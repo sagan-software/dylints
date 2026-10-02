@@ -1,0 +1,35 @@
+warning: duration-like field `retry_delay_seconds` uses integer `u64`
+  --> $DIR/main.rs:2:26
+   |
+LL |     retry_delay_seconds: u64,
+   |                          ^^^
+   |
+   = help: use `std::time::Duration` and convert units at the input boundary
+   = note: `#[warn(duration_integer_field)]` on by default
+
+warning: duration-like field `timeout_ms` uses integer `usize`
+  --> $DIR/main.rs:3:17
+   |
+LL |     timeout_ms: usize,
+   |                 ^^^^^
+   |
+   = help: use `std::time::Duration` and convert units at the input boundary
+
+warning: duration-like field `hours_until_expiry` uses integer `i32`
+  --> $DIR/main.rs:4:25
+   |
+LL |     hours_until_expiry: i32,
+   |                         ^^^
+   |
+   = help: use `std::time::Duration` and convert units at the input boundary
+
+warning: duration-like field `seconds_between_checks` uses integer `u16`
+  --> $DIR/main.rs:10:29
+   |
+LL |     seconds_between_checks: u16,
+   |                             ^^^
+   |
+   = help: use `std::time::Duration` and convert units at the input boundary
+
+warning: 4 warnings emitted
+

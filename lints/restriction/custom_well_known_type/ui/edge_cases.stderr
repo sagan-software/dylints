@@ -1,0 +1,83 @@
+warning: local struct `U$DIRd` duplicates a well-known semantic type
+  --> $DIR/edge_cases.rs:3:12
+   |
+LL | pub struct U$DIRd(String);
+   |            ^^^^
+   |
+   = help: use `u$DIRd::U$DIRd`
+   = note: `#[warn(custom_well_known_type)]` on by default
+
+warning: local enum `Uri` duplicates a well-known semantic type
+  --> $DIR/edge_cases.rs:5:6
+   |
+LL | enum Uri {
+   |      ^^^
+   |
+   = help: use `http::Uri` or another established URI type
+
+warning: local type alias `Duration` duplicates a well-known semantic type
+  --> $DIR/edge_cases.rs:9:6
+   |
+LL | type Duration = u64;
+   |      ^^^^^^^^
+   |
+   = help: use `std::time::Duration`
+
+warning: local type alias `Instant` duplicates a well-known semantic type
+  --> $DIR/edge_cases.rs:12:6
+   |
+LL | type Instant = Millis;
+   |      ^^^^^^^
+   |
+   = help: use `std::time::Instant`
+
+warning: local struct `PathBuf` duplicates a well-known semantic type
+  --> $DIR/edge_cases.rs:17:16
+   |
+LL |     pub struct PathBuf(std::path::PathBuf);
+   |                ^^^^^^^
+   |
+   = help: use `std::path::PathBuf`
+
+warning: local struct `Duration` duplicates a well-known semantic type
+  --> $DIR/edge_cases.rs:19:16
+   |
+LL |     pub struct Duration<T>(T);
+   |                ^^^^^^^^
+   |
+   = help: use `std::time::Duration`
+
+warning: local enum `Method` duplicates a well-known semantic type
+  --> $DIR/edge_cases.rs:21:14
+   |
+LL |     pub enum Method {
+   |              ^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: local struct `Url` duplicates a well-known semantic type
+  --> $DIR/edge_cases.rs:39:16
+   |
+LL |     pub struct Url(String);
+   |                ^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or another established URL type
+
+warning: local type alias `URL` duplicates a well-known semantic type
+  --> $DIR/edge_cases.rs:41:10
+   |
+LL |     type URL = Url;
+   |          ^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or another established URL type
+
+warning: local enum `Uri` duplicates a well-known semantic type
+  --> $DIR/edge_cases.rs:46:18
+   |
+LL |         pub enum Uri {
+   |                  ^^^
+   |
+   = help: use `http::Uri` or another established URI type
+
+warning: 10 warnings emitted
+

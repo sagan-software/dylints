@@ -1,0 +1,11 @@
+warning: Rust file has 1500 non-test lines
+  --> $DIR/main.rs:1:1
+   |
+LL | fn main() {}
+   | ^^^^^^^^^^^^
+   |
+   = help: split large files by responsibility or module
+   = note: `#[warn(large_rust_file)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,11 @@
+warning: `World::non_send` panics when the value is absent
+  --> $DIR/main.rs:15:19
+   |
+LL |     let _ = world.non_send::<LocalState>();
+   |                   ^^^^^^^^
+   |
+   = help: use `World::get_non_send` and handle the fallible result
+   = note: `#[warn(bevy_world_non_send)]` on by default
+
+warning: 1 warning emitted
+

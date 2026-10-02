@@ -1,0 +1,11 @@
+warning: this query fetches a zero-sized component
+  --> $DIR/main.rs:18:11
+   |
+LL | fn bad(_: Query<&Marker>) {}
+   |           ^^^^^^^^^^^^^^
+   |
+   = help: move marker components to a `With<T>` or `Without<T>` filter
+   = note: `#[warn(bevy_zst_query)]` on by default
+
+warning: 1 warning emitted
+

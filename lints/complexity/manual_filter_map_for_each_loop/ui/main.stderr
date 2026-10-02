@@ -1,0 +1,15 @@
+warning: conditional mapping loop can use `filter_map(...).for_each(...)`
+  --> $DIR/main.rs:8:5
+   |
+LL | /     for value in values {
+LL | |         if let Some(mapped) = parse(value) {
+LL | |             consume(mapped);
+LL | |         }
+LL | |     }
+   | |_____^
+   |
+   = help: use `filter_map(...).for_each(...)` for this conditional action
+   = note: `#[warn(manual_filter_map_for_each_loop)]` on by default
+
+warning: 1 warning emitted
+

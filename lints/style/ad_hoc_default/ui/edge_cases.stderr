@@ -1,0 +1,23 @@
+warning: constructor `empty` looks like a default value
+  --> $DIR/edge_cases.rs:8:5
+   |
+LL | /     fn empty() -> Self {
+LL | |         Self { bytes: Vec::new() }
+LL | |     }
+   | |_____^
+   |
+   = help: implement `Default` when this is the canonical zero-argument value
+   = note: `#[warn(ad_hoc_default)]` on by default
+
+warning: constructor `blank` looks like a default value
+  --> $DIR/edge_cases.rs:12:5
+   |
+LL | /     fn blank() -> Self {
+LL | |         Self { bytes: Vec::new() }
+LL | |     }
+   | |_____^
+   |
+   = help: implement `Default` when this is the canonical zero-argument value
+
+warning: 2 warnings emitted
+

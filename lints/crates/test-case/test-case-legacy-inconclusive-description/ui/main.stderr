@@ -1,0 +1,11 @@
+warning: an `inconclusive` description no longer ignores this generated test
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(1_u8 ; "inconclusive - blocked by issue #123")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `ignore["reason"]` as an output modifier when the case must be skipped
+   = note: `#[warn(test_case_legacy_inconclusive_description)]` on by default
+
+warning: 1 warning emitted
+

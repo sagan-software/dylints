@@ -1,0 +1,10 @@
+warning: Axum 0.8 rejects this legacy `*name` capture
+  --> $DIR/main.rs:6:41
+   |
+LL |     let _: Router = Router::new().route("/assets/*path", get(|| async {}));
+   |                                         ^^^^^^^^^^^^^^^ help: write the wildcard as `{*name}`: `"/assets/{*path}"`
+   |
+   = note: `#[warn(axum_route_legacy_wildcard_capture)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,11 @@
+warning: systems in one schedule write disjoint fields of this component
+  --> $DIR/main.rs:5:1
+   |
+LL | struct Motion {
+   | ^^^^^^^^^^^^^
+   |
+   = help: split independently written fields into separate components
+   = note: `#[warn(bevy_component_field_contention)]` on by default
+
+warning: 1 warning emitted
+

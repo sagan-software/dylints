@@ -1,0 +1,61 @@
+[package]
+name = "bevy"
+version.workspace = true
+description = "Rust review lints for Bevy API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bevy_borrowed_reborrowable = { package = "bevy-borrowed-reborrowable", path = "bevy-borrowed-reborrowable", features = ["rlib"] }
+bevy_camera_modification_in_fixed_update = { package = "bevy-camera-modification-in-fixed-update", path = "bevy-camera-modification-in-fixed-update", features = ["rlib"] }
+bevy_children_mutation_query = { package = "bevy-children-mutation-query", path = "bevy-children-mutation-query", features = ["rlib"] }
+bevy_component_field_contention = { package = "bevy-component-field-contention", path = "bevy-component-field-contention", features = ["rlib"] }
+bevy_disallow_fixed_update_schedule = { package = "bevy-disallow-fixed-update-schedule", path = "bevy-disallow-fixed-update-schedule", features = ["rlib"] }
+bevy_disallow_update_schedule = { package = "bevy-disallow-update-schedule", path = "bevy-disallow-update-schedule", features = ["rlib"] }
+bevy_duplicate_dependencies = { package = "bevy-duplicate-dependencies", path = "bevy-duplicate-dependencies", features = ["rlib"] }
+bevy_duplicate_plugin_addition = { package = "bevy-duplicate-plugin-addition", path = "bevy-duplicate-plugin-addition", features = ["rlib"] }
+bevy_global_transform_mutation_query = { package = "bevy-global-transform-mutation-query", path = "bevy-global-transform-mutation-query", features = ["rlib"] }
+bevy_inherited_visibility_mutation_query = { package = "bevy-inherited-visibility-mutation-query", path = "bevy-inherited-visibility-mutation-query", features = ["rlib"] }
+bevy_insert_message_resource = { package = "bevy-insert-message-resource", path = "bevy-insert-message-resource", features = ["rlib"] }
+bevy_iter_current_update_messages = { package = "bevy-iter-current-update-messages", path = "bevy-iter-current-update-messages", features = ["rlib"] }
+bevy_large_component = { package = "bevy-large-component", path = "bevy-large-component", features = ["rlib"] }
+bevy_large_component_change_filter = { package = "bevy-large-component-change-filter", path = "bevy-large-component-change-filter", features = ["rlib"] }
+bevy_main_return_without_app_exit = { package = "bevy-main-return-without-app-exit", path = "bevy-main-return-without-app-exit", features = ["rlib"] }
+bevy_missing_clone_for_unit_component = { package = "bevy-missing-clone-for-unit-component", path = "bevy-missing-clone-for-unit-component", features = ["rlib"] }
+bevy_missing_copy_for_unit_component = { package = "bevy-missing-copy-for-unit-component", path = "bevy-missing-copy-for-unit-component", features = ["rlib"] }
+bevy_missing_default_for_unit_component = { package = "bevy-missing-default-for-unit-component", path = "bevy-missing-default-for-unit-component", features = ["rlib"] }
+bevy_missing_reflect = { package = "bevy-missing-reflect", path = "bevy-missing-reflect", features = ["rlib"] }
+bevy_narrow_exclusive_system = { package = "bevy-narrow-exclusive-system", path = "bevy-narrow-exclusive-system", features = ["rlib"] }
+bevy_partially_used_query_data = { package = "bevy-partially-used-query-data", path = "bevy-partially-used-query-data", features = ["rlib"] }
+bevy_presence_only_query_fetch = { package = "bevy-presence-only-query-fetch", path = "bevy-presence-only-query-fetch", features = ["rlib"] }
+bevy_readonly_system_access = { package = "bevy-readonly-system-access", path = "bevy-readonly-system-access", features = ["rlib"] }
+bevy_time_elapsed_secs_cast_f64 = { package = "bevy-time-elapsed-secs-cast-f64", path = "bevy-time-elapsed-secs-cast-f64", features = ["rlib"] }
+bevy_unconventional_naming = { package = "bevy-unconventional-naming", path = "bevy-unconventional-naming", features = ["rlib"] }
+bevy_unfiltered_entity_access_query = { package = "bevy-unfiltered-entity-access-query", path = "bevy-unfiltered-entity-access-query", features = ["rlib"] }
+bevy_unit_in_bundle = { package = "bevy-unit-in-bundle", path = "bevy-unit-in-bundle", features = ["rlib"] }
+bevy_wide_query_access = { package = "bevy-wide-query-access", path = "bevy-wide-query-access", features = ["rlib"] }
+bevy_world_entity = { package = "bevy-world-entity", path = "bevy-world-entity", features = ["rlib"] }
+bevy_world_entity_mut = { package = "bevy-world-entity-mut", path = "bevy-world-entity-mut", features = ["rlib"] }
+bevy_world_insert_batch = { package = "bevy-world-insert-batch", path = "bevy-world-insert-batch", features = ["rlib"] }
+bevy_world_insert_batch_if_new = { package = "bevy-world-insert-batch-if-new", path = "bevy-world-insert-batch-if-new", features = ["rlib"] }
+bevy_world_non_send = { package = "bevy-world-non-send", path = "bevy-world-non-send", features = ["rlib"] }
+bevy_world_non_send_mut = { package = "bevy-world-non-send-mut", path = "bevy-world-non-send-mut", features = ["rlib"] }
+bevy_world_resource = { package = "bevy-world-resource", path = "bevy-world-resource", features = ["rlib"] }
+bevy_world_resource_mut = { package = "bevy-world-resource-mut", path = "bevy-world-resource-mut", features = ["rlib"] }
+bevy_world_resource_ref = { package = "bevy-world-resource-ref", path = "bevy-world-resource-ref", features = ["rlib"] }
+bevy_world_run_schedule = { package = "bevy-world-run-schedule", path = "bevy-world-run-schedule", features = ["rlib"] }
+bevy_world_schedule_scope = { package = "bevy-world-schedule-scope", path = "bevy-world-schedule-scope", features = ["rlib"] }
+bevy_zst_query = { package = "bevy-zst-query", path = "bevy-zst-query", features = ["rlib"] }
+dylint_linting.workspace = true
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

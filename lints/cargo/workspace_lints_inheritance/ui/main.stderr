@@ -1,0 +1,11 @@
+warning: workspace package defines `[lints]` without `workspace = true`
+  --> $DIR/main.rs:1:1
+   |
+LL | fn main() {}
+   | ^^^^^^^^^^^^
+   |
+   = help: add `workspace = true` to the package `[lints]` table
+   = note: `#[warn(workspace_lints_inheritance)]` on by default
+
+warning: 1 warning emitted
+

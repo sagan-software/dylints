@@ -1,0 +1,11 @@
+warning: `World::entity_mut` panics when the entity does not exist
+  --> $DIR/main.rs:14:19
+   |
+LL |     let _ = world.entity_mut(id);
+   |                   ^^^^^^^^^^
+   |
+   = help: use `World::get_entity_mut` and handle the fallible result
+   = note: `#[warn(bevy_world_entity_mut)]` on by default
+
+warning: 1 warning emitted
+

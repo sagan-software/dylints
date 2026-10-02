@@ -1,0 +1,17 @@
+warning: function has Cyclomatic Complexity 12, which exceeds 9
+  --> $DIR/main.rs:5:1
+   |
+LL | / fn exceeds_limit(a: bool, b: bool, c: bool, d: bool, e: bool, f: bool) -> usize {
+LL | |     let mut score = 0;
+LL | |     if a {
+LL | |         score += 1;
+...  |
+LL | |     score
+LL | | }
+   | |_^
+   |
+   = help: split independent decisions into smaller functions or typed state transitions
+   = note: `#[warn(cyclomatic_complexity)]` on by default
+
+warning: 1 warning emitted
+

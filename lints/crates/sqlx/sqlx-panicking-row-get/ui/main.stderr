@@ -1,0 +1,19 @@
+warning: SQLx `Row::get` can panic
+  --> $DIR/main.rs:6:25
+   |
+LL |     let _: String = row.get("name");
+   |                         ^^^
+   |
+   = help: use `Row::try_get` and handle or propagate the decoding error
+   = note: `#[warn(sqlx_panicking_row_get)]` on by default
+
+warning: SQLx `Row::get_unchecked` can panic
+  --> $DIR/main.rs:7:22
+   |
+LL |     let _: i64 = row.get_unchecked(0);
+   |                      ^^^^^^^^^^^^^
+   |
+   = help: use `Row::try_get_unchecked` and handle or propagate the decoding error
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,19 @@
+warning: Reqwest panics when `max_extra_load` is below 0.0 or above 1000.0
+  --> $DIR/main.rs:4:60
+   |
+LL |     let negative = reqwest::retry::for_host("example.com").max_extra_load(-0.1);
+   |                                                            ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+   = note: `#[warn(reqwest_retry_invalid_max_extra_load)]` on by default
+
+warning: Reqwest panics when `max_extra_load` is below 0.0 or above 1000.0
+  --> $DIR/main.rs:7:61
+   |
+LL |     let too_large = reqwest::retry::for_host("example.com").max_extra_load(1000.1);
+   |                                                             ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: 2 warnings emitted
+

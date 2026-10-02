@@ -1,0 +1,11 @@
+warning: `or_current` is redundant on `Span::current()`
+  --> $DIR/main.rs:4:29
+   |
+LL |     let _ = Span::current().or_current();
+   |                             ^^^^^^^^^^
+   |
+   = help: remove `.or_current()`
+   = note: `#[warn(tracing_current_span_or_current)]` on by default
+
+warning: 1 warning emitted
+

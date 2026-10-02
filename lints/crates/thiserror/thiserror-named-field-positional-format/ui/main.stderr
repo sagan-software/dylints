@@ -1,0 +1,10 @@
+warning: this named field is formatted positionally
+  --> $DIR/main.rs:5:5
+   |
+LL |     #[error("failed: {}", source)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: capture the field directly as `{field}`: `#[error("failed: {source}")]`
+   |
+   = note: `#[warn(thiserror_named_field_positional_format)]` on by default
+
+warning: 1 warning emitted
+

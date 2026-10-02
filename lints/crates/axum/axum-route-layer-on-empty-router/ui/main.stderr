@@ -1,0 +1,11 @@
+warning: applying a route layer before adding routes panics
+  --> $DIR/main.rs:16:35
+   |
+LL |     let _: Router = Router::new().route_layer(middleware::from_fn(pass_through));
+   |                                   ^^^^^^^^^^^
+   |
+   = help: add the routes before calling `Router::route_layer`
+   = note: `#[warn(axum_route_layer_on_empty_router)]` on by default
+
+warning: 1 warning emitted
+

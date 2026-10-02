@@ -1,0 +1,19 @@
+warning: `std::env::var` reads runtime environment outside config/bootstrap code
+  --> $DIR/edge_cases.rs:6:5
+   |
+LL |     env::var("API_TOKEN")
+   |     ^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+   = note: `#[warn(runtime_env_read)]` on by default
+
+warning: `std::env::var_os` reads runtime environment outside config/bootstrap code
+  --> $DIR/edge_cases.rs:10:5
+   |
+LL |     var_os("TEMPLATE_PATH")
+   |     ^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+
+warning: 2 warnings emitted
+

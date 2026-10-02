@@ -1,0 +1,27 @@
+warning: `required(true)` conflicts with clap's conditional requirement settings
+  --> $DIR/main.rs:7:10
+   |
+LL |         .required(true)
+   |          ^^^^^^^^
+   |
+   = help: remove `required(true)` so the condition controls when the argument is required
+   = note: `#[warn(clap_required_conditional_conflict)]` on by default
+
+warning: `required(true)` conflicts with clap's conditional requirement settings
+  --> $DIR/main.rs:11:10
+   |
+LL |         .required(true);
+   |          ^^^^^^^^
+   |
+   = help: remove `required(true)` so the condition controls when the argument is required
+
+warning: `required(true)` conflicts with clap's conditional requirement settings
+  --> $DIR/main.rs:13:10
+   |
+LL |         .required(true)
+   |          ^^^^^^^^
+   |
+   = help: remove `required(true)` so the condition controls when the argument is required
+
+warning: 3 warnings emitted
+

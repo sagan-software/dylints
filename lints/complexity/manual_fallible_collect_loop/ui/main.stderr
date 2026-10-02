@@ -1,0 +1,23 @@
+warning: fallible collection loop can use `Iterator::collect`
+  --> $DIR/main.rs:5:5
+   |
+LL | /     for value in values {
+LL | |         output.push(value.parse()?);
+LL | |     }
+   | |_____^
+   |
+   = help: use `map(...).collect()` with the matching fallible collection type
+   = note: `#[warn(manual_fallible_collect_loop)]` on by default
+
+warning: fallible collection loop can use `Iterator::collect`
+  --> $DIR/main.rs:23:5
+   |
+LL | /     for value in values {
+LL | |         output.push(value.parse().ok()?);
+LL | |     }
+   | |_____^
+   |
+   = help: use `map(...).collect()` with the matching fallible collection type
+
+warning: 2 warnings emitted
+

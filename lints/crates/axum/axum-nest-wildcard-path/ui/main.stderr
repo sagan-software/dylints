@@ -1,0 +1,11 @@
+warning: wildcards in nested router paths panic
+  --> $DIR/main.rs:6:40
+   |
+LL |     let _: Router = Router::new().nest("/api/{*rest}", Router::new());
+   |                                        ^^^^^^^^^^^^^^
+   |
+   = help: nest at a fixed prefix and route the wildcard inside the nested router
+   = note: `#[warn(axum_nest_wildcard_path)]` on by default
+
+warning: 1 warning emitted
+

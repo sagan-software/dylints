@@ -1,0 +1,41 @@
+[package]
+name = "insta"
+version.workspace = true
+description = "Rust review lints for Insta snapshot API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dylint_linting.workspace = true
+insta_allow_empty_glob = { package = "insta-allow-empty-glob", path = "insta-allow-empty-glob", features = ["rlib"] }
+insta_binary_snapshot_missing_extension = { package = "insta-binary-snapshot-missing-extension", path = "insta-binary-snapshot-missing-extension", features = ["rlib"] }
+insta_bind_to_scope_in_async = { package = "insta-bind-to-scope-in-async", path = "insta-bind-to-scope-in-async", features = ["rlib"] }
+insta_compact_json_snapshot = { package = "insta-compact-json-snapshot", path = "insta-compact-json-snapshot", features = ["rlib"] }
+insta_content_direct_match = { package = "insta-content-direct-match", path = "insta-content-direct-match", features = ["rlib"] }
+insta_deprecated_assert_display = { package = "insta-deprecated-assert-display", path = "insta-deprecated-assert-display", features = ["rlib"] }
+insta_empty_description = { package = "insta-empty-description", path = "insta-empty-description", features = ["rlib"] }
+insta_empty_filter_pattern = { package = "insta-empty-filter-pattern", path = "insta-empty-filter-pattern", features = ["rlib"] }
+insta_empty_input_file = { package = "insta-empty-input-file", path = "insta-empty-input-file", features = ["rlib"] }
+insta_empty_snapshot_path = { package = "insta-empty-snapshot-path", path = "insta-empty-snapshot-path", features = ["rlib"] }
+insta_empty_snapshot_suffix = { package = "insta-empty-snapshot-suffix", path = "insta-empty-snapshot-suffix", features = ["rlib"] }
+insta_glob_parent_traversal = { package = "insta-glob-parent-traversal", path = "insta-glob-parent-traversal", features = ["rlib"] }
+insta_json_snapshot = { package = "insta-json-snapshot", path = "insta-json-snapshot", features = ["rlib"] }
+insta_no_module_prefix = { package = "insta-no-module-prefix", path = "insta-no-module-prefix", features = ["rlib"] }
+insta_noop_filter = { package = "insta-noop-filter", path = "insta-noop-filter", features = ["rlib"] }
+insta_redundant_content_resolve_inner = { package = "insta-redundant-content-resolve-inner", path = "insta-redundant-content-resolve-inner", features = ["rlib"] }
+insta_settings_bind_future = { package = "insta-settings-bind-future", path = "insta-settings-bind-future", features = ["rlib"] }
+insta_settings_new = { package = "insta-settings-new", path = "insta-settings-new", features = ["rlib"] }
+insta_settings_raw_info = { package = "insta-settings-raw-info", path = "insta-settings-raw-info", features = ["rlib"] }
+insta_snapshot_in_loop = { package = "insta-snapshot-in-loop", path = "insta-snapshot-in-loop", features = ["rlib"] }
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

@@ -1,0 +1,25 @@
+[package]
+name = "manual_filter_map_for_each_loop"
+version.workspace = true
+description = "A lint to check for loops that can use filter_map and for_each"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dylint_linting.workspace = true
+dylint_support = { package = "dylint-support", path = "../../../support/dylint" }
+
+[dev-dependencies]
+dylint_testing.workspace = true
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

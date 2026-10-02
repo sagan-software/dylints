@@ -1,0 +1,27 @@
+warning: public struct `UnusedStruct` is unused inside this private crate
+  --> $DIR/main.rs:1:12
+   |
+LL | pub struct UnusedStruct {
+   |            ^^^^^^^^^^^^
+   |
+   = help: remove the type or make it private unless an external boundary uses it
+   = note: `#[warn(unnecessary_public_type)]` on by default
+
+warning: public enum `UnusedEnum` is unused inside this private crate
+  --> $DIR/main.rs:5:10
+   |
+LL | pub enum UnusedEnum {
+   |          ^^^^^^^^^^
+   |
+   = help: remove the type or make it private unless an external boundary uses it
+
+warning: public type alias `UnusedAlias` is unused inside this private crate
+  --> $DIR/main.rs:9:10
+   |
+LL | pub type UnusedAlias = usize;
+   |          ^^^^^^^^^^^
+   |
+   = help: remove the type or make it private unless an external boundary uses it
+
+warning: 3 warnings emitted
+

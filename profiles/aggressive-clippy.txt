@@ -1,0 +1,5 @@
+clippy::expect_used
+clippy::arithmetic_side_effects
+clippy::cast_possible_wrap
+clippy::cast_precision_loss
+clippy::cast_possible_truncation

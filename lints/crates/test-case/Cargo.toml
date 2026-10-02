@@ -1,0 +1,42 @@
+[package]
+name = "test-case"
+version.workspace = true
+description = "Rust review lints for test-case macro misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dylint_linting.workspace = true
+test_case_async_without_test_harness = { package = "test-case-async-without-test-harness", path = "test-case-async-without-test-harness", features = ["rlib"] }
+test_case_constant_match_guard = { package = "test-case-constant-match-guard", path = "test-case-constant-match-guard", features = ["rlib"] }
+test_case_empty_description = { package = "test-case-empty-description", path = "test-case-empty-description", features = ["rlib"] }
+test_case_empty_ignore_reason = { package = "test-case-empty-ignore-reason", path = "test-case-empty-ignore-reason", features = ["rlib"] }
+test_case_empty_matrix = { package = "test-case-empty-matrix", path = "test-case-empty-matrix", features = ["rlib"] }
+test_case_empty_panic_message = { package = "test-case-empty-panic-message", path = "test-case-empty-panic-message", features = ["rlib"] }
+test_case_ignore_without_reason = { package = "test-case-ignore-without-reason", path = "test-case-ignore-without-reason", features = ["rlib"] }
+test_case_ignored_matrix = { package = "test-case-ignored-matrix", path = "test-case-ignored-matrix", features = ["rlib"] }
+test_case_inconclusive_modifier = { package = "test-case-inconclusive-modifier", path = "test-case-inconclusive-modifier", features = ["rlib"] }
+test_case_large_suite = { package = "test-case-large-suite", path = "test-case-large-suite", features = ["rlib"] }
+test_case_legacy_inconclusive_description = { package = "test-case-legacy-inconclusive-description", path = "test-case-legacy-inconclusive-description", features = ["rlib"] }
+test_case_nonpositive_almost_precision = { package = "test-case-nonpositive-almost-precision", path = "test-case-nonpositive-almost-precision", features = ["rlib"] }
+test_case_panics_without_message = { package = "test-case-panics-without-message", path = "test-case-panics-without-message", features = ["rlib"] }
+test_case_single_case_matrix = { package = "test-case-single-case-matrix", path = "test-case-single-case-matrix", features = ["rlib"] }
+test_case_singleton_contains_in_order = { package = "test-case-singleton-contains-in-order", path = "test-case-singleton-contains-in-order", features = ["rlib"] }
+test_case_singleton_matrix_dimension = { package = "test-case-singleton-matrix-dimension", path = "test-case-singleton-matrix-dimension", features = ["rlib"] }
+test_case_unnamed_test_case = { package = "test-case-unnamed-test-case", path = "test-case-unnamed-test-case", features = ["rlib"] }
+test_case_whitespace_ignore_reason = { package = "test-case-whitespace-ignore-reason", path = "test-case-whitespace-ignore-reason", features = ["rlib"] }
+test_case_whitespace_panic_message = { package = "test-case-whitespace-panic-message", path = "test-case-whitespace-panic-message", features = ["rlib"] }
+test_case_wildcard_match = { package = "test-case-wildcard-match", path = "test-case-wildcard-match", features = ["rlib"] }
+test_case_with_function_path = { package = "test-case-with-function-path", path = "test-case-with-function-path", features = ["rlib"] }
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

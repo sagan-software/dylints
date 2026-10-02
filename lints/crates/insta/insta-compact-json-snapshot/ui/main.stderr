@@ -1,0 +1,11 @@
+warning: compact JSON snapshots produce worse line-oriented diffs
+  --> $DIR/main.rs:2:5
+   |
+LL |     insta::assert_compact_json_snapshot!(vec![1, 2, 3]);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: prefer `assert_yaml_snapshot!` unless single-line JSON is the tested contract
+   = note: `#[warn(insta_compact_json_snapshot)]` on by default
+
+warning: 1 warning emitted
+

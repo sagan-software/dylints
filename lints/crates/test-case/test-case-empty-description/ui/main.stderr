@@ -1,0 +1,11 @@
+warning: this case has an empty explicit description
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(1 ; "")]
+   | ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe the behavior covered by this case
+   = note: `#[warn(test_case_empty_description)]` on by default
+
+warning: 1 warning emitted
+

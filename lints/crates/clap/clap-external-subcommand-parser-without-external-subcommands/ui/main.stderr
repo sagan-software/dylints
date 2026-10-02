@@ -1,0 +1,11 @@
+warning: this parser is ignored unless external subcommands are enabled
+  --> $DIR/main.rs:6:33
+   |
+LL |     let _ = Command::new("bad").external_subcommand_value_parser(value_parser!(OsString));
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `.allow_external_subcommands(true)`
+   = note: `#[warn(clap_external_subcommand_parser_without_external_subcommands)]` on by default
+
+warning: 1 warning emitted
+

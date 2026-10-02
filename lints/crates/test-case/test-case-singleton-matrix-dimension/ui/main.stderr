@@ -1,0 +1,11 @@
+warning: this matrix dimension wraps one constant value in a collection
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_matrix([1_u8], [true, false])]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: write the constant as a scalar matrix argument
+   = note: `#[warn(test_case_singleton_matrix_dimension)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,19 @@
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:13:5
+   |
+LL | /     let Some((id, _name)) = lookup_pair() else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+   = note: `#[warn(let_some_return_err)]` on by default
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some((id, _name)) = lookup_pair() else {
+LL -         return Err(Error::Missing);
+LL -     };
+LL +     let (id, _name) = (lookup_pair()).ok_or_else(|| Error::Missing)?;
+   |
+
+warning: 1 warning emitted
+

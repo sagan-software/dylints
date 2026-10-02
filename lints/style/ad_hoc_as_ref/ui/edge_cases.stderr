@@ -1,0 +1,23 @@
+warning: method `get_header` looks like an `AsRef` accessor
+  --> $DIR/edge_cases.rs:6:5
+   |
+LL | /     fn get_header(&self) -> &String {
+LL | |         &self.0
+LL | |     }
+   | |_____^
+   |
+   = help: implement `AsRef<T>` when this exposes the canonical borrowed view
+   = note: `#[warn(ad_hoc_as_ref)]` on by default
+
+warning: method `as_header` looks like an `AsRef` accessor
+  --> $DIR/edge_cases.rs:10:5
+   |
+LL | /     fn as_header(&self) -> &str {
+LL | |         &self.0
+LL | |     }
+   | |_____^
+   |
+   = help: implement `AsRef<T>` when this exposes the canonical borrowed view
+
+warning: 2 warnings emitted
+

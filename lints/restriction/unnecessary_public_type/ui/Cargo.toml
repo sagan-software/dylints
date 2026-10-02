@@ -1,0 +1,11 @@
+[package]
+name = "unnecessary-public-type-fixture"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[[bin]]
+name = "unnecessary-public-type-fixture"
+path = "main.rs"

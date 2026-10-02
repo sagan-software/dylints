@@ -1,0 +1,51 @@
+warning: secret-bearing field `bearer_token` uses raw `String`
+  --> $DIR/edge_cases.rs:6:5
+   |
+LL |     bearer_token: String,
+   |     ^^^^^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+   = note: `#[warn(secret_raw_type)]` on by default
+
+warning: secret-bearing field `refresh_secret` uses raw `&str`
+  --> $DIR/edge_cases.rs:7:5
+   |
+LL |     refresh_secret: &'a str,
+   |     ^^^^^^^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing field `password_hash` uses raw `Vec<u8>`
+  --> $DIR/edge_cases.rs:8:5
+   |
+LL |     password_hash: Vec<u8>,
+   |     ^^^^^^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing parameter `api_key` uses raw `String`
+  --> $DIR/edge_cases.rs:13:9
+   |
+LL | fn send(api_key: String, session_secret: &[u8], retry_count: usize) {
+   |         ^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing parameter `session_secret` uses raw `&[u8]`
+  --> $DIR/edge_cases.rs:13:26
+   |
+LL | fn send(api_key: String, session_secret: &[u8], retry_count: usize) {
+   |                          ^^^^^^^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing local variable `password` uses raw `String`
+  --> $DIR/edge_cases.rs:14:9
+   |
+LL |     let password = "raw password".to_owned();
+   |         ^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: 6 warnings emitted
+

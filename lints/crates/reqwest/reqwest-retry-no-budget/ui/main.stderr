@@ -1,0 +1,11 @@
+warning: this retry policy has an infinite budget and can amplify retry storms
+  --> $DIR/main.rs:4:58
+   |
+LL |     let policy = reqwest::retry::for_host("example.com").no_budget();
+   |                                                          ^^^^^^^^^
+   |
+   = help: keep the default retry budget or configure a finite `max_extra_load`
+   = note: `#[warn(reqwest_retry_no_budget)]` on by default
+
+warning: 1 warning emitted
+

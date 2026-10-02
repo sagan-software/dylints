@@ -1,0 +1,27 @@
+warning: `verbatim_doc_comment` has no doc comment to preserve
+  --> $DIR/main.rs:6:1
+   |
+LL | #[command(verbatim_doc_comment)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a doc comment, or remove `verbatim_doc_comment`
+   = note: `#[warn(clap_derive_verbatim_doc_comment_without_doc)]` on by default
+
+warning: `verbatim_doc_comment` has no doc comment to preserve
+  --> $DIR/main.rs:8:5
+   |
+LL |     #[arg(long, verbatim_doc_comment)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a doc comment, or remove `verbatim_doc_comment`
+
+warning: `verbatim_doc_comment` has no doc comment to preserve
+  --> $DIR/main.rs:25:5
+   |
+LL |     #[command(verbatim_doc_comment)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a doc comment, or remove `verbatim_doc_comment`
+
+warning: 3 warnings emitted
+

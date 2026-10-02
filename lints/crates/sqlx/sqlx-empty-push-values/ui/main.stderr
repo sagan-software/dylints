@@ -1,0 +1,11 @@
+warning: an empty values list produces invalid SQL
+  --> $DIR/main.rs:5:11
+   |
+LL |     query.push_values::<u8>([]);
+   |           ^^^^^^^^^^^
+   |
+   = help: handle the empty collection before building the query
+   = note: `#[warn(sqlx_empty_push_values)]` on by default
+
+warning: 1 warning emitted
+

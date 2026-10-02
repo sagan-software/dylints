@@ -1,0 +1,15 @@
+warning: filtered `for` loop can use `filter(...).for_each(...)`
+  --> $DIR/main.rs:4:5
+   |
+LL | /     for value in values {
+LL | |         if *value > 0 {
+LL | |             consume(*value);
+LL | |         }
+LL | |     }
+   | |_____^
+   |
+   = help: use `filter(...).for_each(...)` for this filtered action
+   = note: `#[warn(manual_filter_for_each_loop)]` on by default
+
+warning: 1 warning emitted
+

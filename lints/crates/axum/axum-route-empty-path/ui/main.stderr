@@ -1,0 +1,10 @@
+warning: this empty route path panics
+  --> $DIR/main.rs:6:41
+   |
+LL |     let _: Router = Router::new().route("", get(|| async {}));
+   |                                         ^^ help: use `/` for the root route: `"/"`
+   |
+   = note: `#[warn(axum_route_empty_path)]` on by default
+
+warning: 1 warning emitted
+

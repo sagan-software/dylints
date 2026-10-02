@@ -1,0 +1,13 @@
+warning: private one-expression helper is only called once
+  --> $DIR/main.rs:7:1
+   |
+LL | / fn inline_total(amount: u64) -> u64 {
+LL | |     amount.saturating_add(1)
+LL | | }
+   | |_^
+   |
+   = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
+   = note: `#[warn(one_use_private_helper)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,11 @@
+warning: `require_equals(true)` has no configured value arity
+  --> $DIR/main.rs:4:29
+   |
+LL |     let _ = Arg::new("bad").require_equals(true);
+   |                             ^^^^^^^^^^^^^^
+   |
+   = help: add an explicit `.num_args(...)`
+   = note: `#[warn(clap_require_equals_without_num_args)]` on by default
+
+warning: 1 warning emitted
+

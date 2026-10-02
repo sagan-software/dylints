@@ -1,0 +1,11 @@
+warning: this system mutates camera-filtered query data in `FixedUpdate`
+  --> $DIR/main.rs:18:34
+   |
+LL |     app.add_systems(FixedUpdate, move_camera);
+   |                                  ^^^^^^^^^^^
+   |
+   = help: schedule camera mutation in a frame-rate update schedule
+   = note: `#[warn(bevy_camera_modification_in_fixed_update)]` on by default
+
+warning: 1 warning emitted
+

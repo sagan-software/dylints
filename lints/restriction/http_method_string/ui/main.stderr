@@ -1,0 +1,83 @@
+warning: HTTP method field `method` uses `String`
+  --> $DIR/main.rs:2:13
+   |
+LL |     method: String,
+   |             ^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+   = note: `#[warn(http_method_string)]` on by default
+
+warning: HTTP method field `http_method` uses `&str`
+  --> $DIR/main.rs:3:18
+   |
+LL |     http_method: &'a str,
+   |                  ^^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: HTTP method field `request_method` uses `&str`
+  --> $DIR/main.rs:4:21
+   |
+LL |     request_method: &'static str,
+   |                     ^^^^^^^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: HTTP method field `verb` uses `String`
+  --> $DIR/main.rs:5:11
+   |
+LL |     verb: std::string::String,
+   |           ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: HTTP method parameter `method` uses `String`
+  --> $DIR/main.rs:14:28
+   |
+LL |     fn send(&self, method: String, auth_method: String) -> String;
+   |                            ^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: HTTP method return value `verb` uses `&str`
+  --> $DIR/main.rs:15:23
+   |
+LL |     fn verb(&self) -> &'static str;
+   |                       ^^^^^^^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: HTTP method parameter `method` uses `String`
+  --> $DIR/main.rs:20:24
+   |
+LL | fn http_method(method: String, method_name: String) -> String {
+   |                        ^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: HTTP method return value `http_method` uses `String`
+  --> $DIR/main.rs:20:56
+   |
+LL | fn http_method(method: String, method_name: String) -> String {
+   |                                                        ^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: HTTP method parameter `verb` uses `&str`
+  --> $DIR/main.rs:24:25
+   |
+LL | fn request_method(verb: &'static str) -> &'static str {
+   |                         ^^^^^^^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: HTTP method return value `request_method` uses `&str`
+  --> $DIR/main.rs:24:42
+   |
+LL | fn request_method(verb: &'static str) -> &'static str {
+   |                                          ^^^^^^^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: 10 warnings emitted
+

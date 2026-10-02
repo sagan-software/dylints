@@ -1,0 +1,19 @@
+warning: `ValueHint::CommandWithArguments` is only valid on a positional argument
+  --> $DIR/main.rs:8:10
+   |
+LL |         .value_hint(ValueHint::CommandWithArguments);
+   |          ^^^^^^^^^^
+   |
+   = help: remove the long and short names, or use a value hint that is valid for options
+   = note: `#[warn(clap_command_with_arguments_option)]` on by default
+
+warning: `ValueHint::CommandWithArguments` is only valid on a positional argument
+  --> $DIR/main.rs:10:10
+   |
+LL |         .value_hint(ValueHint::CommandWithArguments)
+   |          ^^^^^^^^^^
+   |
+   = help: remove the long and short names, or use a value hint that is valid for options
+
+warning: 2 warnings emitted
+

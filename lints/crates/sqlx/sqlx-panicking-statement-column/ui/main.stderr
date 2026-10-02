@@ -1,0 +1,11 @@
+warning: `Statement::column` panics for an invalid index
+  --> $DIR/main.rs:4:19
+   |
+LL |     TestStatement.column(0);
+   |                   ^^^^^^
+   |
+   = help: use `try_column`
+   = note: `#[warn(sqlx_panicking_statement_column)]` on by default
+
+warning: 1 warning emitted
+

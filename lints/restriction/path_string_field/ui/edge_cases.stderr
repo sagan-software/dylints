@@ -1,0 +1,43 @@
+warning: path-like field `file_path` uses `String`
+  --> $DIR/edge_cases.rs:11:16
+   |
+LL |     file_path: PathText,
+   |                ^^^^^^^^
+   |
+   = help: use `std::path::PathBuf`, `std::path::Path`, or a validated path newtype
+   = note: `#[warn(path_string_field)]` on by default
+
+warning: path-like field `output_dir` uses `&str`
+  --> $DIR/edge_cases.rs:12:17
+   |
+LL |     output_dir: &'a PathStr,
+   |                 ^^^^^^^^^^^
+   |
+   = help: use `std::path::PathBuf`, `std::path::Path`, or a validated path newtype
+
+warning: path-like field `manifest_path` uses `String`
+  --> $DIR/edge_cases.rs:13:20
+   |
+LL |     manifest_path: std::string::String,
+   |                    ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `std::path::PathBuf`, `std::path::Path`, or a validated path newtype
+
+warning: path-like field `config_path` uses `String`
+  --> $DIR/edge_cases.rs:14:18
+   |
+LL |     config_path: StdString,
+   |                  ^^^^^^^^^
+   |
+   = help: use `std::path::PathBuf`, `std::path::Path`, or a validated path newtype
+
+warning: path-like field `display_path_label` uses `String`
+  --> $DIR/edge_cases.rs:15:25
+   |
+LL |     display_path_label: String,
+   |                         ^^^^^^
+   |
+   = help: use `std::path::PathBuf`, `std::path::Path`, or a validated path newtype
+
+warning: 5 warnings emitted
+

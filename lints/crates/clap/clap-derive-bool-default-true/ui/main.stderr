@@ -1,0 +1,19 @@
+warning: this `SetTrue` flag is already true when the option is absent
+  --> $DIR/main.rs:7:5
+   |
+LL |     #[arg(long, default_value_t = true)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the true default, or use a negative flag with `ArgAction::SetFalse`
+   = note: `#[warn(clap_derive_bool_default_true)]` on by default
+
+warning: this `SetTrue` flag is already true when the option is absent
+  --> $DIR/main.rs:9:5
+   |
+LL |     #[arg(long, default_value = "true")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the true default, or use a negative flag with `ArgAction::SetFalse`
+
+warning: 2 warnings emitted
+

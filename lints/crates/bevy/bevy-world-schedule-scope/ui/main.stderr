@@ -1,0 +1,11 @@
+warning: `World::schedule_scope` panics when the schedule does not exist
+  --> $DIR/main.rs:16:11
+   |
+LL |     world.schedule_scope(Gameplay, |_, _| {});
+   |           ^^^^^^^^^^^^^^
+   |
+   = help: use `World::try_schedule_scope` and handle the fallible result
+   = note: `#[warn(bevy_world_schedule_scope)]` on by default
+
+warning: 1 warning emitted
+

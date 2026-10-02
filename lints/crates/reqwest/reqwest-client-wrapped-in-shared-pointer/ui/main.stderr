@@ -1,0 +1,19 @@
+warning: Reqwest `Client` already uses `Arc` internally
+  --> $DIR/main.rs:7:19
+   |
+LL |     let _shared = Arc::new(client);
+   |                   ^^^^^^^^^^^^^^^^
+   |
+   = help: store and clone the `Client` directly
+   = note: `#[warn(reqwest_client_wrapped_in_shared_pointer)]` on by default
+
+warning: Reqwest `Client` already uses `Arc` internally
+  --> $DIR/main.rs:10:18
+   |
+LL |     let _local = Rc::new(client);
+   |                  ^^^^^^^^^^^^^^^
+   |
+   = help: store and clone the `Client` directly
+
+warning: 2 warnings emitted
+

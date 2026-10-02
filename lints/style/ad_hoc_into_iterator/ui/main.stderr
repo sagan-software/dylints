@@ -1,0 +1,53 @@
+warning: method `into_rows` looks like ad hoc iteration
+  --> $DIR/main.rs:11:5
+   |
+LL | /     fn into_rows(self) -> Vec<Row> {
+LL | |         self.rows
+LL | |     }
+   | |_____^
+   |
+   = help: implement `IntoIterator` when this is the canonical iteration view
+   = note: `#[warn(ad_hoc_into_iterator)]` on by default
+
+warning: method `into_row_vec` looks like ad hoc iteration
+  --> $DIR/main.rs:15:5
+   |
+LL | /     fn into_row_vec(self) -> RowVec {
+LL | |         self.rows
+LL | |     }
+   | |_____^
+   |
+   = help: implement `IntoIterator` when this is the canonical iteration view
+
+warning: method `into_row_iter` looks like ad hoc iteration
+  --> $DIR/main.rs:19:5
+   |
+LL | /     fn into_row_iter(self) -> RowIntoIter {
+LL | |         self.rows.into_iter()
+LL | |     }
+   | |_____^
+   |
+   = help: implement `IntoIterator` when this is the canonical iteration view
+
+warning: method `iter_rows` looks like ad hoc iteration
+  --> $DIR/main.rs:23:5
+   |
+LL | /     fn iter_rows(&self) -> impl Iterator<Item = &Row> {
+LL | |         self.rows.iter()
+LL | |     }
+   | |_____^
+   |
+   = help: implement `IntoIterator` when this is the canonical iteration view
+
+warning: method `items` looks like ad hoc iteration
+  --> $DIR/main.rs:27:5
+   |
+LL | /     fn items(self) -> std::vec::IntoIter<Row> {
+LL | |         self.rows.into_iter()
+LL | |     }
+   | |_____^
+   |
+   = help: implement `IntoIterator` when this is the canonical iteration view
+
+warning: 5 warnings emitted
+

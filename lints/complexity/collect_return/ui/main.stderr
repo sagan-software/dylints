@@ -1,0 +1,75 @@
+warning: this `Vec` return value comes from a tail `.collect()` call
+  --> $DIR/main.rs:7:42
+   |
+LL |     values.iter().map(|value| value * 2).collect()
+   |                                          ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+   = note: `#[warn(collect_return)]` on by default
+
+warning: this `HashMap` return value comes from a tail `.collect()` call
+  --> $DIR/main.rs:11:28
+   |
+LL |     values.iter().copied().collect()
+   |                            ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: this `Vec` return value comes from a tail `.collect()` call
+  --> $DIR/main.rs:15:28
+   |
+LL |     values.iter().copied().collect()
+   |                            ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: this `HashMap` return value comes from a tail `.collect()` call
+  --> $DIR/main.rs:19:28
+   |
+LL |     values.iter().copied().collect()
+   |                            ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: this `HashSet` return value comes from a tail `.collect()` call
+  --> $DIR/main.rs:23:28
+   |
+LL |     values.iter().copied().collect()
+   |                            ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: this `Box<[T]>` return value comes from a tail `.collect()` call
+  --> $DIR/main.rs:27:28
+   |
+LL |     values.iter().copied().collect()
+   |                            ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: this `BTreeSet` return value comes from a tail `.collect()` call
+  --> $DIR/main.rs:36:48
+   |
+LL |         self.values.iter().map(String::as_str).collect()
+   |                                                ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: this `BTreeMap` return value comes from a tail `.collect()` call
+  --> $DIR/main.rs:72:28
+   |
+LL |     values.iter().copied().collect()
+   |                            ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: this `HashSet` return value comes from a tail `.collect()` call
+  --> $DIR/main.rs:76:28
+   |
+LL |     values.iter().copied().collect()
+   |                            ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: 9 warnings emitted
+

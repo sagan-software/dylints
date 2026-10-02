@@ -1,0 +1,35 @@
+warning: `std::env::var` reads runtime environment outside config/bootstrap code
+  --> $DIR/main.rs:13:13
+   |
+LL |     let _ = std::env::var("API_ENDPOINT");
+   |             ^^^^^^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+   = note: `#[warn(runtime_env_read)]` on by default
+
+warning: `std::env::var_os` reads runtime environment outside config/bootstrap code
+  --> $DIR/main.rs:14:13
+   |
+LL |     let _ = std::env::var_os("API_TOKEN");
+   |             ^^^^^^^^^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+
+warning: `std::env::var` reads runtime environment outside config/bootstrap code
+  --> $DIR/main.rs:15:13
+   |
+LL |     let _ = env::var("FEATURE_FLAG");
+   |             ^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+
+warning: `std::env::var` reads runtime environment outside config/bootstrap code
+  --> $DIR/main.rs:16:13
+   |
+LL |     let _ = read_var("READ_ALIAS");
+   |             ^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+
+warning: 4 warnings emitted
+

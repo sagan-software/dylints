@@ -1,0 +1,28 @@
+warning: test has 5 assertions
+  --> $DIR/edge_cases.rs:5:1
+   |
+LL | / fn many_assertions_with_messages() {
+LL | |     let report = "alpha beta gamma delta epsilon";
+...  |
+LL | |     assert!(report.contains("epsilon"), "missing epsilon");
+LL | | }
+   | |_^
+   |
+   = help: use `insta` when many assertions describe one structured output contract
+   = note: `#[warn(many_assertions_in_test)]` on by default
+
+warning: test has 4 assertions
+  --> $DIR/edge_cases.rs:25:1
+   |
+LL | / fn aliased_standard_assertions_are_counted() {
+LL | |     check_eq!(1, 1);
+LL | |     check_eq!(2, 2);
+LL | |     check_eq!(3, 3);
+LL | |     check_eq!(4, 4);
+LL | | }
+   | |_^
+   |
+   = help: use `insta` when many assertions describe one structured output contract
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,23 @@
+warning: inherent method `as_parsed` does work that should not hide behind `as_*`
+  --> $DIR/edge_cases.rs:14:5
+   |
+LL | /     fn as_parsed(&self) -> Result<u64, Error> {
+LL | |         self.raw.parse::<u64>().map_err(|_| Error)
+LL | |     }
+   | |_____^
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+   = note: `#[warn(expensive_as_method)]` on by default
+
+warning: inherent method `as_owned_string` does work that should not hide behind `as_*`
+  --> $DIR/edge_cases.rs:18:5
+   |
+LL | /     fn as_owned_string(&self) -> String {
+LL | |         self.raw.clone()
+LL | |     }
+   | |_____^
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,11 @@
+warning: ordering is not observable for a one-element expected sequence
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(vec![1_u8, 2] => it contains_in_order [2] ; "one element")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use the `contains` matcher for the expected element
+   = note: `#[warn(test_case_singleton_contains_in_order)]` on by default
+
+warning: 1 warning emitted
+

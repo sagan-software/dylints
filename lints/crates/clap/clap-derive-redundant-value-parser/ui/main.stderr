@@ -1,0 +1,33 @@
+warning: Clap derive already selects this parser from the field type
+  --> $DIR/main.rs:9:5
+   |
+LL |     #[arg(long, value_parser = clap::value_parser!(u16))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the redundant `value_parser` setting
+   = note: `#[warn(clap_derive_redundant_value_parser)]` on by default
+
+warning: Clap derive already selects this parser from the field type
+  --> $DIR/main.rs:11:5
+   |
+LL |     #[arg(long, value_parser = value_parser!(PathBuf))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the redundant `value_parser` setting
+
+warning: Clap derive already selects this parser from the field type
+  --> $DIR/main.rs:13:5
+   |
+LL |     #[arg(long, value_parser = clap::value_parser!(String))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the redundant `value_parser` setting
+
+warning: Clap derive already selects this parser from the field type
+  --> $DIR/main.rs:15:5
+   |
+LL |     #[arg(value_parser = clap::value_parser!(u32))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove the redundant `value_parser` setting
+
+warning: 4 warnings emitted
+

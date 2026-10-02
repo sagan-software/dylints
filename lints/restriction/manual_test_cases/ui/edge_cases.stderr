@@ -1,0 +1,67 @@
+warning: test manually iterates over cases
+  --> $DIR/edge_cases.rs:8:28
+   |
+LL |     for (raw, expected) in vec![("ok", true), ("bad", false), ("", false)] {
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+   = note: `#[warn(manual_test_cases)]` on by default
+
+warning: test manually iterates over cases
+  --> $DIR/edge_cases.rs:15:5
+   |
+LL |     for (raw, expected) in cases {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/edge_cases.rs:21:5
+   |
+LL |     for raw in ["ok", "bad"].iter().copied().filter(|raw| !raw.is_empty()) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/edge_cases.rs:29:5
+   |
+LL |     for (raw, expected) in STATIC_CASES {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/edge_cases.rs:41:5
+   |
+LL |     for (raw, expected) in CaseSet::CASES {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/edge_cases.rs:47:5
+   |
+LL |     for (raw, expected) in [("ok", true); 2] {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/edge_cases.rs:56:10
+   |
+LL |         .for_each(|(raw, expected)| assert_eq!(parse(raw), expected));
+   |          ^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/edge_cases.rs:88:5
+   |
+LL |     for &(raw, expected) in cases {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: 8 warnings emitted
+

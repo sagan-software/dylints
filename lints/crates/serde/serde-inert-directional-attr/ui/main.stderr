@@ -1,0 +1,47 @@
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:13:1
+   |
+LL | #[serde(default)]
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(serde_inert_directional_attr)]` on by default
+help: remove the deserialization-only attribute, or add `Deserialize` if it was intended
+   |
+LL - #[serde(default)]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:20:5
+   |
+LL |     #[serde(alias = "old_value")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the deserialization-only attribute, or add `Deserialize` if it was intended
+   |
+LL -     #[serde(alias = "old_value")]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:26:5
+   |
+LL |     #[serde(skip_serializing_if = "String::is_empty")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the serialization-only attribute, or add `Serialize` if it was intended
+   |
+LL -     #[serde(skip_serializing_if = "String::is_empty")]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:32:5
+   |
+LL |     #[serde(skip_serializing)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the serialization-only attribute, or add `Serialize` if it was intended
+   |
+LL -     #[serde(skip_serializing)]
+   |
+
+warning: 4 warnings emitted
+

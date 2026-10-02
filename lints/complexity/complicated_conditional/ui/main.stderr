@@ -1,0 +1,55 @@
+warning: boolean expression contains complex inline work
+  --> $DIR/main.rs:93:8
+   |
+LL |       if client.complicated().await.map_err(WrappedError)?.is_enabled
+   |  ________^
+LL | |         && account.profile.hello_world.is_something_enabled()
+   | |_____________________________________________________________^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+   = note: `#[warn(complicated_conditional)]` on by default
+
+warning: boolean expression contains complex inline work
+  --> $DIR/main.rs:103:8
+   |
+LL |     if account.owner().hello_world.is_something_enabled() && config.hello_world.is_ready() {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/main.rs:109:8
+   |
+LL |       if account.owner().hello_world.is_something_enabled()
+   |  ________^
+LL | |         || (config.hello_world.is_ready() && account.refresh().is_ok())
+   | |_______________________________________________________________________^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/main.rs:117:8
+   |
+LL |     if { client.feature().is_enabled } && account.profile.hello_world.is_something_enabled() {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/main.rs:123:8
+   |
+LL |     if account.owner().hello_world.is_something_enabled() && config.hello_world.is_ready() {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/main.rs:197:11
+   |
+LL |     while account.owner().hello_world.is_something_enabled() && config.hello_world.is_ready() {
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: 6 warnings emitted
+

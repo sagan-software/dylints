@@ -1,0 +1,13 @@
+warning: method `next_item` looks like an iterator step
+  --> $DIR/edge_cases.rs:8:5
+   |
+LL | /     fn next_item(&mut self) -> Option<Row> {
+LL | |         self.0.pop()
+LL | |     }
+   | |_____^
+   |
+   = help: implement `Iterator` when this is the canonical next item for the type
+   = note: `#[warn(ad_hoc_iterator)]` on by default
+
+warning: 1 warning emitted
+

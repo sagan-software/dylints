@@ -1,0 +1,67 @@
+warning: country-code-like field `country` uses `String`
+  --> $DIR/main.rs:4:14
+   |
+LL |     country: String,
+   |              ^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+   = note: `#[warn(country_string_field)]` on by default
+
+warning: country-code-like field `country_code` uses `&str`
+  --> $DIR/main.rs:5:19
+   |
+LL |     country_code: &'a str,
+   |                   ^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `iso_country` uses `String`
+  --> $DIR/main.rs:6:18
+   |
+LL |     iso_country: String,
+   |                  ^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `iso_country_code` uses `String`
+  --> $DIR/main.rs:7:23
+   |
+LL |     iso_country_code: String,
+   |                       ^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `residence_country` uses `&str`
+  --> $DIR/main.rs:8:24
+   |
+LL |     residence_country: &'a str,
+   |                        ^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `nationality_country` uses `String`
+  --> $DIR/main.rs:9:26
+   |
+LL |     nationality_country: String,
+   |                          ^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `billing_country` uses `String`
+  --> $DIR/main.rs:10:22
+   |
+LL |     billing_country: String,
+   |                      ^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `shipping_country_code` uses `&str`
+  --> $DIR/main.rs:11:28
+   |
+LL |     shipping_country_code: &'a str,
+   |                            ^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: 8 warnings emitted
+

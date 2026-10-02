@@ -1,0 +1,19 @@
+warning: this test matrix generates no test cases
+  --> $DIR/main.rs:11:1
+   |
+LL | #[test_matrix([], [1_u8, 2])]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: populate every input set so the Cartesian product is nonempty
+   = note: `#[warn(test_case_empty_matrix)]` on by default
+
+warning: this test matrix generates no test cases
+  --> $DIR/main.rs:15:1
+   |
+LL | #[test_matrix(0..0, [1_u8, 2])]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: populate every input set so the Cartesian product is nonempty
+
+warning: 2 warnings emitted
+

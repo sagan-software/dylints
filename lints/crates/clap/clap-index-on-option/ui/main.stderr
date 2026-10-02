@@ -1,0 +1,11 @@
+warning: `index` only configures positional arguments
+  --> $DIR/main.rs:4:41
+   |
+LL |     let _ = Arg::new("bad").long("bad").index(1);
+   |                                         ^^^^^
+   |
+   = help: remove `index`, or make this argument positional
+   = note: `#[warn(clap_index_on_option)]` on by default
+
+warning: 1 warning emitted
+

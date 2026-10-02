@@ -1,0 +1,10 @@
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:6:41
+   |
+LL |     let _: Router = Router::new().route("/users/:id", get(|| async {}));
+   |                                         ^^^^^^^^^^^^ help: write the capture as `{name}`: `"/users/{id}"`
+   |
+   = note: `#[warn(axum_route_legacy_colon_capture)]` on by default
+
+warning: 1 warning emitted
+

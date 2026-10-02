@@ -1,0 +1,19 @@
+warning: path-like field `cache_dir` uses `String`
+  --> $DIR/main.rs:4:16
+   |
+LL |     cache_dir: String,
+   |                ^^^^^^
+   |
+   = help: use `std::path::PathBuf`, `std::path::Path`, or a validated path newtype
+   = note: `#[warn(path_string_field)]` on by default
+
+warning: path-like field `manifest_path` uses `&str`
+  --> $DIR/main.rs:5:20
+   |
+LL |     manifest_path: &'a str,
+   |                    ^^^^^^^
+   |
+   = help: use `std::path::PathBuf`, `std::path::Path`, or a validated path newtype
+
+warning: 2 warnings emitted
+

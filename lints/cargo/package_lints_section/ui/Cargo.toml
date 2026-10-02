@@ -1,0 +1,10 @@
+[package]
+name = "package-lints-section-fixture"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+
+[[bin]]
+name = "package-lints-section-fixture"
+path = "main.rs"

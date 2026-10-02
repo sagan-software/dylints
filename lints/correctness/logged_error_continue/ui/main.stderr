@@ -1,0 +1,27 @@
+warning: this error branch only logs the failure and then continues
+  --> $DIR/main.rs:17:12
+   |
+LL |     if let Err(error) = fallible() {
+   |            ^^^^^^^^^^
+   |
+   = help: return the error or use `?` so the caller receives the failure
+   = note: `#[warn(logged_error_continue)]` on by default
+
+warning: this error branch only logs the failure and then continues
+  --> $DIR/main.rs:27:9
+   |
+LL |         Err(error) => {
+   |         ^^^^^^^^^^
+   |
+   = help: return the error or use `?` so the caller receives the failure
+
+warning: this error branch only logs the failure and then continues
+  --> $DIR/main.rs:36:12
+   |
+LL |     if let Err(_error) = fallible() {
+   |            ^^^^^^^^^^^
+   |
+   = help: return the error or use `?` so the caller receives the failure
+
+warning: 3 warnings emitted
+

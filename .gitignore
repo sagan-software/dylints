@@ -1,0 +1,6 @@
+/target/
+/result
+/public/
+/.direnv/
+/.rustup-dylint/
+/.envrc.local

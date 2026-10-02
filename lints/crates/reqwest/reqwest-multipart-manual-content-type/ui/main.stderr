@@ -1,0 +1,19 @@
+warning: Reqwest must generate the multipart `Content-Type` with its boundary
+  --> $DIR/main.rs:7:10
+   |
+LL |         .header(reqwest::header::CONTENT_TYPE, "multipart/form-data")
+   |          ^^^^^^
+   |
+   = help: remove the manual `Content-Type` header from this builder chain
+   = note: `#[warn(reqwest_multipart_manual_content_type)]` on by default
+
+warning: Reqwest must generate the multipart `Content-Type` with its boundary
+  --> $DIR/main.rs:14:10
+   |
+LL |         .header("content-type", "multipart/form-data");
+   |          ^^^^^^
+   |
+   = help: remove the manual `Content-Type` header from this builder chain
+
+warning: 2 warnings emitted
+

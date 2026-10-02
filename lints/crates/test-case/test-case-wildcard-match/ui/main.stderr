@@ -1,0 +1,11 @@
+warning: the wildcard pattern accepts every returned value
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(1_u8 => matches _ ; "vacuous")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: match the expected variant or value
+   = note: `#[warn(test_case_wildcard_match)]` on by default
+
+warning: 1 warning emitted
+

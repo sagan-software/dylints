@@ -1,0 +1,27 @@
+warning: all fields use one Serde rename convention
+  --> $DIR/main.rs:5:5
+   |
+LL |     #[serde(rename = "firstName")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `#[serde(rename_all = "camelCase")]` to the struct and remove its field-level renames
+   = note: `#[warn(serde_manual_rename_all)]` on by default
+
+warning: all fields use one Serde rename convention
+  --> $DIR/main.rs:13:5
+   |
+LL |     #[serde(rename(serialize = "user-id"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `#[serde(rename_all(serialize = "kebab-case"))]` to the struct and remove its field-level renames
+
+warning: all fields use one Serde rename convention
+  --> $DIR/main.rs:21:5
+   |
+LL |     #[serde(rename(deserialize = "FIRST-NAME"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `#[serde(rename_all(deserialize = "SCREAMING-KEBAB-CASE"))]` to the struct and remove its field-level renames
+
+warning: 3 warnings emitted
+

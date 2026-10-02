@@ -1,0 +1,16 @@
+warning: two-way collection loop can use `Iterator::partition`
+  --> $DIR/main.rs:5:5
+   |
+LL | /     for value in values {
+LL | |         if value > 0 {
+LL | |             accepted.push(value);
+LL | |         } else {
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::partition` and bind its two returned collections
+   = note: `#[warn(manual_partition_loop)]` on by default
+
+warning: 1 warning emitted
+

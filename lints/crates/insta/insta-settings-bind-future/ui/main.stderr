@@ -1,0 +1,10 @@
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:9:27
+   |
+LL |     let future = settings.bind(|| async { work().await });
+   |                           ^^^^ help: pass the async block directly to `Settings::bind_async` instead: `bind_async`
+   |
+   = note: `#[warn(insta_settings_bind_future)]` on by default
+
+warning: 1 warning emitted
+

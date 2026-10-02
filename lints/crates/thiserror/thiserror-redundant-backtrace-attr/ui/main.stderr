@@ -1,0 +1,28 @@
+warning: `Backtrace` fields are detected without `#[backtrace]`
+  --> $DIR/main.rs:11:5
+   |
+LL |     #[backtrace]
+   |     ^^^^^^^^^^^^ help: remove the redundant `#[backtrace]` attribute
+   |
+   = note: `#[warn(thiserror_redundant_backtrace_attr)]` on by default
+
+warning: `Backtrace` fields are detected without `#[backtrace]`
+  --> $DIR/main.rs:18:5
+   |
+LL |     #[backtrace]
+   |     ^^^^^^^^^^^^ help: remove the redundant `#[backtrace]` attribute
+
+warning: `Backtrace` fields are detected without `#[backtrace]`
+  --> $DIR/main.rs:25:5
+   |
+LL |     #[backtrace]
+   |     ^^^^^^^^^^^^ help: remove the redundant `#[backtrace]` attribute
+
+warning: `Backtrace` fields are detected without `#[backtrace]`
+  --> $DIR/main.rs:32:5
+   |
+LL |     #[backtrace]
+   |     ^^^^^^^^^^^^ help: remove the redundant `#[backtrace]` attribute
+
+warning: 4 warnings emitted
+

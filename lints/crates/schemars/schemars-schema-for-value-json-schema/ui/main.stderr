@@ -1,0 +1,27 @@
+warning: this value's type already implements `JsonSchema`
+  --> $DIR/main.rs:28:13
+   |
+LL |     consume(schemars::schema_for_value!(Message::Number(7)));
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: generate the schema from the type with `schema_for!(Type)`
+   = note: `#[warn(schemars_schema_for_value_json_schema)]` on by default
+
+warning: this value's type already implements `JsonSchema`
+  --> $DIR/main.rs:29:13
+   |
+LL |     consume(SchemaGenerator::default().root_schema_for_value(&Message::Text(String::new())));
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: generate the schema from the type with `schema_for!(Type)`
+
+warning: this value's type already implements `JsonSchema`
+  --> $DIR/main.rs:30:13
+   |
+LL |     consume(SchemaGenerator::default().into_root_schema_for_value(&Message::Text(String::new())));
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: generate the schema from the type with `schema_for!(Type)`
+
+warning: 3 warnings emitted
+

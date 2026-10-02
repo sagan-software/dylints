@@ -1,0 +1,15 @@
+warning: module exports 26 reachable public names, which exceeds 25
+  --> $DIR/main.rs:3:1
+   |
+LL | / macro_rules! public_functions {
+LL | |     ($($name:ident),+ $(,)?) => { $(pub fn $name() {})+ };
+...  |
+LL | |     f20, f21, f22, f23, f24, f25, f26,
+LL | | );
+   | |__^
+   |
+   = help: expose a focused facade and keep implementation modules private
+   = note: `#[warn(public_surface_size)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,11 @@
+warning: `World::resource` panics when the resource is absent
+  --> $DIR/main.rs:16:19
+   |
+LL |     let _ = world.resource::<Score>();
+   |                   ^^^^^^^^
+   |
+   = help: use `World::get_resource` and handle the fallible result
+   = note: `#[warn(bevy_world_resource)]` on by default
+
+warning: 1 warning emitted
+

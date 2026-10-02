@@ -1,0 +1,95 @@
+# field_usage_cohesion
+
+## What it does
+
+Checks whether the inherent methods of a local type split into separate groups
+that use separate fields, and warns when there are at least two such groups.
+
+Two methods join the same group when they use a common `self.field` or one
+calls the other through `self`. The lint counts only methods with a `self`
+receiver that use a field or call another counted method, across all inherent
+`impl` blocks. It checks a type only when it has at least 6 such methods and 4
+used fields. It warns when at least two groups each have 2 or more methods and
+2 or more fields.
+
+## Why is this bad?
+
+Methods that never share state usually implement separate responsibilities.
+Keeping them in one type makes each half harder to test alone, and every user
+of one half also depends on the other.
+
+## Known problems
+
+Facades, adapters, and plain records can hold separate groups on purpose. The
+lint misses connections it cannot see: field uses inside closures or macro
+invocations such as `format!`, destructuring with `let Self { a, b } = self`,
+calls through helper functions, and trait methods. The lint reports graph
+separation, not an LCOM score, because published LCOM variants disagree with
+each other ([Al Dallal, 2020](https://arxiv.org/abs/2012.12324)).
+
+## Example
+
+```rust
+struct SplitState {
+    left_a: usize,
+    left_b: usize,
+    right_a: usize,
+    right_b: usize,
+}
+
+impl SplitState {
+    fn read_left(&self) -> usize {
+        self.left_a + self.left_b
+    }
+    fn write_left(&mut self, value: usize) {
+        self.left_a = value;
+        self.left_b = value;
+    }
+    fn reset_left(&mut self) {
+        self.left_a = 0;
+        self.left_b = 0;
+    }
+    fn read_right(&self) -> usize {
+        self.right_a + self.right_b
+    }
+    fn write_right(&mut self, value: usize) {
+        self.right_a = value;
+        self.right_b = value;
+    }
+    fn reset_right(&mut self) {
+        self.right_a = 0;
+        self.right_b = 0;
+    }
+}
+```
+
+The `left_*` methods and the `right_*` methods never share a field.
+
+## Use instead
+
+Extract each group into its own type when it has its own invariant.
+
+```rust
+struct Pair {
+    a: usize,
+    b: usize,
+}
+
+impl Pair {
+    fn read(&self) -> usize {
+        self.a + self.b
+    }
+    fn write(&mut self, value: usize) {
+        self.a = value;
+        self.b = value;
+    }
+    fn reset(&mut self) {
+        self.write(0);
+    }
+}
+
+struct SplitState {
+    left: Pair,
+    right: Pair,
+}
+```

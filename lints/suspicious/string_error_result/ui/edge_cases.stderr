@@ -1,0 +1,51 @@
+warning: `Result` uses `String` as its error type
+  --> $DIR/edge_cases.rs:7:32
+   |
+LL | fn owned_error() -> Result<(), String> {
+   |                                ^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+   = note: `#[warn(string_error_result)]` on by default
+
+warning: `Result` uses `String` as its error type
+  --> $DIR/edge_cases.rs:11:63
+   |
+LL | fn nested_result() -> std::result::Result<Result<u8, String>, String> {
+   |                                                               ^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: `Result` uses `String` as its error type
+  --> $DIR/edge_cases.rs:11:54
+   |
+LL | fn nested_result() -> std::result::Result<Result<u8, String>, String> {
+   |                                                      ^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: `Result` uses `String` as its error type
+  --> $DIR/edge_cases.rs:15:36
+   |
+LL | fn alias_result() -> StdResult<(), String> {
+   |                                    ^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: `Result` uses `String` as its error type
+  --> $DIR/edge_cases.rs:19:42
+   |
+LL | fn alias_error_result() -> StdResult<(), ErrorText> {
+   |                                          ^^^^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: `Result` uses `String` as its error type
+  --> $DIR/edge_cases.rs:23:29
+   |
+LL | fn baked_string_result() -> StringResult<()> {
+   |                             ^^^^^^^^^^^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: 6 warnings emitted
+

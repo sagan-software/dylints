@@ -1,0 +1,26 @@
+warning: type `Order` is more private than the item `public_helper`
+  --> $DIR/edge_cases.rs:15:1
+   |
+LL | pub fn public_helper(order: &Order) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `public_helper` is reachable at visibility `pub`
+   |
+note: but type `Order` is only usable at visibility `pub(crate)`
+  --> $DIR/edge_cases.rs:3:1
+   |
+LL | struct Order {
+   | ^^^^^^^^^^^^
+   = note: `#[warn(private_interfaces)]` on by default
+
+warning: private one-expression helper is only called once
+  --> $DIR/edge_cases.rs:7:1
+   |
+LL | / fn inline_discount(order: &Order) -> u64 {
+LL | |     order.amount.saturating_sub(5)
+LL | | }
+   | |_^
+   |
+   = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
+   = note: `#[warn(one_use_private_helper)]` on by default
+
+warning: 2 warnings emitted
+

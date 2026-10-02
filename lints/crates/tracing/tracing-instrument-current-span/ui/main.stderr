@@ -1,0 +1,11 @@
+warning: `Span::current()` is an indirect spelling of current-span instrumentation
+  --> $DIR/main.rs:6:20
+   |
+LL |     let _ = work().instrument(Span::current());
+   |                    ^^^^^^^^^^
+   |
+   = help: call `.in_current_span()`
+   = note: `#[warn(tracing_instrument_current_span)]` on by default
+
+warning: 1 warning emitted
+

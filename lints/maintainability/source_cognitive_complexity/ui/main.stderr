@@ -1,0 +1,16 @@
+warning: function has source Cognitive Complexity 21, which exceeds 14
+  --> $DIR/main.rs:3:1
+   |
+LL | / fn too_nested(a: bool, b: bool, c: bool, d: bool, e: bool, f: bool) {
+LL | |     if a {
+LL | |         if b {
+LL | |             if c {
+...  |
+LL | | }
+   | |_^
+   |
+   = help: flatten nested control flow or extract a named operation
+   = note: `#[warn(source_cognitive_complexity)]` on by default
+
+warning: 1 warning emitted
+

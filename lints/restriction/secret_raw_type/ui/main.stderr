@@ -1,0 +1,91 @@
+warning: secret-bearing field `api_key` uses raw `String`
+  --> $DIR/main.rs:6:5
+   |
+LL |     api_key: String,
+   |     ^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+   = note: `#[warn(secret_raw_type)]` on by default
+
+warning: secret-bearing field `session_token` uses raw `&str`
+  --> $DIR/main.rs:7:5
+   |
+LL |     session_token: &'a str,
+   |     ^^^^^^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing field `password` uses raw `Vec<u8>`
+  --> $DIR/main.rs:8:5
+   |
+LL |     password: Vec<u8>,
+   |     ^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing field `secret` uses raw `&[u8]`
+  --> $DIR/main.rs:9:5
+   |
+LL |     secret: &'a [u8],
+   |     ^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing field `access_token` uses raw `[u8; N]`
+  --> $DIR/main.rs:10:5
+   |
+LL |     access_token: [u8; 32],
+   |     ^^^^^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing parameter `refresh_token` uses raw `String`
+  --> $DIR/main.rs:17:20
+   |
+LL |     fn send(&self, refresh_token: String, request_id: String);
+   |                    ^^^^^^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing parameter `access_token` uses raw `String`
+  --> $DIR/main.rs:20:17
+   |
+LL | fn authenticate(access_token: String, password: &[u8], username: String) {
+   |                 ^^^^^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing parameter `password` uses raw `&[u8]`
+  --> $DIR/main.rs:20:39
+   |
+LL | fn authenticate(access_token: String, password: &[u8], username: String) {
+   |                                       ^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing local variable `session_token` uses raw `&str`
+  --> $DIR/main.rs:21:9
+   |
+LL |     let session_token = "raw-token";
+   |         ^^^^^^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing local variable `api_key` uses raw `Vec<u8>`
+  --> $DIR/main.rs:22:9
+   |
+LL |     let api_key = vec![1_u8, 2, 3];
+   |         ^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing local variable `secret` uses raw `[u8; N]`
+  --> $DIR/main.rs:23:9
+   |
+LL |     let secret = [0_u8; 32];
+   |         ^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: 11 warnings emitted
+

@@ -1,0 +1,11 @@
+warning: `Runtime::block_on` can panic inside a Tokio runtime
+  --> $DIR/main.rs:4:13
+   |
+LL |     runtime.block_on(async {});
+   |             ^^^^^^^^
+   |
+   = help: await the future directly
+   = note: `#[warn(tokio_runtime_block_on_in_async)]` on by default
+
+warning: 1 warning emitted
+

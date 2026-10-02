@@ -1,0 +1,4 @@
+[general]
+dirs = ["templates"]
+# Match the Clippy lint list template, which relies on suppressed whitespace.
+whitespace = "suppress"

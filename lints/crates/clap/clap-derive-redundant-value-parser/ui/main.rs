@@ -1,0 +1,35 @@
+#![allow(dead_code)]
+
+use std::path::PathBuf;
+
+use clap::{Parser, value_parser};
+
+#[derive(Parser)]
+struct RedundantParsers {
+    #[arg(long, value_parser = clap::value_parser!(u16))]
+    port: u16,
+    #[arg(long, value_parser = value_parser!(PathBuf))]
+    config: Option<PathBuf>,
+    #[arg(long, value_parser = clap::value_parser!(String))]
+    include: Vec<String>,
+    #[arg(value_parser = clap::value_parser!(u32))]
+    standalone: u32,
+}
+
+#[derive(Parser)]
+struct CustomParsers {
+    #[arg(long, value_parser = clap::value_parser!(u16).range(1..))]
+    port: u16,
+    #[arg(long, value_parser = parse_name)]
+    name: String,
+}
+
+fn parse_name(value: &str) -> Result<String, &'static str> {
+    if value.is_empty() {
+        Err("name cannot be empty")
+    } else {
+        Ok(value.to_owned())
+    }
+}
+
+fn main() {}

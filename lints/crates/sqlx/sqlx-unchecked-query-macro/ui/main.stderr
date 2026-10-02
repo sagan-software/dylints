@@ -1,0 +1,40 @@
+warning: `query_unchecked!` skips SQLx input or output type checking
+  --> $DIR/main.rs:4:13
+   |
+LL |     let _ = sqlx::query_unchecked!("SELECT 1");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use the checked `query!` macro: `sqlx::query!("SELECT 1")`
+   |
+   = note: `#[warn(sqlx_unchecked_query_macro)]` on by default
+
+warning: `query_as_unchecked!` skips SQLx input or output type checking
+  --> $DIR/main.rs:5:13
+   |
+LL |     let _ = sqlx::query_as_unchecked!(u64, "SELECT 1");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use the checked `query_as!` macro: `sqlx::query_as!(u64, "SELECT 1")`
+
+warning: `query_file_unchecked!` skips SQLx input or output type checking
+  --> $DIR/main.rs:6:13
+   |
+LL |     let _ = sqlx::query_file_unchecked!("queries/one.sql");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use the checked `query_file!` macro: `sqlx::query_file!("queries/one.sql")`
+
+warning: `query_file_as_unchecked!` skips SQLx input or output type checking
+  --> $DIR/main.rs:7:13
+   |
+LL |     let _ = sqlx::query_file_as_unchecked!(u64, "queries/one.sql");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use the checked `query_file_as!` macro: `sqlx::query_file_as!(u64, "queries/one.sql")`
+
+warning: `query_scalar_unchecked!` skips SQLx input or output type checking
+  --> $DIR/main.rs:8:13
+   |
+LL |     let _ = sqlx::query_scalar_unchecked!("SELECT 1");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use the checked `query_scalar!` macro: `sqlx::query_scalar!("SELECT 1")`
+
+warning: `query_file_scalar_unchecked!` skips SQLx input or output type checking
+  --> $DIR/main.rs:9:13
+   |
+LL |     let _ = sqlx::query_file_scalar_unchecked!("queries/one.sql");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use the checked `query_file_scalar!` macro: `sqlx::query_file_scalar!("queries/one.sql")`
+
+warning: 6 warnings emitted
+

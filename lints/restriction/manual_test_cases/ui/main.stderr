@@ -1,0 +1,67 @@
+warning: test manually iterates over cases
+  --> $DIR/main.rs:9:5
+   |
+LL |     for (raw, expected) in [("ok", true), ("no", false)] {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+   = note: `#[warn(manual_test_cases)]` on by default
+
+warning: test manually iterates over cases
+  --> $DIR/main.rs:17:5
+   |
+LL |     for (raw, expected) in cases {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/main.rs:25:5
+   |
+LL |     for (raw, expected) in cases {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/main.rs:56:5
+   |
+LL |     for (raw, expected) in CASES.iter() {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/main.rs:64:5
+   |
+LL |     for (raw, expected) in cases.iter() {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/main.rs:102:5
+   |
+LL |     for (raw, expected) in [("ok", true), ("no", false)] {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/main.rs:123:5
+   |
+LL |     for (raw, expected) in MODULE_CASES {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
+  --> $DIR/main.rs:132:10
+   |
+LL |         .for_each(|(raw, expected)| assert_eq!(parse(raw), expected));
+   |          ^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: 8 warnings emitted
+

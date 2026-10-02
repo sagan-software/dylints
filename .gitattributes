@@ -1,0 +1,2 @@
+# Compiletest UI expectations include the compiler's blank line after summaries.
+*.stderr whitespace=-blank-at-eof

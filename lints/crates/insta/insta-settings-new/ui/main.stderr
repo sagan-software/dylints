@@ -1,0 +1,10 @@
+warning: `Settings::new` discards inherited configuration
+  --> $DIR/main.rs:2:13
+   |
+LL |     let _ = insta::Settings::new();
+   |             ^^^^^^^^^^^^^^^^^^^^^^ help: use `Settings::clone_current`: `insta::Settings::clone_current()`
+   |
+   = note: `#[warn(insta_settings_new)]` on by default
+
+warning: 1 warning emitted
+

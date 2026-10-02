@@ -1,0 +1,19 @@
+warning: dependency `alpha_dep` appears after `zeta_dep` but should sort before it
+  --> $DIR/lib.rs:3:1
+   |
+LL | pub fn marker() {}
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: sort contiguous dependency entries alphabetically within each Cargo dependency table
+   = note: `#[warn(dependency_key_order)]` on by default
+
+warning: dependency `unix_alpha_dep` appears after `unix_zeta_dep` but should sort before it
+  --> $DIR/lib.rs:3:1
+   |
+LL | pub fn marker() {}
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: sort contiguous dependency entries alphabetically within each Cargo dependency table
+
+warning: 2 warnings emitted
+

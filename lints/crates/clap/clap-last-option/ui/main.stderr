@@ -1,0 +1,19 @@
+warning: `last(true)` has no effect on a clap option
+  --> $DIR/main.rs:6:45
+   |
+LL |     let _ = Arg::new("input").long("input").last(true);
+   |                                             ^^^^
+   |
+   = help: remove `last(true)`, or make the argument positional by removing its long and short names
+   = note: `#[warn(clap_last_option)]` on by default
+
+warning: `last(true)` has no effect on a clap option
+  --> $DIR/main.rs:7:32
+   |
+LL |     let _ = Arg::new("output").last(true).short('o');
+   |                                ^^^^
+   |
+   = help: remove `last(true)`, or make the argument positional by removing its long and short names
+
+warning: 2 warnings emitted
+

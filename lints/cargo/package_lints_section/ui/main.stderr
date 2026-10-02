@@ -1,0 +1,11 @@
+warning: package `Cargo.toml` defines `[package]` but no `[lints]` table
+  --> $DIR/main.rs:1:1
+   |
+LL | fn main() {}
+   | ^^^^^^^^^^^^
+   |
+   = help: add a package `[lints]` table, usually with `workspace = true`
+   = note: `#[warn(package_lints_section)]` on by default
+
+warning: 1 warning emitted
+

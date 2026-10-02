@@ -1,0 +1,542 @@
+[package]
+name = "sagan-lints"
+version.workspace = true
+description = "Sagan's Rust lint runner and Dylint library bundle"
+edition.workspace = true
+publish.workspace = true
+build = "build.rs"
+
+[dependencies]
+axum-lints = { package = "axum", path = "lints/crates/axum", features = ["rlib"] }
+bevy-lints = { package = "bevy", path = "lints/crates/bevy", features = ["rlib"] }
+cargo-lints = { package = "cargo", path = "lints/cargo", features = ["rlib"] }
+clap.workspace = true
+clap-lints = { package = "clap", path = "lints/crates/clap", features = ["rlib"] }
+complexity-lints = { package = "complexity", path = "lints/complexity", features = ["rlib"] }
+correctness-lints = { package = "correctness", path = "lints/correctness", features = ["rlib"] }
+crates-lints = { package = "crates", path = "lints/crates", features = ["rlib"] }
+dylint-support = { path = "support/dylint", features = ["rlib"] }
+insta-lints = { package = "insta", path = "lints/crates/insta", features = ["rlib"] }
+maintainability-lints = { package = "maintainability", path = "lints/maintainability", features = ["rlib"] }
+perf-lints = { package = "perf", path = "lints/perf", features = ["rlib"] }
+reqwest-category-lints = { package = "reqwest-lints", path = "lints/crates/reqwest", features = ["rlib"] }
+restriction-lints = { package = "restriction", path = "lints/restriction", features = ["rlib"] }
+schemars-lints = { package = "schemars", path = "lints/crates/schemars", features = ["rlib"] }
+serde.workspace = true
+serde-lints = { package = "serde", path = "lints/crates/serde", features = ["rlib"] }
+serde_json.workspace = true
+sqlx-lints = { package = "sqlx", path = "lints/crates/sqlx", features = ["rlib"] }
+strum.workspace = true
+style-lints = { package = "style", path = "lints/style", features = ["rlib"] }
+suspicious-lints = { package = "suspicious", path = "lints/suspicious", features = ["rlib"] }
+tempfile.workspace = true
+test-case-lints = { package = "test-case", path = "lints/crates/test-case", features = ["rlib"] }
+thiserror = { workspace = true, features = ["std"] }
+thiserror-lints = { package = "thiserror", path = "lints/crates/thiserror", features = ["rlib"] }
+tokio-lints = { package = "tokio", path = "lints/crates/tokio", features = ["rlib"] }
+tracing-lints = { package = "tracing", path = "lints/crates/tracing", features = ["rlib"] }
+
+[lints]
+workspace = true
+
+[workspace]
+members = [
+  "lints/cargo",
+  "lints/cargo/dependency_full_semver_versions",
+  "lints/cargo/dependency_key_order",
+  "lints/cargo/missing_clippy_toml",
+  "lints/cargo/missing_rust_toolchain_toml",
+  "lints/cargo/package_lints_section",
+  "lints/cargo/rust_toolchain_toml",
+  "lints/cargo/workspace_dependency_versions",
+  "lints/cargo/workspace_lints_inheritance",
+  "lints/complexity",
+  "lints/complexity/collect_return",
+  "lints/complexity/complicated_conditional",
+  "lints/complexity/contains_key_before_any",
+  "lints/complexity/let_some_return_err",
+  "lints/complexity/manual_arg_parsing",
+  "lints/complexity/manual_iterator_loop",
+  "lints/complexity/manual_try_for_each_loop",
+  "lints/complexity/manual_fallible_collect_loop",
+  "lints/complexity/manual_extend_loop",
+  "lints/complexity/manual_partition_loop",
+  "lints/complexity/manual_unzip_loop",
+  "lints/complexity/manual_filter_for_each_loop",
+  "lints/complexity/manual_filter_map_for_each_loop",
+  "lints/complexity/manual_passthrough_inspect",
+  "lints/complexity/manual_option_take_if",
+  "lints/complexity/manual_entry_update",
+  "lints/complexity/consecutive_iterator_loops",
+  "lints/complexity/manual_adjacent_window_loop",
+  "lints/complexity/one_use_predicate_binding",
+  "lints/complexity/one_use_private_helper",
+  "lints/complexity/trivial_public_constructor",
+  "lints/complexity/unnecessary_map_err",
+  "lints/maintainability/abc_size",
+  "lints/maintainability/cyclomatic_complexity",
+  "lints/maintainability/field_usage_cohesion",
+  "lints/maintainability/impl_method_count",
+  "lints/maintainability",
+  "lints/maintainability/many_exit_points",
+  "lints/maintainability/module_dependency_cycle",
+  "lints/maintainability/module_fan_out",
+  "lints/maintainability/npath_complexity",
+  "lints/maintainability/public_surface_size",
+  "lints/maintainability/source_cognitive_complexity",
+  "lints/maintainability/support",
+  "lints/maintainability/type_method_complexity",
+  "lints/correctness",
+  "lints/correctness/logged_error_continue",
+  "lints/correctness/panic_in_main",
+  "lints/crates",
+  "lints/crates/axum",
+  "lints/crates/axum/axum-nest-at-root",
+  "lints/crates/axum/axum-nest-service-at-root",
+  "lints/crates/axum/axum-nest-wildcard-path",
+  "lints/crates/axum/axum-route-empty-path",
+  "lints/crates/axum/axum-route-layer-on-empty-router",
+  "lints/crates/axum/axum-route-legacy-colon-capture",
+  "lints/crates/axum/axum-route-legacy-wildcard-capture",
+  "lints/crates/axum/axum-route-path-missing-slash",
+  "lints/crates/axum/axum-route-service-empty-path",
+  "lints/crates/axum/axum-route-service-router",
+  "lints/crates/axum/support",
+  "lints/crates/bevy",
+  "lints/crates/bevy/bevy-borrowed-reborrowable",
+  "lints/crates/bevy/bevy-camera-modification-in-fixed-update",
+  "lints/crates/bevy/bevy-children-mutation-query",
+  "lints/crates/bevy/bevy-component-field-contention",
+  "lints/crates/bevy/bevy-disallow-fixed-update-schedule",
+  "lints/crates/bevy/bevy-disallow-update-schedule",
+  "lints/crates/bevy/bevy-duplicate-dependencies",
+  "lints/crates/bevy/bevy-duplicate-plugin-addition",
+  "lints/crates/bevy/bevy-global-transform-mutation-query",
+  "lints/crates/bevy/bevy-inherited-visibility-mutation-query",
+  "lints/crates/bevy/bevy-insert-message-resource",
+  "lints/crates/bevy/bevy-iter-current-update-messages",
+  "lints/crates/bevy/bevy-main-return-without-app-exit",
+  "lints/crates/bevy/bevy-large-component",
+  "lints/crates/bevy/bevy-large-component-change-filter",
+  "lints/crates/bevy/bevy-missing-clone-for-unit-component",
+  "lints/crates/bevy/bevy-missing-copy-for-unit-component",
+  "lints/crates/bevy/bevy-missing-default-for-unit-component",
+  "lints/crates/bevy/bevy-missing-reflect",
+  "lints/crates/bevy/bevy-narrow-exclusive-system",
+  "lints/crates/bevy/bevy-partially-used-query-data",
+  "lints/crates/bevy/bevy-presence-only-query-fetch",
+  "lints/crates/bevy/bevy-readonly-system-access",
+  "lints/crates/bevy/bevy-time-elapsed-secs-cast-f64",
+  "lints/crates/bevy/bevy-unconventional-naming",
+  "lints/crates/bevy/bevy-unit-in-bundle",
+  "lints/crates/bevy/bevy-unfiltered-entity-access-query",
+  "lints/crates/bevy/bevy-wide-query-access",
+  "lints/crates/bevy/bevy-world-resource",
+  "lints/crates/bevy/bevy-world-entity",
+  "lints/crates/bevy/bevy-world-entity-mut",
+  "lints/crates/bevy/bevy-world-insert-batch",
+  "lints/crates/bevy/bevy-world-insert-batch-if-new",
+  "lints/crates/bevy/bevy-world-non-send",
+  "lints/crates/bevy/bevy-world-non-send-mut",
+  "lints/crates/bevy/bevy-world-resource-mut",
+  "lints/crates/bevy/bevy-world-resource-ref",
+  "lints/crates/bevy/bevy-world-run-schedule",
+  "lints/crates/bevy/bevy-world-schedule-scope",
+  "lints/crates/bevy/bevy-zst-query",
+  "lints/crates/bevy/support",
+  "lints/crates/clap",
+  "lints/crates/clap/clap-allow-hyphen-values-without-num-args",
+  "lints/crates/clap/clap-allow-negative-numbers-without-num-args",
+  "lints/crates/clap/clap-command-with-arguments-option",
+  "lints/crates/clap/clap-derive-author-without-help-template",
+  "lints/crates/clap/clap-derive-bool-default-true",
+  "lints/crates/clap/clap-derive-redundant-action",
+  "lints/crates/clap/clap-derive-redundant-value-parser",
+  "lints/crates/clap/clap-derive-vec-vec-without-num-args",
+  "lints/crates/clap/clap-derive-verbatim-doc-comment-without-doc",
+  "lints/crates/clap/clap-external-subcommand-parser-without-external-subcommands",
+  "lints/crates/clap/clap-index-on-option",
+  "lints/crates/clap/clap-last-option",
+  "lints/crates/clap/clap-multicall-no-binary-name",
+  "lints/crates/clap/clap-require-equals-without-num-args",
+  "lints/crates/clap/clap-required-conditional-conflict",
+  "lints/crates/clap/clap-trailing-var-arg-without-num-args",
+  "lints/crates/clap/support",
+  "lints/crates/insta",
+  "lints/crates/insta/insta-allow-empty-glob",
+  "lints/crates/insta/insta-binary-snapshot-missing-extension",
+  "lints/crates/insta/insta-bind-to-scope-in-async",
+  "lints/crates/insta/insta-compact-json-snapshot",
+  "lints/crates/insta/insta-content-direct-match",
+  "lints/crates/insta/insta-deprecated-assert-display",
+  "lints/crates/insta/insta-empty-description",
+  "lints/crates/insta/insta-empty-filter-pattern",
+  "lints/crates/insta/insta-empty-input-file",
+  "lints/crates/insta/insta-empty-snapshot-path",
+  "lints/crates/insta/insta-empty-snapshot-suffix",
+  "lints/crates/insta/insta-glob-parent-traversal",
+  "lints/crates/insta/insta-json-snapshot",
+  "lints/crates/insta/insta-no-module-prefix",
+  "lints/crates/insta/insta-noop-filter",
+  "lints/crates/insta/insta-redundant-content-resolve-inner",
+  "lints/crates/insta/insta-settings-bind-future",
+  "lints/crates/insta/insta-settings-new",
+  "lints/crates/insta/insta-settings-raw-info",
+  "lints/crates/insta/insta-snapshot-in-loop",
+  "lints/crates/insta/support",
+  "lints/crates/reqwest",
+  "lints/crates/reqwest/reqwest-blocking-in-async",
+  "lints/crates/reqwest/reqwest-client-in-loop",
+  "lints/crates/reqwest/reqwest-client-wrapped-in-shared-pointer",
+  "lints/crates/reqwest/reqwest-cookie-provider-overridden",
+  "lints/crates/reqwest/reqwest-get-in-loop",
+  "lints/crates/reqwest/reqwest-multipart-manual-content-type",
+  "lints/crates/reqwest/reqwest-retry-invalid-max-extra-load",
+  "lints/crates/reqwest/reqwest-retry-no-budget",
+  "lints/crates/reqwest/reqwest-tls-danger-invalid-certs",
+  "lints/crates/reqwest/reqwest-tls-danger-invalid-hostnames",
+  "lints/crates/reqwest/support",
+  "lints/crates/serde",
+  "lints/crates/serde/serde-all-fields-default",
+  "lints/crates/serde/serde-borrow-redundant-str-bytes",
+  "lints/crates/serde/serde-cow-missing-borrow",
+  "lints/crates/serde/serde-deserialize-any-portability",
+  "lints/crates/serde/serde-expecting-style",
+  "lints/crates/serde/serde-fallback-missing-other",
+  "lints/crates/serde/serde-flatten-deny-unknown-fields",
+  "lints/crates/serde/serde-inert-directional-attr",
+  "lints/crates/serde/serde-manual-rename-all",
+  "lints/crates/serde/serde-serialize-str-to-string",
+  "lints/crates/serde/serde-skip-serializing-roundtrip",
+  "lints/crates/serde/serde-skip-serializing-variant-error",
+  "lints/crates/serde/serde-untagged-missing-expecting",
+  "lints/crates/serde/support",
+  "lints/crates/strum",
+  "lints/crates/strum/strum-enum-representation",
+  "lints/crates/schemars",
+  "lints/crates/schemars/schemars-json-schema-ref-return",
+  "lints/crates/schemars/schemars-recursive-inline-schema",
+  "lints/crates/schemars/schemars-redundant-serde-deny-unknown-fields",
+  "lints/crates/schemars/schemars-redundant-serde-default",
+  "lints/crates/schemars/schemars-redundant-serde-rename",
+  "lints/crates/schemars/schemars-redundant-serde-rename-all",
+  "lints/crates/schemars/schemars-redundant-serde-skip",
+  "lints/crates/schemars/schemars-redundant-serde-tag",
+  "lints/crates/schemars/schemars-redundant-serde-transparent",
+  "lints/crates/schemars/schemars-schema-for-value-json-schema",
+  "lints/crates/schemars/support",
+  "lints/crates/sqlx",
+  "lints/crates/sqlx/fixture",
+  "lints/crates/sqlx/sqlx-empty-push-tuples",
+  "lints/crates/sqlx/sqlx-empty-push-values",
+  "lints/crates/sqlx/sqlx-assert-sql-safe",
+  "lints/crates/sqlx/sqlx-panicking-row-get",
+  "lints/crates/sqlx/sqlx-panicking-statement-column",
+  "lints/crates/sqlx/sqlx-pool-connection-leak",
+  "lints/crates/sqlx/sqlx-query-builder-push-interpolation",
+  "lints/crates/sqlx/sqlx-query-builder-push-unseparated-interpolation",
+  "lints/crates/sqlx/sqlx-unchecked-query-macro",
+  "lints/crates/sqlx/sqlx-zero-max-connections",
+  "lints/crates/sqlx/support",
+  "lints/crates/test-case",
+  "lints/crates/test-case/support",
+  "lints/crates/test-case/test-case-async-without-test-harness",
+  "lints/crates/test-case/test-case-constant-match-guard",
+  "lints/crates/test-case/test-case-empty-ignore-reason",
+  "lints/crates/test-case/test-case-empty-panic-message",
+  "lints/crates/test-case/test-case-empty-matrix",
+  "lints/crates/test-case/test-case-ignored-matrix",
+  "lints/crates/test-case/test-case-ignore-without-reason",
+  "lints/crates/test-case/test-case-large-suite",
+  "lints/crates/test-case/test-case-legacy-inconclusive-description",
+  "lints/crates/test-case/test-case-nonpositive-almost-precision",
+  "lints/crates/test-case/test-case-panics-without-message",
+  "lints/crates/test-case/test-case-empty-description",
+  "lints/crates/test-case/test-case-single-case-matrix",
+  "lints/crates/test-case/test-case-singleton-contains-in-order",
+  "lints/crates/test-case/test-case-singleton-matrix-dimension",
+  "lints/crates/test-case/test-case-unnamed-test-case",
+  "lints/crates/test-case/test-case-inconclusive-modifier",
+  "lints/crates/test-case/test-case-whitespace-ignore-reason",
+  "lints/crates/test-case/test-case-whitespace-panic-message",
+  "lints/crates/test-case/test-case-wildcard-match",
+  "lints/crates/test-case/test-case-with-function-path",
+  "lints/crates/thiserror",
+  "lints/crates/thiserror/thiserror-named-field-positional-format",
+  "lints/crates/thiserror/thiserror-no-std-path-display",
+  "lints/crates/thiserror/thiserror-raw-field-format",
+  "lints/crates/thiserror/thiserror-redundant-backtrace-attr",
+  "lints/crates/thiserror/thiserror-redundant-from-source",
+  "lints/crates/thiserror/thiserror-redundant-named-source",
+  "lints/crates/thiserror/thiserror-self-display-recursion",
+  "lints/crates/thiserror/thiserror-source-field-opt-out",
+  "lints/crates/thiserror/thiserror-transparent-single-source-display",
+  "lints/crates/thiserror/thiserror-tuple-format-positional-ambiguity",
+  "lints/crates/tracing",
+  "lints/crates/tracing/support",
+  "lints/crates/tracing/tracing-async-block-in-sync-scope",
+  "lints/crates/tracing/tracing-await-holding-span-guard",
+  "lints/crates/tracing/tracing-current-span-enter",
+  "lints/crates/tracing/tracing-current-span-or-current",
+  "lints/crates/tracing/tracing-direct-record-all",
+  "lints/crates/tracing/tracing-format-field",
+  "lints/crates/tracing/tracing-instrument-current-span",
+  "lints/crates/tracing/tracing-message-interpolation",
+  "lints/crates/tracing/tracing-none-enter",
+  "lints/crates/tracing/tracing-none-or-current",
+  "lints/crates/tracing/tracing-none-record",
+  "lints/crates/tracing/tracing-redundant-in-current-span",
+  "lints/crates/tracing/tracing-redundant-field-assignment",
+  "lints/crates/tracing/tracing-to-string-field",
+  "lints/crates/tokio",
+  "lints/crates/tokio/support",
+  "lints/crates/tokio/tokio-blocking-call-in-async",
+  "lints/crates/tokio/tokio-handle-block-on-in-async",
+  "lints/crates/tokio/tokio-runtime-block-on-in-async",
+  "lints/crates/tokio/tokio-runtime-new-in-async",
+  "lints/crates/tokio/tokio-sleep-in-loop",
+  "lints/crates/tokio/tokio-spawn-blocking-async-closure",
+  "lints/crates/tokio/tokio-unbounded-channel",
+  "lints/crates/tokio/tokio-zero-capacity-channel",
+  "lints/crates/tokio/tokio-zero-duration-interval",
+  "lints/crates/tokio/tokio-zero-runtime-thread-count",
+  "lints/perf",
+  "lints/perf/boxed_future_return",
+  "lints/perf/expensive_as_method",
+  "lints/perf/owned_input_field_clones",
+  "lints/perf/ownership_at_boundaries",
+  "lints/restriction",
+  "lints/restriction/ambiguous_numeric_unit_field",
+  "lints/restriction/country_string_field",
+  "lints/restriction/custom_well_known_type",
+  "lints/restriction/date_string_field",
+  "lints/restriction/datetime_integer_field",
+  "lints/restriction/duration_integer_field",
+  "lints/restriction/http_method_string",
+  "lints/restriction/hardcoded_path",
+  "lints/restriction/insufficient_public_documentation",
+  "lints/restriction/interpolated_logging",
+  "lints/restriction/large_rust_crate",
+  "lints/restriction/large_rust_file",
+  "lints/restriction/manual_test_cases",
+  "lints/restriction/many_assertions_in_test",
+  "lints/restriction/missing_doctest_examples",
+  "lints/restriction/missing_intent_comments",
+  "lints/restriction/path_attribute_outside_root",
+  "lints/restriction/path_string_field",
+  "lints/restriction/public_serde_schema_derive",
+  "lints/restriction/repeated_cfg_gate",
+  "lints/restriction/runtime_env_read",
+  "lints/restriction/secret_raw_type",
+  "lints/restriction/semantic_primitive_type",
+  "lints/restriction/struct_update_default",
+  "lints/restriction/unnecessary_module_directory",
+  "lints/restriction/unnecessary_public_type",
+  "lints/restriction/url_string_field",
+  "lints/style",
+  "lints/style/ad_hoc_as_ref",
+  "lints/style/ad_hoc_borrow",
+  "lints/style/ad_hoc_default",
+  "lints/style/ad_hoc_display",
+  "lints/style/ad_hoc_from",
+  "lints/style/ad_hoc_from_str",
+  "lints/style/ad_hoc_into_iterator",
+  "lints/style/ad_hoc_iterator",
+  "lints/style/ad_hoc_try_from",
+  "lints/style/bool_name_prefix",
+  "lints/style/doc_attr_comment",
+  "lints/style/internal_import_self",
+  "lints/style/manual_debug_impl",
+  "lints/style/manual_default_impl",
+  "lints/style/manual_error_impl",
+  "lints/style/module_type_first",
+  "lints/style/rumdl_doc_comments",
+  "lints/style/top_level_item_line_break",
+  "lints/suspicious",
+  "lints/suspicious/broad_string_error_variant",
+  "lints/suspicious/logged_conversion_impl",
+  "lints/suspicious/collection_bool_result",
+  "lints/suspicious/string_error_result",
+  "support/dylint",
+  "web",
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace.dependencies]
+askama        = { version = "0.16.0", default-features = false, features = ["config", "derive", "std"] }
+axum          = "0.8.9"
+bevy_app      = "0.19.0"
+bevy_camera   = "0.19.0"
+bevy_ecs      = "0.19.0"
+bevy_reflect  = "0.19.0"
+bevy_time     = "0.19.0"
+bevy_transform = "0.19.0"
+clap          = { version = "4.6.1", features = ["derive"] }
+dylint_linting = "6.0.3"
+dylint_testing = "6.0.3"
+heck           = "0.5.0"
+insta          = "1.48.0"
+proc-macro2    = "1.0.106"
+pulldown-cmark = "0.13.4"
+reqwest        = { version = "0.13.4", features = ["blocking", "cookies", "multipart"] }
+rumdl          = { version = "=0.2.55", default-features = false }
+schemars       = "1.2.1"
+serde          = { version = "1.0.228", features = ["derive"] }
+serde_json     = "1.0.149"
+strum          = { version = "0.28.0", features = ["derive"] }
+syn            = "2.0.117"
+tempfile       = "3.27.0"
+"test-case"    = "3.3.1"
+thiserror      = { version = "2.0.18", default-features = false }
+tokio          = { version = "1.53.1", features = ["macros", "rt-multi-thread", "sync", "time"] }
+tracing        = "0.1.44"
+walkdir        = "2.5.0"
+
+[workspace.lints.rust.unexpected_cfgs]
+level     = "warn"
+check-cfg = ["cfg(dylint_lib, values(any()))"]
+
+[workspace.metadata.dylint]
+libraries = [
+  { path = "lints/cargo" },
+  { path = "lints/complexity" },
+  { path = "lints/correctness" },
+  { path = "lints/crates" },
+  { path = "lints/maintainability" },
+  { path = "lints/perf" },
+  { path = "lints/restriction" },
+  { path = "lints/style" },
+  { path = "lints/suspicious" },
+]
+
+# https://doc.rust-lang.org/rustc/lints/listing/index.html
+[workspace.lints.rust]
+absolute-paths-not-starting-with-crate = "warn"
+ambiguous-negative-literals            = "warn"
+closure-returning-async-block          = "warn"
+deprecated-safe-2024                   = "warn"
+deref-into-dyn-supertrait              = "warn"
+edition-2024-expr-fragment-specifier   = "warn"
+elided-lifetimes-in-paths              = "warn"
+explicit-outlives-requirements         = "warn"
+ffi-unwind-calls                       = "warn"
+if-let-rescope                         = "warn"
+impl-trait-overcaptures                = "warn"
+impl-trait-redundant-captures          = "warn"
+keyword-idents-2018                    = "warn"
+keyword-idents-2024                    = "warn"
+let-underscore-drop                    = "warn"
+# NOTE: Set to "allow" because this lint produces noisy warnings on macOS
+# ("ignoring duplicate libraries", "built for newer macOS version", etc.)
+# that are harmless. The Rust team is working on splitting this lint into
+# linker-info (allow) and linker-messages (warn). See:
+# https://github.com/rust-lang/rust/issues/136096
+linker-messages               = "allow"
+macro-use-extern-crate        = "warn"
+meta-variable-misuse          = "warn"
+missing-copy-implementations  = "warn"
+missing-debug-implementations = "warn"
+missing-docs                  = { level = "warn", priority = 1 }
+missing-unsafe-on-extern      = "warn"
+# multiple-supertrait-upcastable = "warn"
+# must-not-suspend = "warn"
+non-ascii-idents = "warn"
+# non-exhaustive-omitted-patterns = "warn"
+redundant-imports                            = "warn"
+redundant-lifetimes                          = "warn"
+rust-2021-incompatible-closure-captures      = "warn"
+rust-2021-incompatible-or-patterns           = "warn"
+rust-2021-prefixes-incompatible-syntax       = "warn"
+rust-2021-prelude-collisions                 = "warn"
+rust-2024-guarded-string-incompatible-syntax = "warn"
+rust-2024-incompatible-pat                   = "warn"
+rust-2024-prelude-collisions                 = "warn"
+single-use-lifetimes                         = "warn"
+# supertrait-item-shadowing-definition = "warn"
+# supertrait-item-shadowing-usage = "warn"
+tail-expr-drop-order  = "warn"
+trivial-casts         = "warn"
+trivial-numeric-casts = "warn"
+unit-bindings         = "warn"
+unknown-lints         = "deny"
+unnameable-types      = "warn"
+# unqualified-local-imports = "warn"
+unreachable-pub            = { level = "warn", priority = 1 }
+unsafe-attr-outside-unsafe = "warn"
+unsafe-code                = "allow"
+unsafe-op-in-unsafe-fn     = "warn"
+unstable-features          = "allow"
+unused-crate-dependencies  = "warn"
+unused-extern-crates       = "warn"
+unused-import-braces       = "warn"
+unused-lifetimes           = "warn"
+unused-macro-rules         = "warn"
+unused-qualifications      = "warn"
+unused-results             = "warn"
+variant-size-differences   = "warn"
+
+# https://doc.rust-lang.org/rustdoc/lints.html
+[workspace.lints.rustdoc]
+bare_urls                    = "warn"
+broken_intra_doc_links       = "warn"
+invalid_codeblock_attributes = "warn"
+invalid_html_tags            = "warn"
+invalid_rust_codeblocks      = "warn"
+private_intra_doc_links      = "warn"
+redundant_explicit_links     = "warn"
+unescaped_backticks          = "warn"
+
+# https://rust-lang.github.io/rust-clippy/master/index.html
+[workspace.lints.clippy]
+all                             = "warn"
+allow_attributes                = { level = "allow", priority = 2 }
+allow_attributes_without_reason = { level = "warn", priority = 2 }
+disallowed_macros               = { level = "deny", priority = 2 }
+disallowed_types                = { level = "deny", priority = 2 }
+indexing_slicing                = { level = "warn", priority = 2 }
+cargo                           = { level = "warn", priority = -1 }
+# Allow multiple versions of transitive dependencies (out of our control)
+multiple_crate_versions = { level = "allow", priority = 1 }
+complexity              = "warn"
+cognitive_complexity    = "warn"
+correctness             = "warn"
+needless_pass_by_value  = "warn"
+nursery                 = "warn"
+# Noisy nursery lints - allow until they are more stable
+missing_const_for_fn    = { level = "warn", priority = 1 }
+no_mangle_with_rust_abi = { level = "allow", priority = 2 }
+# future_not_send conflicts with valid async patterns using references
+future_not_send = { level = "allow", priority = 1 }
+# significant_drop_tightening has false positives and is overly pedantic
+significant_drop_tightening        = { level = "allow", priority = 1 }
+pedantic                           = "warn"
+perf                               = "warn"
+redundant_pub_crate                = { level = "allow", priority = 1 }
+restriction                        = { level = "allow", priority = -1 }
+style                              = "warn"
+suspicious                         = "warn"
+too_many_arguments                 = "warn"
+type_complexity                    = "warn"
+option_if_let_else                 = "warn"
+doc_markdown                       = "warn"
+missing_errors_doc                 = "warn"
+missing_docs_in_private_items      = { level = "deny", priority = 1 }
+missing_panics_doc                 = "warn"
+cast_precision_loss                = { level = "warn", priority = 1 }
+struct_field_names                 = { level = "warn", priority = 1 }
+must_use_candidate                 = "warn"
+if_not_else                        = { level = "warn", priority = 1 }
+collapsible_if                     = { level = "warn", priority = 1 }
+match_same_arms                    = { level = "warn", priority = 1 }
+redundant_closure_for_method_calls = { level = "warn", priority = 1 }
+let_and_return                     = { level = "warn", priority = 1 }
+struct_excessive_bools             = { level = "warn", priority = 1 }
+missing_fields_in_debug            = { level = "warn", priority = 1 }
+use_self                           = { level = "warn", priority = 1 }
+unused_self                        = { level = "warn", priority = 1 }
+unnecessary_wraps                  = { level = "warn", priority = 1 }

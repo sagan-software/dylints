@@ -1,0 +1,35 @@
+warning: dependency `workspace_bad` has incomplete semver version `1`
+  --> $DIR/main.rs:1:1
+   |
+LL | fn main() {}
+   | ^^^^^^^^^^^^
+   |
+   = help: write a full version such as `1.0.0` for `workspace_bad`
+   = note: `#[warn(dependency_full_semver_versions)]` on by default
+
+warning: dependency `bad_major` has incomplete semver version `1`
+  --> $DIR/main.rs:1:1
+   |
+LL | fn main() {}
+   | ^^^^^^^^^^^^
+   |
+   = help: write a full version such as `1.0.0` for `bad_major`
+
+warning: dependency `dev_bad` has incomplete semver version `0.1`
+  --> $DIR/main.rs:1:1
+   |
+LL | fn main() {}
+   | ^^^^^^^^^^^^
+   |
+   = help: write a full version such as `0.1.0` for `dev_bad`
+
+warning: dependency `make_bad` has incomplete semver version `1`
+  --> $DIR/main.rs:1:1
+   |
+LL | fn main() {}
+   | ^^^^^^^^^^^^
+   |
+   = help: write a full version such as `1.0.0` for `make_bad`
+
+warning: 4 warnings emitted
+

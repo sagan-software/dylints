@@ -1,0 +1,11 @@
+warning: this case accepts every panic message
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(1 => panics "" ; "empty message")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: provide a stable expected panic substring
+   = note: `#[warn(test_case_empty_panic_message)]` on by default
+
+warning: 1 warning emitted
+

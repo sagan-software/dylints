@@ -1,0 +1,71 @@
+warning: module documentation has 2 prose words; minimum is 40
+  --> $DIR/main.rs:10:1
+   |
+LL | pub mod short_module {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe responsibilities, key types, invariants, and how callers should navigate the API; add concrete information instead of filler
+   = note: `#[warn(insufficient_public_documentation)]` on by default
+
+warning: function documentation has 4 prose words; minimum is 20
+  --> $DIR/main.rs:25:1
+   |
+LL | / pub fn current_value() -> u64 {
+LL | |     0
+LL | | }
+   | |_^
+   |
+   = help: describe purpose, caller expectations, return meaning, side effects, and errors or panics when applicable; add concrete information instead of filler
+
+warning: function documentation has 3 prose words; minimum is 20
+  --> $DIR/main.rs:34:1
+   |
+LL | pub fn code_heavy_docs() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe purpose, caller expectations, return meaning, side effects, and errors or panics when applicable; add concrete information instead of filler
+
+warning: public item documentation has 3 prose words; minimum is 20
+  --> $DIR/main.rs:37:1
+   |
+LL | pub struct Brief;
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: describe the API role, invariants, valid states, and how callers construct or use it; add concrete information instead of filler
+
+warning: field documentation has 2 prose words; minimum is 20
+  --> $DIR/main.rs:44:5
+   |
+LL |     pub timeout_ms: u64,
+   |     ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe the semantic meaning, units or constraints, and when this value occurs; add concrete information instead of filler
+
+warning: variant documentation has 2 prose words; minimum is 20
+  --> $DIR/main.rs:52:5
+   |
+LL |     Complete,
+   |     ^^^^^^^^
+   |
+   = help: describe the semantic meaning, units or constraints, and when this value occurs; add concrete information instead of filler
+
+warning: method documentation has 2 prose words; minimum is 20
+  --> $DIR/main.rs:62:5
+   |
+LL | /     pub fn read(&self) -> u64 {
+LL | |         0
+LL | |     }
+   | |_____^
+   |
+   = help: describe purpose, caller expectations, return meaning, side effects, and errors or panics when applicable; add concrete information instead of filler
+
+warning: trait method documentation has 2 prose words; minimum is 20
+  --> $DIR/main.rs:72:5
+   |
+LL |     fn describe(&self) -> String;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe purpose, caller expectations, return meaning, side effects, and errors or panics when applicable; add concrete information instead of filler
+
+warning: 8 warnings emitted
+

@@ -1,0 +1,62 @@
+mod some_internal_thing {
+    pub struct CrateQualified;
+    pub struct SelfQualified;
+    pub struct Whatever;
+}
+
+mod nested_parent {
+    pub mod child {
+        pub struct NestedThing;
+        pub struct SelfQualifiedNested;
+    }
+}
+
+use self::nested_parent::child::SelfQualifiedNested;
+use self::some_internal_thing::SelfQualified;
+use crate::some_internal_thing::CrateQualified;
+use nested_parent::child::NestedThing;
+use some_internal_thing::Whatever;
+
+mod outer {
+    mod inner {
+        pub struct ChildAlias;
+        pub struct Other;
+        pub struct SelfQualified;
+    }
+
+    mod sibling {
+        pub struct Sibling;
+    }
+
+    use self::inner::ChildAlias as RenamedChild;
+    use self::inner::Other;
+    use self::inner::SelfQualified;
+    use self::sibling::Sibling;
+    use super::some_internal_thing::Whatever as ParentWhatever;
+    use crate::some_internal_thing::CrateQualified as RootCrateQualified;
+
+    pub fn nested_values() {
+        let _ = RenamedChild;
+        let _ = Other;
+        let _ = ParentWhatever;
+        let _ = RootCrateQualified;
+        let _ = SelfQualified;
+        let _ = Sibling;
+    }
+}
+
+fn external_import() {
+    use std::collections::HashMap;
+
+    let _: HashMap<(), ()> = HashMap::new();
+}
+
+fn main() {
+    let _ = CrateQualified;
+    let _ = NestedThing;
+    let _ = SelfQualified;
+    let _ = SelfQualifiedNested;
+    let _ = Whatever;
+    outer::nested_values();
+    external_import();
+}

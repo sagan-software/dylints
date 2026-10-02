@@ -1,0 +1,11 @@
+warning: entering `Span::none()` records nothing
+  --> $DIR/main.rs:4:23
+   |
+LL |     drop(Span::none().enter());
+   |                       ^^^^^
+   |
+   = help: remove the enter guard
+   = note: `#[warn(tracing_none_enter)]` on by default
+
+warning: 1 warning emitted
+

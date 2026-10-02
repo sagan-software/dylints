@@ -1,0 +1,19 @@
+warning: this `Plugin` name does not end in `Plugin`
+  --> $DIR/main.rs:13:1
+   |
+LL | struct Gameplay;
+   | ^^^^^^^^^^^^^^^
+   |
+   = help: rename the type with the `Plugin` suffix
+   = note: `#[warn(bevy_unconventional_naming)]` on by default
+
+warning: this `SystemSet` name does not end in `Systems`
+  --> $DIR/main.rs:26:1
+   |
+LL | struct Movement;
+   | ^^^^^^^^^^^^^^^
+   |
+   = help: rename the type with the `Systems` suffix
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,27 @@
+warning: manual `Error` and `Display` implementations look derivable
+  --> $DIR/edge_cases.rs:11:1
+   |
+LL | / impl Display for TokenError {
+LL | |     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+LL | |         write!(f, "bad token {}", self.token_id)
+LL | |     }
+LL | | }
+   | |_^
+   |
+   = help: use `#[derive(thiserror::Error, Debug)]` with a `#[error("...")]` message
+   = note: `#[warn(manual_error_impl)]` on by default
+
+warning: manual `Error` and `Display` implementations look derivable
+  --> $DIR/edge_cases.rs:22:1
+   |
+LL | / impl Display for SourceError {
+LL | |     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+LL | |         write!(f, "source error")
+LL | |     }
+LL | | }
+   | |_^
+   |
+   = help: use `#[derive(thiserror::Error, Debug)]` with a `#[error("...")]` message
+
+warning: 2 warnings emitted
+

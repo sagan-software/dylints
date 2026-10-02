@@ -1,0 +1,11 @@
+warning: allowing an empty glob can hide a misspelled or missing fixture path
+  --> $DIR/main.rs:3:14
+   |
+LL |     settings.set_allow_empty_glob(true);
+   |              ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep the default unless an empty fixture set is intentionally valid
+   = note: `#[warn(insta_allow_empty_glob)]` on by default
+
+warning: 1 warning emitted
+

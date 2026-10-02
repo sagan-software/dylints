@@ -1,0 +1,47 @@
+# serde-fallback-missing-other
+
+## What it does
+
+Checks for an internally or adjacently tagged enum that derives
+`Deserialize` and whose last variant is a unit variant named `Other` or
+`Unknown` without `#[serde(other)]`.
+
+## Why is this bad?
+
+Without `#[serde(other)]`, the variant only matches the literal tag `"Other"`
+or `"Unknown"`. Input with any new tag fails to deserialize, which is usually
+what the fallback variant was meant to prevent.
+
+## Known problems
+
+A variant named `Other` or `Unknown` that is meant to match only its own tag
+also triggers the lint. The lint misses fallback variants with other names or
+in a position other than last.
+
+The lint matches derives to types by name, so two types with the same name in
+one crate can share the same derive result.
+
+## Example
+
+```rust
+#[derive(serde::Deserialize)]
+#[serde(tag = "kind")]
+enum Event {
+    Created,
+    Deleted,
+    Unknown,
+}
+```
+
+## Use instead
+
+```rust
+#[derive(serde::Deserialize)]
+#[serde(tag = "kind")]
+enum Event {
+    Created,
+    Deleted,
+    #[serde(other)]
+    Unknown,
+}
+```

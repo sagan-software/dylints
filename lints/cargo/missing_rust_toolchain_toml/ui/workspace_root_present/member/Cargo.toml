@@ -1,0 +1,8 @@
+[package]
+name = "present-toolchain-workspace-member"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "present-toolchain-workspace-member"
+path = "main.rs"

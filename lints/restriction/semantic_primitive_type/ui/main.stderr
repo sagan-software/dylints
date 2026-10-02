@@ -1,0 +1,56 @@
+warning: field `tenant_id` uses primitive type `u64` for identity data
+  --> $DIR/main.rs:4:16
+   |
+LL |     tenant_id: u64,
+   |                ^^^
+   |
+   = help: introduce a validated semantic type and convert at the system boundary
+   = note: `#[warn(semantic_primitive_type)]` on by default
+
+warning: field `reason_code` uses primitive type `String` for a reason code
+  --> $DIR/main.rs:5:18
+   |
+LL |     reason_code: String,
+   |                  ^^^^^^
+   |
+   = help: introduce a validated semantic type and convert at the system boundary
+
+warning: field `reasons` uses primitive type `String` for a reason code
+  --> $DIR/main.rs:6:14
+   |
+LL |     reasons: Vec<String>,
+   |              ^^^^^^^^^^^
+   |
+   = help: introduce a validated semantic type and convert at the system boundary
+
+warning: return value `http_status` uses primitive type `u16` for an HTTP status
+  --> $DIR/main.rs:10:21
+   |
+LL | fn http_status() -> Option<u16> {
+   |                     ^^^^^^^^^^^
+   |
+   = help: introduce a validated semantic type and convert at the system boundary
+
+warning: parameter `account_id` uses primitive type `u32` for identity data
+  --> $DIR/main.rs:14:23
+   |
+LL | fn lookup(account_id: Option<u32>) {
+   |                       ^^^^^^^^^^^
+   |
+   = help: introduce a validated semantic type and convert at the system boundary
+
+warning: string match encodes a closed vocabulary with primitive strings
+  --> $DIR/main.rs:19:5
+   |
+LL | /     match state {
+LL | |         "queued" => 0,
+LL | |         "running" => 1,
+LL | |         "complete" => 2,
+LL | |         _ => 3,
+LL | |     }
+   | |_____^
+   |
+   = help: parse the input into a closed enum and match on its variants
+
+warning: 6 warnings emitted
+

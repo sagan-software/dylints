@@ -1,0 +1,10 @@
+warning: `assert_display_snapshot!` is deprecated
+  --> $DIR/main.rs:4:5
+   |
+LL |     insta::assert_display_snapshot!("value");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `assert_snapshot!`, which accepts the same `Display` values: `insta::assert_snapshot!("value")`
+   |
+   = note: `#[warn(insta_deprecated_assert_display)]` on by default
+
+warning: 1 warning emitted
+

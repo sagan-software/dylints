@@ -1,0 +1,35 @@
+warning: enum `AcronymNames` has divergent Strum and Serde output for variant `HTTPResponse`: Strum uses `http_response`; Serde uses `h_t_t_p_response`
+  --> $DIR/main.rs:46:5
+   |
+LL |     HTTPResponse,
+   |     ^^^^^^^^^^^^
+   |
+   = help: align the Strum and Serde representation attributes
+   = note: `#[warn(strum_enum_representation)]` on by default
+
+warning: enum `DirectionalNames` has divergent Strum and Serde output for variant `Ready`: Strum uses `displayed`; Serde uses `outbound`
+  --> $DIR/main.rs:53:5
+   |
+LL |     Ready,
+   |     ^^^^^
+   |
+   = help: align the Strum and Serde representation attributes
+
+warning: enum `InputNames` has divergent Strum and Serde input names for variant `Ready`
+  --> $DIR/main.rs:60:5
+   |
+LL |     Ready,
+   |     ^^^^^
+   |
+   = help: align the Strum and Serde representation attributes
+
+warning: fieldless enum `ManualStatus` hand-writes both `Display` and `FromStr`
+  --> $DIR/main.rs:6:6
+   |
+LL | enum ManualStatus {
+   |      ^^^^^^^^^^^^
+   |
+   = help: derive `strum::Display` and `strum::EnumString` and declare the string mapping once
+
+warning: 4 warnings emitted
+

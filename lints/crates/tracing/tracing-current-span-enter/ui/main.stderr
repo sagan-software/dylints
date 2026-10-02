@@ -1,0 +1,11 @@
+warning: `Span::current()` is already current
+  --> $DIR/main.rs:4:26
+   |
+LL |     drop(Span::current().enter());
+   |                          ^^^^^
+   |
+   = help: remove the redundant enter guard
+   = note: `#[warn(tracing_current_span_enter)]` on by default
+
+warning: 1 warning emitted
+

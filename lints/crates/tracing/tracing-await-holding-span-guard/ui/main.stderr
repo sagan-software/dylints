@@ -1,0 +1,29 @@
+warning: this tracing span guard is held across an `.await` point
+  --> $DIR/main.rs:9:9
+   |
+LL |     let _guard = span.enter();
+   |         ^^^^^^
+   |
+note: the span remains entered through these suspension points
+  --> $DIR/main.rs:10:18
+   |
+LL |     other_work().await;
+   |                  ^^^^^
+   = help: use `Span::in_scope`, `Future::instrument`, or `#[instrument]`
+   = note: `#[warn(tracing_await_holding_span_guard)]` on by default
+
+warning: this tracing span guard is held across an `.await` point
+  --> $DIR/main.rs:14:9
+   |
+LL |     let _guard = info_span!("owned").entered();
+   |         ^^^^^^
+   |
+note: the span remains entered through these suspension points
+  --> $DIR/main.rs:15:18
+   |
+LL |     other_work().await;
+   |                  ^^^^^
+   = help: use `Span::in_scope`, `Future::instrument`, or `#[instrument]`
+
+warning: 2 warnings emitted
+

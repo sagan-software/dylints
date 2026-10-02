@@ -1,0 +1,27 @@
+warning: this test matrix generates only one test case
+  --> $DIR/main.rs:11:1
+   |
+LL | #[test_matrix("input", 1_u8)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: replace the matrix with one `#[test_case(...)]` attribute
+   = note: `#[warn(test_case_single_case_matrix)]` on by default
+
+warning: this test matrix generates only one test case
+  --> $DIR/main.rs:15:1
+   |
+LL | #[test_matrix(["input"], [1_u8])]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: replace the matrix with one `#[test_case(...)]` attribute
+
+warning: this test matrix generates only one test case
+  --> $DIR/main.rs:19:1
+   |
+LL | #[test_matrix(0..1, [1_u8])]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: replace the matrix with one `#[test_case(...)]` attribute
+
+warning: 3 warnings emitted
+

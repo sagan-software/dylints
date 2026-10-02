@@ -1,0 +1,19 @@
+warning: logging message uses string interpolation
+  --> $DIR/edge_cases.rs:12:12
+   |
+LL |     error!("user {user_id} failed with {status}");
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put runtime values in structured key/value fields and keep the message static
+   = note: `#[warn(interpolated_logging)]` on by default
+
+warning: logging message uses string interpolation
+  --> $DIR/edge_cases.rs:14:12
+   |
+LL |     error!("user {} failed with {}", user_id, status);
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put runtime values in structured key/value fields and keep the message static
+
+warning: 2 warnings emitted
+

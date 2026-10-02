@@ -1,0 +1,11 @@
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:12:11
+   |
+LL |         ..Default::default()
+   |           ^^^^^^^^^^^^^^^^^^
+   |
+   = help: set every field explicitly at the construction boundary
+   = note: `#[warn(struct_update_default)]` on by default
+
+warning: 1 warning emitted
+

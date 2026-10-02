@@ -1,0 +1,23 @@
+warning: collection insertion loop can use `Extend::extend`
+  --> $DIR/main.rs:4:5
+   |
+LL | /     for value in values {
+LL | |         output.push(value);
+LL | |     }
+   | |_____^
+   |
+   = help: use `Extend::extend`, with `map` when the inserted value is transformed
+   = note: `#[warn(manual_extend_loop)]` on by default
+
+warning: collection insertion loop can use `Extend::extend`
+  --> $DIR/main.rs:10:5
+   |
+LL | /     for value in values {
+LL | |         output.push_back(value * 2);
+LL | |     }
+   | |_____^
+   |
+   = help: use `Extend::extend`, with `map` when the inserted value is transformed
+
+warning: 2 warnings emitted
+

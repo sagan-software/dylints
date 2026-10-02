@@ -1,0 +1,33 @@
+warning: method `next_row` looks like an iterator step
+  --> $DIR/main.rs:10:5
+   |
+LL | /     fn next_row(&mut self) -> Option<Row> {
+LL | |         self.rows.pop()
+LL | |     }
+   | |_____^
+   |
+   = help: implement `Iterator` when this is the canonical next item for the type
+   = note: `#[warn(ad_hoc_iterator)]` on by default
+
+warning: method `next_alias` looks like an iterator step
+  --> $DIR/main.rs:14:5
+   |
+LL | /     fn next_alias(&mut self) -> MaybeRow {
+LL | |         self.rows.pop()
+LL | |     }
+   | |_____^
+   |
+   = help: implement `Iterator` when this is the canonical next item for the type
+
+warning: method `next_qualified` looks like an iterator step
+  --> $DIR/main.rs:18:5
+   |
+LL | /     fn next_qualified(&mut self) -> std::option::Option<Row> {
+LL | |         self.rows.pop()
+LL | |     }
+   | |_____^
+   |
+   = help: implement `Iterator` when this is the canonical next item for the type
+
+warning: 3 warnings emitted
+

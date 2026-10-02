@@ -1,0 +1,11 @@
+warning: `serde(untagged)` does not produce informative fallback errors by default
+  --> $DIR/main.rs:14:1
+   |
+LL | #[serde(untagged)]
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `expecting = "..."` with a domain-specific description of accepted input
+   = note: `#[warn(serde_untagged_missing_expecting)]` on by default
+
+warning: 1 warning emitted
+

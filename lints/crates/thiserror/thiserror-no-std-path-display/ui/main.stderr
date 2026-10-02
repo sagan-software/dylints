@@ -1,0 +1,11 @@
+warning: `thiserror` path capture needs its `std` feature
+  --> $DIR/main.rs:7:1
+   |
+LL | #[error("missing {path}")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: enable thiserror's `std` feature, or format the field with `.display()`
+   = note: `#[warn(thiserror_no_std_path_display)]` on by default
+
+warning: 1 warning emitted
+

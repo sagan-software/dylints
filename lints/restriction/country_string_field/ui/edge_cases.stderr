@@ -1,0 +1,43 @@
+warning: country-code-like field `country` uses `&str`
+  --> $DIR/edge_cases.rs:11:14
+   |
+LL |     country: &'a str,
+   |              ^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+   = note: `#[warn(country_string_field)]` on by default
+
+warning: country-code-like field `shipping_country_code` uses `String`
+  --> $DIR/edge_cases.rs:12:28
+   |
+LL |     shipping_country_code: CountryText,
+   |                            ^^^^^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `iso_country` uses `String`
+  --> $DIR/edge_cases.rs:13:18
+   |
+LL |     iso_country: std::string::String,
+   |                  ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `residence_country` uses `&str`
+  --> $DIR/edge_cases.rs:14:24
+   |
+LL |     residence_country: &'a CountryStr,
+   |                        ^^^^^^^^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `billing_country` uses `String`
+  --> $DIR/edge_cases.rs:15:22
+   |
+LL |     billing_country: StdString,
+   |                      ^^^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: 5 warnings emitted
+

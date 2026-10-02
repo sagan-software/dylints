@@ -1,0 +1,65 @@
+use serde::Deserialize;
+
+#[derive(Default, Deserialize)]
+struct Named {
+    #[serde(default)]
+    retries: u32,
+    #[serde(default)]
+    verbose: bool,
+}
+
+#[derive(Default, Deserialize)]
+struct Tuple(#[serde(default)] u32, #[serde(default)] bool);
+
+#[derive(Default, Deserialize)]
+struct Partial {
+    #[serde(default)]
+    retries: u32,
+    verbose: bool,
+}
+
+fn custom_retries() -> u32 {
+    3
+}
+
+#[derive(Default, Deserialize)]
+struct CustomFieldDefault {
+    #[serde(default = "custom_retries")]
+    retries: u32,
+    #[serde(default)]
+    verbose: bool,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(default)]
+struct ExistingContainerDefault {
+    #[serde(default)]
+    retries: u32,
+    #[serde(default)]
+    verbose: bool,
+}
+
+#[derive(Deserialize)]
+struct ManualDefault {
+    #[serde(default)]
+    retries: u32,
+    #[serde(default)]
+    verbose: bool,
+}
+
+impl Default for ManualDefault {
+    fn default() -> Self {
+        Self {
+            retries: 3,
+            verbose: true,
+        }
+    }
+}
+
+#[derive(Default, Deserialize)]
+struct OneField {
+    #[serde(default)]
+    retries: u32,
+}
+
+fn main() {}

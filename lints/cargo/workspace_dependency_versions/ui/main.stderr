@@ -1,0 +1,11 @@
+warning: dependency `bad_dep` specifies an explicit version instead of inheriting from `[workspace.dependencies]`
+  --> $DIR/main.rs:1:1
+   |
+LL | fn main() {}
+   | ^^^^^^^^^^^^
+   |
+   = help: move the version for `bad_dep` into `[workspace.dependencies]` and use `bad_dep.workspace = true` here
+   = note: `#[warn(workspace_dependency_versions)]` on by default
+
+warning: 1 warning emitted
+

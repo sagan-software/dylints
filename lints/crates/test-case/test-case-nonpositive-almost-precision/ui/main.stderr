@@ -1,0 +1,19 @@
+warning: an absolute difference cannot be less than this precision
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(1.0_f64 => is almost 1.0 precision 0.0 ; "zero precision")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a positive tolerance that reflects the expected numerical error
+   = note: `#[warn(test_case_nonpositive_almost_precision)]` on by default
+
+warning: an absolute difference cannot be less than this precision
+  --> $DIR/main.rs:10:1
+   |
+LL | #[test_case(1.0_f64 => is almost 1.0 precision -0.1 ; "negative precision")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a positive tolerance that reflects the expected numerical error
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,19 @@
+warning: this Reqwest shortcut creates a new client on every loop iteration
+  --> $DIR/main.rs:5:25
+   |
+LL |         let _response = reqwest::get("https://example.com").await?;
+   |                         ^^^^^^^^^^^^
+   |
+   = help: create one `reqwest::Client` before the loop and call `client.get(...)`
+   = note: `#[warn(reqwest_get_in_loop)]` on by default
+
+warning: this Reqwest shortcut creates a new client on every loop iteration
+  --> $DIR/main.rs:12:25
+   |
+LL |         let _response = reqwest::blocking::get("https://example.com")?;
+   |                         ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: create one `reqwest::Client` before the loop and call `client.get(...)`
+
+warning: 2 warnings emitted
+

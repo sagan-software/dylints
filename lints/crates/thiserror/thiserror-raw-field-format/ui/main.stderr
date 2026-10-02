@@ -1,0 +1,22 @@
+warning: `thiserror` 2 expects unraw field names in format strings
+  --> $DIR/main.rs:5:1
+   |
+LL | #[error("qualified {r#type}")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("qualified {type}")]`
+   |
+   = note: `#[warn(thiserror_raw_field_format)]` on by default
+
+warning: `thiserror` 2 expects unraw field names in format strings
+  --> $DIR/main.rs:12:1
+   |
+LL | #[error("renamed {r#kind}")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("renamed {kind}")]`
+
+warning: `thiserror` 2 expects unraw field names in format strings
+  --> $DIR/main.rs:19:1
+   |
+LL | #[error("same-line {r#value}")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("same-line {value}")]`
+
+warning: 3 warnings emitted
+

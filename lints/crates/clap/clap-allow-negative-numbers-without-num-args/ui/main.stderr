@@ -1,0 +1,11 @@
+warning: `allow_negative_numbers(true)` is ambiguous without `num_args`
+  --> $DIR/main.rs:4:29
+   |
+LL |     let _ = Arg::new("bad").allow_negative_numbers(true);
+   |                             ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add an explicit `.num_args(...)`
+   = note: `#[warn(clap_allow_negative_numbers_without_num_args)]` on by default
+
+warning: 1 warning emitted
+

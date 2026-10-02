@@ -1,0 +1,19 @@
+warning: panicking `expect` in `main`
+  --> $DIR/edge_cases.rs:4:32
+   |
+LL |     let value = Some("config").expect("config must be present");
+   |                                ^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+   = note: `#[warn(panic_in_main)]` on by default
+
+warning: panicking `assert` in `main`
+  --> $DIR/edge_cases.rs:5:5
+   |
+LL |     assert!(!value.is_empty());
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+
+warning: 2 warnings emitted
+

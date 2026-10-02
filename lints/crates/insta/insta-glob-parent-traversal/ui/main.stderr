@@ -1,0 +1,11 @@
+warning: the two-argument `glob!` form cannot traverse parents
+  --> $DIR/main.rs:4:5
+   |
+LL |     insta::glob!("../fixtures/*.txt", |_path| {});
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: pass the parent directory as the base in the three-argument form
+   = note: `#[warn(insta_glob_parent_traversal)]` on by default
+
+warning: 1 warning emitted
+

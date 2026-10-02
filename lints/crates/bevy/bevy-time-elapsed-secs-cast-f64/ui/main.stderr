@@ -1,0 +1,10 @@
+warning: casting `elapsed_secs()` to `f64` cannot recover its lost precision
+  --> $DIR/main.rs:13:18
+   |
+LL |     let _ = time.elapsed_secs() as f64;
+   |                  ^^^^^^^^^^^^ help: call `elapsed_secs_f64()` instead: `elapsed_secs_f64`
+   |
+   = note: `#[warn(bevy_time_elapsed_secs_cast_f64)]` on by default
+
+warning: 1 warning emitted
+

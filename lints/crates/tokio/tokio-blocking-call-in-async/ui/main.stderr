@@ -1,0 +1,43 @@
+warning: this Tokio blocking method panics in an asynchronous execution context
+  --> $DIR/main.rs:8:24
+   |
+LL |     let _guard = mutex.blocking_lock();
+   |                        ^^^^^^^^^^^^^
+   |
+   = help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+   = note: `#[warn(tokio_blocking_call_in_async)]` on by default
+
+warning: this Tokio blocking method panics in an asynchronous execution context
+  --> $DIR/main.rs:11:30
+   |
+LL |     let _read_guard = rwlock.blocking_read();
+   |                              ^^^^^^^^^^^^^
+   |
+   = help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+
+warning: this Tokio blocking method panics in an asynchronous execution context
+  --> $DIR/main.rs:12:31
+   |
+LL |     let _write_guard = rwlock.blocking_write();
+   |                               ^^^^^^^^^^^^^^
+   |
+   = help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+
+warning: this Tokio blocking method panics in an asynchronous execution context
+  --> $DIR/main.rs:15:20
+   |
+LL |     let _ = sender.blocking_send(1_u8);
+   |                    ^^^^^^^^^^^^^
+   |
+   = help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+
+warning: this Tokio blocking method panics in an asynchronous execution context
+  --> $DIR/main.rs:16:22
+   |
+LL |     let _ = receiver.blocking_recv();
+   |                      ^^^^^^^^^^^^^
+   |
+   = help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+
+warning: 5 warnings emitted
+

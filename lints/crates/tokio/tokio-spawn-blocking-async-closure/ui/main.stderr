@@ -1,0 +1,11 @@
+warning: the future returned by this closure is not polled
+  --> $DIR/main.rs:2:13
+   |
+LL |     let _ = tokio::task::spawn_blocking(|| async {});
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `tokio::spawn` or a synchronous closure
+   = note: `#[warn(tokio_spawn_blocking_async_closure)]` on by default
+
+warning: 1 warning emitted
+

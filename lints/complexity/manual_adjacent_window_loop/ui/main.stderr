@@ -1,0 +1,17 @@
+warning: adjacent index loop can use `slice::windows(2)`
+  --> $DIR/main.rs:3:5
+   |
+LL | /     for index in 0..values.len().saturating_sub(1) {
+LL | |         println!(
+LL | |             "{current} {next}",
+LL | |             current = values[index],
+LL | |             next = values[index + 1]
+LL | |         );
+LL | |     }
+   | |_____^
+   |
+   = help: use `windows(2)` and read the two elements from each window
+   = note: `#[warn(manual_adjacent_window_loop)]` on by default
+
+warning: 1 warning emitted
+

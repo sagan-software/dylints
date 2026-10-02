@@ -1,0 +1,67 @@
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/main.rs:32:5
+   |
+LL | /     let Some(user) = find_user(id) else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+   = note: `#[warn(let_some_return_err)]` on by default
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some(user) = find_user(id) else {
+LL -         return Err(Error::Missing);
+LL -     };
+LL +     let user = (find_user(id)).ok_or_else(|| Error::Missing)?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/main.rs:40:5
+   |
+LL | /     let std::option::Option::Some(user) = find_alias_user(id) else {
+LL | |         return Err(Error::Empty);
+LL | |     };
+   | |______^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let std::option::Option::Some(user) = find_alias_user(id) else {
+LL -         return Err(Error::Empty);
+LL -     };
+LL +     let user = (find_alias_user(id)).ok_or_else(|| Error::Empty)?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/main.rs:49:9
+   |
+LL | /         let Some(user) = find_user(id) else {
+LL | |             return Err(Error::Missing);
+LL | |         };
+   | |__________^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -         let Some(user) = find_user(id) else {
+LL -             return Err(Error::Missing);
+LL -         };
+LL +         let user = (find_user(id)).ok_or_else(|| Error::Missing)?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/main.rs:61:9
+   |
+LL | /         let Some(user) = find_user(id) else {
+LL | |             return Err(Error::Empty);
+LL | |         };
+   | |__________^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -         let Some(user) = find_user(id) else {
+LL -             return Err(Error::Empty);
+LL -         };
+LL +         let user = (find_user(id)).ok_or_else(|| Error::Empty)?;
+   |
+
+warning: 4 warnings emitted
+

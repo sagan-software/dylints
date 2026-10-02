@@ -1,0 +1,11 @@
+warning: this permanently reduces the SQLx pool's capacity
+  --> $DIR/main.rs:6:23
+   |
+LL |     let _connection = connection.leak();
+   |                       ^^^^^^^^^^^^^^^^^
+   |
+   = help: use `PoolConnection::detach` when the pool should open a replacement
+   = note: `#[warn(sqlx_pool_connection_leak)]` on by default
+
+warning: 1 warning emitted
+

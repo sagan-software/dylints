@@ -1,0 +1,5 @@
+#[cfg(feature = "abc")]
+pub fn third() {}
+
+#[cfg(feature = "abc")]
+pub fn fourth() {}

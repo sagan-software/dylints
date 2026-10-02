@@ -1,0 +1,11 @@
+warning: this entrypoint discards Bevy's requested exit status
+  --> $DIR/main.rs:24:16
+   |
+LL |     App::new().run();
+   |                ^^^
+   |
+   = help: return `AppExit` from `main` and tail-return `App::run`
+   = note: `#[warn(bevy_main_return_without_app_exit)]` on by default
+
+warning: 1 warning emitted
+

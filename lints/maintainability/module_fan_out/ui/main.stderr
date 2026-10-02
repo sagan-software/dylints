@@ -1,0 +1,11 @@
+warning: module depends on 9 top-level local modules, which exceeds 7
+  --> $DIR/main.rs:31:1
+   |
+LL | mod coordinator {
+   | ^^^^^^^^^^^^^^^
+   |
+   = help: introduce a narrower facade or move orchestration to a boundary module
+   = note: `#[warn(module_fan_out)]` on by default
+
+warning: 1 warning emitted
+

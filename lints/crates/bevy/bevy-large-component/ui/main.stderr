@@ -1,0 +1,11 @@
+warning: this component has at least eight fields and exceeds 64 bytes
+  --> $DIR/main.rs:4:1
+   |
+LL | struct LargeAgent {
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: split independently accessed state into cohesive components
+   = note: `#[warn(bevy_large_component)]` on by default
+
+warning: 1 warning emitted
+

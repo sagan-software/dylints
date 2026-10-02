@@ -1,0 +1,13 @@
+warning: `new` only forwards fields into a struct literal
+  --> $DIR/main.rs:11:5
+   |
+LL | /     pub fn new(id: UserId, name: String) -> UserAlias {
+LL | |         UserAlias { id, name }
+LL | |     }
+   | |_____^
+   |
+   = help: remove the constructor when public fields already express the same construction
+   = note: `#[warn(trivial_public_constructor)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,11 @@
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+enum Error {
+    #[error("failed: {}", source)]
+    Bad { source: std::io::Error },
+    #[error("failed: {source}")]
+    Good { source: std::io::Error },
+}
+
+fn main() {}

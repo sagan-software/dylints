@@ -1,0 +1,19 @@
+warning: `skip_serializing` does not skip deserializing this field
+  --> $DIR/main.rs:15:5
+   |
+LL |     #[serde(skip_serializing)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `skip`, add `skip_deserializing`, or provide a default for deserialization
+   = note: `#[warn(serde_skip_serializing_roundtrip)]` on by default
+
+warning: `skip_serializing` does not skip deserializing this field
+  --> $DIR/main.rs:17:5
+   |
+LL |     #[serde(skip_serializing)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `skip`, add `skip_deserializing`, or provide a default for deserialization
+
+warning: 2 warnings emitted
+

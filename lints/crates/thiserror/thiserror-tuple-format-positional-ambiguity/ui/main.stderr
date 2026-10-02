@@ -1,0 +1,35 @@
+warning: `thiserror` tuple format mixes numeric fields and positional arguments
+  --> $DIR/main.rs:8:1
+   |
+LL | #[error("qualified {0} {}", expected())]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: give the extra format argument a name, such as `value = value()`
+   = note: `#[warn(thiserror_tuple_format_positional_ambiguity)]` on by default
+
+warning: `thiserror` tuple format mixes numeric fields and positional arguments
+  --> $DIR/main.rs:12:1
+   |
+LL | #[error("imported {0} {}", expected())]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: give the extra format argument a name, such as `value = value()`
+
+warning: `thiserror` tuple format mixes numeric fields and positional arguments
+  --> $DIR/main.rs:16:1
+   |
+LL | #[error("renamed {0:?} {}", expected())]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: give the extra format argument a name, such as `value = value()`
+
+warning: `thiserror` tuple format mixes numeric fields and positional arguments
+  --> $DIR/main.rs:21:5
+   |
+LL |     #[error("variant {0} {}", expected())]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: give the extra format argument a name, such as `value = value()`
+
+warning: 4 warnings emitted
+

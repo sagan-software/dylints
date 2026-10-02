@@ -1,0 +1,27 @@
+warning: error variant `Timeout` has broad field `details` using `String`
+  --> $DIR/edge_cases.rs:4:24
+   |
+LL |     Timeout { details: String },
+   |                        ^^^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+   = note: `#[warn(broad_string_error_variant)]` on by default
+
+warning: error variant `Message` has broad tuple variant `Message` using `&str`
+  --> $DIR/edge_cases.rs:5:13
+   |
+LL |     Message(&'static str),
+   |             ^^^^^^^^^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+
+warning: error variant `Rejected` has broad field `error` using `&str`
+  --> $DIR/edge_cases.rs:10:23
+   |
+LL |     Rejected { error: &'static str },
+   |                       ^^^^^^^^^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+
+warning: 3 warnings emitted
+

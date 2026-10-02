@@ -1,0 +1,27 @@
+warning: formatted values are only recorded in the tracing message
+  --> $DIR/main.rs:6:5
+   |
+LL |     info!("request {request_id} completed");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: record `request_id` as structured fields before the message
+   = note: `#[warn(tracing_message_interpolation)]` on by default
+
+warning: formatted values are only recorded in the tracing message
+  --> $DIR/main.rs:7:5
+   |
+LL |     error!("request {} failed: {}", request_id, error);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: record `request_id, error` as structured fields before the message
+
+warning: formatted values are only recorded in the tracing message
+  --> $DIR/main.rs:8:5
+   |
+LL |     event!(Level::DEBUG, "request {request_id:?} queued");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: record `request_id` as structured fields before the message
+
+warning: 3 warnings emitted
+

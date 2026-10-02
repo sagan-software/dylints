@@ -1,0 +1,58 @@
+warning: function `make_associated_user_id` looks like an infallible conversion
+  --> $DIR/main.rs:17:9
+   |
+LL | /         fn make_associated_user_id(raw: RawUserId) -> Self {
+LL | |             let _ = raw;
+LL | |             Self
+LL | |         }
+   | |_________^
+   |
+   = help: implement `From` when the conversion has one canonical meaning
+   = note: `#[warn(ad_hoc_from)]` on by default
+
+warning: function `make_user_id` looks like an infallible conversion
+  --> $DIR/main.rs:26:1
+   |
+LL | / fn make_user_id(raw: ids::RawUserId) -> ids::UserId {
+LL | |     let _ = raw;
+LL | |     ids::UserId
+LL | | }
+   | |_^
+   |
+   = help: implement `From` when the conversion has one canonical meaning
+
+warning: function `convert_user_id_alias` looks like an infallible conversion
+  --> $DIR/main.rs:31:1
+   |
+LL | / fn convert_user_id_alias(raw: ids::RawUserId) -> UserIdAlias {
+LL | |     let _ = raw;
+LL | |     ids::UserId
+LL | | }
+   | |_^
+   |
+   = help: implement `From` when the conversion has one canonical meaning
+
+warning: function `from_qualified_user_id` looks like an infallible conversion
+  --> $DIR/main.rs:36:1
+   |
+LL | / fn from_qualified_user_id(raw: ids::RawUserId) -> crate::ids::UserIdAlias {
+LL | |     let _ = raw;
+LL | |     ids::UserId
+LL | | }
+   | |_^
+   |
+   = help: implement `From` when the conversion has one canonical meaning
+
+warning: function `extract_user_id` looks like an infallible conversion
+  --> $DIR/main.rs:41:1
+   |
+LL | / fn extract_user_id(raw: ids::RawUserId) -> ids::UserId {
+LL | |     let _ = raw;
+LL | |     ids::UserId
+LL | | }
+   | |_^
+   |
+   = help: implement `From` when the conversion has one canonical meaning
+
+warning: 5 warnings emitted
+

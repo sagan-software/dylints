@@ -1,0 +1,11 @@
+warning: repeated sleep timing accumulates drift
+  --> $DIR/main.rs:5:9
+   |
+LL |         tokio::time::sleep(Duration::from_secs(1)).await;
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `tokio::time::interval` for periodic work
+   = note: `#[warn(tokio_sleep_in_loop)]` on by default
+
+warning: 1 warning emitted
+

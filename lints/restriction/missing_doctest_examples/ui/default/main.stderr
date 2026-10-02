@@ -1,0 +1,51 @@
+warning: function or method documentation has no doctest example
+  --> $DIR/main.rs:2:1
+   |
+LL | pub fn undocumented_example() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `# Examples` with a non-empty Rust code block to this item's docs
+   = note: `#[warn(missing_doctest_examples)]` on by default
+
+warning: function or method documentation has no doctest example
+  --> $DIR/main.rs:16:1
+   |
+LL | pub fn non_rust_example() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `# Examples` with a non-empty Rust code block to this item's docs
+
+warning: function or method documentation has no doctest example
+  --> $DIR/main.rs:23:1
+   |
+LL | pub fn empty_example() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `# Examples` with a non-empty Rust code block to this item's docs
+
+warning: function or method documentation has no doctest example
+  --> $DIR/main.rs:30:1
+   |
+LL | pub fn wrong_heading() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `# Examples` with a non-empty Rust code block to this item's docs
+
+warning: function or method documentation has no doctest example
+  --> $DIR/main.rs:45:5
+   |
+LL |     pub fn undocumented_method(&self) {}
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `# Examples` with a non-empty Rust code block to this item's docs
+
+warning: function or method documentation has no doctest example
+  --> $DIR/main.rs:58:5
+   |
+LL |     fn trait_method(&self);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `# Examples` with a non-empty Rust code block to this item's docs
+
+warning: 6 warnings emitted
+

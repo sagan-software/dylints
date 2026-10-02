@@ -1,0 +1,11 @@
+warning: `trailing_var_arg(true)` requires `num_args`
+  --> $DIR/main.rs:4:29
+   |
+LL |     let _ = Arg::new("bad").trailing_var_arg(true);
+   |                             ^^^^^^^^^^^^^^^^
+   |
+   = help: add `.num_args(...)` to this argument
+   = note: `#[warn(clap_trailing_var_arg_without_num_args)]` on by default
+
+warning: 1 warning emitted
+

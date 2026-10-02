@@ -1,0 +1,19 @@
+warning: dependency `dotted_major` has incomplete semver version `1`
+  --> $DIR/lib.rs:3:1
+   |
+LL | pub fn marker() {}
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: write a full version such as `1.0.0` for `dotted_major`
+   = note: `#[warn(dependency_full_semver_versions)]` on by default
+
+warning: dependency `inline_minor` has incomplete semver version `1.2`
+  --> $DIR/lib.rs:3:1
+   |
+LL | pub fn marker() {}
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: write a full version such as `1.2.0` for `inline_minor`
+
+warning: 2 warnings emitted
+

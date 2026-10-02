@@ -1,0 +1,10 @@
+warning: `serde(expecting)` should be a lowercase noun phrase without a period
+  --> $DIR/main.rs:6:1
+   |
+LL | #[serde(expecting = "A user id.")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: rewrite the expectation text: `#[serde(expecting = "a user id")]`
+   |
+   = note: `#[warn(serde_expecting_style)]` on by default
+
+warning: 1 warning emitted
+

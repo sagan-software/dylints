@@ -1,0 +1,35 @@
+[package]
+name = "dependency-full-semver-versions-fixture"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = [
+  "bad_major",
+  "dev_bad",
+  "good_full",
+  "make_bad",
+  "path_only",
+  "workspace_bad",
+  "workspace_only",
+]
+
+[workspace.dependencies]
+workspace_bad = { path = "workspace_bad", version = "1" }
+workspace_only = { path = "workspace_only", version = "1.2.3" }
+
+[dependencies]
+bad_major = { path = "bad_major", version = "1" }
+good_full = { path = "good_full", version = "1.2.3" }
+path_only = { path = "path_only" }
+workspace_only.workspace = true
+
+[dev-dependencies]
+dev_bad = { path = "dev_bad", version = "0.1" }
+
+[build-dependencies]
+make_bad = { path = "make_bad", version = "1" }
+
+[[bin]]
+name = "dependency-full-semver-versions-fixture"
+path = "main.rs"

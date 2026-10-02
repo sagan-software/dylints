@@ -1,0 +1,40 @@
+[package]
+name = "style"
+version.workspace = true
+description = "Rust review lints for idiomatic style"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ad_hoc_as_ref = { path = "ad_hoc_as_ref", features = ["rlib"] }
+ad_hoc_borrow = { path = "ad_hoc_borrow", features = ["rlib"] }
+ad_hoc_default = { path = "ad_hoc_default", features = ["rlib"] }
+ad_hoc_display = { path = "ad_hoc_display", features = ["rlib"] }
+ad_hoc_from = { path = "ad_hoc_from", features = ["rlib"] }
+ad_hoc_from_str = { path = "ad_hoc_from_str", features = ["rlib"] }
+ad_hoc_into_iterator = { path = "ad_hoc_into_iterator", features = ["rlib"] }
+ad_hoc_iterator = { path = "ad_hoc_iterator", features = ["rlib"] }
+ad_hoc_try_from = { path = "ad_hoc_try_from", features = ["rlib"] }
+bool_name_prefix = { path = "bool_name_prefix", features = ["rlib"] }
+doc_attr_comment = { path = "doc_attr_comment", features = ["rlib"] }
+internal_import_self = { path = "internal_import_self", features = ["rlib"] }
+manual_debug_impl = { path = "manual_debug_impl", features = ["rlib"] }
+manual_default_impl = { path = "manual_default_impl", features = ["rlib"] }
+manual_error_impl = { path = "manual_error_impl", features = ["rlib"] }
+module_type_first = { path = "module_type_first", features = ["rlib"] }
+rumdl_doc_comments = { path = "rumdl_doc_comments", features = ["rlib"] }
+top_level_item_line_break = { path = "top_level_item_line_break", features = ["rlib"] }
+
+dylint_linting.workspace = true
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

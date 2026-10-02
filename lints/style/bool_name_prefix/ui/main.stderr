@@ -1,0 +1,131 @@
+warning: boolean field `ready` does not start with `is_`
+  --> $DIR/main.rs:6:5
+   |
+LL |     ready: bool,
+   |     ^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+   = note: `#[warn(bool_name_prefix)]` on by default
+
+warning: boolean field `enabled` does not start with `is_`
+  --> $DIR/main.rs:11:5
+   |
+LL |     enabled: Flag,
+   |     ^^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean constant `ENABLED` does not start with `IS_`
+  --> $DIR/main.rs:17:7
+   |
+LL | const ENABLED: bool = true;
+   |       ^^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean static `READY` does not start with `IS_`
+  --> $DIR/main.rs:20:8
+   |
+LL | static READY: bool = true;
+   |        ^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean associated constant `READY` does not start with `IS_`
+  --> $DIR/main.rs:24:11
+   |
+LL |     const READY: bool;
+   |           ^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean parameter `enabled` does not start with `is_`
+  --> $DIR/main.rs:27:25
+   |
+LL |     fn available(&self, enabled: bool) -> bool;
+   |                         ^^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean method `available` does not start with `is_`
+  --> $DIR/main.rs:27:8
+   |
+LL |     fn available(&self, enabled: bool) -> bool;
+   |        ^^^^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean associated constant `READY` does not start with `IS_`
+  --> $DIR/main.rs:35:11
+   |
+LL |     const READY: bool = true;
+   |           ^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean method `available` does not start with `is_`
+  --> $DIR/main.rs:38:8
+   |
+LL |     fn available(&self) -> bool {
+   |        ^^^^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean parameter `enabled` does not start with `is_`
+  --> $DIR/main.rs:55:25
+   |
+LL |     fn available(&self, enabled: bool) -> bool {
+   |                         ^^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean parameter `ready` does not start with `is_`
+  --> $DIR/main.rs:68:12
+   |
+LL | fn enabled(ready: bool, is_ready: bool, count: u32) -> bool {
+   |            ^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean function `enabled` does not start with `is_`
+  --> $DIR/main.rs:68:4
+   |
+LL | fn enabled(ready: bool, is_ready: bool, count: u32) -> bool {
+   |    ^^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean local variable `cached` does not start with `is_`
+  --> $DIR/main.rs:69:9
+   |
+LL |     let cached = ready;
+   |         ^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean parameter `enabled` does not start with `is_`
+  --> $DIR/main.rs:142:15
+   |
+LL | fn alias_flag(enabled: Flag) -> Flag {
+   |               ^^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean function `alias_flag` does not start with `is_`
+  --> $DIR/main.rs:142:4
+   |
+LL | fn alias_flag(enabled: Flag) -> Flag {
+   |    ^^^^^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: boolean local variable `cached` does not start with `is_`
+  --> $DIR/main.rs:143:9
+   |
+LL |     let cached: Flag = enabled;
+   |         ^^^^^^
+   |
+   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+
+warning: 16 warnings emitted
+

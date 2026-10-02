@@ -1,0 +1,39 @@
+warning: integer measurement field `maximum_size` does not identify its unit
+  --> $DIR/main.rs:2:19
+   |
+LL |     maximum_size: u64,
+   |                   ^^^
+   |
+   = note: the field stores a primitive `u64`
+   = help: use a unit-bearing type or state the unit in the field name or documentation
+   = note: `#[warn(ambiguous_numeric_unit_field)]` on by default
+
+warning: integer measurement field `payload_length` does not identify its unit
+  --> $DIR/main.rs:3:21
+   |
+LL |     payload_length: usize,
+   |                     ^^^^^
+   |
+   = note: the field stores a primitive `usize`
+   = help: use a unit-bearing type or state the unit in the field name or documentation
+
+warning: integer measurement field `file_offset` does not identify its unit
+  --> $DIR/main.rs:4:18
+   |
+LL |     file_offset: i64,
+   |                  ^^^
+   |
+   = note: the field stores a primitive `i64`
+   = help: use a unit-bearing type or state the unit in the field name or documentation
+
+warning: integer measurement field `alias_size` does not identify its unit
+  --> $DIR/main.rs:5:17
+   |
+LL |     alias_size: RawSize,
+   |                 ^^^^^^^
+   |
+   = note: the field stores a primitive `u64`
+   = help: use a unit-bearing type or state the unit in the field name or documentation
+
+warning: 4 warnings emitted
+

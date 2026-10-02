@@ -1,0 +1,32 @@
+[package]
+name = "sqlx"
+version.workspace = true
+description = "Rust review lints for SQLx API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+sqlx_assert_sql_safe = { package = "sqlx-assert-sql-safe", path = "sqlx-assert-sql-safe", features = ["rlib"] }
+sqlx_empty_push_tuples = { package = "sqlx-empty-push-tuples", path = "sqlx-empty-push-tuples", features = ["rlib"] }
+sqlx_empty_push_values = { package = "sqlx-empty-push-values", path = "sqlx-empty-push-values", features = ["rlib"] }
+sqlx_panicking_row_get = { package = "sqlx-panicking-row-get", path = "sqlx-panicking-row-get", features = ["rlib"] }
+sqlx_panicking_statement_column = { package = "sqlx-panicking-statement-column", path = "sqlx-panicking-statement-column", features = ["rlib"] }
+sqlx_pool_connection_leak = { package = "sqlx-pool-connection-leak", path = "sqlx-pool-connection-leak", features = ["rlib"] }
+sqlx_query_builder_push_interpolation = { package = "sqlx-query-builder-push-interpolation", path = "sqlx-query-builder-push-interpolation", features = ["rlib"] }
+sqlx_query_builder_push_unseparated_interpolation = { package = "sqlx-query-builder-push-unseparated-interpolation", path = "sqlx-query-builder-push-unseparated-interpolation", features = ["rlib"] }
+sqlx_unchecked_query_macro = { package = "sqlx-unchecked-query-macro", path = "sqlx-unchecked-query-macro", features = ["rlib"] }
+sqlx_zero_max_connections = { package = "sqlx-zero-max-connections", path = "sqlx-zero-max-connections", features = ["rlib"] }
+
+dylint_linting.workspace = true
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

@@ -1,0 +1,19 @@
+warning: Clap's default help template does not display this `author` value
+  --> $DIR/main.rs:6:1
+   |
+LL | #[command(author)]
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a custom `help_template` containing `{author}`, or remove `author`
+   = note: `#[warn(clap_derive_author_without_help_template)]` on by default
+
+warning: Clap's default help template does not display this `author` value
+  --> $DIR/main.rs:15:5
+   |
+LL |     #[command(author = "Example Team")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a custom `help_template` containing `{author}`, or remove `author`
+
+warning: 2 warnings emitted
+

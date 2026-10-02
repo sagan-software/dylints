@@ -1,0 +1,11 @@
+warning: this macro generates at least 64 tests
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_matrix(0..8, 0..8)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the matrix or reduce its Cartesian product
+   = note: `#[warn(test_case_large_suite)]` on by default
+
+warning: 1 warning emitted
+

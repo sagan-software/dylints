@@ -1,0 +1,25 @@
+warning: function `make_user_id` looks like a fallible conversion
+  --> $DIR/main.rs:5:1
+   |
+LL | / fn make_user_id(raw: RawUserId) -> Result<UserId, Error> {
+LL | |     let _ = raw;
+LL | |     Ok(UserId)
+LL | | }
+   | |_^
+   |
+   = help: implement `TryFrom` when the conversion has one canonical meaning
+   = note: `#[warn(ad_hoc_try_from)]` on by default
+
+warning: function `map_user_id` looks like a fallible conversion
+  --> $DIR/main.rs:10:1
+   |
+LL | / fn map_user_id(raw: RawUserId) -> Result<UserId, Error> {
+LL | |     let _ = raw;
+LL | |     Ok(UserId)
+LL | | }
+   | |_^
+   |
+   = help: implement `TryFrom` when the conversion has one canonical meaning
+
+warning: 2 warnings emitted
+

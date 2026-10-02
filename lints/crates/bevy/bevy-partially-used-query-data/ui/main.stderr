@@ -1,0 +1,11 @@
+warning: this custom query uses at most half of its fields
+  --> $DIR/main.rs:36:15
+   |
+LL | fn bad(query: Query<AgentQuery>) {
+   |               ^^^^^^^^^^^^^^^^^
+   |
+   = help: define a smaller query type for this behavior
+   = note: `#[warn(bevy_partially_used_query_data)]` on by default
+
+warning: 1 warning emitted
+

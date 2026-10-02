@@ -1,0 +1,11 @@
+warning: this exclusive world access can use normal system parameters
+  --> $DIR/main.rs:7:15
+   |
+LL | fn bad(world: &mut World) {
+   |               ^^^^^^^^^^
+   |
+   = help: replace &mut World with typed Query, Res, ResMut, or entity parameters
+   = note: `#[warn(bevy_narrow_exclusive_system)]` on by default
+
+warning: 1 warning emitted
+

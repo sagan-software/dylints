@@ -1,0 +1,11 @@
+warning: `cookie_store(true)` replaces the custom cookie provider set earlier in this chain
+  --> $DIR/main.rs:9:10
+   |
+LL |         .cookie_store(true)
+   |          ^^^^^^^^^^^^
+   |
+   = help: remove `cookie_store(true)`, or choose only the default store
+   = note: `#[warn(reqwest_cookie_provider_overridden)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,14 @@
+warning: unchanged `Option` or `Result` observation can use an inspect method
+  --> $DIR/main.rs:6:5
+   |
+LL | /     let result = operation(ok);
+LL | |     if let Err(error) = &result {
+LL | |         println!("{error}");
+LL | |     }
+   | |_____^
+   |
+   = help: use `inspect` or `inspect_err` on the initializer and return the chain
+   = note: `#[warn(manual_passthrough_inspect)]` on by default
+
+warning: 1 warning emitted
+

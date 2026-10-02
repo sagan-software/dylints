@@ -1,0 +1,16 @@
+warning: MD037 in Rust doc comment at line 1, column 18: Spaces inside emphasis markers: "* emphasis *"
+  --> $DIR/main.rs:14:1
+   |
+LL | /// Do not write * emphasis * with spaces.
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `/// Do not write *emphasis* with spaces.`
+   |
+   = note: `#[warn(rumdl_doc_comments)]` on by default
+
+warning: MD037 in Rust doc comment at line 1, column 10: Spaces inside emphasis markers: "* good *"
+  --> $DIR/main.rs:52:5
+   |
+LL |     /// More * good * text on a field.
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `/// More *good* text on a field.`
+
+warning: 2 warnings emitted
+

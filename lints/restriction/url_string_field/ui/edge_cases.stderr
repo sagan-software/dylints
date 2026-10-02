@@ -1,0 +1,43 @@
+warning: URL-like field `callback_url` uses `&str`
+  --> $DIR/edge_cases.rs:11:19
+   |
+LL |     callback_url: &'a UrlStr,
+   |                   ^^^^^^^^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
+   = note: `#[warn(url_string_field)]` on by default
+
+warning: URL-like field `webhook_uri` uses `String`
+  --> $DIR/edge_cases.rs:12:18
+   |
+LL |     webhook_uri: UrlText,
+   |                  ^^^^^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
+
+warning: URL-like field `base_endpoint` uses `String`
+  --> $DIR/edge_cases.rs:13:20
+   |
+LL |     base_endpoint: std::string::String,
+   |                    ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
+
+warning: URL-like field `link_url` uses `String`
+  --> $DIR/edge_cases.rs:14:15
+   |
+LL |     link_url: StdString,
+   |               ^^^^^^^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
+
+warning: URL-like field `url_label` uses `String`
+  --> $DIR/edge_cases.rs:15:16
+   |
+LL |     url_label: String,
+   |                ^^^^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
+
+warning: 5 warnings emitted
+

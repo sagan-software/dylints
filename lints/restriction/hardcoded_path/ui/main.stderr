@@ -1,0 +1,35 @@
+warning: hardcoded absolute filesystem path
+  --> $DIR/main.rs:6:13
+   |
+LL |     consume("/home/sagan/balls");
+   |             ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a repository-relative path or derive the path from configuration or the runtime environment
+   = note: `#[warn(hardcoded_path)]` on by default
+
+warning: hardcoded home-relative filesystem path
+  --> $DIR/main.rs:7:13
+   |
+LL |     consume("~/Sync/playground/whatever");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a repository-relative path or derive the path from configuration or the runtime environment
+
+warning: hardcoded absolute filesystem path
+  --> $DIR/main.rs:8:13
+   |
+LL |     consume(r"C:/Users/sagan/AppData/Local/example");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a repository-relative path or derive the path from configuration or the runtime environment
+
+warning: hardcoded absolute filesystem path
+  --> $DIR/main.rs:9:13
+   |
+LL |     consume(r"/server/share/example");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a repository-relative path or derive the path from configuration or the runtime environment
+
+warning: 4 warnings emitted
+

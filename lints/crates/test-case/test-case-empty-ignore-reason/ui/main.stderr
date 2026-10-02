@@ -1,0 +1,11 @@
+warning: this ignored case has an empty reason
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(1 => ignore[""] ; "empty reason")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe why the case is ignored
+   = note: `#[warn(test_case_empty_ignore_reason)]` on by default
+
+warning: 1 warning emitted
+

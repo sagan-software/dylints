@@ -1,0 +1,11 @@
+warning: this expected substring does not identify the intended panic
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(0_u8 => panics " " ; "blank expectation")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: match a stable, nonblank part of the intended panic message
+   = note: `#[warn(test_case_whitespace_panic_message)]` on by default
+
+warning: 1 warning emitted
+

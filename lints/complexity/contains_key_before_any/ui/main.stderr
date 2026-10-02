@@ -1,0 +1,29 @@
+warning: a separate `contains_key` call can be folded into the array searched by `any`
+  --> $DIR/main.rs:13:14
+   |
+LL |           _ if document.contains_key("address")
+   |  ______________^
+LL | |             || [
+LL | |                 "full_name",
+LL | |                 "date_of_birth",
+...  |
+LL | |             .iter()
+LL | |             .any(|key| document.contains_key(*key))
+   | |___________________________________________________^
+   |
+   = help: include the separate string literal in the array and remove this `||` gate
+   = note: `#[warn(contains_key_before_any)]` on by default
+
+warning: a separate `contains_key` call can be folded into the array searched by `any`
+  --> $DIR/main.rs:28:5
+   |
+LL | /     document.contains_key("address")
+LL | |         || ["full_name", "date_of_birth"]
+LL | |             .iter()
+LL | |             .any(|key| document.contains_key(*key))
+   | |___________________________________________________^
+   |
+   = help: include the separate string literal in the array and remove this `||` gate
+
+warning: 2 warnings emitted
+

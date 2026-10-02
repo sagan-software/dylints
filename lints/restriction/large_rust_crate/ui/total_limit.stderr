@@ -1,0 +1,11 @@
+warning: Rust crate has 8 total lines (limit: 7)
+  --> $DIR/total_limit.rs:1:1
+   |
+LL | fn main() {}
+   | ^^^^^^^^^^^^
+   |
+   = help: create new crates to split large crates into smaller crates by responsibility
+   = note: `#[warn(large_rust_crate)]` on by default
+
+warning: 1 warning emitted
+

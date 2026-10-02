@@ -1,0 +1,59 @@
+warning: this parameter takes owned `String` at the boundary
+  --> $DIR/main.rs:6:26
+   |
+LL | pub fn has_prefix(value: String, prefix: String) -> bool {
+   |                          ^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+   = note: `#[warn(ownership_at_boundaries)]` on by default
+
+warning: this parameter takes owned `String` at the boundary
+  --> $DIR/main.rs:6:42
+   |
+LL | pub fn has_prefix(value: String, prefix: String) -> bool {
+   |                                          ^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+
+warning: this parameter takes owned `Vec` at the boundary
+  --> $DIR/main.rs:10:28
+   |
+LL | pub fn count_errors(lines: Vec<String>) -> usize {
+   |                            ^^^^^^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+
+warning: this parameter takes owned `String` at the boundary
+  --> $DIR/main.rs:14:23
+   |
+LL | pub fn aliased(value: ErrorText, lines: ErrorLines) -> usize {
+   |                       ^^^^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+
+warning: this parameter takes owned `Vec` at the boundary
+  --> $DIR/main.rs:14:41
+   |
+LL | pub fn aliased(value: ErrorText, lines: ErrorLines) -> usize {
+   |                                         ^^^^^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+
+warning: this parameter takes owned `String` at the boundary
+  --> $DIR/main.rs:19:12
+   |
+LL |     value: std::string::String,
+   |            ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+
+warning: this parameter takes owned `Vec` at the boundary
+  --> $DIR/main.rs:20:12
+   |
+LL |     lines: std::vec::Vec<std::string::String>,
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+
+warning: 7 warnings emitted
+

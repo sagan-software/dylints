@@ -1,0 +1,11 @@
+warning: routing to another `Router` here panics
+  --> $DIR/main.rs:7:35
+   |
+LL |     let _: Router = Router::new().route_service("/api", inner);
+   |                                   ^^^^^^^^^^^^^
+   |
+   = help: compose the inner router with `Router::nest` instead
+   = note: `#[warn(axum_route_service_router)]` on by default
+
+warning: 1 warning emitted
+

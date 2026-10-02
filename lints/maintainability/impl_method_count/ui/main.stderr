@@ -1,0 +1,11 @@
+warning: local type has 21 inherent methods, which exceeds 20
+  --> $DIR/main.rs:5:1
+   |
+LL | struct LargeType;
+   | ^^^^^^^^^^^^^^^^
+   |
+   = help: extract an independent capability when its state and invariants can stand alone
+   = note: `#[warn(impl_method_count)]` on by default
+
+warning: 1 warning emitted
+

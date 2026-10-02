@@ -1,0 +1,11 @@
+warning: `mod.rs` is the only file in this module directory
+  --> $DIR/auxiliary/single_file/mod.rs:1:1
+   |
+LL | pub fn value() -> u8 {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: move this module to `single_file.rs` and remove the directory
+   = note: `#[warn(unnecessary_module_directory)]` on by default
+
+warning: 1 warning emitted
+

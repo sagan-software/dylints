@@ -1,0 +1,19 @@
+warning: `AssertSqlSafe` bypasses SQLx's SQL injection protection
+  --> $DIR/main.rs:6:18
+   |
+LL |     let _query = AssertSqlSafe(format!("SELECT * FROM {table}"));
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep SQL static and bind values, or use `QueryBuilder` for dynamic SQL
+   = note: `#[warn(sqlx_assert_sql_safe)]` on by default
+
+warning: `AssertSqlSafe` bypasses SQLx's SQL injection protection
+  --> $DIR/main.rs:10:18
+   |
+LL |     let _query = sqlx::AssertSqlSafe(query);
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep SQL static and bind values, or use `QueryBuilder` for dynamic SQL
+
+warning: 2 warnings emitted
+

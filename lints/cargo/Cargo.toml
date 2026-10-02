@@ -1,0 +1,30 @@
+[package]
+name = "cargo"
+version.workspace = true
+description = "Rust review lints for Cargo and Rust project metadata"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dependency_full_semver_versions = { path = "dependency_full_semver_versions", features = ["rlib"] }
+dependency_key_order = { path = "dependency_key_order", features = ["rlib"] }
+missing_clippy_toml = { path = "missing_clippy_toml", features = ["rlib"] }
+missing_rust_toolchain_toml = { path = "missing_rust_toolchain_toml", features = ["rlib"] }
+package_lints_section = { path = "package_lints_section", features = ["rlib"] }
+rust_toolchain_toml = { path = "rust_toolchain_toml", features = ["rlib"] }
+workspace_dependency_versions = { path = "workspace_dependency_versions", features = ["rlib"] }
+workspace_lints_inheritance = { path = "workspace_lints_inheritance", features = ["rlib"] }
+
+dylint_linting.workspace = true
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

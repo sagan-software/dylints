@@ -1,0 +1,27 @@
+warning: public struct `EdgeUnused` is unused inside this private crate
+  --> $DIR/edge_cases.rs:3:12
+   |
+LL | pub struct EdgeUnused {
+   |            ^^^^^^^^^^
+   |
+   = help: remove the type or make it private unless an external boundary uses it
+   = note: `#[warn(unnecessary_public_type)]` on by default
+
+warning: public enum `EdgeUnusedEnum` is unused inside this private crate
+  --> $DIR/edge_cases.rs:7:10
+   |
+LL | pub enum EdgeUnusedEnum {
+   |          ^^^^^^^^^^^^^^
+   |
+   = help: remove the type or make it private unless an external boundary uses it
+
+warning: public type alias `EdgeUnusedAlias` is unused inside this private crate
+  --> $DIR/edge_cases.rs:11:10
+   |
+LL | pub type EdgeUnusedAlias = u64;
+   |          ^^^^^^^^^^^^^^^
+   |
+   = help: remove the type or make it private unless an external boundary uses it
+
+warning: 3 warnings emitted
+

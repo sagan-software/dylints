@@ -1,0 +1,16 @@
+warning: multiple versions of the `bevy` facade are loaded
+  --> $DIR/main.rs:1:1
+   |
+LL | / #![allow(
+LL | |     dead_code,
+LL | |     elided_lifetimes_in_paths,
+LL | |     let_underscore_drop,
+...  |
+LL | | fn main() {}
+   | |____________^
+   |
+   = help: align direct Bevy dependencies to one version
+   = note: `#[warn(bevy_duplicate_dependencies)]` on by default
+
+warning: 1 warning emitted
+

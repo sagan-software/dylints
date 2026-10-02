@@ -1,0 +1,12 @@
+use schemars::JsonSchema;
+use serde::Serialize;
+
+#[derive(JsonSchema, Serialize)]
+#[serde(rename_all = "camelCase")]
+#[schemars(rename_all = "camelCase")]
+struct Example {
+    bad: String,
+    good: String,
+}
+
+fn main() {}

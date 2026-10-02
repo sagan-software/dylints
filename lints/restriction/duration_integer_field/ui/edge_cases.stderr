@@ -1,0 +1,43 @@
+warning: duration-like field `connect_timeout_millis` uses integer `u64`
+  --> $DIR/edge_cases.rs:10:29
+   |
+LL |     connect_timeout_millis: u64,
+   |                             ^^^
+   |
+   = help: use `std::time::Duration` and convert units at the input boundary
+   = note: `#[warn(duration_integer_field)]` on by default
+
+warning: duration-like field `cache_ttl_seconds` uses integer `i32`
+  --> $DIR/edge_cases.rs:11:24
+   |
+LL |     cache_ttl_seconds: i32,
+   |                        ^^^
+   |
+   = help: use `std::time::Duration` and convert units at the input boundary
+
+warning: duration-like field `delay_ms` uses integer `usize`
+  --> $DIR/edge_cases.rs:12:15
+   |
+LL |     delay_ms: usize,
+   |               ^^^^^
+   |
+   = help: use `std::time::Duration` and convert units at the input boundary
+
+warning: duration-like field `alias_timeout_ms` uses integer `u64`
+  --> $DIR/edge_cases.rs:13:23
+   |
+LL |     alias_timeout_ms: Milliseconds,
+   |                       ^^^^^^^^^^^^
+   |
+   = help: use `std::time::Duration` and convert units at the input boundary
+
+warning: duration-like field `alias_window_seconds` uses integer `i32`
+  --> $DIR/edge_cases.rs:14:27
+   |
+LL |     alias_window_seconds: SignedSeconds,
+   |                           ^^^^^^^^^^^^^
+   |
+   = help: use `std::time::Duration` and convert units at the input boundary
+
+warning: 5 warnings emitted
+

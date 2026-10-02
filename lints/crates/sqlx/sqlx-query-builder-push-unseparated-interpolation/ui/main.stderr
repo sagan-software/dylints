@@ -1,0 +1,11 @@
+warning: `format!` inserts values directly into SQL text
+  --> $DIR/main.rs:6:15
+   |
+LL |     separated.push_unseparated(format!("id = {}", 1));
+   |               ^^^^^^^^^^^^^^^^
+   |
+   = help: append fixed SQL and pass values with `push_bind`
+   = note: `#[warn(sqlx_query_builder_push_unseparated_interpolation)]` on by default
+
+warning: 1 warning emitted
+

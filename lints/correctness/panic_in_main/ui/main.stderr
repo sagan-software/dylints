@@ -1,0 +1,67 @@
+warning: panicking `panic` in `main`
+  --> $DIR/main.rs:3:9
+   |
+LL |         panic!("missing configuration");
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+   = note: `#[warn(panic_in_main)]` on by default
+
+warning: panicking `todo` in `main`
+  --> $DIR/main.rs:6:9
+   |
+LL |         todo!("wire later");
+   |         ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+
+warning: panicking `unimplemented` in `main`
+  --> $DIR/main.rs:9:9
+   |
+LL |         unimplemented!("wire later");
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+
+warning: panicking `assert` in `main`
+  --> $DIR/main.rs:12:9
+   |
+LL |         assert!(true);
+   |         ^^^^^^^^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+
+warning: panicking `assert_eq` in `main`
+  --> $DIR/main.rs:15:9
+   |
+LL |         assert_eq!(1, 1);
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+
+warning: panicking `assert_ne` in `main`
+  --> $DIR/main.rs:18:9
+   |
+LL |         assert_ne!(1, 2);
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+
+warning: panicking `unwrap` in `main`
+  --> $DIR/main.rs:22:28
+   |
+LL |         let _value = value.unwrap();
+   |                            ^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+
+warning: panicking `expect` in `main`
+  --> $DIR/main.rs:26:28
+   |
+LL |         let _value = value.expect("value exists");
+   |                            ^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+
+warning: 8 warnings emitted
+

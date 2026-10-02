@@ -1,0 +1,13 @@
+warning: consecutive iterator loops can use `Iterator::chain`
+  --> $DIR/main.rs:5:5
+   |
+LL | /     for value in first {
+LL | |         consume(value);
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::chain` and apply the shared body once
+   = note: `#[warn(consecutive_iterator_loops)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,59 @@
+warning: timestamp-like field `created_at_ts` uses integer `i64`
+  --> $DIR/main.rs:18:20
+   |
+LL |     created_at_ts: i64,
+   |                    ^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+   = note: `#[warn(datetime_integer_field)]` on by default
+
+warning: timestamp-like field `expires_epoch` uses integer `u64`
+  --> $DIR/main.rs:19:20
+   |
+LL |     expires_epoch: u64,
+   |                    ^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: timestamp-like field `timestamp_ms` uses integer `usize`
+  --> $DIR/main.rs:20:19
+   |
+LL |     timestamp_ms: usize,
+   |                   ^^^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: timestamp-like field `aliased_created_at_ts` uses integer `i64`
+  --> $DIR/main.rs:21:28
+   |
+LL |     aliased_created_at_ts: EpochMillis,
+   |                            ^^^^^^^^^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: timestamp-like field `aliased_expires_epoch` uses integer `u64`
+  --> $DIR/main.rs:22:28
+   |
+LL |     aliased_expires_epoch: UnixSeconds,
+   |                            ^^^^^^^^^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: timestamp-like field `imported_unix` uses integer `i128`
+  --> $DIR/main.rs:23:20
+   |
+LL |     imported_unix: ImportedEpoch,
+   |                    ^^^^^^^^^^^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: timestamp-like field `machine_timestamp` uses integer `usize`
+  --> $DIR/main.rs:24:24
+   |
+LL |     machine_timestamp: MachineTimestamp,
+   |                        ^^^^^^^^^^^^^^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: 7 warnings emitted
+

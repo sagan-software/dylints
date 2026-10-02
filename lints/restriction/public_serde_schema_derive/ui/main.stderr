@@ -1,0 +1,27 @@
+warning: public serde struct `MissingSchemaStruct` is missing a schema derive
+  --> $DIR/main.rs:7:12
+   |
+LL | pub struct MissingSchemaStruct {
+   |            ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: derive `schemars::JsonSchema` so Rust, JSON Schema, and docs stay aligned
+   = note: `#[warn(public_serde_schema_derive)]` on by default
+
+warning: public serde enum `MissingSchemaEnum` is missing a schema derive
+  --> $DIR/main.rs:12:10
+   |
+LL | pub enum MissingSchemaEnum {
+   |          ^^^^^^^^^^^^^^^^^
+   |
+   = help: derive `schemars::JsonSchema` so Rust, JSON Schema, and docs stay aligned
+
+warning: public serde struct `MissingRenamedSerdeDerive` is missing a schema derive
+  --> $DIR/main.rs:17:12
+   |
+LL | pub struct MissingRenamedSerdeDerive {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: derive `schemars::JsonSchema` so Rust, JSON Schema, and docs stay aligned
+
+warning: 3 warnings emitted
+

@@ -1,0 +1,19 @@
+warning: Tokio channel capacity must be greater than zero
+  --> $DIR/main.rs:6:33
+   |
+LL |     let _ = mpsc::channel::<u8>(0);
+   |                                 ^
+   |
+   = help: use a positive capacity
+   = note: `#[warn(tokio_zero_capacity_channel)]` on by default
+
+warning: Tokio channel capacity must be greater than zero
+  --> $DIR/main.rs:7:38
+   |
+LL |     let _ = broadcast::channel::<u8>(0);
+   |                                      ^
+   |
+   = help: use a positive capacity
+
+warning: 2 warnings emitted
+

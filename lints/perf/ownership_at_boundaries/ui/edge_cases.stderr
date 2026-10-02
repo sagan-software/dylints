@@ -1,0 +1,35 @@
+warning: this parameter takes owned `String` at the boundary
+  --> $DIR/edge_cases.rs:3:31
+   |
+LL | pub fn contains_any(haystack: String, needles: Vec<String>) -> bool {
+   |                               ^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+   = note: `#[warn(ownership_at_boundaries)]` on by default
+
+warning: this parameter takes owned `Vec` at the boundary
+  --> $DIR/edge_cases.rs:3:48
+   |
+LL | pub fn contains_any(haystack: String, needles: Vec<String>) -> bool {
+   |                                                ^^^^^^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+
+warning: this parameter takes owned `String` at the boundary
+  --> $DIR/edge_cases.rs:7:28
+   |
+LL | pub fn stores_owned(value: String) -> String {
+   |                            ^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+
+warning: this parameter takes owned `Vec` at the boundary
+  --> $DIR/edge_cases.rs:11:34
+   |
+LL | pub fn mutates_owned(mut values: Vec<String>) -> usize {
+   |                                  ^^^^^^^^^^^
+   |
+   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+
+warning: 4 warnings emitted
+

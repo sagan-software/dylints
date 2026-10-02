@@ -1,0 +1,14 @@
+[package]
+name = "package-lints-subtable"
+version = "0.1.0"
+edition = "2024"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[[bin]]
+name = "package-lints-subtable"
+path = "main.rs"
+
+[workspace]
+resolver = "3"

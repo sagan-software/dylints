@@ -1,0 +1,19 @@
+warning: command line arguments are parsed manually
+  --> $DIR/edge_cases.rs:6:18
+   |
+LL |     let _first = std::env::args().skip(1).next();
+   |                  ^^^^^^^^^^^^^^
+   |
+   = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
+   = note: `#[warn(manual_arg_parsing)]` on by default
+
+warning: command line arguments are parsed manually
+  --> $DIR/edge_cases.rs:10:24
+   |
+LL |     let _all: Vec<_> = args_os().collect();
+   |                        ^^^^^^^
+   |
+   = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
+
+warning: 2 warnings emitted
+

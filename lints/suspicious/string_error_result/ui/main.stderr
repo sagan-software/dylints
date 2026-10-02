@@ -1,0 +1,43 @@
+warning: `Result` uses `String` as its error type
+  --> $DIR/main.rs:6:41
+   |
+LL | fn parse_port(raw: &str) -> Result<u16, String> {
+   |                                         ^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+   = note: `#[warn(string_error_result)]` on by default
+
+warning: `Result` uses `String` as its error type
+  --> $DIR/main.rs:10:57
+   |
+LL | fn validate_name(name: &str) -> std::result::Result<(), String> {
+   |                                                         ^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: `Result` uses `String` as its error type
+  --> $DIR/main.rs:17:54
+   |
+LL | fn imported_result(raw: &str) -> ImportedResult<u16, String> {
+   |                                                      ^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: `Result` uses `String` as its error type
+  --> $DIR/main.rs:21:51
+   |
+LL | fn aliased_string_error(raw: &str) -> Result<u16, ErrorText> {
+   |                                                   ^^^^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: `Result` uses `String` as its error type
+  --> $DIR/main.rs:25:64
+   |
+LL | fn renamed_string_error(name: &str) -> std::result::Result<(), Text> {
+   |                                                                ^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: 5 warnings emitted
+

@@ -1,0 +1,19 @@
+warning: `JsonSchema::json_schema` returns a `$ref` schema
+  --> $DIR/main.rs:18:9
+   |
+LL |         Schema::new_ref("#/$defs/Other".to_owned())
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return a concrete schema and use `generator.subschema_for` for dependencies
+   = note: `#[warn(schemars_json_schema_ref_return)]` on by default
+
+warning: `JsonSchema::json_schema` returns a `$ref` schema
+  --> $DIR/main.rs:32:20
+   |
+LL |             return Schema::new_ref("#/$defs/Other".to_owned());
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return a concrete schema and use `generator.subschema_for` for dependencies
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,27 @@
+warning: this loop constructs a new Reqwest connection pool on every iteration
+  --> $DIR/main.rs:5:23
+   |
+LL |         let _client = reqwest::Client::new();
+   |                       ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: construct the client before the loop and reuse it
+   = note: `#[warn(reqwest_client_in_loop)]` on by default
+
+warning: this loop constructs a new Reqwest connection pool on every iteration
+  --> $DIR/main.rs:9:23
+   |
+LL |         let _client = reqwest::Client::builder().build()?;
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: construct the client before the loop and reuse it
+
+warning: this loop constructs a new Reqwest connection pool on every iteration
+  --> $DIR/main.rs:16:23
+   |
+LL |         let _client = reqwest::blocking::Client::new();
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: construct the client before the loop and reuse it
+
+warning: 3 warnings emitted
+

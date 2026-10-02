@@ -1,0 +1,19 @@
+warning: all fields use `serde(default)` with a derived `Default` implementation
+  --> $DIR/main.rs:5:5
+   |
+LL |     #[serde(default)]
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = help: add `#[serde(default)]` to the struct and remove its field-level defaults
+   = note: `#[warn(serde_all_fields_default)]` on by default
+
+warning: all fields use `serde(default)` with a derived `Default` implementation
+  --> $DIR/main.rs:12:14
+   |
+LL | struct Tuple(#[serde(default)] u32, #[serde(default)] bool);
+   |              ^^^^^^^^^^^^^^^^^
+   |
+   = help: add `#[serde(default)]` to the struct and remove its field-level defaults
+
+warning: 2 warnings emitted
+

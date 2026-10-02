@@ -1,0 +1,11 @@
+warning: `allow_hyphen_values(true)` is ambiguous without `num_args`
+  --> $DIR/main.rs:4:29
+   |
+LL |     let _ = Arg::new("bad").allow_hyphen_values(true);
+   |                             ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add an explicit `.num_args(...)`
+   = note: `#[warn(clap_allow_hyphen_values_without_num_args)]` on by default
+
+warning: 1 warning emitted
+

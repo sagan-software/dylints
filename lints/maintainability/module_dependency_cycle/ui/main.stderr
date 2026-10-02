@@ -1,0 +1,11 @@
+warning: module dependency cycle contains: alpha, beta
+  --> $DIR/main.rs:3:1
+   |
+LL | mod alpha {
+   | ^^^^^^^^^
+   |
+   = help: move the shared contract inward or reverse one dependency
+   = note: `#[warn(module_dependency_cycle)]` on by default
+
+warning: 1 warning emitted
+

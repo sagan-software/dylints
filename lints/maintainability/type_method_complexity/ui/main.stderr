@@ -1,0 +1,11 @@
+warning: implementation has summed method complexity 54 across 6 methods, which exceeds 40
+  --> $DIR/main.rs:5:1
+   |
+LL | impl Busy {
+   | ^^^^^^^^^
+   |
+   = help: split unrelated responsibilities into separate types or impl blocks
+   = note: `#[warn(type_method_complexity)]` on by default
+
+warning: 1 warning emitted
+

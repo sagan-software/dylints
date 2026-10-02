@@ -1,0 +1,11 @@
+warning: `Span::none().or_current()` always selects the current span
+  --> $DIR/main.rs:4:26
+   |
+LL |     let _ = Span::none().or_current();
+   |                          ^^^^^^^^^^
+   |
+   = help: use `Span::current()`
+   = note: `#[warn(tracing_none_or_current)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,11 @@
+warning: `Children` should not be manipulated directly
+  --> $DIR/main.rs:15:11
+   |
+LL | fn bad(_: Query<&mut Children>) {}
+   |           ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: modify `ChildOf` on source entities or use relationship commands
+   = note: `#[warn(bevy_children_mutation_query)]` on by default
+
+warning: 1 warning emitted
+

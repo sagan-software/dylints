@@ -1,0 +1,19 @@
+warning: tracing field value is allocated with `.to_string()`
+  --> $DIR/main.rs:10:5
+   |
+LL |     warn!(error = error.to_string(), "request failed");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: record `error` with tracing's `%` sigil
+   = note: `#[warn(tracing_to_string_field)]` on by default
+
+warning: tracing field value is allocated with `.to_string()`
+  --> $DIR/main.rs:11:5
+   |
+LL |     info_span!("request", failure = request.error.to_string());
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: record `failure` with tracing's `%` sigil
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,45 @@
+warning: function has ABC size <0, 26, 0> with magnitude 26.00, which exceeds 25.00
+  --> $DIR/main.rs:7:1
+   |
+LL | / fn exceeds_limit() {
+LL | |     call();
+LL | |     call();
+LL | |     call();
+...  |
+LL | |     call();
+LL | | }
+   | |_^
+   |
+   = help: split repeated state changes, calls, or conditions into a focused operation
+   = note: `#[warn(abc_size)]` on by default
+
+warning: function has ABC size <26, 0, 0> with magnitude 26.00, which exceeds 25.00
+  --> $DIR/main.rs:36:1
+   |
+LL | / fn too_many_assignments() {
+LL | |     let _a01 = 1;
+LL | |     let _a02 = 2;
+LL | |     let _a03 = 3;
+...  |
+LL | |     let _a26 = 26;
+LL | | }
+   | |_^
+   |
+   = help: split repeated state changes, calls, or conditions into a focused operation
+
+warning: function has ABC size <0, 0, 26> with magnitude 26.00, which exceeds 25.00
+  --> $DIR/main.rs:65:1
+   |
+LL | / fn too_many_conditions(values: [bool; 26]) {
+LL | |     if values[0] {}
+LL | |     if values[1] {}
+LL | |     if values[2] {}
+...  |
+LL | |     if values[25] {}
+LL | | }
+   | |_^
+   |
+   = help: split repeated state changes, calls, or conditions into a focused operation
+
+warning: 3 warnings emitted
+

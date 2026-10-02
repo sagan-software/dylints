@@ -1,0 +1,33 @@
+warning: fallible `for` loop can use `Iterator::try_for_each`
+  --> $DIR/main.rs:11:5
+   |
+LL | /     for value in values {
+LL | |         write_value(value)?;
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::try_for_each` for this fallible loop
+   = note: `#[warn(manual_try_for_each_loop)]` on by default
+
+warning: fallible `for` loop can use `Iterator::try_for_each`
+  --> $DIR/main.rs:30:5
+   |
+LL | /     for value in values {
+LL | |         optional_action(value)?;
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::try_for_each` for this fallible loop
+
+warning: fallible `for` loop can use `Iterator::try_for_each`
+  --> $DIR/main.rs:44:5
+   |
+LL | /     for value in values {
+LL | |         control_action(value)?;
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::try_for_each` for this fallible loop
+
+warning: 3 warnings emitted
+

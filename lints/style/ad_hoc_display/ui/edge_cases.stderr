@@ -1,0 +1,23 @@
+warning: method `format` looks like ad hoc display formatting
+  --> $DIR/edge_cases.rs:6:5
+   |
+LL | /     fn format(&self) -> String {
+LL | |         self.0.clone()
+LL | |     }
+   | |_____^
+   |
+   = help: implement `std::fmt::Display` when this is the canonical textual representation
+   = note: `#[warn(ad_hoc_display)]` on by default
+
+warning: method `render` looks like ad hoc display formatting
+  --> $DIR/edge_cases.rs:10:5
+   |
+LL | /     fn render(&self) -> String {
+LL | |         self.0.clone()
+LL | |     }
+   | |_____^
+   |
+   = help: implement `std::fmt::Display` when this is the canonical textual representation
+
+warning: 2 warnings emitted
+

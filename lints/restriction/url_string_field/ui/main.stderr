@@ -1,0 +1,27 @@
+warning: URL-like field `callback_url` uses `String`
+  --> $DIR/main.rs:2:19
+   |
+LL |     callback_url: String,
+   |                   ^^^^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
+   = note: `#[warn(url_string_field)]` on by default
+
+warning: URL-like field `webhook_uri` uses `&str`
+  --> $DIR/main.rs:3:18
+   |
+LL |     webhook_uri: &'a str,
+   |                  ^^^^^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
+
+warning: URL-like field `endpoint` uses `&str`
+  --> $DIR/main.rs:4:15
+   |
+LL |     endpoint: &'static str,
+   |               ^^^^^^^^^^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
+
+warning: 3 warnings emitted
+

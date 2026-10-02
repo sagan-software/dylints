@@ -1,0 +1,15 @@
+warning: this project policy disallows the `FixedUpdate` schedule
+  --> $DIR/main.rs:16:21
+   |
+LL |     app.add_systems(FixedUpdate, animate);
+   |                     ^^^^^^^^^^^
+   |
+   = help: move the system to `Update` or another approved schedule
+note: the lint level is defined here
+  --> $DIR/main.rs:9:9
+   |
+LL | #![warn(bevy_disallow_fixed_update_schedule)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: 1 warning emitted
+

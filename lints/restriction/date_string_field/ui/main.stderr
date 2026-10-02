@@ -1,0 +1,67 @@
+warning: date-like field `date_of_birth` uses `String`
+  --> $DIR/main.rs:12:20
+   |
+LL |     date_of_birth: String,
+   |                    ^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+   = note: `#[warn(date_string_field)]` on by default
+
+warning: date-like field `dob` uses `&str`
+  --> $DIR/main.rs:13:10
+   |
+LL |     dob: &'a str,
+   |          ^^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: date-like field `birth_date` uses `String`
+  --> $DIR/main.rs:14:17
+   |
+LL |     birth_date: String,
+   |                 ^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: date-like field `birthdate` uses `String`
+  --> $DIR/main.rs:15:16
+   |
+LL |     birthdate: String,
+   |                ^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: date-like field `created_date` uses `String`
+  --> $DIR/main.rs:16:19
+   |
+LL |     created_date: String,
+   |                   ^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: date-like field `updated_date` uses `&str`
+  --> $DIR/main.rs:17:19
+   |
+LL |     updated_date: &'a str,
+   |                   ^^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: date-like field `expires_date` uses `String`
+  --> $DIR/main.rs:18:19
+   |
+LL |     expires_date: String,
+   |                   ^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: date-like field `renewal_date` uses `String`
+  --> $DIR/main.rs:19:19
+   |
+LL |     renewal_date: String,
+   |                   ^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: 8 warnings emitted
+

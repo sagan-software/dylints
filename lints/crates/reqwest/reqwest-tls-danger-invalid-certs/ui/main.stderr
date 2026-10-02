@@ -1,0 +1,11 @@
+warning: this client trusts invalid certificates for every site
+  --> $DIR/main.rs:5:10
+   |
+LL |         .tls_danger_accept_invalid_certs(true)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep validation enabled and configure explicit certificate roots
+   = note: `#[warn(reqwest_tls_danger_invalid_certs)]` on by default
+
+warning: 1 warning emitted
+

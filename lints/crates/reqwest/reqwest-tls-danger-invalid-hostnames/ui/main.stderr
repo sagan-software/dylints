@@ -1,0 +1,11 @@
+warning: this client accepts certificates issued for different hostnames
+  --> $DIR/main.rs:5:10
+   |
+LL |         .tls_danger_accept_invalid_hostnames(true)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep hostname verification enabled and use a certificate for the requested host
+   = note: `#[warn(reqwest_tls_danger_invalid_hostnames)]` on by default
+
+warning: 1 warning emitted
+

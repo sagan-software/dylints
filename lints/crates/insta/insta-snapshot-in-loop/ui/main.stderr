@@ -1,0 +1,11 @@
+warning: this assertion can visit the same snapshot more than once
+  --> $DIR/main.rs:5:9
+   |
+LL |         insta::assert_debug_snapshot!(value);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use distinct snapshot names or wrap equal repeats in `allow_duplicates!`
+   = note: `#[warn(insta_snapshot_in_loop)]` on by default
+
+warning: 1 warning emitted
+

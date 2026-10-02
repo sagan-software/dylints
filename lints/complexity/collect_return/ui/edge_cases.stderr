@@ -1,0 +1,19 @@
+warning: this `BTreeMap` return value comes from a tail `.collect()` call
+  --> $DIR/edge_cases.rs:10:28
+   |
+LL |     values.iter().copied().collect()
+   |                            ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+   = note: `#[warn(collect_return)]` on by default
+
+warning: this `Vec` return value comes from a tail `.collect()` call
+  --> $DIR/edge_cases.rs:14:28
+   |
+LL |     values.iter().copied().collect::<Vec<_>>()
+   |                            ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,16 @@
+warning: internal import should start with `self::`
+  --> $DIR/main.rs:17:5
+   |
+LL | use nested_parent::child::NestedThing;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add `self::` to this import path: `self::nested_parent::child::NestedThing`
+   |
+   = note: `#[warn(internal_import_self)]` on by default
+
+warning: internal import should start with `self::`
+  --> $DIR/main.rs:18:5
+   |
+LL | use some_internal_thing::Whatever;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add `self::` to this import path: `self::some_internal_thing::Whatever`
+
+warning: 2 warnings emitted
+

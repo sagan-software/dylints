@@ -1,0 +1,11 @@
+warning: `InheritedVisibility` is maintained by Bevy and should not be changed manually
+  --> $DIR/main.rs:13:11
+   |
+LL | fn bad(_: Query<&mut InheritedVisibility>) {}
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: query and mutate `Visibility` instead
+   = note: `#[warn(bevy_inherited_visibility_mutation_query)]` on by default
+
+warning: 1 warning emitted
+

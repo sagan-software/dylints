@@ -1,0 +1,51 @@
+warning: date-like field `dob` uses `&str`
+  --> $DIR/edge_cases.rs:11:10
+   |
+LL |     dob: &'a str,
+   |          ^^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+   = note: `#[warn(date_string_field)]` on by default
+
+warning: date-like field `hire_date` uses `String`
+  --> $DIR/edge_cases.rs:12:16
+   |
+LL |     hire_date: String,
+   |                ^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: date-like field `birth_date` uses `String`
+  --> $DIR/edge_cases.rs:13:17
+   |
+LL |     birth_date: DateText,
+   |                 ^^^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: date-like field `review_date` uses `String`
+  --> $DIR/edge_cases.rs:14:18
+   |
+LL |     review_date: std::string::String,
+   |                  ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: date-like field `renewal_date` uses `&str`
+  --> $DIR/edge_cases.rs:15:19
+   |
+LL |     renewal_date: &'a DateStr,
+   |                   ^^^^^^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: date-like field `approved_date` uses `String`
+  --> $DIR/edge_cases.rs:16:20
+   |
+LL |     approved_date: StdString,
+   |                    ^^^^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: 6 warnings emitted
+

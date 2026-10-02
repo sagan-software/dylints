@@ -1,0 +1,58 @@
+warning: struct `UserProfile` should be the first source-order item after imports in module `user_profile`
+  --> $DIR/main.rs:10:12
+   |
+LL |     struct UserProfile {
+   |            ^^^^^^^^^^^
+   |
+   = help: place the representative type below leading imports and above functions, constants, impls, nested modules, and other source items
+   = note: `#[warn(module_type_first)]` on by default
+
+warning: enum `PaymentStatus` should be the first source-order item after imports in module `payment_status`
+  --> $DIR/main.rs:24:10
+   |
+LL |     enum PaymentStatus {
+   |          ^^^^^^^^^^^^^
+   |
+   = help: place the representative type below leading imports and above functions, constants, impls, nested modules, and other source items
+
+warning: union `RawRecord` should be the first source-order item after imports in module `raw_record`
+  --> $DIR/main.rs:43:11
+   |
+LL |     union RawRecord {
+   |           ^^^^^^^^^
+   |
+   = help: place the representative type below leading imports and above functions, constants, impls, nested modules, and other source items
+
+warning: type alias `RequestId` should be the first source-order item after imports in module `request_id`
+  --> $DIR/main.rs:63:10
+   |
+LL |     type RequestId = u64;
+   |          ^^^^^^^^^
+   |
+   = help: place the representative type below leading imports and above functions, constants, impls, nested modules, and other source items
+
+warning: struct `PublicOrder` should be the first source-order item after imports in module `public_order`
+  --> $DIR/main.rs:75:16
+   |
+LL |     pub struct PublicOrder {
+   |                ^^^^^^^^^^^
+   |
+   = help: place the representative type below leading imports and above functions, constants, impls, nested modules, and other source items
+
+warning: struct `ParentRecord` should be the first source-order item after imports in module `parent_record`
+  --> $DIR/main.rs:89:12
+   |
+LL |     struct ParentRecord;
+   |            ^^^^^^^^^^^^
+   |
+   = help: place the representative type below leading imports and above functions, constants, impls, nested modules, and other source items
+
+warning: struct `ChildRecord` should be the first source-order item after imports in module `child_record`
+  --> $DIR/main.rs:86:16
+   |
+LL |         struct ChildRecord;
+   |                ^^^^^^^^^^^
+   |
+   = help: place the representative type below leading imports and above functions, constants, impls, nested modules, and other source items
+
+warning: 7 warnings emitted

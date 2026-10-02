@@ -1,0 +1,19 @@
+[package]
+name = "workspace-dependency-versions-fixture"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = ["bad_dep", "example_fixture", "path_only_dep", "workspace_dep"]
+
+[workspace.dependencies]
+workspace_dep = { path = "workspace_dep", version = "0.1.0" }
+
+[dependencies]
+bad_dep = { path = "bad_dep", version = "0.1.0" }
+path_only_dep = { path = "path_only_dep" }
+workspace_dep.workspace = true
+
+[[bin]]
+name = "workspace-dependency-versions-fixture"
+path = "main.rs"

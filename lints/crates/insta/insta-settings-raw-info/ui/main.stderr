@@ -1,0 +1,11 @@
+warning: raw snapshot info bypasses redactions
+  --> $DIR/main.rs:4:14
+   |
+LL |     settings.set_raw_info(&content);
+   |              ^^^^^^^^^^^^
+   |
+   = help: use `set_info` when redactions should apply
+   = note: `#[warn(insta_settings_raw_info)]` on by default
+
+warning: 1 warning emitted
+

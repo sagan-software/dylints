@@ -1,0 +1,11 @@
+warning: this channel can buffer until memory is exhausted
+  --> $DIR/main.rs:2:22
+   |
+LL |     let (_tx, _rx) = tokio::sync::mpsc::unbounded_channel::<u8>();
+   |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `mpsc::channel` with an explicit capacity
+   = note: `#[warn(tokio_unbounded_channel)]` on by default
+
+warning: 1 warning emitted
+

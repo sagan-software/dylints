@@ -1,0 +1,11 @@
+warning: `deserialize_any` restricts this code to self-describing formats
+  --> $DIR/main.rs:19:18
+   |
+LL |     deserializer.deserialize_any(AnyVisitor)
+   |                  ^^^^^^^^^^^^^^^
+   |
+   = help: use a typed `deserialize_*` method unless dynamic input is intentional
+   = note: `#[warn(serde_deserialize_any_portability)]` on by default
+
+warning: 1 warning emitted
+

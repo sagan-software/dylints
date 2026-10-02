@@ -1,0 +1,43 @@
+warning: constructor `new` looks like a default value
+  --> $DIR/main.rs:16:5
+   |
+LL | /     fn new() -> Self {
+LL | |         Self { retries: 3 }
+LL | |     }
+   | |_____^
+   |
+   = help: implement `Default` when this is the canonical zero-argument value
+   = note: `#[warn(ad_hoc_default)]` on by default
+
+warning: constructor `empty` looks like a default value
+  --> $DIR/main.rs:20:5
+   |
+LL | /     fn empty() -> Config {
+LL | |         Config { retries: 3 }
+LL | |     }
+   | |_____^
+   |
+   = help: implement `Default` when this is the canonical zero-argument value
+
+warning: constructor `blank` looks like a default value
+  --> $DIR/main.rs:24:5
+   |
+LL | /     fn blank() -> ConfigAlias {
+LL | |         Config { retries: 3 }
+LL | |     }
+   | |_____^
+   |
+   = help: implement `Default` when this is the canonical zero-argument value
+
+warning: constructor `default_config` looks like a default value
+  --> $DIR/main.rs:49:9
+   |
+LL | /         pub fn default_config() -> crate::qualified::Qualified {
+LL | |             Self
+LL | |         }
+   | |_________^
+   |
+   = help: implement `Default` when this is the canonical zero-argument value
+
+warning: 4 warnings emitted
+

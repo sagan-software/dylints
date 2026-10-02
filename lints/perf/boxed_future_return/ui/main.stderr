@@ -1,0 +1,59 @@
+warning: this API returns a boxed future
+  --> $DIR/main.rs:21:17
+   |
+LL | fn refresh() -> Pin<Box<dyn Future<Output = ()> + Send>> {
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: prefer `async fn`, native async trait methods, or `async-trait` unless boxing is req$DIRred
+   = note: `#[warn(boxed_future_return)]` on by default
+
+warning: this API returns a boxed future
+  --> $DIR/main.rs:25:18
+   |
+LL | fn load<'a>() -> BoxFuture<'a, ()> {
+   |                  ^^^^^^^^^^^^^^^^^
+   |
+   = help: prefer `async fn`, native async trait methods, or `async-trait` unless boxing is req$DIRred
+
+warning: this API returns a boxed future
+  --> $DIR/main.rs:29:24
+   |
+LL | fn load_local<'a>() -> LocalBoxFuture<'a, ()> {
+   |                        ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: prefer `async fn`, native async trait methods, or `async-trait` unless boxing is req$DIRred
+
+warning: this API returns a boxed future
+  --> $DIR/main.rs:33:22
+   |
+LL | fn load_job<'a>() -> LocalJob<'a> {
+   |                      ^^^^^^^^^^^^
+   |
+   = help: prefer `async fn`, native async trait methods, or `async-trait` unless boxing is req$DIRred
+
+warning: this API returns a boxed future
+  --> $DIR/main.rs:37:30
+   |
+LL | fn load_fully_qualified() -> Pin<Box<dyn std::future::Future<Output = ()> + Send>> {
+   |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: prefer `async fn`, native async trait methods, or `async-trait` unless boxing is req$DIRred
+
+warning: this API returns a boxed future
+  --> $DIR/main.rs:41:25
+   |
+LL | fn load_box_direct() -> Box<dyn std::future::Future<Output = ()> + Send> {
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: prefer `async fn`, native async trait methods, or `async-trait` unless boxing is req$DIRred
+
+warning: this API returns a boxed future
+  --> $DIR/main.rs:46:29
+   |
+LL |     fn run<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + 'a>>;
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: prefer `async fn`, native async trait methods, or `async-trait` unless boxing is req$DIRred
+
+warning: 7 warnings emitted
+

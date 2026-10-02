@@ -1,0 +1,35 @@
+warning: `serde(flatten)` is not supported with `deny_unknown_fields`
+  --> $DIR/main.rs:18:5
+   |
+LL |     #[serde(flatten)]
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `deny_unknown_fields` from the outer or flattened struct, or avoid `flatten`
+   = note: `#[warn(serde_flatten_deny_unknown_fields)]` on by default
+
+warning: `serde(flatten)` is not supported with `deny_unknown_fields`
+  --> $DIR/main.rs:25:5
+   |
+LL |     #[serde(flatten)]
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `deny_unknown_fields` from the outer or flattened struct, or avoid `flatten`
+
+warning: `serde(flatten)` is not supported with `deny_unknown_fields`
+  --> $DIR/main.rs:45:5
+   |
+LL |     #[serde(flatten)]
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `deny_unknown_fields` from the outer or flattened struct, or avoid `flatten`
+
+warning: `serde(flatten)` is not supported with `deny_unknown_fields`
+  --> $DIR/main.rs:62:5
+   |
+LL |     #[serde(flatten)]
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `deny_unknown_fields` from the outer or flattened struct, or avoid `flatten`
+
+warning: 4 warnings emitted
+

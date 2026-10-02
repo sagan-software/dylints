@@ -1,0 +1,16 @@
+warning: standard map entry match can use `and_modify(...).or_insert_with(...)`
+  --> $DIR/main.rs:5:5
+   |
+LL | /     match map.entry(key) {
+LL | |         Entry::Occupied(mut entry) => *entry.get_mut() += 1,
+LL | |         Entry::Vacant(entry) => {
+LL | |             entry.insert(1);
+LL | |         }
+LL | |     }
+   | |_____^
+   |
+   = help: use `and_modify(...).or_insert_with(...)` for this value-only entry update
+   = note: `#[warn(manual_entry_update)]` on by default
+
+warning: 1 warning emitted
+

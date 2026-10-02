@@ -1,0 +1,11 @@
+warning: this ignored case does not explain why
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(1 => ignore ; "one")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add an ignore reason
+   = note: `#[warn(test_case_ignore_without_reason)]` on by default
+
+warning: 1 warning emitted
+

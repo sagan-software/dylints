@@ -1,0 +1,47 @@
+warning: function `try_token` looks like a fallible conversion
+  --> $DIR/edge_cases.rs:17:1
+   |
+LL | / fn try_token(raw: RawToken) -> Result<Token, Error> {
+LL | |     let _ = raw;
+LL | |     Ok(Token)
+LL | | }
+   | |_^
+   |
+   = help: implement `TryFrom` when the conversion has one canonical meaning
+   = note: `#[warn(ad_hoc_try_from)]` on by default
+
+warning: function `validate_token` looks like a fallible conversion
+  --> $DIR/edge_cases.rs:22:1
+   |
+LL | / fn validate_token(raw: RawToken) -> TokenResult {
+LL | |     let _ = raw;
+LL | |     Ok(Token)
+LL | | }
+   | |_^
+   |
+   = help: implement `TryFrom` when the conversion has one canonical meaning
+
+warning: function `convert_qualified` looks like a fallible conversion
+  --> $DIR/edge_cases.rs:27:1
+   |
+LL | / fn convert_qualified(raw: RawToken) -> std::result::Result<Token, Error> {
+LL | |     let _ = raw;
+LL | |     Ok(Token)
+LL | | }
+   | |_^
+   |
+   = help: implement `TryFrom` when the conversion has one canonical meaning
+
+warning: function `make_token` looks like a fallible conversion
+  --> $DIR/edge_cases.rs:48:5
+   |
+LL | /     fn make_token(raw: RawToken) -> Result<Self, Error> {
+LL | |         let _ = raw;
+LL | |         Ok(Self)
+LL | |     }
+   | |_____^
+   |
+   = help: implement `TryFrom` when the conversion has one canonical meaning
+
+warning: 4 warnings emitted
+

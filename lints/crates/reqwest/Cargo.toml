@@ -1,0 +1,31 @@
+[package]
+name = "reqwest-lints"
+version.workspace = true
+description = "Rust review lints for Reqwest API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dylint_linting.workspace = true
+reqwest_blocking_in_async = { package = "reqwest-blocking-in-async", path = "reqwest-blocking-in-async", features = ["rlib"] }
+reqwest_client_in_loop = { package = "reqwest-client-in-loop", path = "reqwest-client-in-loop", features = ["rlib"] }
+reqwest_client_wrapped_in_shared_pointer = { package = "reqwest-client-wrapped-in-shared-pointer", path = "reqwest-client-wrapped-in-shared-pointer", features = ["rlib"] }
+reqwest_cookie_provider_overridden = { package = "reqwest-cookie-provider-overridden", path = "reqwest-cookie-provider-overridden", features = ["rlib"] }
+reqwest_get_in_loop = { package = "reqwest-get-in-loop", path = "reqwest-get-in-loop", features = ["rlib"] }
+reqwest_multipart_manual_content_type = { package = "reqwest-multipart-manual-content-type", path = "reqwest-multipart-manual-content-type", features = ["rlib"] }
+reqwest_retry_invalid_max_extra_load = { package = "reqwest-retry-invalid-max-extra-load", path = "reqwest-retry-invalid-max-extra-load", features = ["rlib"] }
+reqwest_retry_no_budget = { package = "reqwest-retry-no-budget", path = "reqwest-retry-no-budget", features = ["rlib"] }
+reqwest_tls_danger_invalid_certs = { package = "reqwest-tls-danger-invalid-certs", path = "reqwest-tls-danger-invalid-certs", features = ["rlib"] }
+reqwest_tls_danger_invalid_hostnames = { package = "reqwest-tls-danger-invalid-hostnames", path = "reqwest-tls-danger-invalid-hostnames", features = ["rlib"] }
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

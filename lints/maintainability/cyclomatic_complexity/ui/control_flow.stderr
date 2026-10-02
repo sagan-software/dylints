@@ -1,0 +1,17 @@
+warning: function has Cyclomatic Complexity 11, which exceeds 9
+  --> $DIR/control_flow.rs:3:1
+   |
+LL | / fn control_flow_kinds(input: Option<u8>, a: bool, b: bool) -> Option<u8> {
+LL | |     let value = input?;
+LL | |     while false {}
+LL | |     for _ in 0..1 {}
+...  |
+LL | |     Some(result)
+LL | | }
+   | |_^
+   |
+   = help: split independent decisions into smaller functions or typed state transitions
+   = note: `#[warn(cyclomatic_complexity)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,10 @@
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:6:1
+   |
+LL | #[schemars(deny_unknown_fields)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove the redundant Schemars attribute
+   |
+   = note: `#[warn(schemars_redundant_serde_deny_unknown_fields)]` on by default
+
+warning: 1 warning emitted
+

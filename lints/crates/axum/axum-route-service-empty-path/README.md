@@ -1,0 +1,39 @@
+# axum-route-service-empty-path
+
+## What it does
+
+Checks for `axum::Router::route_service` calls whose path is the empty string
+literal `""`.
+
+## Why is this bad?
+
+Axum route paths must start with `/`. `Router::route_service` panics on an
+empty path when the router is built, so the error shows up only when the
+application starts or a test builds that router. The root route is `"/"`.
+
+## Known problems
+
+The lint checks only a string literal passed directly as the path. It does not
+check paths held in constants or variables, or paths built at runtime.
+
+## Example
+
+```rust
+use axum::Router;
+use tower_http::services::ServeFile;
+
+fn app() -> Router {
+    Router::new().route_service("", ServeFile::new("index.html"))
+}
+```
+
+## Use instead
+
+```rust
+use axum::Router;
+use tower_http::services::ServeFile;
+
+fn app() -> Router {
+    Router::new().route_service("/", ServeFile::new("index.html"))
+}
+```

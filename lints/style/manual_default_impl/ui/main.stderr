@@ -1,0 +1,29 @@
+warning: manual `Default` implementation looks derivable
+  --> $DIR/main.rs:6:1
+   |
+LL | / impl Default for Config {
+LL | |     fn default() -> Self {
+LL | |         Self {
+LL | |             retries: Default::default(),
+...  |
+LL | | }
+   | |_^
+   |
+   = help: use `#[derive(Default)]` when all fields use their own default values
+   = note: `#[warn(manual_default_impl)]` on by default
+
+warning: manual `Default` implementation looks derivable
+  --> $DIR/main.rs:19:1
+   |
+LL | / impl std::default::Default for Qualified {
+LL | |     fn default() -> Self {
+LL | |         Self {
+LL | |             enabled: std::default::Default::default(),
+...  |
+LL | | }
+   | |_^
+   |
+   = help: use `#[derive(Default)]` when all fields use their own default values
+
+warning: 2 warnings emitted
+

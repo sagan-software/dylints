@@ -1,0 +1,19 @@
+warning: `path` attribute outside a conventional crate root file
+  --> $DIR/module.rs:3:1
+   |
+LL | #[path = "auxiliary/support.rs"]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use Rust's standard module file layout, or declare this override from an allowed root file
+   = note: `#[warn(path_attribute_outside_root)]` on by default
+
+warning: `path` attribute outside a conventional crate root file
+  --> $DIR/module.rs:6:19
+   |
+LL | #[cfg_attr(all(), path = "auxiliary/support.rs")]
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use Rust's standard module file layout, or declare this override from an allowed root file
+
+warning: 2 warnings emitted
+

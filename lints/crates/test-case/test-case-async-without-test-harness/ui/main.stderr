@@ -1,0 +1,11 @@
+warning: these generated async functions are not registered as tests
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(1_u8 ; "silently unregistered")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: place an async runtime test attribute after the test-case attributes
+   = note: `#[warn(test_case_async_without_test_harness)]` on by default
+
+warning: 1 warning emitted
+

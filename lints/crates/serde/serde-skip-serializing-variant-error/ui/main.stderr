@@ -1,0 +1,11 @@
+warning: `skip_serializing` makes this variant fail during serialization
+  --> $DIR/main.rs:15:5
+   |
+LL |     #[serde(skip_serializing)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `skip` if the variant should be unavailable both ways, or keep this variant away from serialization
+   = note: `#[warn(serde_skip_serializing_variant_error)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,17 @@
+[package]
+name = "inherits-workspace-lints"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+resolver = "3"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "inherits-workspace-lints"
+path = "main.rs"

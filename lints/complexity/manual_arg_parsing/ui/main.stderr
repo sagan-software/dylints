@@ -1,0 +1,51 @@
+warning: command line arguments are parsed manually
+  --> $DIR/main.rs:20:13
+   |
+LL |     let _ = std::env::args().nth(1);
+   |             ^^^^^^^^^^^^^^
+   |
+   = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
+   = note: `#[warn(manual_arg_parsing)]` on by default
+
+warning: command line arguments are parsed manually
+  --> $DIR/main.rs:21:13
+   |
+LL |     let _ = std::env::args_os().nth(1);
+   |             ^^^^^^^^^^^^^^^^^
+   |
+   = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
+
+warning: command line arguments are parsed manually
+  --> $DIR/main.rs:22:13
+   |
+LL |     let _ = env::args().skip(1);
+   |             ^^^^^^^^^
+   |
+   = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
+
+warning: command line arguments are parsed manually
+  --> $DIR/main.rs:23:13
+   |
+LL |     let _ = env::args_os().skip(1);
+   |             ^^^^^^^^^^^^
+   |
+   = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
+
+warning: command line arguments are parsed manually
+  --> $DIR/main.rs:24:13
+   |
+LL |     let _ = args().skip(1);
+   |             ^^^^
+   |
+   = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
+
+warning: command line arguments are parsed manually
+  --> $DIR/main.rs:25:13
+   |
+LL |     let _ = os_args().skip(1);
+   |             ^^^^^^^
+   |
+   = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
+
+warning: 6 warnings emitted
+

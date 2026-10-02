@@ -1,0 +1,126 @@
+#![allow(dead_code, unused_assignments, unused_variables)]
+
+use std::ops::Not;
+
+type Predicate = bool;
+
+fn consume<T>(_value: T) {}
+
+fn inline_is_empty(values: &[i32]) {
+    let is_empty = values.is_empty();
+    if is_empty {
+        consume(values.len());
+    }
+}
+
+fn inline_bool_alias(values: &[i32]) {
+    let is_ready: Predicate = values.len() > 1;
+    if is_ready {
+        consume(values.len());
+    }
+}
+
+fn inline_has_items(count: usize) {
+    let has_items = count > 0;
+    if has_items {
+        consume(count);
+    }
+}
+
+fn inline_contains_value(values: &[i32], needle: i32) {
+    let contains_value = values.contains(&needle);
+    if contains_value {
+        consume(needle);
+    }
+}
+
+fn keep_while_condition(count: usize) {
+    let has_items = count > 0;
+    while has_items {
+        break;
+    }
+}
+
+fn inline_boolean_chain(name: &str, count: usize) {
+    let is_valid = !name.is_empty() && count > 0;
+    if is_valid {
+        consume(name);
+    }
+}
+
+fn keep_domain_concept(is_verified: bool, is_hold_expired: bool) {
+    let can_release_funds = is_verified && is_hold_expired;
+    if can_release_funds {
+        consume(());
+    }
+}
+
+fn keep_multiple_uses(values: &[i32]) {
+    let is_empty = values.is_empty();
+    if is_empty {
+        consume(values.len());
+    }
+    if is_empty {
+        consume(0);
+    }
+}
+
+fn keep_mutated_binding(values: &[i32]) {
+    let mut is_empty = values.is_empty();
+    is_empty = false;
+    if is_empty {
+        consume(values.len());
+    }
+}
+
+fn keep_body_use(values: &[i32]) {
+    let is_empty = values.is_empty();
+    if is_empty {
+        consume(is_empty);
+    }
+}
+
+fn keep_rechecked_while(values: &mut Vec<i32>) {
+    let has_items = !values.is_empty();
+    while has_items {
+        values.pop();
+    }
+}
+
+struct PredicateLookalike(bool);
+
+impl Not for PredicateLookalike {
+    type Output = bool;
+
+    fn not(self) -> Self::Output {
+        !self.0
+    }
+}
+
+fn is_ready() -> PredicateLookalike {
+    PredicateLookalike(true)
+}
+
+fn keep_non_bool_lookalike() {
+    let is_ready = is_ready();
+    if !is_ready {
+        consume(());
+    }
+}
+
+struct Config;
+
+impl Config {
+    fn ready(&self) -> bool {
+        true
+    }
+}
+
+fn keep_non_predicate_initializer(config: &Config) {
+    let is_ready = config.ready();
+    if is_ready {
+        consume(());
+    }
+}
+
+fn main() {}

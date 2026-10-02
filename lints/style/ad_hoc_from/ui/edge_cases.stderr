@@ -1,0 +1,25 @@
+warning: function `from_raw_token` looks like an infallible conversion
+  --> $DIR/edge_cases.rs:6:1
+   |
+LL | / fn from_raw_token(raw: RawToken) -> Token {
+LL | |     let _ = raw;
+LL | |     Token
+LL | | }
+   | |_^
+   |
+   = help: implement `From` when the conversion has one canonical meaning
+   = note: `#[warn(ad_hoc_from)]` on by default
+
+warning: function `make_policy_token` looks like an infallible conversion
+  --> $DIR/edge_cases.rs:16:1
+   |
+LL | / fn make_policy_token(raw: RawToken) -> Token {
+LL | |     let _ = raw;
+LL | |     Token
+LL | | }
+   | |_^
+   |
+   = help: implement `From` when the conversion has one canonical meaning
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,19 @@
+warning: this recursive type is configured to inline its schema
+  --> $DIR/main.rs:12:1
+   |
+LL | struct InlineNode {
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `#[schemars(inline)]` or return `false` from `inline_schema`
+   = note: `#[warn(schemars_recursive_inline_schema)]` on by default
+
+warning: this recursive type is configured to inline its schema
+  --> $DIR/main.rs:18:1
+   |
+LL | struct ManualInlineNode {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `#[schemars(inline)]` or return `false` from `inline_schema`
+
+warning: 2 warnings emitted
+

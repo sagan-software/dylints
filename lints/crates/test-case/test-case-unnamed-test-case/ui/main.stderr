@@ -1,0 +1,11 @@
+warning: this case has no explicit display name
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(1)]
+   | ^^^^^^^^^^^^^^^
+   |
+   = help: add a descriptive case comment after `;`
+   = note: `#[warn(test_case_unnamed_test_case)]` on by default
+
+warning: 1 warning emitted
+

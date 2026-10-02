@@ -1,0 +1,11 @@
+warning: this query fetches component values but only checks presence or count
+  --> $DIR/main.rs:6:15
+   |
+LL | fn bad(query: Query<&Enemy>) {
+   |               ^^^^^^^^^^^^^
+   |
+   = help: use an Entity query with a With<T> filter
+   = note: `#[warn(bevy_presence_only_query_fetch)]` on by default
+
+warning: 1 warning emitted
+

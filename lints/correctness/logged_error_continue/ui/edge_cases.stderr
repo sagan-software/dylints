@@ -1,0 +1,11 @@
+warning: this error branch only logs the failure and then continues
+  --> $DIR/edge_cases.rs:29:9
+   |
+LL |         Err(error) => {
+   |         ^^^^^^^^^^
+   |
+   = help: return the error or use `?` so the caller receives the failure
+   = note: `#[warn(logged_error_continue)]` on by default
+
+warning: 1 warning emitted
+

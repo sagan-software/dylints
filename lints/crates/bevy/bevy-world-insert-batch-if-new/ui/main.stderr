@@ -1,0 +1,11 @@
+warning: `World::insert_batch_if_new` panics when an entity does not exist
+  --> $DIR/main.rs:16:11
+   |
+LL |     world.insert_batch_if_new([(Entity::PLACEHOLDER, Marker)]);
+   |           ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `World::try_insert_batch_if_new` and handle the fallible result
+   = note: `#[warn(bevy_world_insert_batch_if_new)]` on by default
+
+warning: 1 warning emitted
+

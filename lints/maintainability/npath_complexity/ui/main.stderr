@@ -1,0 +1,17 @@
+warning: function has NPath complexity 512, which exceeds 200
+  --> $DIR/main.rs:3:1
+   |
+LL | / fn too_many_paths(values: [bool; 9]) {
+LL | |     if values[0] {}
+LL | |     if values[1] {}
+LL | |     if values[2] {}
+...  |
+LL | |     if values[8] {}
+LL | | }
+   | |_^
+   |
+   = help: split independent branching stages into separate functions
+   = note: `#[warn(npath_complexity)]` on by default
+
+warning: 1 warning emitted
+

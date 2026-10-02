@@ -1,0 +1,22 @@
+[package]
+name = "separators-and-dotted"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+zeta_dep.path = "../zeta_dep"
+alpha_dep.path = "../alpha_dep"
+
+gamma_dep.path = "../gamma_dep"
+# comment separators allow independently sorted groups
+beta_dep.path = "../beta_dep"
+
+[target.'cfg(unix)'.dependencies]
+unix_zeta_dep.path = "../unix_zeta_dep"
+unix_alpha_dep.path = "../unix_alpha_dep"
+
+[lib]
+path = "lib.rs"
+
+[workspace]
+resolver = "3"

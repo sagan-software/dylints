@@ -1,0 +1,11 @@
+warning: JSON snapshots make review diffs less reliable
+  --> $DIR/main.rs:2:5
+   |
+LL |     insta::assert_json_snapshot!(vec![1, 2, 3]);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: prefer `assert_yaml_snapshot!` unless exact JSON wire formatting is the subject
+   = note: `#[warn(insta_json_snapshot)]` on by default
+
+warning: 1 warning emitted
+

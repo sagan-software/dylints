@@ -1,0 +1,13 @@
+warning: method `borrow_token` looks like a `Borrow` accessor
+  --> $DIR/edge_cases.rs:6:5
+   |
+LL | /     fn borrow_token(&self) -> &String {
+LL | |         &self.0
+LL | |     }
+   | |_____^
+   |
+   = help: implement `std::borrow::Borrow<T>` only when equality and hashing match the borrowed view
+   = note: `#[warn(ad_hoc_borrow)]` on by default
+
+warning: 1 warning emitted
+

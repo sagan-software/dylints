@@ -1,0 +1,27 @@
+warning: this grouped Clap argument has no value-count boundary
+  --> $DIR/main.rs:8:5
+   |
+LL |     pairs: Vec<Vec<String>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `#[arg(num_args = ...)]` to define the values in each occurrence
+   = note: `#[warn(clap_derive_vec_vec_without_num_args)]` on by default
+
+warning: this grouped Clap argument has no value-count boundary
+  --> $DIR/main.rs:10:5
+   |
+LL |     optional_pairs: Option<Vec<Vec<String>>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `#[arg(num_args = ...)]` to define the values in each occurrence
+
+warning: this grouped Clap argument has no value-count boundary
+  --> $DIR/main.rs:15:5
+   |
+LL |     values: Vec<Vec<String>>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `#[arg(num_args = ...)]` to define the values in each occurrence
+
+warning: 3 warnings emitted
+

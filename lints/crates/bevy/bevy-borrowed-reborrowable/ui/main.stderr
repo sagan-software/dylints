@@ -1,0 +1,11 @@
+warning: Bevy `Query` already supports reborrowing
+  --> $DIR/main.rs:15:11
+   |
+LL | fn bad(_: &mut Query<&Marker>) {}
+   |           ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+   = note: `#[warn(bevy_borrowed_reborrowable)]` on by default
+
+warning: 1 warning emitted
+

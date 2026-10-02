@@ -1,0 +1,27 @@
+warning: timestamp-like field `updated_at_epoch_ms` uses integer `i128`
+  --> $DIR/edge_cases.rs:6:26
+   |
+LL |     updated_at_epoch_ms: i128,
+   |                          ^^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+   = note: `#[warn(datetime_integer_field)]` on by default
+
+warning: timestamp-like field `deleted_timestamp` uses integer `u32`
+  --> $DIR/edge_cases.rs:7:24
+   |
+LL |     deleted_timestamp: u32,
+   |                        ^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: timestamp-like field `expires_at_ts` uses integer `i64`
+  --> $DIR/edge_cases.rs:8:20
+   |
+LL |     expires_at_ts: i64,
+   |                    ^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: 3 warnings emitted
+

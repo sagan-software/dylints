@@ -1,0 +1,2 @@
+[alias]
+web = "run --package sagan-lints-web --"

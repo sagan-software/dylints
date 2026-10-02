@@ -1,0 +1,22 @@
+warning: this span scope ends before the returned future is polled
+  --> $DIR/main.rs:9:23
+   |
+LL |     let future = span.in_scope(|| async { work().await });
+   |                       ^^^^^^^^
+   |
+   = help: attach the span with `Future::instrument` instead
+   = note: `#[warn(tracing_async_block_in_sync_scope)]` on by default
+
+warning: this subscriber scope ends before the returned future is polled
+  --> $DIR/main.rs:14:18
+   |
+LL |       let future = subscriber::with_default(subscriber::NoSubscriber::default(), || async {
+   |  __________________^
+LL | |         work().await;
+LL | |     });
+   | |______^
+   |
+   = help: attach the subscriber with `WithSubscriber::with_subscriber` instead
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,11 @@
+warning: this nested tracing instrumentation is redundant
+  --> $DIR/main.rs:10:10
+   |
+LL |         .in_current_span()
+   |          ^^^^^^^^^^^^^^^
+   |
+   = help: pass `span.or_current()` to `instrument` and remove `in_current_span`
+   = note: `#[warn(tracing_redundant_in_current_span)]` on by default
+
+warning: 1 warning emitted
+

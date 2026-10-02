@@ -1,0 +1,11 @@
+warning: Rust crate has 7 non-test lines (limit: 5)
+  --> $DIR/aggregate_main.rs:1:1
+   |
+LL | #[path = "auxiliary/aggregate_module.rs"]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: create new crates to split large crates into smaller crates by responsibility
+   = note: `#[warn(large_rust_crate)]` on by default
+
+warning: 1 warning emitted
+

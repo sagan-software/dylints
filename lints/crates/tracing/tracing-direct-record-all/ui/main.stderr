@@ -1,0 +1,11 @@
+warning: direct `Span::record_all` calls use a hidden tracing API
+  --> $DIR/main.rs:8:14
+   |
+LL |         span.record_all(&tracing::valueset!(metadata.fields(), answer = 42));
+   |              ^^^^^^^^^^
+   |
+   = help: use the supported `tracing::record_all!` macro
+   = note: `#[warn(tracing_direct_record_all)]` on by default
+
+warning: 1 warning emitted
+

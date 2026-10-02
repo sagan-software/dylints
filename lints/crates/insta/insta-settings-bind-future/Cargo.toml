@@ -1,0 +1,31 @@
+[package]
+name = "insta-settings-bind-future"
+version.workspace = true
+description = "A lint to check for futures returned from synchronous Insta settings bindings"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dylint_linting.workspace = true
+dylint_support = { package = "dylint-support", path = "../../../../support/dylint" }
+insta_support = { package = "insta-support", path = "../support" }
+
+[dev-dependencies]
+dylint_testing.workspace = true
+insta.workspace = true
+
+[[example]]
+name = "main"
+path = "ui/main.rs"
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

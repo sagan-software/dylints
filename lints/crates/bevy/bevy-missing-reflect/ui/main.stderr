@@ -1,0 +1,15 @@
+warning: this Bevy domain type does not implement `Reflect`
+  --> $DIR/main.rs:15:1
+   |
+LL | struct Missing;
+   | ^^^^^^^^^^^^^^
+   |
+   = help: derive `Reflect`
+note: the lint level is defined here
+  --> $DIR/main.rs:9:9
+   |
+LL | #![warn(bevy_missing_reflect)]
+   |         ^^^^^^^^^^^^^^^^^^^^
+
+warning: 1 warning emitted
+

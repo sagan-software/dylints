@@ -1,0 +1,10 @@
+warning: Insta `Content::as_*` accessors already resolve wrappers
+  --> $DIR/main.rs:6:5
+   |
+LL |     content.resolve_inner().as_str()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^ help: call the accessor directly on the original `Content` value: `content`
+   |
+   = note: `#[warn(insta_redundant_content_resolve_inner)]` on by default
+
+warning: 1 warning emitted
+

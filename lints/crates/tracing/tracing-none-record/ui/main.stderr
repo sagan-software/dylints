@@ -1,0 +1,11 @@
+warning: recording on `Span::none()` has no effect
+  --> $DIR/main.rs:4:18
+   |
+LL |     Span::none().record("field", 1);
+   |                  ^^^^^^
+   |
+   = help: remove the record or create an enabled span
+   = note: `#[warn(tracing_none_record)]` on by default
+
+warning: 1 warning emitted
+

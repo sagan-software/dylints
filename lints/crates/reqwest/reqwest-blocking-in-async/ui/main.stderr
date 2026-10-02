@@ -1,0 +1,27 @@
+warning: Reqwest's blocking API can panic and block the executor in an async body
+  --> $DIR/main.rs:4:21
+   |
+LL |     let _response = reqwest::blocking::get("https://example.com")?;
+   |                     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use the asynchronous Reqwest API, or move the whole operation into `spawn_blocking`
+   = note: `#[warn(reqwest_blocking_in_async)]` on by default
+
+warning: Reqwest's blocking API can panic and block the executor in an async body
+  --> $DIR/main.rs:6:18
+   |
+LL |     let client = reqwest::blocking::Client::new();
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use the asynchronous Reqwest API, or move the whole operation into `spawn_blocking`
+
+warning: Reqwest's blocking API can panic and block the executor in an async body
+  --> $DIR/main.rs:7:55
+   |
+LL |     let _response = client.get("https://example.com").send()?;
+   |                                                       ^^^^
+   |
+   = help: use the asynchronous Reqwest API, or move the whole operation into `spawn_blocking`
+
+warning: 3 warnings emitted
+

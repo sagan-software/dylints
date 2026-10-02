@@ -1,0 +1,35 @@
+warning: Tokio interval period must be greater than zero
+  --> $DIR/main.rs:7:22
+   |
+LL |     let _ = interval(Duration::ZERO);
+   |                      ^^^^^^^^^^^^^^
+   |
+   = help: use a positive duration
+   = note: `#[warn(tokio_zero_duration_interval)]` on by default
+
+warning: Tokio interval period must be greater than zero
+  --> $DIR/main.rs:8:22
+   |
+LL |     let _ = interval(Duration::from_secs(0));
+   |                      ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a positive duration
+
+warning: Tokio interval period must be greater than zero
+  --> $DIR/main.rs:9:22
+   |
+LL |     let _ = interval(Duration::new(0, 0));
+   |                      ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a positive duration
+
+warning: Tokio interval period must be greater than zero
+  --> $DIR/main.rs:10:41
+   |
+LL |     let _ = interval_at(Instant::now(), Duration::from_millis(0));
+   |                                         ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a positive duration
+
+warning: 4 warnings emitted
+

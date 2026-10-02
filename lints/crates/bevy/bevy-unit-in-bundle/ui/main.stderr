@@ -1,0 +1,11 @@
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:16:26
+   |
+LL |     world.spawn((Marker, ()));
+   |                          ^^
+   |
+   = help: remove the unit value or use `spawn_empty` for an empty spawn
+   = note: `#[warn(bevy_unit_in_bundle)]` on by default
+
+warning: 1 warning emitted
+

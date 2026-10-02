@@ -1,0 +1,17 @@
+warning: function has 5 explicit or desugared exit points, which exceeds 4
+  --> $DIR/main.rs:5:1
+   |
+LL | / fn exceeds_limit(values: [Option<u8>; 3]) -> Option<u8> {
+LL | |     let first = values[0]?;
+LL | |     let second = values[1]?;
+LL | |     let third = values[2]?;
+...  |
+LL | |     Some(third)
+LL | | }
+   | |_^
+   |
+   = help: keep useful guard clauses and extract independent fallible stages
+   = note: `#[warn(many_exit_points)]` on by default
+
+warning: 1 warning emitted
+

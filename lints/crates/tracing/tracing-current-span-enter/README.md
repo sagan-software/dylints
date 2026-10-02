@@ -1,0 +1,35 @@
+# tracing-current-span-enter
+
+## What it does
+
+Checks for `enter` called directly on `tracing::Span::current()`.
+
+## Why is this bad?
+
+`Span::current()` returns the span that is already entered. Entering it again
+does not change which span is current, so the guard does nothing. The guard
+also suggests a scope boundary that does not exist.
+
+## Known problems
+
+The lint only checks a direct `Span::current().enter()` chain. It does not
+follow the span through a local binding, a field, or a helper function.
+
+## Example
+
+```rust
+fn handle() {
+    let _ = tracing::Span::current().enter();
+    work();
+}
+```
+
+## Use instead
+
+Remove the guard:
+
+```rust
+fn handle() {
+    work();
+}
+```

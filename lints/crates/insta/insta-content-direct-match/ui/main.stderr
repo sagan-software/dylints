@@ -1,0 +1,11 @@
+warning: direct matching can miss Insta's internal wrapper variants
+  --> $DIR/main.rs:6:11
+   |
+LL |     match content {
+   |           ^^^^^^^
+   |
+   = help: use a `Content::as_*` accessor, or match on `resolve_inner()`
+   = note: `#[warn(insta_content_direct_match)]` on by default
+
+warning: 1 warning emitted
+

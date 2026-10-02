@@ -1,0 +1,11 @@
+warning: owned parameter `request` is only borrowed to clone fields into the returned struct
+  --> $DIR/edge_cases.rs:16:24
+   |
+LL | fn clones_three_fields(request: Request) -> Response {
+   |                        ^^^^^^^
+   |
+   = help: consume the input by destructuring it, or take it by reference if cloning is intentional
+   = note: `#[warn(owned_input_field_clones)]` on by default
+
+warning: 1 warning emitted
+

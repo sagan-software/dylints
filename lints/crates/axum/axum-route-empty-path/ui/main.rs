@@ -1,0 +1,10 @@
+#![allow(dead_code)]
+
+use axum::{Router, routing::get};
+
+fn routes() {
+    let _: Router = Router::new().route("", get(|| async {}));
+    let _: Router = Router::new().route("/", get(|| async {}));
+}
+
+fn main() {}

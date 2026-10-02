@@ -1,0 +1,13 @@
+[package]
+name = "workspace-lints-inheritance-fixture"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[[bin]]
+name = "workspace-lints-inheritance-fixture"
+path = "main.rs"

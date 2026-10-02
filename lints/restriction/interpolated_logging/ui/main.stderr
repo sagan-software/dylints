@@ -1,0 +1,27 @@
+warning: logging message uses string interpolation
+  --> $DIR/main.rs:20:11
+   |
+LL |     info!("user {} logged in", user_id);
+   |           ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put runtime values in structured key/value fields and keep the message static
+   = note: `#[warn(interpolated_logging)]` on by default
+
+warning: logging message uses string interpolation
+  --> $DIR/main.rs:21:11
+   |
+LL |     warn!("request failed for {user_id}");
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put runtime values in structured key/value fields and keep the message static
+
+warning: logging message uses string interpolation
+  --> $DIR/main.rs:31:9
+   |
+LL |         "stage={} step={} living={}/{} food={} well={:.2} observations={} global_state={}",
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put runtime values in structured key/value fields and keep the message static
+
+warning: 3 warnings emitted
+

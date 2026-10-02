@@ -1,0 +1,27 @@
+warning: public serde struct `PaginatedResponse` is missing a schema derive
+  --> $DIR/edge_cases.rs:7:12
+   |
+LL | pub struct PaginatedResponse<T> {
+   |            ^^^^^^^^^^^^^^^^^
+   |
+   = help: derive `schemars::JsonSchema` so Rust, JSON Schema, and docs stay aligned
+   = note: `#[warn(public_serde_schema_derive)]` on by default
+
+warning: public serde struct `QualifiedSerdeMissingSchema` is missing a schema derive
+  --> $DIR/edge_cases.rs:13:12
+   |
+LL | pub struct QualifiedSerdeMissingSchema {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: derive `schemars::JsonSchema` so Rust, JSON Schema, and docs stay aligned
+
+warning: public serde enum `NestedMissingSchema` is missing a schema derive
+  --> $DIR/edge_cases.rs:31:14
+   |
+LL |     pub enum NestedMissingSchema {
+   |              ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: derive `schemars::JsonSchema` so Rust, JSON Schema, and docs stay aligned
+
+warning: 3 warnings emitted
+

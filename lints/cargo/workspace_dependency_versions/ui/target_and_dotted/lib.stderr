@@ -1,0 +1,19 @@
+warning: dependency `dotted_dep` specifies an explicit version instead of inheriting from `[workspace.dependencies]`
+  --> $DIR/lib.rs:3:1
+   |
+LL | pub fn marker() {}
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: move the version for `dotted_dep` into `[workspace.dependencies]` and use `dotted_dep.workspace = true` here
+   = note: `#[warn(workspace_dependency_versions)]` on by default
+
+warning: dependency `target_bad` specifies an explicit version instead of inheriting from `[workspace.dependencies]`
+  --> $DIR/lib.rs:3:1
+   |
+LL | pub fn marker() {}
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: move the version for `target_bad` into `[workspace.dependencies]` and use `target_bad.workspace = true` here
+
+warning: 2 warnings emitted
+

@@ -1,0 +1,11 @@
+warning: `GlobalTransform` is maintained by Bevy and cannot be mutated directly
+  --> $DIR/main.rs:13:11
+   |
+LL | fn bad(_: Query<&mut GlobalTransform>) {}
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: query and mutate `Transform` instead
+   = note: `#[warn(bevy_global_transform_mutation_query)]` on by default
+
+warning: 1 warning emitted
+

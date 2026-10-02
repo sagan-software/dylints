@@ -1,0 +1,11 @@
+warning: a zero-sized pool cannot acquire a connection
+  --> $DIR/main.rs:4:25
+   |
+LL |     let _ = PoolOptions.max_connections(0);
+   |                         ^^^^^^^^^^^^^^^
+   |
+   = help: configure at least one maximum connection
+   = note: `#[warn(sqlx_zero_max_connections)]` on by default
+
+warning: 1 warning emitted
+

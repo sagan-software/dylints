@@ -1,0 +1,14 @@
+warning: tracing field value is allocated with `format!`
+  --> $DIR/main.rs:6:5
+   |
+LL | /     info!(
+LL | |         request = format!("{request_id}:{status}"),
+LL | |         label = format!("request-{request_id}")
+LL | |     );
+   | |_____^
+   |
+   = help: record the inputs to `request, label` as separate fields, using `%` or `?` when needed
+   = note: `#[warn(tracing_format_field)]` on by default
+
+warning: 1 warning emitted
+

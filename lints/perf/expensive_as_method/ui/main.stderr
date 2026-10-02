@@ -1,0 +1,53 @@
+warning: inherent method `as_string` does work that should not hide behind `as_*`
+  --> $DIR/main.rs:17:5
+   |
+LL | /     fn as_string(&self) -> String {
+LL | |         self.raw.clone()
+LL | |     }
+   | |_____^
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+   = note: `#[warn(expensive_as_method)]` on by default
+
+warning: inherent method `as_number` does work that should not hide behind `as_*`
+  --> $DIR/main.rs:21:5
+   |
+LL | /     fn as_number(&self) -> Result<u64, ParseError> {
+LL | |         self.raw.parse().map_err(|_| ParseError)
+LL | |     }
+   | |_____^
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+
+warning: inherent method `as_optional_number` does work that should not hide behind `as_*`
+  --> $DIR/main.rs:25:5
+   |
+LL | /     fn as_optional_number(&self) -> Option<u64> {
+LL | |         self.raw.parse().ok()
+LL | |     }
+   | |_____^
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+
+warning: inherent method `as_display_value` does work that should not hide behind `as_*`
+  --> $DIR/main.rs:29:5
+   |
+LL | /     fn as_display_value(&self) -> String {
+LL | |         format!("token: {}", self.raw)
+LL | |     }
+   | |_____^
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+
+warning: inherent method `as_decoded` does work that should not hide behind `as_*`
+  --> $DIR/main.rs:33:5
+   |
+LL | /     fn as_decoded(&self) -> Vec<u8> {
+LL | |         decode(&self.raw)
+LL | |     }
+   | |_____^
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+
+warning: 5 warnings emitted
+

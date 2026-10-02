@@ -1,0 +1,59 @@
+warning: local struct `StatusCode` duplicates a well-known semantic type
+  --> $DIR/main.rs:1:8
+   |
+LL | struct StatusCode(u16);
+   |        ^^^^^^^^^^
+   |
+   = help: use `http::StatusCode` or `reqwest::StatusCode`
+   = note: `#[warn(custom_well_known_type)]` on by default
+
+warning: local enum `HttpMethod` duplicates a well-known semantic type
+  --> $DIR/main.rs:3:6
+   |
+LL | enum HttpMethod {
+   |      ^^^^^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: local type alias `Url` duplicates a well-known semantic type
+  --> $DIR/main.rs:8:6
+   |
+LL | type Url = String;
+   |      ^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or another established URL type
+
+warning: local struct `EmailAddress` duplicates a well-known semantic type
+  --> $DIR/main.rs:10:8
+   |
+LL | struct EmailAddress(String);
+   |        ^^^^^^^^^^^^
+   |
+   = help: use an established email address type or a validated boundary newtype with a project-specific name
+
+warning: local struct `PathBuf` duplicates a well-known semantic type
+  --> $DIR/main.rs:12:8
+   |
+LL | struct PathBuf(String);
+   |        ^^^^^^^
+   |
+   = help: use `std::path::PathBuf`
+
+warning: local type alias `Duration` duplicates a well-known semantic type
+  --> $DIR/main.rs:14:6
+   |
+LL | type Duration = u64;
+   |      ^^^^^^^^
+   |
+   = help: use `std::time::Duration`
+
+warning: local type alias `Instant` duplicates a well-known semantic type
+  --> $DIR/main.rs:17:6
+   |
+LL | type Instant = Millis;
+   |      ^^^^^^^
+   |
+   = help: use `std::time::Instant`
+
+warning: 7 warnings emitted
+

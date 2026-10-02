@@ -1,0 +1,75 @@
+warning: `thiserror` display message formats `self` recursively
+  --> $DIR/main.rs:9:1
+   |
+LL | #[error("invalid error: {self}")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: format a concrete field, or remove `{self}` from the message
+   = note: `#[warn(thiserror_self_display_recursion)]` on by default
+
+warning: `thiserror` display message formats `self` recursively
+  --> $DIR/main.rs:15:1
+   |
+LL | #[error("imported error: {self}")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: format a concrete field, or remove `{self}` from the message
+
+warning: `thiserror` display message formats `self` recursively
+  --> $DIR/main.rs:21:1
+   |
+LL | #[error("renamed error: {self:}")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: format a concrete field, or remove `{self}` from the message
+
+warning: function cannot return without recursing
+  --> $DIR/main.rs:9:9
+   |
+LL | #[error("invalid error: {self}")]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   |         |
+   |         cannot return without recursing
+   |         recursive call site
+   |
+   = help: a `loop` may express intention better if this is on purpose
+note: the lint level is defined here
+  --> $DIR/main.rs:9:9
+   |
+LL | #[error("invalid error: {self}")]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function cannot return without recursing
+  --> $DIR/main.rs:15:9
+   |
+LL | #[error("imported error: {self}")]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+   |         |
+   |         cannot return without recursing
+   |         recursive call site
+   |
+   = help: a `loop` may express intention better if this is on purpose
+note: the lint level is defined here
+  --> $DIR/main.rs:15:9
+   |
+LL | #[error("imported error: {self}")]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function cannot return without recursing
+  --> $DIR/main.rs:21:9
+   |
+LL | #[error("renamed error: {self:}")]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+   |         |
+   |         cannot return without recursing
+   |         recursive call site
+   |
+   = help: a `loop` may express intention better if this is on purpose
+note: the lint level is defined here
+  --> $DIR/main.rs:21:9
+   |
+LL | #[error("renamed error: {self:}")]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: 6 warnings emitted
+

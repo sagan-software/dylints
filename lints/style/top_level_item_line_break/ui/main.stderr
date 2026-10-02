@@ -1,0 +1,19 @@
+warning: top-level items should have a line break between them
+  --> $DIR/main.rs:5:36
+   |
+LL |     fn same_line_nested_first() {} fn same_line_nested_second() {}
+   |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put this item on a new line
+   = note: `#[warn(top_level_item_line_break)]` on by default
+
+warning: top-level items should have a line break between them
+  --> $DIR/main.rs:6:33
+   |
+LL |     struct SameLineStructFirst; struct SameLineStructSecond;
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put this item on a new line
+
+warning: 2 warnings emitted
+

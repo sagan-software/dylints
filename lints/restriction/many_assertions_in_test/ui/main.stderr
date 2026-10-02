@@ -1,0 +1,28 @@
+warning: test has 4 assertions
+  --> $DIR/main.rs:4:1
+   |
+LL | / fn test_renders_report() {
+LL | |     let report = "Summary Total Details Footer";
+LL | |
+LL | |     assert!(report.contains("Summary"));
+...  |
+LL | |     assert!(report.contains("Footer"));
+LL | | }
+   | |_^
+   |
+   = help: use `insta` when many assertions describe one structured output contract
+   = note: `#[warn(many_assertions_in_test)]` on by default
+
+warning: test has 4 assertions
+  --> $DIR/main.rs:19:1
+   |
+LL | / fn test_assertions_nested_in_statements() {
+LL | |     let report = ("Summary", 4, true, "Footer");
+...  |
+LL | | }
+   | |_^
+   |
+   = help: use `insta` when many assertions describe one structured output contract
+
+warning: 2 warnings emitted
+

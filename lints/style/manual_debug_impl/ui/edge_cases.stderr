@@ -1,0 +1,16 @@
+warning: manual `Debug` implementation looks derivable
+  --> $DIR/edge_cases.rs:7:1
+   |
+LL | / impl Debug for Point {
+LL | |     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+LL | |         f.debug_tuple("Point")
+LL | |             .field(&self.0)
+...  |
+LL | | }
+   | |_^
+   |
+   = help: use `#[derive(Debug)]` unless the implementation intentionally redacts or customizes output
+   = note: `#[warn(manual_debug_impl)]` on by default
+
+warning: 1 warning emitted
+

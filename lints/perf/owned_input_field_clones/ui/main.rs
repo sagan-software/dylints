@@ -1,0 +1,116 @@
+#![allow(dead_code, unused_variables)]
+
+struct Input {
+    id: String,
+    name: String,
+    note: String,
+}
+
+struct Output {
+    id: String,
+    name: String,
+    note: String,
+}
+
+struct Wrapped {
+    id: String,
+    name: String,
+    original: Input,
+}
+
+type InputRef<'a> = &'a Input;
+
+fn clones_owned_input(input: Input) -> Output {
+    Output {
+        id: input.id.clone(),
+        name: input.name.clone(),
+        note: input.note.clone(),
+    }
+}
+
+fn borrowed_input(input: InputRef<'_>) -> Output {
+    Output {
+        id: input.id.clone(),
+        name: input.name.clone(),
+        note: String::new(),
+    }
+}
+
+fn clones_unrelated_value(input: Input) -> Output {
+    let input = replacement_input();
+
+    Output {
+        id: input.id.clone(),
+        name: input.name.clone(),
+        note: String::new(),
+    }
+}
+
+fn similar_assignment_shape_source_differs(input: Input) -> Output {
+    let source = replacement_input();
+
+    Output {
+        id: source.id.clone(),
+        name: source.name.clone(),
+        note: input.note,
+    }
+}
+
+fn single_clone(input: Input) -> Output {
+    Output {
+        id: input.id.clone(),
+        name: input.name,
+        note: String::new(),
+    }
+}
+
+fn moves_input(input: Input) -> Wrapped {
+    Wrapped {
+        id: input.id.clone(),
+        name: input.name.clone(),
+        original: input,
+    }
+}
+
+fn custom_clone_method(input: CloneLike) -> CloneLikeOutput {
+    CloneLikeOutput {
+        id: input.id.clone(),
+        name: input.name.clone(),
+    }
+}
+
+fn destructured_input(Input { id, name, note }: Input) -> Output {
+    Output {
+        id: id.clone(),
+        name: name.clone(),
+        note,
+    }
+}
+
+struct CloneLike {
+    id: InherentClone,
+    name: InherentClone,
+}
+
+struct CloneLikeOutput {
+    id: String,
+    name: String,
+}
+
+struct InherentClone(String);
+
+impl InherentClone {
+    fn clone(&self) -> String {
+        self.0.clone()
+    }
+}
+
+fn replacement_input() -> Input {
+    Input {
+        id: String::new(),
+        name: String::new(),
+        note: String::new(),
+    }
+}
+
+fn main() {}

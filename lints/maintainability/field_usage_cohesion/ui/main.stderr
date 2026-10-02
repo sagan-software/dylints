@@ -1,0 +1,11 @@
+warning: type has 2 substantial field-use clusters across 6 methods and 4 fields; the largest cluster contains 50% of measured methods
+  --> $DIR/main.rs:5:1
+   |
+LL | struct SplitState {
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: extract a field cluster only when it has an independent invariant and lifecycle
+   = note: `#[warn(field_usage_cohesion)]` on by default
+
+warning: 1 warning emitted
+

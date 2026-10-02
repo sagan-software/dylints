@@ -1,0 +1,11 @@
+warning: this ignore reason does not explain why the case is disabled
+  --> $DIR/main.rs:5:1
+   |
+LL | #[test_case(1_u8 => ignore["  "] ; "blank reason")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: record the blocker or tracked issue
+   = note: `#[warn(test_case_whitespace_ignore_reason)]` on by default
+
+warning: 1 warning emitted
+

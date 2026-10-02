@@ -1,0 +1,17 @@
+#![allow(
+    dead_code,
+    elided_lifetimes_in_paths,
+    let_underscore_drop,
+    missing_docs,
+    unknown_lints,
+    unused_results
+)]
+
+use bevy_time::Time;
+
+fn elapsed(time: &Time) {
+    let _ = time.elapsed_secs() as f64;
+    let _ = time.elapsed_secs_f64();
+}
+
+fn main() {}

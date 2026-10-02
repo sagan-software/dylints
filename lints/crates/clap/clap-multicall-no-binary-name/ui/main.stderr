@@ -1,0 +1,19 @@
+warning: `multicall(true)` cannot be combined with `no_binary_name(true)`
+  --> $DIR/main.rs:6:53
+   |
+LL |     let _ = Command::new("busybox").multicall(true).no_binary_name(true);
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: remove `no_binary_name(true)`; multicall mode already controls binary-name parsing
+   = note: `#[warn(clap_multicall_no_binary_name)]` on by default
+
+warning: `multicall(true)` cannot be combined with `no_binary_name(true)`
+  --> $DIR/main.rs:8:37
+   |
+LL |     let _ = Command::new("busybox").no_binary_name(true).multicall(true);
+   |                                     ^^^^^^^^^^^^^^
+   |
+   = help: remove `no_binary_name(true)`; multicall mode already controls binary-name parsing
+
+warning: 2 warnings emitted
+

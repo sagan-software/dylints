@@ -1,0 +1,11 @@
+warning: disabling module prefixes can collide snapshot names
+  --> $DIR/main.rs:3:14
+   |
+LL |     settings.set_prepend_module_to_snapshot(false);
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep the default module prefix
+   = note: `#[warn(insta_no_module_prefix)]` on by default
+
+warning: 1 warning emitted
+

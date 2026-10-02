@@ -1,0 +1,11 @@
+warning: `cfg(feature = "abc")` is repeated 4 times across this crate
+  --> $DIR/main.rs:1:1
+   |
+LL | #[cfg(feature = "abc")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: move the gated items into a dedicated module
+   = note: `#[warn(repeated_cfg_gate)]` on by default
+
+warning: 1 warning emitted
+

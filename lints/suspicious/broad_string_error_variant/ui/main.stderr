@@ -1,0 +1,43 @@
+warning: error variant `Invalid` has broad field `message` using `String`
+  --> $DIR/main.rs:2:24
+   |
+LL |     Invalid { message: String },
+   |                        ^^^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+   = note: `#[warn(broad_string_error_variant)]` on by default
+
+warning: error variant `Denied` has broad field `details` using `&str`
+  --> $DIR/main.rs:3:23
+   |
+LL |     Denied { details: &'a str },
+   |                       ^^^^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+
+warning: error variant `Reason` has broad tuple variant `Reason` using `String`
+  --> $DIR/main.rs:4:12
+   |
+LL |     Reason(String),
+   |            ^^^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+
+warning: error variant `Error` has broad tuple variant `Error` using `&str`
+  --> $DIR/main.rs:5:11
+   |
+LL |     Error(&'a str),
+   |           ^^^^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+
+warning: error variant `Failed` has broad field `reason` using `String`
+  --> $DIR/main.rs:9:22
+   |
+LL |     Failed { reason: String },
+   |                      ^^^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+
+warning: 5 warnings emitted
+

@@ -1,0 +1,11 @@
+warning: `World::run_schedule` panics when the schedule does not exist
+  --> $DIR/main.rs:16:11
+   |
+LL |     world.run_schedule(Gameplay);
+   |           ^^^^^^^^^^^^
+   |
+   = help: use `World::try_run_schedule` and handle the fallible result
+   = note: `#[warn(bevy_world_run_schedule)]` on by default
+
+warning: 1 warning emitted
+

@@ -1,0 +1,16 @@
+warning: this `.map_err` only converts the error type
+  --> $DIR/edge_cases.rs:15:23
+   |
+LL |     raw.parse::<u16>().map_err(|error| Error::from(error))
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `.map_err(...)` and let `?` apply the `From` conversion
+   |
+   = note: `#[warn(unnecessary_map_err)]` on by default
+
+warning: this `.map_err` only converts the error type
+  --> $DIR/edge_cases.rs:19:26
+   |
+LL |     Ok(raw.parse::<u16>().map_err(Error::from))
+   |                          ^^^^^^^^^^^^^^^^^^^^^ help: remove `.map_err(...)` and let `?` apply the `From` conversion
+
+warning: 2 warnings emitted
+
