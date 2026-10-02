@@ -368,7 +368,8 @@ fn verbatim();
 #[cfg(all(,))] fn malformed_children() {}
 #[cfg(1)] fn malformed_predicate() {}
 	#[cfg] fn bare_cfg() {}"#;
-    const TEST_ONLY_MARKER: &str = "// test-only";
+    /// Marker in comments on items compiled only for tests.
+    const TEST_ONLY_MARKER: &str = "test-only";
 
     /// Every item kind and nesting site is classified, and only marker lines count.
     #[test]

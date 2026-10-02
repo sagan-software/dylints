@@ -338,9 +338,10 @@ fn entry_range(table: &dyn TableLike, key: &str) -> Option<Range<usize>> {
 
 /// Return the package dependency tables of a manifest.
 ///
-/// This covers `dependencies`, `dev-dependencies`, `build-dependencies`, their
-/// underscore spellings, and the same tables under each `target.<cfg>` table,
-/// in that order.
+/// Package tables precede target tables. Within each package or target, the
+/// order is `dependencies`, `dev-dependencies`, `dev_dependencies`,
+/// `build-dependencies`, then `build_dependencies`. Target tables and entries
+/// within each dependency table retain their manifest order.
 ///
 /// # Examples
 ///
