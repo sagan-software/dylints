@@ -5,7 +5,8 @@
     reason = "the lint intentionally ignores diagnostic builders and unrelated accumulator and rustc syntax variants"
 )]
 
-//! A lint to check for manual for-loop accumulation where iterator adapters fit better.
+//! A lint to check for manual for-loop accumulation where iterator adapters fit
+//! better.
 //!
 //! It classifies a small set of resolved accumulator patterns, checks the loop
 //! body against the matching operation, and reports only source shapes with a
@@ -18,15 +19,23 @@ extern crate rustc_hir;
 extern crate rustc_middle;
 extern crate rustc_span;
 
+#[path = "../../chaining_lint_support.rs"]
+mod support;
+
 use rustc_ast::ast::LitKind;
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    AssignOpKind, BinOpKind, BindingMode, Block, ByRef, Expr, ExprKind, HirId, LoopSource,
-    MatchSource, Mutability, Pat, PatKind, Stmt, StmtKind, def::Res,
+    AssignOpKind, BinOpKind, BindingMode, Block, ByRef, Expr, ExprKind, HirId, MatchSource,
+    Mutability, Pat, PatKind, Stmt, StmtKind,
+    def::Res,
+    intravisit::{Visitor, walk_expr},
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
-use rustc_middle::ty::{self, Ty};
-use rustc_span::Span;
+use rustc_middle::{
+    hir::nested_filter,
+    ty::{self, Ty, TyCtxt},
+};
+use rustc_span::{Span, Symbol, sym};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -39,13 +48,13 @@ dylint_support::documented_late_lint! {
 impl<'tcx> LateLintPass<'tcx> for ManualIteratorLoop {
     /// Check block for this lint.
     fn check_block(&mut self, cx: &LateContext<'tcx>, block: &'tcx Block<'tcx>) {
-        for pair in block.stmts.windows(2) {
-            // Keep the lint local: the accumulator must be initialized immediately before the loop.
-            let Some([init_stmt, loop_stmt]) = pair.first_chunk::<2>() else {
-                continue;
-            };
-            if let Some(offense) = manual_iterator_loop(cx, init_stmt, loop_stmt) {
-                // Report the loop only after its adjacent accumulator determines the rewrite.
+        // Keep the accumulator adjacent to its loop, with each pair exactly two statements.
+        block
+            .stmts
+            .array_windows()
+            .filter_map(|[init_stmt, loop_stmt]| manual_iterator_loop(cx, init_stmt, loop_stmt))
+            .for_each(|offense| {
+                // Report each loop after its adjacent accumulator determines the rewrite.
                 emit_span_lint_with_help(
                     cx,
                     MANUAL_ITERATOR_LOOP,
@@ -53,8 +62,7 @@ impl<'tcx> LateLintPass<'tcx> for ManualIteratorLoop {
                     offense.message,
                     offense.help,
                 );
-            }
-        }
+            });
     }
 }
 
@@ -96,10 +104,11 @@ fn manual_iterator_loop<'tcx>(
     current: &'tcx Stmt<'tcx>,
 ) -> Option<ManualLoop> {
     let accumulator = accumulator_init(cx, previous)?;
-    let (span, body) = for_loop_body(cx, current)?;
-    let (message, help) = matching_operation(cx, body, &accumulator)?;
+    // Resolve the following loop before classifying its accumulator action.
+    let loop_info = support::for_loop(cx, stmt_expr(current)?)?;
+    let (message, help) = matching_operation(cx, loop_info.body, &accumulator)?;
     Some(ManualLoop {
-        span,
+        span: loop_info.span,
         message,
         help,
     })
@@ -133,23 +142,29 @@ fn matching_operation<'tcx>(
 
 /// Helper for accumulator init analysis.
 fn accumulator_init<'tcx>(cx: &LateContext<'tcx>, stmt: &'tcx Stmt<'tcx>) -> Option<Accumulator> {
-    // Require an adjacent mutable local with a direct initializer.
-    let StmtKind::Let(local) = stmt.kind else {
-        return None;
+    // Require an adjacent mutable local with a direct initializer. Skip
+    // macro-generated accumulators, which are not source the reader can rewrite.
+    let local = match stmt.kind {
+        StmtKind::Let(local) if !local.span.from_expansion() => local,
+        _ => return None,
     };
 
     let hir_id = mutable_binding(local.pat)?;
     let init = local.init?;
     let ty = cx.typeck_results().pat_ty(local.pat);
     // Classify only empty Vec, zero count, false any, or true all accumulators.
-    let kind = accumulator_kind(cx, init, ty)?;
+    let kind = validate_accumulator_kind(cx, init, ty)?;
 
     // Preserve the resolved binding identity for loop-body matching.
     Some(Accumulator { hir_id, kind })
 }
 
 /// Classifies one supported accumulator initializer.
-fn accumulator_kind(cx: &LateContext<'_>, init: &Expr<'_>, ty: Ty<'_>) -> Option<AccumulatorKind> {
+fn validate_accumulator_kind(
+    cx: &LateContext<'_>,
+    init: &Expr<'_>,
+    ty: Ty<'_>,
+) -> Option<AccumulatorKind> {
     vec_new_call(cx, init)
         .then_some(AccumulatorKind::Vec)
         .filter(|_| is_std_vec(cx, ty))
@@ -180,40 +195,6 @@ const fn mutable_binding(pat: &Pat<'_>) -> Option<HirId> {
     Some(hir_id)
 }
 
-/// Helper for for loop body analysis.
-fn for_loop_body<'tcx>(
-    cx: &LateContext<'tcx>,
-    stmt: &'tcx Stmt<'tcx>,
-) -> Option<(Span, &'tcx Block<'tcx>)> {
-    // Peel the statement expression and match rustc's standard for-loop shell.
-    let expr = peel_drop_temps(stmt_expr(stmt)?);
-    match expr.kind {
-        ExprKind::Match(iter_expr, [iter_arm], MatchSource::ForLoopDesugar) => {
-            Some((expr, iter_expr, iter_arm))
-        }
-        _ => None,
-    }
-    .filter(|(_, iter_expr, _)| standard_into_iter_call(cx, iter_expr))
-    .and_then(|(expr, _, iter_arm)| match iter_arm.body.kind {
-        ExprKind::Loop(loop_block, _label, LoopSource::ForLoop, _span) => {
-            Some((expr.span, loop_block))
-        }
-        _ => None,
-    })
-    .and_then(|(span, loop_block)| {
-        single_body_expr(loop_block).and_then(|expr| match expr.kind {
-            ExprKind::Match(_, arms, MatchSource::ForLoopDesugar) => Some((span, arms)),
-            _ => None,
-        })
-    })
-    .and_then(|(span, arms)| {
-        arms.iter().find_map(|arm| match arm.body.kind {
-            ExprKind::Block(body, _) => Some((span, body)),
-            _ => None,
-        })
-    })
-}
-
 /// Helper for loop pushes to vec analysis.
 fn loop_pushes_to_vec<'tcx>(
     cx: &LateContext<'tcx>,
@@ -223,34 +204,15 @@ fn loop_pushes_to_vec<'tcx>(
     let Some(expr) = single_body_expr(body) else {
         return false;
     };
-    let ExprKind::MethodCall(segment, receiver, [arg], _) = expr.kind else {
+    let ExprKind::MethodCall(_, receiver, [arg], _) = expr.kind else {
         return false;
     };
 
     // Require the receiver to be the resolved accumulator binding and the call to be standard
     // `Vec::push`, so local lookalike `push` methods stay quiet.
-    segment.ident.name.as_str() == "push"
-        && path_is_binding(cx, receiver, accumulator.hir_id)
+    path_is_binding(cx, receiver, accumulator.hir_id)
         && resolved_vec_push(cx, expr)
-        && !contains_control_flow(arg)
-}
-
-/// Return whether this is the standard into iter call shape.
-fn standard_into_iter_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    let ExprKind::Call(callee, [_source]) = expr.kind else {
-        return false;
-    };
-    let ExprKind::Path(qpath) = callee.kind else {
-        return false;
-    };
-    let Res::Def(_, def_id) = cx.typeck_results().qpath_res(&qpath, callee.hir_id) else {
-        return false;
-    };
-
-    // A `for` loop source is iterator-shaped when rustc lowered it through the standard
-    // `IntoIterator::into_iter` lang item rather than a syntactic method lookalike.
-    let path = cx.tcx.def_path_str(def_id);
-    path.ends_with("::into_iter") && path.contains("IntoIterator")
+        && is_independent_expression(cx, arg, accumulator.hir_id)
 }
 
 /// Helper for loop counts matches analysis.
@@ -265,7 +227,7 @@ fn loop_counts_matches<'tcx>(
 
     // Keep side-effect-heavy predicates out of this lint; the accepted shape maps directly to
     // `filter(...).count()`.
-    !contains_control_flow(condition)
+    is_independent_expression(cx, condition, accumulator.hir_id)
         && cx.typeck_results().expr_ty(condition).is_bool()
         && block_only_expr(then_block).is_some_and(|expr| increments(cx, expr, accumulator))
 }
@@ -282,7 +244,7 @@ fn loop_sets_bool<'tcx>(
     };
 
     // The boolean forms are intended to map directly to `any` or `all`.
-    !contains_control_flow(condition)
+    is_independent_expression(cx, condition, accumulator.hir_id)
         && cx.typeck_results().expr_ty(condition).is_bool()
         && block_only_expr(then_block)
             .is_some_and(|expr| assigns_bool(cx, expr, accumulator, value))
@@ -324,14 +286,6 @@ const fn stmt_expr<'tcx>(stmt: &'tcx Stmt<'tcx>) -> Option<&'tcx Expr<'tcx>> {
     match stmt.kind {
         StmtKind::Expr(expr) | StmtKind::Semi(expr) => Some(expr),
         StmtKind::Let(_) | StmtKind::Item(_) => None,
-    }
-}
-
-/// Helper for peel drop temps analysis.
-fn peel_drop_temps<'tcx>(expr: &'tcx Expr<'tcx>) -> &'tcx Expr<'tcx> {
-    match expr.kind {
-        ExprKind::DropTemps(inner) => peel_drop_temps(inner),
-        _ => expr,
     }
 }
 
@@ -404,11 +358,8 @@ fn vec_new_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
         return false;
     };
 
-    // Require both the `new` method and Vec type identity.
-    let path = cx.tcx.def_path_str(def_id);
-
-    (path.ends_with("::new") || path == "alloc::vec::Vec<T>::new")
-        && (path.contains("::vec::Vec") || path.starts_with("alloc::vec::Vec"))
+    // Aliases and renamed imports resolve to the same diagnostic `Vec::new` item.
+    cx.tcx.is_diagnostic_item(Symbol::intern("vec_new"), def_id)
 }
 
 /// Return whether resolution found vec push.
@@ -417,20 +368,29 @@ fn resolved_vec_push(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
         return false;
     };
 
-    let path = cx.tcx.def_path_str(def_id);
-
-    (path.ends_with("::push") || path == "alloc::vec::Vec<T>::push")
-        && (path.contains("::vec::Vec") || path.starts_with("alloc::vec::Vec"))
+    // `Vec::push` has no diagnostic item, so require an inherent `push` on the `Vec` type.
+    cx.tcx.item_name(def_id).as_str() == "push"
+        && cx
+            .tcx
+            .inherent_impl_of_assoc(def_id)
+            .is_some_and(|impl_def_id| {
+                is_std_vec(
+                    cx,
+                    cx.tcx
+                        .type_of(impl_def_id)
+                        .instantiate_identity()
+                        .skip_norm_wip(),
+                )
+            })
 }
 
-/// Return whether std vec.
+/// Return whether a type is the standard `Vec`.
 fn is_std_vec(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     let ty::Adt(adt, _) = ty.kind() else {
         return false;
     };
 
-    cx.tcx.item_name(adt.did()).as_str() == "Vec"
-        && matches!(cx.tcx.crate_name(adt.did().krate).as_str(), "alloc" | "std")
+    cx.tcx.is_diagnostic_item(sym::Vec, adt.did())
 }
 
 /// Return whether integer.
@@ -465,66 +425,88 @@ const fn bool_literal(expr: &Expr<'_>, value: bool) -> bool {
     matches!(lit.node, LitKind::Bool(literal) if literal == value)
 }
 
-/// Return whether the source contains control flow.
-fn contains_control_flow(expr: &Expr<'_>) -> bool {
-    // Reject direct exits, loops, assembly, and assignments at any depth.
-    match expr.kind {
-        ExprKind::Break(..)
-        | ExprKind::Continue(..)
-        | ExprKind::Ret(..)
-        | ExprKind::Loop(..)
-        | ExprKind::InlineAsm(..)
-        | ExprKind::Assign(..)
-        | ExprKind::AssignOp(..) => true,
-        // Recurse through the expression forms accepted by predicate analysis.
-        ExprKind::Call(callee, args) => contains_call_control_flow(callee, args),
-        ExprKind::MethodCall(_, receiver, args, _) => contains_call_control_flow(receiver, args),
-        ExprKind::Binary(_, lhs, rhs) | ExprKind::Index(lhs, rhs, _) => {
-            contains_binary_control_flow(lhs, rhs)
+/// Requires a closure-compatible expression that never reads the changing accumulator.
+fn is_independent_expression<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+    accumulator: HirId,
+) -> bool {
+    ControlFlowFinder.visit_expr(expr).is_continue()
+        && !has_accumulator_reference(cx, expr, accumulator)
+}
+
+/// Searches the expression and nested closures for the accumulator's resolved binding.
+fn has_accumulator_reference<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+    accumulator: HirId,
+) -> bool {
+    // Resolve captured paths as well as direct reads, keeping shadowed locals distinct.
+    let mut finder = AccumulatorUseFinder { cx, accumulator };
+    finder.visit_expr(expr).is_break()
+}
+
+/// Stops when a direct or captured path reads the accumulator.
+struct AccumulatorUseFinder<'cx, 'tcx> {
+    /// Compiler context used to resolve path bindings.
+    cx: &'cx LateContext<'tcx>,
+    /// Binding whose value changes during the original loop.
+    accumulator: HirId,
+}
+
+impl<'tcx> Visitor<'tcx> for AccumulatorUseFinder<'_, 'tcx> {
+    /// Visits captured reads inside nested closure bodies.
+    type NestedFilter = nested_filter::OnlyBodies;
+    /// Stops after the first read of the changing accumulator.
+    type Result = std::ops::ControlFlow<()>;
+
+    /// Returns the compiler context needed to enter nested bodies.
+    fn maybe_tcx(&mut self) -> TyCtxt<'tcx> {
+        self.cx.tcx
+    }
+
+    /// Resolves local paths before visiting their child expressions.
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) -> Self::Result {
+        if let ExprKind::Path(qpath) = expr.kind
+            && matches!(self.cx.qpath_res(&qpath, expr.hir_id), Res::Local(id) if id == self.accumulator)
+        {
+            return std::ops::ControlFlow::Break(());
         }
-        ExprKind::Unary(_, inner)
-        | ExprKind::Cast(inner, _)
-        | ExprKind::Type(inner, _)
-        | ExprKind::Use(inner, _)
-        | ExprKind::DropTemps(inner)
-        | ExprKind::Field(inner, _)
-        | ExprKind::AddrOf(_, _, inner) => contains_control_flow(inner),
-        ExprKind::Block(block, _) => contains_block_control_flow(block),
-        ExprKind::If(condition, then_expr, else_expr) => {
-            contains_if_control_flow(condition, then_expr, else_expr)
-        }
-        _ => false,
+        walk_expr(self, expr)
     }
 }
 
-/// Returns whether a call and its arguments contain control flow.
-fn contains_call_control_flow(callee: &Expr<'_>, args: &[Expr<'_>]) -> bool {
-    contains_control_flow(callee) || args.iter().any(contains_control_flow)
-}
+/// Stops on work whose control flow or mutation would change in an iterator closure.
+///
+/// `break`, `continue`, `return`, `?`, `.await`, and `yield` target the enclosing
+/// loop or function and would target the closure instead. Loops, inline assembly,
+/// and assignments keep the loop body from being a plain predicate or mapped
+/// value. Nested closures are skipped because their control flow already targets
+/// the closure itself.
+struct ControlFlowFinder;
 
-/// Returns whether two expression children contain control flow.
-fn contains_binary_control_flow(left: &Expr<'_>, right: &Expr<'_>) -> bool {
-    contains_control_flow(left) || contains_control_flow(right)
-}
+impl<'tcx> Visitor<'tcx> for ControlFlowFinder {
+    type Result = std::ops::ControlFlow<()>;
 
-/// Returns whether a block contains control flow in statements or its tail.
-fn contains_block_control_flow(block: &Block<'_>) -> bool {
-    block
-        .stmts
-        .iter()
-        .any(|stmt| stmt_expr(stmt).is_none_or(contains_control_flow))
-        || block.expr.is_some_and(contains_control_flow)
-}
-
-/// Returns whether an if expression contains control flow in any branch.
-fn contains_if_control_flow(
-    condition: &Expr<'_>,
-    then_expr: &Expr<'_>,
-    else_expr: Option<&Expr<'_>>,
-) -> bool {
-    contains_control_flow(condition)
-        || contains_control_flow(then_expr)
-        || else_expr.is_some_and(contains_control_flow)
+    /// Stop on control flow and mutation; otherwise keep walking outside nested
+    /// bodies.
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) -> Self::Result {
+        match expr.kind {
+            ExprKind::Break(..)
+            | ExprKind::Continue(..)
+            | ExprKind::Ret(..)
+            | ExprKind::Become(..)
+            | ExprKind::Yield(..)
+            | ExprKind::Loop(..)
+            | ExprKind::InlineAsm(..)
+            | ExprKind::Assign(..)
+            | ExprKind::AssignOp(..)
+            | ExprKind::Match(_, _, MatchSource::TryDesugar(_) | MatchSource::AwaitDesugar) => {
+                std::ops::ControlFlow::Break(())
+            }
+            _ => walk_expr(self, expr),
+        }
+    }
 }
 
 /// Emit the span lint with help diagnostic.

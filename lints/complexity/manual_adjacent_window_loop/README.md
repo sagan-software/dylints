@@ -2,8 +2,10 @@
 
 ## What it does
 
-Checks for a `for` loop over `0..values.len().saturating_sub(1)` whose body
-indexes a slice, array, or `Vec` exactly twice, once with `[index + 1]`.
+Checks for a `for index in 0..values.len().saturating_sub(1)` loop over a
+slice, array, or `Vec` binding whose body uses `index` only in `values[index]`
+and `values[index + 1]`. It suggests `for window in values.windows(2)` with
+`window[0]` and `window[1]`.
 
 ## Why is this bad?
 
@@ -15,18 +17,19 @@ panic or skip a pair. `slice::windows(2)` yields each adjacent pair directly.
 
 - Only the `saturating_sub(1)` bound triggers. A loop over
   `0..values.len() - 1` is ignored.
-- The lint matches the `+ 1]` index by source text. It does not check that both
-  indexes use the loop variable or the same slice, so it can trigger when the
-  two indexes read different slices.
-- If the body also uses the index value itself, `windows(2)` needs
-  `.enumerate()` to keep it.
+- The slice must be an immutable local binding that is not a `&mut` slice.
+  Fields such as `self.values` are ignored.
+- A body that uses `index` in any other way, reads another element of the
+  slice, or already uses the name `window` is ignored.
 
 ## Example
 
 ```rust
 fn print_pairs(values: &[i32]) {
     for index in 0..values.len().saturating_sub(1) {
-        println!("{} {}", values[index], values[index + 1]);
+        let current = values[index];
+        let next = values[index + 1];
+        println!("{current} {next}");
     }
 }
 ```
@@ -35,8 +38,10 @@ fn print_pairs(values: &[i32]) {
 
 ```rust
 fn print_pairs(values: &[i32]) {
-    for pair in values.windows(2) {
-        println!("{} {}", pair[0], pair[1]);
+    for window in values.windows(2) {
+        let current = window[0];
+        let next = window[1];
+        println!("{current} {next}");
     }
 }
 ```

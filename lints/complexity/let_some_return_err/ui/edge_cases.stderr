@@ -117,5 +117,177 @@ LL | |     };
    |
    = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
 
-warning: 10 warnings emitted
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:112:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err("missing".into());
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:119:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(Default::default());
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:126:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(5_000_000_000);
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:133:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(Box::new(std::fmt::Error));
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:140:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(None);
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:147:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err("missing".to_string());
+LL | |     };
+   | |______^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some(value) = value else {
+LL -         return Err("missing".to_string());
+LL -     };
+LL +     let value = (value).ok_or_else(|| "missing".to_string())?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:154:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(5_i64);
+LL | |     };
+   | |______^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some(value) = value else {
+LL -         return Err(5_i64);
+LL -     };
+LL +     let value = (value).ok_or_else(|| 5_i64)?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:165:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(Detail { code: 1 });
+LL | |     };
+   | |______^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some(value) = value else {
+LL -         return Err(Detail { code: 1 });
+LL -     };
+LL +     let value = (value).ok_or_else(|| Detail { code: 1 })?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:174:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(MISSING);
+LL | |     };
+   | |______^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some(value) = value else {
+LL -         return Err(MISSING);
+LL -     };
+LL +     let value = (value).ok_or_else(|| MISSING)?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:183:5
+   |
+LL | /     let Some(_) = value else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some(_) = value else {
+LL -         return Err(Error::Missing);
+LL -     };
+LL +     let _ = (value).ok_or_else(|| Error::Missing)?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:190:5
+   |
+LL | /     let Some(&value) = value else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some(&value) = value else {
+LL -         return Err(Error::Missing);
+LL -     };
+LL +     let &value = (value).ok_or_else(|| Error::Missing)?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:203:5
+   |
+LL | /     let Some(Wrapper(value)) = lookup_wrapper() else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some(Wrapper(value)) = lookup_wrapper() else {
+LL -         return Err(Error::Missing);
+LL -     };
+LL +     let Wrapper(value) = (lookup_wrapper()).ok_or_else(|| Error::Missing)?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:210:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err((|| Error::Missing)());
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: 23 warnings emitted
 

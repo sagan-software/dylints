@@ -2,8 +2,8 @@
 
 ## What it does
 
-Checks for a `for` loop whose body is only an `if` without `else`, where the
-`if` branch holds one call, method call, or assignment.
+Checks for a `for` loop whose body is only an `if` without `else` or `let`,
+where the `if` branch holds one call, method call, or assignment.
 
 ## Why is this bad?
 
@@ -13,13 +13,11 @@ selection and the action as separate steps.
 
 ## Known problems
 
-- The lint skips bodies whose source text contains `?`, `.await`, `break`,
-  `continue`, or `return`. The check is a text match, so a name such as
-  `returned` also prevents the lint.
+- The lint skips bodies that contain `?`, `.await`, `break`, `continue`, or
+  `return` outside a closure.
 - Compound assignments such as `total += value` do not count as an action, so
   those loops are ignored.
-- An `if let` condition also has type `bool` here, so an `if let Some(..)` body
-  can trigger this lint and `manual_filter_map_for_each_loop` together.
+- Conditions with `if let` or a let chain are ignored.
 - Closure arguments can need extra dereferences, such as `**value` for a slice
   iterator. The lint emits help without an automatic fix.
 

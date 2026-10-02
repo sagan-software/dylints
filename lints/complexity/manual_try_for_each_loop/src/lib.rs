@@ -8,25 +8,29 @@
 
 //! A lint to check for fallible loops that can use `Iterator::try_for_each`.
 //!
-//! It inspects source structure and resolved rustc information to identify the
-//! pattern described by the lint documentation. The implementation keeps
-//! generated code and unsupported syntax conservative, then reports a focused
-//! diagnostic so callers can choose the documented replacement with confidence.
+//! It looks at the outermost block of each function, closure, or async body.
+//! When that block ends with a standard `for` loop whose body holds one `?`,
+//! followed by a unit success constructor with the same residual, it reports
+//! the loop. Constructors, residual types, and the loop desugaring are matched
+//! through lang items and diagnostic items rather than source text.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_middle;
 extern crate rustc_span;
 
+#[path = "../../chaining_lint_support.rs"]
+mod support;
+
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Block, Expr, ExprKind, MatchSource, Stmt, StmtKind,
-    def::Res,
+    Block, Body, Expr, ExprKind, LangItem, MatchSource, Stmt, StmtKind,
+    def::{DefKind, Res},
     intravisit::{Visitor, walk_expr},
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::{Span, sym};
+use rustc_span::{DesugaringKind, Span, Symbol, sym};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -37,8 +41,16 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for ManualTryForEachLoop {
-    /// Checks a block for a final fallible loop and matching unit success tail.
-    fn check_block(&mut self, cx: &LateContext<'tcx>, block: &'tcx Block<'tcx>) {
+    /// Checks a function, closure, or async body for a final fallible loop and unit
+    /// success tail.
+    ///
+    /// Only the outermost block of a body qualifies, because `?` returns from the
+    /// body. In a nested block, the loop's `?` and the block's tail value would have
+    /// different targets.
+    fn check_body(&mut self, cx: &LateContext<'tcx>, body: &Body<'tcx>) {
+        let Some(block) = outer_block(body.value) else {
+            return;
+        };
         // Limit the rewrite to a final loop followed by its direct unit success tail.
         let (Some(loop_stmt), Some(tail)) = (block.stmts.last(), block.expr) else {
             return;
@@ -49,14 +61,14 @@ impl<'tcx> LateLintPass<'tcx> for ManualTryForEachLoop {
 
         // Require one standard loop whose body propagates the same residual.
         if let Some(loop_expr) = stmt_expr(loop_stmt)
-            && let Some((span, body)) = for_loop_expr(cx, loop_expr)
-            && let Some(action) = block_only_expr(body)
+            && let Some(loop_info) = support::for_loop(cx, loop_expr)
+            && let Some(action) = block_only_expr(loop_info.body)
             && is_fallible_body_match(cx, action, residual)
         {
             emit_span_lint_with_help(
                 cx,
                 MANUAL_TRY_FOR_EACH_LOOP,
-                span,
+                loop_info.span,
                 "fallible `for` loop can use `Iterator::try_for_each`",
                 "use `Iterator::try_for_each` for this fallible loop",
             );
@@ -75,167 +87,115 @@ enum Residual<'tcx> {
     ControlFlow(Ty<'tcx>),
 }
 
-/// Returns the residual represented by an exact unit success tail.
+/// Returns the outermost block of a body, looking through blocks that only wrap a
+/// block.
+fn outer_block<'tcx>(expr: &'tcx Expr<'tcx>) -> Option<&'tcx Block<'tcx>> {
+    let ExprKind::Block(block, _) = peel_drop_temps(expr).kind else {
+        return None;
+    };
+    // A block whose only content is another block evaluates that block in the same body.
+    // An async body moves its parameters with generated `let` statements before the user's
+    // block, which still runs in the same coroutine body.
+    let is_async_wrapper = block.span.is_desugaring(DesugaringKind::Async)
+        && block
+            .stmts
+            .iter()
+            .all(|stmt| matches!(stmt.kind, StmtKind::Let(_)));
+    match (block.stmts, block.expr) {
+        ([], Some(inner)) if matches!(peel_drop_temps(inner).kind, ExprKind::Block(..)) => {
+            outer_block(inner)
+        }
+        (_, Some(inner)) if is_async_wrapper => outer_block(inner),
+        _ => Some(block),
+    }
+}
+
+/// Returns the residual of an `Ok(())`, `Some(())`, or
+/// `ControlFlow::Continue(())` tail.
 fn unit_success_residual<'tcx>(
     cx: &LateContext<'tcx>,
     tail: &'tcx Expr<'tcx>,
 ) -> Option<Residual<'tcx>> {
-    // Resolve the tail ADT and preserve its generic residual arguments.
-    match cx.typeck_results().expr_ty(tail).kind() {
-        ty::Adt(adt, args) => Some((*adt, args)),
+    // Require a source-written call with a unit argument.
+    let ExprKind::Call(callee, [argument]) = tail.kind else {
+        return None;
+    };
+    let is_unit_call = !tail.span.from_expansion() && matches!(argument.kind, ExprKind::Tup([]));
+    let tail_ty = cx.typeck_results().expr_ty(tail);
+    let (true, ExprKind::Path(qpath), ty::Adt(_, args)) =
+        (is_unit_call, callee.kind, tail_ty.kind())
+    else {
+        return None;
+    };
+    // Resolve the callee to a constructor rather than a function with the same name.
+    let Res::Def(DefKind::Ctor(..), ctor_def_id) = cx.qpath_res(&qpath, callee.hir_id) else {
+        return None;
+    };
+
+    // Map the constructor's variant to the residual that `?` propagates.
+    match cx.tcx.as_lang_item(cx.tcx.parent(ctor_def_id))? {
+        LangItem::ResultOk => Some(Residual::Result(args.type_at(1))),
+        LangItem::OptionSome => Some(Residual::Option),
+        LangItem::ControlFlowContinue => Some(Residual::ControlFlow(args.type_at(0))),
         _ => None,
     }
-    .and_then(|(adt, args)| {
-        cx.sess()
-            .source_map()
-            .span_to_snippet(tail.span.source_callsite())
-            .ok()
-            .map(|source| (adt, args, source))
-    })
-    .and_then(|(adt, args, source)| constructor_residual(cx, adt, args, &source))
 }
 
-/// Return the residual represented by one supported success constructor.
-fn constructor_residual<'tcx>(
-    cx: &LateContext<'tcx>,
-    adt: ty::AdtDef<'tcx>,
-    args: ty::GenericArgsRef<'tcx>,
-    source: &str,
-) -> Option<Residual<'tcx>> {
-    let first_ty = type_arg(args, 0)?;
-    let source = source.trim_start();
-
-    // Accept an exact unit-success Result constructor and retain its error type.
-    cx.tcx
-        .is_diagnostic_item(sym::Result, adt.did())
-        .then_some(())
-        .filter(|()| first_ty.is_unit() && source.starts_with("Ok("))
-        .and_then(|()| type_arg(args, 1).map(Residual::Result))
-        // Accept an exact unit-success Option constructor.
-        .or_else(|| {
-            cx.tcx
-                .is_diagnostic_item(sym::Option, adt.did())
-                .then_some(())
-                .filter(|()| first_ty.is_unit() && source.starts_with("Some("))
-                .map(|()| Residual::Option)
-        })
-        // Accept unit-continue ControlFlow and retain its break type.
-        .or_else(|| {
-            cx.tcx
-                .def_path_str(adt.did())
-                .ends_with("::ControlFlow")
-                .then_some(())
-                .filter(|()| {
-                    type_arg(args, 1).is_some_and(Ty::is_unit) && source.contains("Continue(")
-                })
-                .map(|()| Residual::ControlFlow(first_ty))
-        })
-}
-
-/// Returns a type argument without indexing an incomplete or erased argument list.
-fn type_arg(args: ty::GenericArgsRef<'_>, index: usize) -> Option<Ty<'_>> {
-    args.iter().nth(index).and_then(ty::GenericArg::as_type)
-}
-
-/// Extracts the body of a standard `for` loop desugaring.
-fn for_loop_expr<'tcx>(
-    cx: &LateContext<'tcx>,
-    expr: &'tcx Expr<'tcx>,
-) -> Option<(Span, &'tcx Block<'tcx>)> {
-    // Peel the temporary wrapper and match rustc's standard for-loop shell.
-    let expr = peel_drop_temps(expr);
-    match expr.kind {
-        ExprKind::Match(iter_expr, [iter_arm], MatchSource::ForLoopDesugar) => {
-            Some((expr.span, iter_expr, iter_arm))
-        }
-        _ => None,
-    }
-    .filter(|(_, iter_expr, _)| standard_into_iter_call(cx, iter_expr))
-    // Descend through the generated loop and iterator match.
-    .and_then(|(span, _, iter_arm)| match iter_arm.body.kind {
-        ExprKind::Loop(loop_block, _, _, _) => Some((span, loop_block)),
-        _ => None,
-    })
-    .and_then(|(span, loop_block)| {
-        block_only_expr(loop_block).and_then(|expr| match expr.kind {
-            ExprKind::Match(_, arms, MatchSource::ForLoopDesugar) => Some((span, arms)),
-            _ => None,
-        })
-    })
-    // Select the arm that carries the user-written block expression.
-    .and_then(|(span, arms)| {
-        arms.iter().find_map(|arm| match arm.body.kind {
-            ExprKind::Block(body, _) => Some((span, body)),
-            _ => None,
-        })
-    })
-}
-
-/// Returns whether the `for` loop used the standard `IntoIterator` trait.
-fn standard_into_iter_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    // Compare the resolved trait method so a custom spelling does not trigger.
-    let ExprKind::Call(callee, [_]) = expr.kind else {
-        return false;
-    };
-    let ExprKind::Path(qpath) = callee.kind else {
-        return false;
-    };
-    let Res::Def(_, def_id) = cx.qpath_res(&qpath, callee.hir_id) else {
-        return false;
-    };
-    // Require both the method suffix and the standard trait identity.
-    let path = cx.tcx.def_path_str(def_id);
-    path.ends_with("::into_iter") && path.contains("IntoIterator")
-}
-
-/// Returns whether the loop body has one matching typed fallible operation.
+/// Returns whether the loop body has exactly one `?` with the tail's residual and
+/// no other exit.
 fn is_fallible_body_match<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
     residual: Residual<'tcx>,
 ) -> bool {
-    // Require one `?` before proving that a typed residual matches the tail.
-    let Ok(source) = cx.sess().source_map().span_to_snippet(expr.span) else {
-        return false;
-    };
-    if source.matches('?').count() != 1 {
-        return false;
-    }
-
-    // Count typed residual expressions outside nested closures.
-    let mut visitor = MatchingResidualVisitor {
-        cx,
-        residual,
-        matches: 0,
+    // Collect `?` operands and reject control flow that a closure would retarget.
+    let mut visitor = TryOperandVisitor {
+        operands: Vec::new(),
+        has_other_exit: false,
     };
     visitor.visit_expr(expr);
-    visitor.matches >= 1
+    if visitor.has_other_exit {
+        return false;
+    }
+    // Require exactly one `?` whose operand already has the tail's residual type.
+    let [operand] = visitor.operands.as_slice() else {
+        return false;
+    };
+    is_residual_match(cx, cx.typeck_results().expr_ty(operand), residual)
 }
 
-/// Counts fallible expressions with the enclosing residual type.
-struct MatchingResidualVisitor<'cx, 'tcx> {
-    /// Compiler context used for expression types.
-    cx: &'cx LateContext<'tcx>,
-    /// Required residual type.
-    residual: Residual<'tcx>,
-    /// Number of matching expressions.
-    matches: usize,
+/// Collects `?` operands outside nested closures and records other exits.
+struct TryOperandVisitor<'tcx> {
+    /// User-written operands of `?` expressions.
+    operands: Vec<&'tcx Expr<'tcx>>,
+    /// Set by `break`, `continue`, `return`, `become`, `yield`, or `.await`.
+    has_other_exit: bool,
 }
 
-impl<'tcx> Visitor<'tcx> for MatchingResidualVisitor<'_, 'tcx> {
-    /// Visits expressions while excluding nested closures.
+impl<'tcx> Visitor<'tcx> for TryOperandVisitor<'tcx> {
+    /// Records `?` operands and exits; nested closure bodies are not visited.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        // Count only expressions with the exact standard residual profile.
-        if is_residual_match(
-            self.cx,
-            self.cx.typeck_results().expr_ty(expr),
-            self.residual,
-        ) {
-            self.matches += 1;
+        match expr.kind {
+            ExprKind::Match(scrutinee, _, MatchSource::TryDesugar(_)) => {
+                // rustc lowers `operand?` to a match on `Try::branch(operand)` whose arms
+                // contain the generated `return`; visit only the user-written operand.
+                if let ExprKind::Call(_, [operand]) = scrutinee.kind {
+                    self.operands.push(operand);
+                    self.visit_expr(operand);
+                    return;
+                }
+            }
+            ExprKind::Break(..)
+            | ExprKind::Continue(_)
+            | ExprKind::Ret(_)
+            | ExprKind::Become(_)
+            | ExprKind::Yield(..)
+            | ExprKind::Match(_, _, MatchSource::AwaitDesugar) => {
+                self.has_other_exit = true;
+            }
+            _ => {}
         }
-        if !matches!(expr.kind, ExprKind::Closure(_)) {
-            walk_expr(self, expr);
-        }
+        walk_expr(self, expr);
     }
 }
 
@@ -251,7 +211,9 @@ fn is_residual_match<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>, residual: Resid
         }
         Residual::Option => cx.tcx.is_diagnostic_item(sym::Option, adt.did()),
         Residual::ControlFlow(break_ty) => {
-            cx.tcx.def_path_str(adt.did()).ends_with("::ControlFlow") && args.type_at(0) == break_ty
+            cx.tcx
+                .is_diagnostic_item(Symbol::intern("ControlFlow"), adt.did())
+                && args.type_at(0) == break_ty
         }
     }
 }

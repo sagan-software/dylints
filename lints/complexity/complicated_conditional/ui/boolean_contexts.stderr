@@ -1,22 +1,14 @@
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:5:24
+  --> $DIR/boolean_contexts.rs:10:8
    |
-LL |     let mut is_ready = values.iter().next().is_some() && other.iter().next().is_some();
-   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     if values.iter().next().is_some() && other.iter().next().is_some() {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
    = note: `#[warn(complicated_conditional)]` on by default
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:6:16
-   |
-LL |     is_ready = values.iter().next().is_some() || other.iter().next().is_some();
-   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
-
-warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:7:11
+  --> $DIR/boolean_contexts.rs:11:11
    |
 LL |     while values.iter().next().is_some() && other.iter().next().is_some() {
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -24,7 +16,7 @@ LL |     while values.iter().next().is_some() && other.iter().next().is_some() {
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:11:14
+  --> $DIR/boolean_contexts.rs:15:14
    |
 LL |         _ if values.iter().next().is_some() && other.iter().next().is_some() => (),
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -32,192 +24,199 @@ LL |         _ if values.iter().next().is_some() && other.iter().next().is_some(
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:14:21
+  --> $DIR/boolean_contexts.rs:18:8
    |
-LL |       let has_match = values.iter().any(|value| {
-   |  _____________________^
+LL |       if values.iter().any(|value| {
+   |  ________^
 LL | |         let trimmed = value.trim();
 LL | |         let lowered = trimmed.to_lowercase();
 LL | |         lowered.starts_with('a') && lowered.ends_with('z')
-LL | |     }) && !other.is_empty();
+LL | |     }) && !other.is_empty()
    | |___________________________^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:40:14
+  --> $DIR/boolean_contexts.rs:43:8
    |
-LL |     let at = chain.step().step().step().ready();
-   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
-
-warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:41:17
-   |
-LL |     let above = !chain.step().step().step().ready();
-   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     if !chain.step().step().step().step().ready() {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:43:20
+  --> $DIR/boolean_contexts.rs:45:8
    |
-LL |     let combined = chain.step().ready() && chain.step().ready();
-   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
-
-warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:46:26
-   |
-LL |     let one_complex_at = chain.step().step().ready() && chain.ready();
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     if chain.step().step().ready() && chain.step().step().ready() {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:47:27
+  --> $DIR/boolean_contexts.rs:48:8
    |
-LL |     let bool_comparison = chain.step().ready() == chain.step().ready();
-   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     if chain.step().step().ready() && !chain.step().ready() {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:51:19
+  --> $DIR/boolean_contexts.rs:51:8
    |
-LL |       let adapted = [1, 2]
-   |  ___________________^
+LL |     if chain.step().step().ready() == chain.step().step().ready() {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/boolean_contexts.rs:58:8
+   |
+LL |       if values
+   |  ________^
 LL | |         .iter()
-LL | |         .filter(|value| {
-LL | |             let first = **value + 1;
-...  |
-LL | |         .next()
-LL | |         .is_some();
-   | |__________________^
+LL | |         .any(|value| *value > 0 && *value < 9 && *value != 4)
+LL | |         && chain.step().ready()
+   | |_______________________________^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:60:22
+  --> $DIR/boolean_contexts.rs:63:8
    |
-LL |       let standalone = [1, 2].iter().any(|value| {
-   |  ______________________^
-LL | |         let first = *value + 1;
-LL | |         let second = first * 2;
-LL | |         second > 2
-LL | |     });
-   | |______^
-   |
-   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
-
-warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:68:26
-   |
-LL |     let explicit: bool = chain.step().step().step().ready();
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
-
-warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:70:21
-   |
-LL |     uninitialized = chain.step().step().step().ready();
-   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
-
-warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:74:23
-   |
-LL |       let with_branch = values
-   |  _______________________^
+LL |       if values
+   |  ________^
 LL | |         .iter()
-LL | |         .any(|value| if *value > 1 { chain.ready() } else { false });
+LL | |         .any(|value| if *value > 1 { chain.ready() } else { false })
    | |____________________________________________________________________^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:77:22
+  --> $DIR/boolean_contexts.rs:82:8
    |
-LL |       let with_match = values.iter().any(|value| match *value {
-   |  ______________________^
-LL | |         0 => chain.ready(),
-LL | |         _ => false,
-LL | |     });
-   | |______^
-   |
-   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
-
-warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:81:21
-   |
-LL |       let with_loop = values.iter().any(|value| {
-   |  _____________________^
-LL | |         loop {
-LL | |             break *value > 0;
-LL | |         }
-LL | |     });
-   | |______^
+LL |       if values
+   |  ________^
+LL | |         .iter()
+LL | |         .any(|value| Some(*value).is_some_and(|inner| inner > 0))
+   | |_________________________________________________________________^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:86:27
+  --> $DIR/boolean_contexts.rs:96:8
    |
-LL |       let with_assignment = values.iter().any(|value| {
-   |  ___________________________^
-LL | |         let mut result = *value;
-LL | |         result = result + 1;
-LL | |         result > 0
-LL | |     });
-   | |______^
-   |
-   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
-
-warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:100:24
-   |
-LL |       let long_closure = values.iter().any(|value| {
-   |  ________________________^
+LL |       if values.iter().any(|value| {
+   |  ________^
 LL | |         let a = *value + 1;
 LL | |         let b = a + 1;
 LL | |         let c = b + 1;
 ...  |
 LL | |         e > 0
-LL | |     });
+LL | |     }) {}
    | |______^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:108:29
+  --> $DIR/boolean_contexts.rs:110:8
    |
-LL |       let function_argument = accepts(|| {
-   |  _____________________________^
-LL | |         let a = chain.ready();
-LL | |         let b = chain.step().ready();
-LL | |         a && b
-LL | |     });
-   | |______^
-   |
-   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
-
-warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:120:21
-   |
-LL |     let elaborate = value.trim().to_lowercase().trim().len() > 0;
-   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |       if [1, 2]
+   |  ________^
+LL | |         .iter()
+LL | |         .filter(|value| {
+LL | |             let first = **value + 1;
+...  |
+LL | |         .next()
+LL | |         .is_some()
+   | |__________________^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/boolean_contexts.rs:121:20
+  --> $DIR/boolean_contexts.rs:153:8
    |
-LL |     let combined = value.trim().len() > 0 && other.trim().len() > 0;
-   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     if context.inner.lookup().lookup().names.is_empty() && other.lookup().is_enabled {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/boolean_contexts.rs:158:8
+   |
+LL |     if value.trim().to_lowercase().trim().len() > 0 {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/boolean_contexts.rs:159:8
+   |
+LL |     if value.trim().to_lowercase().len() > 0 && other.trim().to_lowercase().len() > 0 {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/boolean_contexts.rs:175:8
+   |
+LL |       if let Some(value) = values.first()
+   |  ________^
+LL | |         && chain.step().step().step().ready()
+   | |_____________________________________________^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/boolean_contexts.rs:181:8
+   |
+LL |     if { chain.step().ready() } && chain.step().step().ready() {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/boolean_contexts.rs:182:8
+   |
+LL |     if (if flag { chain.ready() } else { false }) && chain.step().ready() {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/boolean_contexts.rs:183:8
+   |
+LL |       if match flag {
+   |  ________^
+LL | |         true if chain.ready() => chain.step().ready(),
+LL | |         _ => false,
+LL | |     } {}
+   | |_____^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/boolean_contexts.rs:187:8
+   |
+LL |       if !match flag {
+   |  ________^
+LL | |         true => chain.ready(),
+LL | |         false => chain.step().ready(),
+LL | |     } {
+   | |_____^
+   |
+   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
+
+warning: boolean expression contains complex inline work
+  --> $DIR/boolean_contexts.rs:199:8
+   |
+LL |       if match flag {
+   |  ________^
+LL | |         true => source,
+LL | |         false => "",
+...  |
+LL | |     .len()
+LL | |         > source.trim().trim().len()
+   | |____________________________________^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 

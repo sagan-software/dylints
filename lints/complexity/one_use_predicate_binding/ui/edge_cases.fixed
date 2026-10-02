@@ -41,37 +41,32 @@ struct Point {
 }
 
 fn struct_literal_init(point: &Point) {
-    let is_valid = *point == Point { x: 0 };
-    if is_valid {
+    if (*point == Point { x: 0 }) {
         consume(point.x);
     }
 }
 
 fn negated_comparison(count: usize) {
-    let has_items = count > 0;
-    if !has_items {
+    if !(count > 0) {
         consume(count);
     }
 }
 
 fn negated_call(items: &[u8]) {
-    let is_empty = items.is_empty();
-    if !is_empty {
+    if !items.is_empty() {
         consume(items.len());
     }
 }
 
 fn comment_between(items: &[u8]) {
-    let is_empty = items.is_empty();
     // Explain the branch.
-    if is_empty {
+    if items.is_empty() {
         consume(items.len());
     }
 }
 
 fn tail_branch(items: &[u8]) -> usize {
-    let is_empty = items.is_empty();
-    if is_empty { 0 } else { items.len() }
+    if items.is_empty() { 0 } else { items.len() }
 }
 
 macro_rules! empty_check {
@@ -146,12 +141,10 @@ impl Checker {
 }
 
 fn predicate_calls(text: &str, value: u8) {
-    let is_empty = is_blank(text);
-    if is_empty {
+    if is_blank(text) {
         consume(text);
     }
-    let is_valid = Checker::is_good(value);
-    if is_valid {
+    if Checker::is_good(value) {
         consume(value);
     }
 }

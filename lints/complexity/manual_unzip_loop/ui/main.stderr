@@ -1,5 +1,5 @@
 warning: pair collection loop can use `Iterator::unzip`
-  --> $DIR/main.rs:5:5
+  --> $DIR/main.rs:7:5
    |
 LL | /     for (first, second) in pairs {
 LL | |         left.push(first);
@@ -10,5 +10,16 @@ LL | |     }
    = help: use `Iterator::unzip` and bind its two returned collections
    = note: `#[warn(manual_unzip_loop)]` on by default
 
-warning: 1 warning emitted
+warning: pair collection loop can use `Iterator::unzip`
+  --> $DIR/main.rs:18:5
+   |
+LL | /     for (returned, second) in pairs {
+LL | |         left.insert(returned);
+LL | |         right.push_back(second)
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::unzip` and bind its two returned collections
+
+warning: 2 warnings emitted
 

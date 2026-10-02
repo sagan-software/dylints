@@ -14,12 +14,12 @@ separate steps.
 
 ## Known problems
 
-- The lint skips bodies whose source text contains `?`, `.await`, `break`,
-  `continue`, `return`, or `.ok()`. The check is a text match, so a name such as
-  `returned` also prevents the lint.
+- The lint skips bodies that contain `?`, `.await`, `break`, `continue`, or
+  `return` outside a closure.
+- The lint skips `if let Some(..) = result.ok()`, which reads better as
+  `if let Ok(..) = result`.
 - Compound assignments such as `total += value` do not count as an action, so
   those loops are ignored.
-- The same loop can also trigger `manual_filter_for_each_loop`.
 - The lint emits help without an automatic fix because closure arguments can
   need adjustment.
 

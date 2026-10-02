@@ -7,26 +7,22 @@
 
 //! A lint to check for trivial field-forwarding constructors.
 //!
-//! It resolves public `new` methods that only return a struct literal populated
-//! by shorthand parameters. The lint requires a side-effect-free body, a complete
-//! field list, and public fields before recommending direct construction to callers.
+//! It resolves public inherent `new` methods that only return a literal of a
+//! public, exhaustive struct whose fields are public and populated by distinct
+//! parameters. Callers can then build the same value with a struct literal.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
-extern crate rustc_middle;
 extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Body, Expr, ExprField, ExprKind, FnDecl, ImplicitSelfKind, QPath, StructTailExpr, def::Res,
-    intravisit::FnKind,
+    Body, Expr, ExprField, ExprKind, FnDecl, HirId, ImplicitSelfKind, PatKind, StructTailExpr,
+    def::Res, intravisit::FnKind,
 };
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
-use rustc_middle::ty::{AdtDef, Ty, TyCtxt};
-use rustc_span::{
-    Span,
-    def_id::{DefId, LocalDefId},
-};
+use rustc_lint::{LateContext, LateLintPass, LintContext};
+
+use rustc_span::{Span, def_id::LocalDefId, sym};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -37,7 +33,7 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for TrivialPublicConstructor {
-    /// Check fn for this lint.
+    /// Checks public inherent `new` methods that only forward their parameters.
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
@@ -47,75 +43,68 @@ impl<'tcx> LateLintPass<'tcx> for TrivialPublicConstructor {
         span: Span,
         local_def_id: LocalDefId,
     ) {
-        // Restrict the public API check to methods with a stable method name.
+        // Restrict the check to a user-written associated `new` without `self`.
         let FnKind::Method(ident, _) = kind else {
             return;
         };
+        let def_id = local_def_id.to_def_id();
+        let is_new_without_self = ident.name == sym::new
+            && decl.implicit_self() == ImplicitSelfKind::None
+            && !decl.inputs.is_empty();
 
-        // Establish the constructor signature before inspecting its returned literal.
-        let method_is_new = ident.name.to_ident_string() == "new";
-        let has_no_self = decl.implicit_self() == ImplicitSelfKind::None;
-        let has_inputs = !decl.inputs.is_empty();
-        let is_struct_forward =
-            has_inputs && trivial_struct_forward(cx, body.value, decl.inputs.len(), local_def_id);
-        if method_is_new && has_no_self && has_inputs && is_struct_forward {
-            emit_span_lint_with_help(
-                cx,
+        // Trait methods keep their signature, and only a public method is public API.
+        let is_public_inherent = cx.tcx.trait_of_assoc(def_id).is_none()
+            && cx.tcx.trait_impl_of_assoc(def_id).is_none()
+            && cx.tcx.visibility(def_id).is_public();
+        if is_new_without_self
+            && is_public_inherent
+            && !span.from_expansion()
+            && trivial_struct_forward(cx, body)
+        {
+            cx.emit_span_lint(
                 TRIVIAL_PUBLIC_CONSTRUCTOR,
                 span,
-                "`new` only forwards fields into a struct literal",
-                "remove the constructor when public fields already express the same construction",
+                DiagDecorator(|diag| {
+                    let _ = diag.primary_message("`new` only forwards fields into a struct literal");
+                    let _ = diag.help(
+                        "remove the constructor when public fields already express the same construction",
+                    );
+                }),
             );
         }
     }
 }
 
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: &'static str,
-    help: &'static str,
-) {
-    // Use rustc's native diagnostic decorator to keep the lint dependency-free.
-    cx.emit_span_lint(
-        lint,
-        span,
-        DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ = diag.help(help);
-        }),
-    );
+/// Returns whether the body only moves each parameter into a public field.
+fn trivial_struct_forward<'tcx>(cx: &LateContext<'tcx>, body: &'tcx Body<'tcx>) -> bool {
+    // Recover the returned literal and the struct it builds.
+    let Some((fields, struct_def_id)) = block_tail_expr(body.value)
+        .and_then(|literal| forwarded_struct_literal(literal).map(|fields| (literal, fields)))
+        .and_then(|(literal, fields)| {
+            cx.typeck_results()
+                .expr_ty(literal)
+                .ty_adt_def()
+                .map(|adt| (fields, adt.did()))
+        })
+    else {
+        return false;
+    };
+
+    // Other crates cannot use a literal for a private or non-exhaustive struct.
+    let adt = cx.tcx.adt_def(struct_def_id);
+    let is_constructible = adt.is_struct()
+        && cx.tcx.visibility(struct_def_id).is_public()
+        && !adt.non_enum_variant().is_field_list_non_exhaustive();
+
+    // A literal without `..` names every field, so every field must be public.
+    is_constructible
+        && is_parameter_forwarding(cx, body, fields)
+        && adt
+            .all_fields()
+            .all(|field| cx.tcx.visibility(field.did).is_public())
 }
 
-/// Helper for trivial struct forward analysis.
-fn trivial_struct_forward<'tcx>(
-    cx: &LateContext<'tcx>,
-    expr: &'tcx Expr<'tcx>,
-    input_count: usize,
-    constructor_def_id: LocalDefId,
-) -> bool {
-    // Keep each source-shape check in a small option stage so this predicate has one exit path.
-    block_tail_expr(expr)
-        .and_then(|final_expr| {
-            forwarded_struct_literal(final_expr, input_count).and_then(|(qpath, fields)| {
-                struct_def_id(cx, qpath, final_expr).map(|struct_def_id| (fields, struct_def_id))
-            })
-        })
-        .filter(|(_, struct_def_id)| {
-            returns_constructed_type(cx, constructor_def_id, *struct_def_id)
-        })
-        .is_some_and(|(fields, struct_def_id)| {
-            let adt = cx.tcx.adt_def(struct_def_id);
-            // Public fields make direct struct construction available to callers.
-            fields
-                .iter()
-                .all(|field| field_is_public(cx.tcx, adt, field.ident.name))
-        })
-}
-
-/// Return the side-effect-free tail expression of a constructor body.
+/// Returns the tail expression of a statement-free constructor body.
 const fn block_tail_expr<'tcx>(expr: &'tcx Expr<'tcx>) -> Option<&'tcx Expr<'tcx>> {
     match expr.kind {
         ExprKind::Block(block, _) if block.stmts.is_empty() => block.expr,
@@ -123,66 +112,48 @@ const fn block_tail_expr<'tcx>(expr: &'tcx Expr<'tcx>) -> Option<&'tcx Expr<'tcx
     }
 }
 
-/// Return a complete shorthand struct literal with the expected input count.
-fn forwarded_struct_literal<'tcx>(
-    expr: &'tcx Expr<'tcx>,
-    input_count: usize,
-) -> Option<(&'tcx QPath<'tcx>, &'tcx [ExprField<'tcx>])> {
+/// Returns the fields of a complete shorthand struct literal.
+fn forwarded_struct_literal<'tcx>(expr: &'tcx Expr<'tcx>) -> Option<&'tcx [ExprField<'tcx>]> {
     match expr.kind {
-        ExprKind::Struct(qpath, fields, StructTailExpr::None)
-            if fields.len() == input_count && fields.iter().all(|field| field.is_shorthand) =>
+        ExprKind::Struct(_, fields, StructTailExpr::None)
+            if fields.iter().all(|field| field.is_shorthand) =>
         {
-            Some((qpath, fields))
+            Some(fields)
         }
         _ => None,
     }
 }
 
-/// Helper for struct def id analysis.
-fn struct_def_id<'tcx>(
-    cx: &LateContext<'tcx>,
-    qpath: &'tcx QPath<'tcx>,
-    expr: &'tcx Expr<'tcx>,
-) -> Option<DefId> {
-    if let Some(adt) = cx.typeck_results().expr_ty(expr).ty_adt_def() {
-        return Some(adt.did());
-    }
-
-    match cx.typeck_results().qpath_res(qpath, expr.hir_id) {
-        Res::Def(_, def_id) => Some(def_id),
-        _ => None,
-    }
-}
-
-/// Return whether the item returns constructed type.
-fn returns_constructed_type(
+/// Returns whether the fields consume every parameter binding exactly once.
+fn is_parameter_forwarding(
     cx: &LateContext<'_>,
-    constructor_def_id: LocalDefId,
-    struct_def_id: DefId,
+    body: &Body<'_>,
+    fields: &[ExprField<'_>],
 ) -> bool {
-    let output = fn_output_ty(cx.tcx, constructor_def_id);
-    output
-        .ty_adt_def()
-        .is_some_and(|adt| adt.did() == struct_def_id)
+    // A shorthand field can also name a constant, so resolve every value to a parameter.
+    let parameters = body
+        .params
+        .iter()
+        .filter_map(|param| match param.pat.kind {
+            PatKind::Binding(_, hir_id, _, None) => Some(hir_id),
+            _ => None,
+        })
+        .collect::<Vec<HirId>>();
+    parameters.len() == body.params.len()
+        && parameters.len() == fields.len()
+        && fields.iter().all(|field| {
+            matches!(
+                field.expr.kind,
+                ExprKind::Path(ref qpath)
+                    if matches!(
+                        cx.qpath_res(qpath, field.expr.hir_id),
+                        Res::Local(hir_id) if parameters.contains(&hir_id)
+                    )
+            )
+        })
 }
 
-/// Helper for field is public analysis.
-fn field_is_public(tcx: TyCtxt<'_>, adt: AdtDef<'_>, field_name: rustc_span::Symbol) -> bool {
-    adt.all_fields()
-        .find(|field| field.name == field_name)
-        .is_some_and(|field| tcx.visibility(field.did).is_public())
-}
-
-/// Return type information for fn output.
-fn fn_output_ty(tcx: TyCtxt<'_>, local_def_id: LocalDefId) -> Ty<'_> {
-    tcx.fn_sig(local_def_id)
-        .instantiate_identity()
-        .skip_norm_wip()
-        .output()
-        .skip_binder()
-}
-
-/// Helper for ui analysis.
+/// Runs the UI fixtures.
 #[test]
 fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");

@@ -2,8 +2,10 @@
 
 ## What it does
 
-Checks for two adjacent `for` loops that iterate over plain local names (or a
-borrow of one) and have the same body text.
+Checks for two adjacent `for` loops that iterate over local bindings (or a
+direct borrow of one), bind patterns of the same shape and item type, and have
+structurally equal bodies. A use of the first loop's binding must match a use
+of the second loop's binding at the same pattern position.
 
 ## Why is this bad?
 
@@ -13,12 +15,14 @@ one ordered sequence and keeps one copy of the body.
 
 ## Known problems
 
-- The lint compares the body source text only. It does not compare the loop
-  patterns, so `for a in x { f(v); }` followed by `for b in y { f(v); }` also
-  triggers.
-- Sources other than a plain local name, `&name`, or `&mut name` never trigger.
+- Sources other than a local binding, `&name`, or `&mut name` never trigger.
   Field accesses such as `self.items` and calls such as `list.iter()` are
   ignored.
+- The body comparison supports common expression and statement forms. A body
+  that uses another form, such as a labeled block, a cast, a struct literal, or
+  a `while` loop, is ignored.
+- A body that contains `break` is ignored, because after chaining the `break`
+  would also skip the second sequence.
 - `chain` converts the second source into an iterator before the first loop
   runs. The lint only emits help and does not offer an automatic fix.
 

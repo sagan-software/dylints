@@ -16,10 +16,9 @@ statements hide that the value passes through unchanged. `inspect` and
 
 - The block must contain exactly the `let`, the `if let`, and the returned
   binding. A block with any other statement is ignored.
-- The observation must borrow the binding as `&name` and hold at most one `;`.
-  The lint skips it when its source text contains `?`, `.await`, `break`,
-  `continue`, or `return`. The check is a text match, so a name such as
-  `returned` also prevents the lint.
+- The observation must borrow the binding as `&name`, have no `else`, and hold
+  one action. The lint skips it when it contains `?`, `.await`, `break`,
+  `continue`, or `return` outside a closure.
 - With `inspect`, temporaries in the initializer can drop at a different time.
   The lint emits help without an automatic fix.
 

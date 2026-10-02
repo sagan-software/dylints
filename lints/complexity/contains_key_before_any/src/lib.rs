@@ -17,12 +17,12 @@ extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_span;
 
-use rustc_errors::DiagDecorator;
+use rustc_errors::{Applicability, DiagDecorator};
 use rustc_hir::{
     BinOpKind, BindingMode, ByRef, Expr, ExprKind, HirId, Mutability, Pat, PatKind, UnOp, def::Res,
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
-use rustc_span::{def_id::DefId, sym};
+use rustc_span::{Span, Symbol, def_id::DefId, sym};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -35,27 +35,83 @@ dylint_support::documented_late_lint! {
 impl<'tcx> LateLintPass<'tcx> for ContainsKeyBeforeAny {
     /// Checks one disjunction for a `contains_key` call that can join the array.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        if contains_key_candidate(cx, expr).is_some() {
-            // Report the full disjunction that can become one literal array search.
-            cx.emit_span_lint(
-                CONTAINS_KEY_BEFORE_ANY,
-                expr.span,
-                DiagDecorator(|diagnostic| {
-                    let _diagnostic = diagnostic
-                        .primary_message(
-                            "a separate `contains_key` call can be folded into the array searched by `any`",
-                        )
-                        .help(
-                            "include the separate string literal in the array and remove this `||` gate",
-                        );
-                }),
-            );
-        }
+        let Some(candidate) = validate_contains_key_candidate(cx, expr) else {
+            return;
+        };
+        let suggestion = fold_suggestion(cx, expr, &candidate);
+        // Report the full disjunction that can become one literal array search.
+        cx.emit_span_lint(
+            CONTAINS_KEY_BEFORE_ANY,
+            expr.span,
+            DiagDecorator(|diagnostic| {
+                let help =
+                    "include the separate string literal in the array and remove this `||` gate";
+                let diagnostic = diagnostic.primary_message(
+                    "a separate `contains_key` call can be folded into the array searched by `any`",
+                );
+                if let Some(parts) = suggestion {
+                    let _diagnostic = diagnostic.multipart_suggestion(
+                        help,
+                        parts,
+                        Applicability::MachineApplicable,
+                    );
+                } else {
+                    let _diagnostic = diagnostic.help(help);
+                }
+            }),
+        );
     }
 }
 
-/// Return evidence for a disjunction that can be folded into one key search.
-fn contains_key_candidate<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Option<()> {
+/// Source parts of a disjunction that can be folded into one key search.
+struct Candidate<'tcx> {
+    /// The separate key literal passed to the first `contains_key` call.
+    key: &'tcx Expr<'tcx>,
+    /// The `[..].iter().any(..)` call on the right of `||`.
+    any_call: &'tcx Expr<'tcx>,
+    /// The first array element; the separate key is inserted before it.
+    first_key: &'tcx Expr<'tcx>,
+}
+
+/// Build the rewrite that moves the separate key to the front of the array.
+///
+/// The folded search calls the same resolved method with the same keys in the
+/// same order and stops at the same first match, so it keeps both behavior and
+/// types. Macro-generated source stays on the help-only path because its text
+/// cannot be edited in place.
+fn fold_suggestion(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    candidate: &Candidate<'_>,
+) -> Option<Vec<(Span, String)>> {
+    // Keep generated source on the help-only path.
+    let spans = [
+        expr.span,
+        candidate.key.span,
+        candidate.any_call.span,
+        candidate.first_key.span,
+    ];
+    if spans.iter().any(|span| span.from_expansion()) {
+        return None;
+    }
+    // Reuse the literal's source text so raw strings and escapes stay unchanged.
+    let key = cx
+        .sess()
+        .source_map()
+        .span_to_snippet(candidate.key.span)
+        .ok()?;
+    Some(vec![
+        // Remove `receiver.contains_key("key") ||` and the whitespace before the array.
+        (expr.span.until(candidate.any_call.span), String::new()),
+        (candidate.first_key.span.shrink_to_lo(), format!("{key}, ")),
+    ])
+}
+
+/// Return the parts of a disjunction that can be folded into one key search.
+fn validate_contains_key_candidate<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+) -> Option<Candidate<'tcx>> {
     // Prove the binary shape, literal keys, and closure identity in source order.
     match expr.kind {
         ExprKind::Binary(operation, separate_call, any_call) if operation.node == BinOpKind::Or => {
@@ -67,21 +123,34 @@ fn contains_key_candidate<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) 
         contains_key_call(cx, separate_call).map(|call| (call, any_call))
     })
     .filter(|((_, _, key), _)| is_string_literal(key))
-    .and_then(|((method, receiver, _), any_call)| {
-        literal_array_any(cx, any_call).map(|(keys, closure)| (method, receiver, keys, closure))
+    .and_then(|((method, receiver, key), any_call)| {
+        validate_literal_array_any(cx, any_call)
+            .map(|(keys, closure)| (method, receiver, key, any_call, keys, closure))
     })
-    .filter(|(_, _, keys, _)| !keys.is_empty() && keys.iter().all(|key| is_string_literal(key)))
-    .and_then(|(method, receiver, _, closure)| {
-        closure_contains_key(cx, closure).map(|call| (method, receiver, call))
+    .filter(|(_, _, _, _, keys, _)| keys.iter().all(|key| is_string_literal(key)))
+    .and_then(|(method, receiver, key, any_call, keys, closure)| {
+        let first_key = keys.first()?;
+        closure_contains_key(cx, closure).map(|call| {
+            (
+                method,
+                receiver,
+                Candidate {
+                    key,
+                    any_call,
+                    first_key,
+                },
+                call,
+            )
+        })
     })
     .filter(
-        |(method, receiver, (closure_method, closure_receiver, closure_key, parameter))| {
+        |(method, receiver, _, (closure_method, closure_receiver, closure_key, parameter))| {
             *method == *closure_method
                 && is_same_local(cx, receiver, closure_receiver)
                 && is_dereferenced_local(cx, closure_key, *parameter)
         },
     )
-    .map(|_| ())
+    .map(|(_, _, candidate, _)| candidate)
 }
 
 /// Returns the resolved method, receiver, and key for one `contains_key` call.
@@ -107,7 +176,7 @@ fn is_contains_key_name(name: &str) -> bool {
 }
 
 /// Returns the literal array and closure from a standard `iter().any(...)` call.
-fn literal_array_any<'tcx>(
+fn validate_literal_array_any<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
 ) -> Option<(&'tcx [Expr<'tcx>], &'tcx Expr<'tcx>)> {
@@ -119,7 +188,7 @@ fn literal_array_any<'tcx>(
     .filter(|_| is_standard_iterator_method(cx, expr, "any"))
     // Resolve the receiver as an inline array followed by the core `iter` method.
     .and_then(|(iterator, closure)| match iterator.kind {
-        ExprKind::MethodCall(_, keys, [], _) if is_core_method(cx, iterator, "iter") => {
+        ExprKind::MethodCall(_, keys, [], _) if is_slice_iter(cx, iterator) => {
             Some((keys, closure))
         }
         _ => None,
@@ -186,12 +255,14 @@ fn is_standard_iterator_method(cx: &LateContext<'_>, expr: &Expr<'_>, name: &str
     cx.tcx.item_name(method).as_str() == name && cx.tcx.is_diagnostic_item(sym::Iterator, trait_id)
 }
 
-/// Returns whether a method with the target name resolves inside `core`.
-fn is_core_method(cx: &LateContext<'_>, expr: &Expr<'_>, name: &str) -> bool {
-    let Some(method) = cx.typeck_results().type_dependent_def_id(expr.hir_id) else {
-        return false;
-    };
-    cx.tcx.crate_name(method.krate).as_str() == "core" && cx.tcx.item_name(method).as_str() == name
+/// Returns whether a method call resolves to the standard slice `iter` method.
+fn is_slice_iter(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    cx.typeck_results()
+        .type_dependent_def_id(expr.hir_id)
+        .is_some_and(|method| {
+            cx.tcx
+                .is_diagnostic_item(Symbol::intern("slice_iter"), method)
+        })
 }
 
 /// Returns whether two expressions resolve to the same local binding.

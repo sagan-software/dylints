@@ -1,0 +1,63 @@
+warning: fallible `for` loop can use `Iterator::try_for_each`
+  --> $DIR/edge_cases.rs:14:5
+   |
+LL | /     for value in values {
+LL | |         write_value(value).map_err(|_| io::Error::other("why?"))?;
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::try_for_each` for this fallible loop
+   = note: `#[warn(manual_try_for_each_loop)]` on by default
+
+warning: fallible `for` loop can use `Iterator::try_for_each`
+  --> $DIR/edge_cases.rs:61:5
+   |
+LL | /     for value in values {
+LL | |         (|| -> io::Result<()> { write_value(value) })()?;
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::try_for_each` for this fallible loop
+
+warning: fallible `for` loop can use `Iterator::try_for_each`
+  --> $DIR/edge_cases.rs:79:9
+   |
+LL | /         for value in values {
+LL | |             write_value(value)?;
+LL | |         }
+   | |_________^
+   |
+   = help: use `Iterator::try_for_each` for this fallible loop
+
+warning: fallible `for` loop can use `Iterator::try_for_each`
+  --> $DIR/edge_cases.rs:88:9
+   |
+LL | /         for value in values {
+LL | |             write_value(value)?;
+LL | |         }
+   | |_________^
+   |
+   = help: use `Iterator::try_for_each` for this fallible loop
+
+warning: fallible `for` loop can use `Iterator::try_for_each`
+  --> $DIR/edge_cases.rs:97:5
+   |
+LL | /     for value in values {
+LL | |         write_value(value)?;
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::try_for_each` for this fallible loop
+
+warning: fallible `for` loop can use `Iterator::try_for_each`
+  --> $DIR/edge_cases.rs:131:5
+   |
+LL | /     for value in values {
+LL | |         write_value(value)?;
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::try_for_each` for this fallible loop
+
+warning: 6 warnings emitted
+

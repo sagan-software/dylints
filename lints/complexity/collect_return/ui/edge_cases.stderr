@@ -15,5 +15,21 @@ LL |     values.iter().copied().collect::<Vec<_>>()
    |
    = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
 
-warning: 2 warnings emitted
+warning: this `Vec` return value comes from a tail `.collect()` call
+  --> $DIR/edge_cases.rs:42:32
+   |
+LL |         values.iter().copied().collect()
+   |                                ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: this `BTreeSet` return value comes from a tail `.collect()` call
+  --> $DIR/edge_cases.rs:61:28
+   |
+LL |     values.iter().copied().collect()
+   |                            ^^^^^^^
+   |
+   = help: consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract
+
+warning: 4 warnings emitted
 

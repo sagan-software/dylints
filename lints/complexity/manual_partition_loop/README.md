@@ -2,8 +2,8 @@
 
 ## What it does
 
-Checks for two empty mutable collections declared just before a `for` loop
-whose body is one `if`/`else` that pushes or inserts the same item into the
+Checks for two empty mutable collections of the same type declared just before
+a `for` loop whose body is one `if`/`else` that inserts the loop item into the
 first collection or the second, when the block returns `(first, second)`.
 
 ## Why is this bad?
@@ -14,14 +14,16 @@ states the two-way split in one call.
 
 ## Known problems
 
-- The collections must be standard `Vec`, `VecDeque`, `HashSet`, `BTreeSet`,
-  `HashMap`, or `BTreeMap` values created with `::new()` or `::default()`.
-  `vec![]` and `Vec::with_capacity(n)` are ignored.
+- The collections must be standard `Vec`, `VecDeque`, `HashSet`, or `BTreeSet`
+  values created with the collection's own `new` function (including `vec![]`)
+  or with `Default::default`. `Vec::with_capacity(n)` is ignored. Maps are
+  ignored because their insertion takes a key and a value.
+- Each branch must call `push`, `push_back`, or `insert` with the loop binding
+  itself. A loop pattern that destructures the item is ignored.
+- The condition must not use either collection, and must not contain `return`,
+  `break`, `continue`, `?`, or `.await`, because it moves into a closure.
 - The block must end with the tuple of both collections in declaration order.
   A loop whose results are used another way is ignored.
-- The lint does not check that both collections have the same type.
-  `partition` needs one type for both sides, so a `Vec` paired with a `HashSet`
-  triggers but cannot use `partition` directly.
 - The predicate closure receives `&T`, so it can need a dereference. The lint
   emits help without an automatic fix.
 

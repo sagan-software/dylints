@@ -1,3 +1,14 @@
+warning: function cannot return without recursing
+  --> $DIR/edge_cases.rs:71:1
+   |
+LL | fn recursive_total(order: &Order) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot return without recursing
+LL |     recursive_total(order)
+   |     ---------------------- recursive call site
+   |
+   = help: a `loop` may express intention better if this is on purpose
+   = note: `#[warn(unconditional_recursion)]` on by default
+
 warning: type `Order` is more private than the item `public_helper`
   --> $DIR/edge_cases.rs:15:1
    |
@@ -14,13 +25,107 @@ LL | struct Order {
 warning: private one-expression helper is only called once
   --> $DIR/edge_cases.rs:7:1
    |
-LL | / fn inline_discount(order: &Order) -> u64 {
-LL | |     order.amount.saturating_sub(5)
-LL | | }
-   | |_^
+LL | fn inline_discount(order: &Order) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
+note: the only call is here
+  --> $DIR/edge_cases.rs:12:5
+   |
+LL |     inline_discount(order)
+   |     ^^^^^^^^^^^^^^^
    = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
    = note: `#[warn(one_use_private_helper)]` on by default
 
-warning: 2 warnings emitted
+warning: private one-expression helper is only called once
+  --> $DIR/edge_cases.rs:31:1
+   |
+LL | fn documented_discount(order: &Order) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the only call is here
+  --> $DIR/edge_cases.rs:55:5
+   |
+LL |     documented_discount(order)
+   |     ^^^^^^^^^^^^^^^^^^^
+   = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
+
+warning: private one-expression helper is only called once
+  --> $DIR/edge_cases.rs:36:1
+   |
+LL | fn inlined_discount(order: &Order) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the only call is here
+  --> $DIR/edge_cases.rs:57:11
+   |
+LL |         + inlined_discount(order)
+   |           ^^^^^^^^^^^^^^^^
+   = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
+
+warning: private one-expression helper is only called once
+  --> $DIR/edge_cases.rs:42:1
+   |
+LL | fn attributed_discount(order: &Order) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the only call is here
+  --> $DIR/edge_cases.rs:56:11
+   |
+LL |         + attributed_discount(order)
+   |           ^^^^^^^^^^^^^^^^^^^
+   = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
+
+warning: private one-expression helper is only called once
+  --> $DIR/edge_cases.rs:46:1
+   |
+LL | fn qualified_discount(order: &Order) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the only call is here
+  --> $DIR/edge_cases.rs:58:11
+   |
+LL |         + self::qualified_discount(order)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
+
+warning: private one-expression helper is only called once
+  --> $DIR/edge_cases.rs:50:1
+   |
+LL | fn closure_discount(order: &Order) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the only call is here
+  --> $DIR/edge_cases.rs:59:15
+   |
+LL |         + (|| closure_discount(order))()
+   |               ^^^^^^^^^^^^^^^^
+   = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
+
+warning: private one-expression helper is only called once
+  --> $DIR/edge_cases.rs:106:1
+   |
+LL | pub(crate) fn crate_amount(order: &Order) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the only call is here
+  --> $DIR/edge_cases.rs:111:70
+   |
+LL |     generic_amount(order.amount) + unsafe { unsafe_amount(order) } + crate_amount(order)
+   |                                                                      ^^^^^^^^^^^^
+   = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
+
+warning: private one-expression helper is only called once
+  --> $DIR/edge_cases.rs:129:1
+   |
+LL | const fn const_amount(amount: u64) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the only call is here
+  --> $DIR/edge_cases.rs:133:20
+   |
+LL | const LIMIT: u64 = const_amount(1);
+   |                    ^^^^^^^^^^^^
+   = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
+
+warning: 10 warnings emitted
 

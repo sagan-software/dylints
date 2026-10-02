@@ -1,5 +1,5 @@
 warning: adjacent index loop can use `slice::windows(2)`
-  --> $DIR/main.rs:3:5
+  --> $DIR/main.rs:6:5
    |
 LL | /     for index in 0..values.len().saturating_sub(1) {
 LL | |         println!(
@@ -10,8 +10,44 @@ LL | |         );
 LL | |     }
    | |_____^
    |
-   = help: use `windows(2)` and read the two elements from each window
    = note: `#[warn(manual_adjacent_window_loop)]` on by default
+help: use `windows(2)` and read the two elements from each window
+   |
+LL ~     for window in values.windows(2) {
+LL |         println!(
+LL |             "{current} {next}",
+LL ~             current = window[0],
+LL ~             next = window[1]
+   |
 
-warning: 1 warning emitted
+warning: adjacent index loop can use `slice::windows(2)`
+  --> $DIR/main.rs:18:5
+   |
+LL | /     for index in 0..values.len().saturating_sub(1) {
+LL | |         total += values[index + 1] - values[index];
+LL | |     }
+   | |_____^
+   |
+help: use `windows(2)` and read the two elements from each window
+   |
+LL ~     for window in values.windows(2) {
+LL ~         total += window[1] - window[0];
+   |
+
+warning: adjacent index loop can use `slice::windows(2)`
+  --> $DIR/main.rs:27:5
+   |
+LL | /     for index in 0..values.len().saturating_sub(1) {
+LL | |         let sum = || values[index] + values[index + 1];
+LL | |         total += sum();
+LL | |     }
+   | |_____^
+   |
+help: use `windows(2)` and read the two elements from each window
+   |
+LL ~     for window in values.windows(2) {
+LL ~         let sum = || window[0] + window[1];
+   |
+
+warning: 3 warnings emitted
 

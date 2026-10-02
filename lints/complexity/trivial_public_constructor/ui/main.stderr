@@ -9,5 +9,15 @@ LL | |     }
    = help: remove the constructor when public fields already express the same construction
    = note: `#[warn(trivial_public_constructor)]` on by default
 
-warning: 1 warning emitted
+warning: `new` only forwards fields into a struct literal
+  --> $DIR/main.rs:58:5
+   |
+LL | /     pub fn new(value: T) -> Self {
+LL | |         Self { value }
+LL | |     }
+   | |_____^
+   |
+   = help: remove the constructor when public fields already express the same construction
+
+warning: 2 warnings emitted
 

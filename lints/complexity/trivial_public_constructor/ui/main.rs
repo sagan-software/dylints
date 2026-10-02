@@ -1,8 +1,8 @@
-struct UserId;
+pub struct UserId;
 
-type UserAlias = User;
+pub type UserAlias = User;
 
-struct User {
+pub struct User {
     pub id: UserId,
     pub name: String,
 }
@@ -20,7 +20,7 @@ impl User {
     }
 }
 
-struct PrivateField {
+pub struct PrivateField {
     pub id: UserId,
     name: String,
 }
@@ -31,7 +31,7 @@ impl PrivateField {
     }
 }
 
-struct RestrictedField {
+pub struct RestrictedField {
     pub id: UserId,
     pub(crate) name: String,
 }
@@ -47,6 +47,16 @@ pub struct Newtype(pub String);
 impl Newtype {
     pub fn new(value: String) -> Self {
         Self(value)
+    }
+}
+
+pub struct Wrapper<T> {
+    pub value: T,
+}
+
+impl<T> Wrapper<T> {
+    pub fn new(value: T) -> Self {
+        Self { value }
     }
 }
 

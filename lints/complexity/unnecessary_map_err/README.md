@@ -20,11 +20,13 @@ adds a call that a reader must check, only to find that it changes nothing that
   call. In a tail expression such as `raw.parse::<u16>().map_err(Error::from)`,
   or inside `Ok(..)` without `?`, the lint gives help without a fix. Rewrite
   these calls by hand as `Ok(raw.parse::<u16>()?)`.
-- A call inside a macro body gets help without a fix.
+- A call inside a macro body, or whose receiver comes from a macro call, gets
+  help without a fix.
 - `?` cannot infer the target of `map_err(From::from)`, `map_err(Into::into)`,
   or `map_err(|e| e.into())`, so these mappers trigger only without `?`.
-- Closures are not checked. Mappers with any other body, such as a closure that
-  adds context, are ignored.
+- Calls inside closures and `async` function bodies are not checked.
+- Mappers with any other body, such as a closure that adds context or runs a
+  statement before the conversion, are ignored.
 
 ## Example
 

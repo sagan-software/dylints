@@ -12,5 +12,30 @@ LL | |     }
    = help: use `and_modify(...).or_insert_with(...)` for this value-only entry update
    = note: `#[warn(manual_entry_update)]` on by default
 
-warning: 1 warning emitted
+warning: standard map entry match can use `and_modify(...).or_insert_with(...)`
+  --> $DIR/main.rs:15:5
+   |
+LL | /     match map.entry(key) {
+LL | |         btree_map::Entry::Vacant(slot) => {
+LL | |             slot.insert(vec![value]);
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: use `and_modify(...).or_insert_with(...)` for this value-only entry update
+
+warning: standard map entry match can use `and_modify(...).or_insert_with(...)`
+  --> $DIR/main.rs:28:5
+   |
+LL | /     match map.entry(key) {
+LL | |         Entry::Occupied(mut entry) => {
+LL | |             let mut bump = || *entry.get_mut() += 1;
+LL | |             bump();
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: use `and_modify(...).or_insert_with(...)` for this value-only entry update
+
+warning: 3 warnings emitted
 

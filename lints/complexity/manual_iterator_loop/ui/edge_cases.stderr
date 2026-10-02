@@ -11,5 +11,68 @@ LL | |     }
    = help: use `.filter(...).count()` instead of incrementing a counter in the loop
    = note: `#[warn(manual_iterator_loop)]` on by default
 
-warning: 1 warning emitted
+warning: for loop manually searches for a matching item
+  --> $DIR/edge_cases.rs:63:5
+   |
+LL | /     for value in values {
+LL | |         if value.iter().any(|inner| {
+LL | |             if *inner < 0 {
+LL | |                 return false;
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: use `.any(...)` instead of setting a boolean accumulator
+
+warning: for loop manually fills a collection
+  --> $DIR/edge_cases.rs:78:5
+   |
+LL | /     for value in values {
+LL | |         output.push({
+LL | |             let doubled = value * 2;
+LL | |             doubled + 1
+LL | |         });
+LL | |     }
+   | |_____^
+   |
+   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()`
+
+warning: for loop manually counts matching items
+  --> $DIR/edge_cases.rs:154:5
+   |
+LL | /     for value in values {
+LL | |         if *value > 0 {
+LL | |             count = count + 1;
+LL | |         }
+LL | |     }
+   | |_____^
+   |
+   = help: use `.filter(...).count()` instead of incrementing a counter in the loop
+
+warning: for loop manually counts matching items
+  --> $DIR/edge_cases.rs:164:5
+   |
+LL | /     for value in values {
+LL | |         if *value > 0 {
+LL | |             count = 1 + count;
+LL | |         }
+LL | |     }
+   | |_____^
+   |
+   = help: use `.filter(...).count()` instead of incrementing a counter in the loop
+
+warning: for loop manually counts matching items
+  --> $DIR/edge_cases.rs:262:5
+   |
+LL | /     for value in values {
+LL | |         if (|| {
+LL | |             let count = 2;
+LL | |             *value < count
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: use `.filter(...).count()` instead of incrementing a counter in the loop
+
+warning: 6 warnings emitted
 

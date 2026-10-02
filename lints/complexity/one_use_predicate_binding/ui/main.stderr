@@ -1,43 +1,68 @@
 warning: one-use predicate binding could be inlined
-  --> $DIR/main.rs:10:5
+  --> $DIR/main.rs:12:5
    |
 LL |     let is_empty = values.is_empty();
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: inline the predicate expression into the branch condition unless the name captures a domain concept
    = note: `#[warn(one_use_predicate_binding)]` on by default
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let is_empty = values.is_empty();
+LL -     if is_empty {
+LL +     if values.is_empty() {
+   |
 
 warning: one-use predicate binding could be inlined
-  --> $DIR/main.rs:17:5
+  --> $DIR/main.rs:19:5
    |
 LL |     let is_ready: Predicate = values.len() > 1;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: inline the predicate expression into the branch condition unless the name captures a domain concept
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let is_ready: Predicate = values.len() > 1;
+LL -     if is_ready {
+LL +     if values.len() > 1 {
+   |
 
 warning: one-use predicate binding could be inlined
-  --> $DIR/main.rs:24:5
+  --> $DIR/main.rs:26:5
    |
 LL |     let has_items = count > 0;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: inline the predicate expression into the branch condition unless the name captures a domain concept
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let has_items = count > 0;
+LL -     if has_items {
+LL +     if count > 0 {
+   |
 
 warning: one-use predicate binding could be inlined
-  --> $DIR/main.rs:31:5
+  --> $DIR/main.rs:33:5
    |
 LL |     let contains_value = values.contains(&needle);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: inline the predicate expression into the branch condition unless the name captures a domain concept
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let contains_value = values.contains(&needle);
+LL -     if contains_value {
+LL +     if values.contains(&needle) {
+   |
 
 warning: one-use predicate binding could be inlined
-  --> $DIR/main.rs:45:5
+  --> $DIR/main.rs:47:5
    |
 LL |     let is_valid = !name.is_empty() && count > 0;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: inline the predicate expression into the branch condition unless the name captures a domain concept
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let is_valid = !name.is_empty() && count > 0;
+LL -     if is_valid {
+LL +     if !name.is_empty() && count > 0 {
+   |
 
 warning: 5 warnings emitted
 

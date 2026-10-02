@@ -21,6 +21,9 @@ question. Adding the first key to the array keeps all keys in one list.
   `self.map.contains_key(..)` are ignored.
 - Computed keys, a closure with any extra condition, and sources other than an
   inline array with `.iter().any(..)` are ignored.
+- The machine-applicable fix moves the separate key to the front of the array,
+  so the keys keep their search order. A disjunction produced by a macro gets
+  help without a fix.
 
 ## Example
 

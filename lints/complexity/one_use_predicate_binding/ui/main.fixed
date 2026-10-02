@@ -9,29 +9,25 @@ type Predicate = bool;
 fn consume<T>(_value: T) {}
 
 fn inline_is_empty(values: &[i32]) {
-    let is_empty = values.is_empty();
-    if is_empty {
+    if values.is_empty() {
         consume(values.len());
     }
 }
 
 fn inline_bool_alias(values: &[i32]) {
-    let is_ready: Predicate = values.len() > 1;
-    if is_ready {
+    if values.len() > 1 {
         consume(values.len());
     }
 }
 
 fn inline_has_items(count: usize) {
-    let has_items = count > 0;
-    if has_items {
+    if count > 0 {
         consume(count);
     }
 }
 
 fn inline_contains_value(values: &[i32], needle: i32) {
-    let contains_value = values.contains(&needle);
-    if contains_value {
+    if values.contains(&needle) {
         consume(needle);
     }
 }
@@ -44,8 +40,7 @@ fn keep_while_condition(count: usize) {
 }
 
 fn inline_boolean_chain(name: &str, count: usize) {
-    let is_valid = !name.is_empty() && count > 0;
-    if is_valid {
+    if !name.is_empty() && count > 0 {
         consume(name);
     }
 }

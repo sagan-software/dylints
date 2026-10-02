@@ -45,7 +45,7 @@ Rust review lints for code that can usually become simpler.
 - [`one_use_predicate_binding`](one_use_predicate_binding): flags generic
   `bool` bindings used once as the next `if` condition.
 - [`one_use_private_helper`](one_use_private_helper): flags private
-  one-expression functions called once in the same file.
+  one-expression functions called once in the crate.
 - [`trivial_public_constructor`](trivial_public_constructor): flags `new`
   functions that only forward arguments into a struct with `pub` fields.
 - [`unnecessary_map_err`](unnecessary_map_err): flags `.map_err` calls that only

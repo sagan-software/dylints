@@ -1,5 +1,5 @@
 warning: a separate `contains_key` call can be folded into the array searched by `any`
-  --> $DIR/main.rs:13:14
+  --> $DIR/main.rs:17:14
    |
 LL |           _ if document.contains_key("address")
    |  ______________^
@@ -11,11 +11,15 @@ LL | |             .iter()
 LL | |             .any(|key| document.contains_key(*key))
    | |___________________________________________________^
    |
-   = help: include the separate string literal in the array and remove this `||` gate
    = note: `#[warn(contains_key_before_any)]` on by default
+help: include the separate string literal in the array and remove this `||` gate
+   |
+LL ~         _ if [
+LL ~                 "address", "full_name",
+   |
 
 warning: a separate `contains_key` call can be folded into the array searched by `any`
-  --> $DIR/main.rs:28:5
+  --> $DIR/main.rs:32:5
    |
 LL | /     document.contains_key("address")
 LL | |         || ["full_name", "date_of_birth"]
@@ -23,7 +27,37 @@ LL | |             .iter()
 LL | |             .any(|key| document.contains_key(*key))
    | |___________________________________________________^
    |
-   = help: include the separate string literal in the array and remove this `||` gate
+help: include the separate string literal in the array and remove this `||` gate
+   |
+LL -     document.contains_key("address")
+LL -         || ["full_name", "date_of_birth"]
+LL +     ["address", "full_name", "date_of_birth"]
+   |
 
-warning: 2 warnings emitted
+warning: a separate `contains_key` call can be folded into the array searched by `any`
+  --> $DIR/main.rs:70:5
+   |
+LL |     document.contains_key("address") || ["full_name"].iter().any(|key| document.contains_key(*key))
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: include the separate string literal in the array and remove this `||` gate
+   |
+LL -     document.contains_key("address") || ["full_name"].iter().any(|key| document.contains_key(*key))
+LL +     ["address", "full_name"].iter().any(|key| document.contains_key(*key))
+   |
+
+warning: a separate `contains_key` call can be folded into the array searched by `any`
+  --> $DIR/main.rs:80:9
+   |
+LL | /         $document.contains_key("address")
+LL | |             || ["full_name"].iter().any(|key| $document.contains_key(*key))
+   | |___________________________________________________________________________^
+...
+LL |       generated_gate!(document)
+   |       ------------------------- in this macro invocation
+   |
+   = help: include the separate string literal in the array and remove this `||` gate
+   = note: this warning originates in the macro `generated_gate` (in Nightly b$DIRlds, run with -Z macro-backtrace for more info)
+
+warning: 4 warnings emitted
 

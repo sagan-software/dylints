@@ -16,10 +16,11 @@ pair split in one call.
 ## Known problems
 
 - The collections must be standard `Vec`, `VecDeque`, `HashSet`, `BTreeSet`,
-  `HashMap`, or `BTreeMap` values created with `::new()` or `::default()`.
-  `vec![]` and `Vec::with_capacity(n)` are ignored.
-- The loop pattern must be a two-name tuple, and the body must push the names
-  unchanged in pattern order. Swapped or transformed items are ignored.
+  `HashMap`, or `BTreeMap` values created by an argument-free `new` or
+  `default` call. `vec![]` and `Vec::with_capacity(n)` are ignored.
+- The loop pattern must be a two-name tuple, and the body must insert the names
+  unchanged in pattern order with `push`, `push_back`, or `insert`. Swapped or
+  transformed items are ignored.
 - The block must end with the tuple of both collections in declaration order.
   A loop whose results are used another way is ignored.
 - The lint emits help without an automatic fix.

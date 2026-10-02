@@ -1,5 +1,5 @@
 warning: conditional mapping loop can use `filter_map(...).for_each(...)`
-  --> $DIR/main.rs:8:5
+  --> $DIR/main.rs:10:5
    |
 LL | /     for value in values {
 LL | |         if let Some(mapped) = parse(value) {
@@ -11,5 +11,29 @@ LL | |     }
    = help: use `filter_map(...).for_each(...)` for this conditional action
    = note: `#[warn(manual_filter_map_for_each_loop)]` on by default
 
-warning: 1 warning emitted
+warning: conditional mapping loop can use `filter_map(...).for_each(...)`
+  --> $DIR/main.rs:19:5
+   |
+LL | /     for value in returned {
+LL | |         if let Some(mapped) = parse(value) {
+LL | |             consume_option(value.parse::<i32>().ok().map(|number| number + mapped));
+LL | |         }
+LL | |     }
+   | |_____^
+   |
+   = help: use `filter_map(...).for_each(...)` for this conditional action
+
+warning: conditional mapping loop can use `filter_map(...).for_each(...)`
+  --> $DIR/main.rs:28:5
+   |
+LL | /     for value in values {
+LL | |         if let Some(character) = value.chars().next() {
+LL | |             consume(character as i32);
+LL | |         }
+LL | |     }
+   | |_____^
+   |
+   = help: use `filter_map(...).for_each(...)` for this conditional action
+
+warning: 3 warnings emitted
 

@@ -20,7 +20,7 @@ extern crate rustc_span;
 #[path = "../../chaining_lint_support.rs"]
 mod support;
 
-use rustc_hir::{Expr, ExprKind};
+use rustc_hir::{Expr, ExprKind, LangItem};
 use rustc_lint::{LateContext, LateLintPass};
 use rustc_span::Span;
 
@@ -35,7 +35,7 @@ dylint_support::documented_late_lint! {
 impl<'tcx> LateLintPass<'tcx> for ManualFilterMapForEachLoop {
     /// Checks one standard loop for a complete `if let Some` body.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        if let Some(span) = filter_map_loop_span(cx, expr) {
+        if let Some(span) = validate_filter_map_loop(cx, expr) {
             support::emit(
                 cx,
                 MANUAL_FILTER_MAP_FOR_EACH_LOOP,
@@ -48,11 +48,12 @@ impl<'tcx> LateLintPass<'tcx> for ManualFilterMapForEachLoop {
 }
 
 /// Return the span of a loop whose body is one safe `Option` mapping action.
-fn filter_map_loop_span<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Option<Span> {
-    // Recover the loop, then preserve the source checks that make the adapter equivalent.
+fn validate_filter_map_loop<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Option<Span> {
+    // Recover the loop, then require the resolved `Some` pattern and no early exit.
     (!matches!(expr.kind, ExprKind::DropTemps(_)))
         .then_some(expr)
         .and_then(|expr| support::for_loop(cx, expr))
+        .filter(|loop_info| !loop_info.body.span.from_expansion())
         .and_then(|loop_info| {
             support::block_only_expr(loop_info.body).map(|body| (loop_info, body))
         })
@@ -64,44 +65,45 @@ fn filter_map_loop_span<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) ->
                 _ => None,
             },
         )
-        .and_then(
-            |(loop_info, body, condition, then_expr)| match condition.kind {
-                ExprKind::Let(let_expr)
-                    if support::is_option(cx, cx.typeck_results().expr_ty(let_expr.init))
-                        && single_action(then_expr) =>
-                {
-                    Some((loop_info, body))
-                }
-                _ => None,
-            },
-        )
-        .and_then(|(loop_info, body)| {
-            support::snippet(cx, body.span).map(|source| (loop_info, source))
+        .filter(|(_, _, condition, then_expr)| {
+            is_option_mapping(cx, condition) && single_action(then_expr)
         })
-        .filter(|(_, source)| is_filter_map_source(source))
-        .map(|(loop_info, _)| loop_info.span)
+        .filter(|(_, body, _, _)| !support::contains_control_flow(body))
+        .map(|(loop_info, _, _, _)| loop_info.span)
 }
 
-/// Return whether source syntax preserves the semantics of a filter-map closure.
-fn is_filter_map_source(source: &str) -> bool {
-    source.trim_start().starts_with("if let Some(")
-        && !["?", ".await", "break", "continue", "return", ".ok()"]
-            .iter()
-            .any(|token| source.contains(token))
+/// Returns whether a condition is `let Some(..) = option` on a mapped `Option`.
+fn is_option_mapping(cx: &LateContext<'_>, condition: &Expr<'_>) -> bool {
+    // Resolve the `Some` pattern rather than reading the source spelling.
+    let ExprKind::Let(let_expr) = condition.kind else {
+        return false;
+    };
+    let is_some_pattern = support::lang_ctor_pat(cx, let_expr.pat, LangItem::OptionSome).is_some();
+    let is_option = support::is_option(cx, cx.typeck_results().expr_ty(let_expr.init));
+    is_some_pattern && is_option && !is_result_ok(cx, let_expr.init)
+}
+
+/// Returns whether an expression calls `Result::ok`.
+///
+/// `if let Some(x) = result.ok()` is better written as `if let Ok(x) = result`,
+/// so this lint leaves it to that rewrite.
+fn is_result_ok(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    support::inherent_method(cx, expr)
+        .is_some_and(|(self_ty, method)| method.as_str() == "ok" && support::is_result(cx, self_ty))
 }
 
 /// Returns whether an `if let` branch contains one terminal action.
 fn single_action(expr: &Expr<'_>) -> bool {
     // Accept terminal expression categories that preserve immediate execution.
-    let ExprKind::Block(block, _) = support::peel_drop_temps(expr).kind else {
-        return false;
-    };
-    support::block_only_expr(block).is_some_and(|action| {
-        matches!(
-            support::peel_drop_temps(action).kind,
-            ExprKind::Call(..) | ExprKind::MethodCall(..) | ExprKind::Assign(..)
-        )
-    })
+    matches!(
+        support::peel_drop_temps(expr).kind,
+        ExprKind::Block(block, _) if support::block_only_expr(block).is_some_and(|action| {
+            matches!(
+                support::peel_drop_temps(action).kind,
+                ExprKind::Call(..) | ExprKind::MethodCall(..) | ExprKind::Assign(..)
+            )
+        })
+    )
 }
 
 /// Runs the UI fixture.

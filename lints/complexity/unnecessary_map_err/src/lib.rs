@@ -22,7 +22,8 @@ extern crate rustc_trait_selection;
 
 use rustc_errors::{Applicability, DiagDecorator};
 use rustc_hir::{
-    Body, Expr, ExprKind, FnDecl, MatchSource, Node, Pat, PatKind, QPath,
+    Body, Expr, ExprKind, FnDecl, HirId, MatchSource, Node, PatKind, QPath,
+    def::Res,
     intravisit::{FnKind, Visitor, walk_expr},
 };
 use rustc_infer::infer::TyCtxtInferExt as _;
@@ -40,7 +41,7 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for UnnecessaryMapErr {
-    /// Check fn for this lint.
+    /// Walks a function body whose return type is a standard `Result`.
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
@@ -68,24 +69,23 @@ impl<'tcx> LateLintPass<'tcx> for UnnecessaryMapErr {
     }
 }
 
-/// State used by the map err visitor analysis.
+/// Visitor that reports conversion-only `map_err` calls in one function body.
 struct MapErrVisitor<'cx, 'tcx> {
-    /// cx stored for this lint's analysis.
+    /// Lint context of the visited function.
     cx: &'cx LateContext<'tcx>,
-    /// function error ty stored for this lint's analysis.
+    /// Error type of the enclosing function's `Result`.
     function_error_ty: Ty<'tcx>,
 }
 
 impl<'tcx> Visitor<'tcx> for MapErrVisitor<'_, 'tcx> {
-    /// Helper for visit expr analysis.
+    /// Reports a matching call, then descends into everything except closures.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
         // Report a removable conversion before descending into child expressions.
-        if let Some(removal_span) = unnecessary_map_err(self.cx, self.function_error_ty, expr) {
-            // Macro bodies are shared by every expansion, so only user-written calls get a fix.
-            let is_fixable = is_try_operand(self.cx, expr) && !expr.span.from_expansion();
-            emit_map_err_lint(self.cx, removal_span, is_fixable);
+        if let Some(receiver) = unnecessary_map_err(self.cx, self.function_error_ty, expr) {
+            emit_map_err_lint(self.cx, expr, receiver);
         }
 
+        // A `?` inside a closure propagates to the closure, not to this function.
         if matches!(expr.kind, ExprKind::Closure(_)) {
             return;
         }
@@ -94,47 +94,48 @@ impl<'tcx> Visitor<'tcx> for MapErrVisitor<'_, 'tcx> {
     }
 }
 
-/// Helper for unnecessary map err analysis.
+/// Returns the receiver of a conversion-only `Result::map_err` call.
 fn unnecessary_map_err<'tcx>(
     cx: &LateContext<'tcx>,
     function_error_ty: Ty<'tcx>,
     expr: &'tcx Expr<'tcx>,
-) -> Option<Span> {
+) -> Option<&'tcx Expr<'tcx>> {
     // Prove both receiver and output are Results with the enclosing error output.
-    match expr.kind {
-        ExprKind::MethodCall(segment, receiver, [mapper], _call_span) => {
-            Some((segment, receiver, mapper))
-        }
-        _ => None,
-    }
-    .filter(|(segment, _, _)| segment.ident.name.as_str() == "map_err")
-    .and_then(|(_, receiver, mapper)| {
-        result_error_ty(cx, cx.typeck_results().expr_ty(receiver))
-            .map(|receiver_error_ty| (receiver, mapper, receiver_error_ty))
-    })
-    .filter(|_| {
-        result_error_ty(cx, cx.typeck_results().expr_ty(expr))
-            .is_some_and(|output_error_ty| output_error_ty == function_error_ty)
-    })
-    // The receiver and output being `Result` types keeps custom `map_err` methods out of scope.
-    .filter(|(_, mapper, _)| conversion_mapper(cx, mapper))
+    let ExprKind::MethodCall(_, receiver, [mapper], _) = expr.kind else {
+        return None;
+    };
+    let receiver_error_ty = result_error_ty(cx, cx.typeck_results().expr_ty(receiver))?;
+    let output_error_ty = result_error_ty(cx, cx.typeck_results().expr_ty(expr))?;
+
+    // Only `Result` has inherent methods on `Result`, so the name identifies `Result::map_err`.
+    let is_result_map_err = cx
+        .typeck_results()
+        .type_dependent_def_id(expr.hir_id)
+        .is_some_and(|def_id| {
+            cx.tcx.trait_of_assoc(def_id).is_none()
+                && cx.tcx.item_name(def_id) == Symbol::intern("map_err")
+        });
+
     // `?` converts through `From`, so an `Into`-only conversion is not equivalent.
-    .filter(|(_, _, receiver_error_ty)| implements_from(cx, function_error_ty, *receiver_error_ty))
-    .map(|(receiver, _, _)| expr.span.with_lo(receiver.span.hi()))
+    (is_result_map_err
+        && output_error_ty == function_error_ty
+        && conversion_mapper(cx, mapper)
+        && is_from_conversion(cx, function_error_ty, receiver_error_ty))
+    .then_some(receiver)
 }
 
 /// Return whether `target: From<source>` holds in the current function's environment.
-fn implements_from<'tcx>(cx: &LateContext<'tcx>, target: Ty<'tcx>, source: Ty<'tcx>) -> bool {
-    let Some(from_trait) = cx.tcx.get_diagnostic_item(sym::From) else {
-        return false;
-    };
-
+fn is_from_conversion<'tcx>(cx: &LateContext<'tcx>, target: Ty<'tcx>, source: Ty<'tcx>) -> bool {
     // Ask the trait solver because `?` resolves the same obligation.
     cx.tcx
-        .infer_ctxt()
-        .build(cx.typing_mode())
-        .type_implements_trait(from_trait, [target, source], cx.param_env)
-        .must_apply_modulo_regions()
+        .get_diagnostic_item(sym::From)
+        .is_some_and(|from_trait| {
+            cx.tcx
+                .infer_ctxt()
+                .build(cx.typing_mode())
+                .type_implements_trait(from_trait, [target, source], cx.param_env)
+                .must_apply_modulo_regions()
+        })
 }
 
 /// Return whether `expr` is the operand of a `?` operator.
@@ -163,7 +164,7 @@ fn is_try_operand(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     )
 }
 
-/// Return type information for result error.
+/// Returns the error type argument of a standard `Result`.
 fn result_error_ty<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     // Extract the error argument only from the standard Result diagnostic item.
     let ty::Adt(adt, args) = ty.kind() else {
@@ -176,136 +177,99 @@ fn result_error_ty<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx
     Some(args.type_at(1))
 }
 
-/// Helper for conversion mapper analysis.
+/// Returns whether a mapper only applies `From::from` or `Into::into`.
 fn conversion_mapper<'tcx>(cx: &LateContext<'tcx>, mapper: &'tcx Expr<'tcx>) -> bool {
     match mapper.kind {
-        ExprKind::Path(qpath) => conversion_path(cx, qpath, mapper.hir_id),
+        ExprKind::Path(ref qpath) => conversion_path(cx, qpath, mapper.hir_id),
         ExprKind::Closure(closure) => {
             // Only a single-call closure is equivalent to removing `map_err`.
-            // Require one direct parameter binding before inspecting the closure body.
+            // A `map_err` closure has one parameter; require it to be a plain binding.
             let body = cx.tcx.hir_body(closure.body);
-            let [param] = body.params else {
-                return false;
-            };
-            let Some(param_name) = binding_name(param.pat) else {
-                return false;
-            };
-
-            closure_calls_conversion(cx, body.value, param_name)
+            body.params
+                .first()
+                .and_then(|param| match param.pat.kind {
+                    PatKind::Binding(_, param_id, _, None) => Some(param_id),
+                    _ => None,
+                })
+                .is_some_and(|param_id| closure_calls_conversion(cx, body.value, param_id))
         }
         _ => false,
     }
 }
 
-/// Helper for closure calls conversion analysis.
+/// Returns whether a closure body only converts its parameter.
 fn closure_calls_conversion<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
-    param_name: Symbol,
+    param_id: HirId,
 ) -> bool {
-    // Accept only direct calls, `.into()`, or a transparent block tail.
+    // Closure bodies share the enclosing function's typeck results.
+    let typeck = cx.typeck_results();
+
+    // Accept only direct calls, `.into()`, or a statement-free block tail.
     match expr.kind {
-        ExprKind::Call(callee, [arg]) if path_is_binding(arg, param_name) => {
-            conversion_call(cx, callee)
+        ExprKind::Call(callee, [arg]) if is_local(cx, arg, param_id) => {
+            matches!(callee.kind, ExprKind::Path(ref qpath) if conversion_path(cx, qpath, callee.hir_id))
         }
-        ExprKind::MethodCall(segment, receiver, [], _)
-            if segment.ident.name.as_str() == "into" && path_is_binding(receiver, param_name) =>
-        {
-            true
-        }
-        ExprKind::Block(block, _) => block
+        ExprKind::MethodCall(_, receiver, [], _) if is_local(cx, receiver, param_id) => typeck
+            .type_dependent_def_id(expr.hir_id)
+            .is_some_and(|def_id| conversion_trait_item(cx, def_id)),
+        ExprKind::Block(block, _) if block.stmts.is_empty() => block
             .expr
-            .is_some_and(|tail| closure_calls_conversion(cx, tail, param_name)),
+            .is_some_and(|tail| closure_calls_conversion(cx, tail, param_id)),
         _ => false,
     }
 }
 
-/// Helper for conversion call analysis.
-fn conversion_call<'tcx>(cx: &LateContext<'tcx>, callee: &'tcx Expr<'tcx>) -> bool {
-    let ExprKind::Path(qpath) = callee.kind else {
-        return false;
-    };
-
-    conversion_path(cx, qpath, callee.hir_id)
+/// Returns whether a path resolves to `From::from` or `Into::into`.
+fn conversion_path<'tcx>(cx: &LateContext<'tcx>, qpath: &QPath<'tcx>, hir_id: HirId) -> bool {
+    cx.qpath_res(qpath, hir_id)
+        .opt_def_id()
+        .is_some_and(|def_id| conversion_trait_item(cx, def_id))
 }
 
-/// Helper for conversion path analysis.
-fn conversion_path<'tcx>(
-    cx: &LateContext<'tcx>,
-    qpath: QPath<'tcx>,
-    hir_id: rustc_hir::HirId,
-) -> bool {
-    let path_names = qpath_names(qpath);
-    if path_names.as_slice() == ["Into", "into"] || path_names.as_slice() == ["From", "from"] {
-        return true;
-    }
-
-    // Resolve qualified `from` paths back to the standard From trait item.
-    let Some(def_id) = cx.typeck_results().qpath_res(&qpath, hir_id).opt_def_id() else {
-        return false;
-    };
-    let path_ends_with_from = path_names.last().is_some_and(|name| name == "from");
-
-    // A resolved `From::from` associated item proves `?` has the same conversion available.
-    path_ends_with_from && from_trait_assoc(cx, def_id)
-}
-
-/// Helper for from trait assoc analysis.
-fn from_trait_assoc(cx: &LateContext<'_>, def_id: DefId) -> bool {
-    // Walk the associated item back to its owning trait definition.
-    let Some(assoc_item) = cx.tcx.opt_associated_item(def_id) else {
-        return false;
-    };
-    let Ok(trait_item) = assoc_item.trait_item_or_self() else {
-        return false;
-    };
-    let Some(trait_def_id) = cx.tcx.trait_of_assoc(trait_item) else {
+/// Returns whether an associated item implements `From::from` or `Into::into`.
+fn conversion_trait_item(cx: &LateContext<'_>, def_id: DefId) -> bool {
+    // Walk an impl item back to its trait item, then to the owning trait.
+    let Some(trait_item) = cx
+        .tcx
+        .opt_associated_item(def_id)
+        .and_then(|item| item.trait_item_or_self().ok())
+    else {
         return false;
     };
 
     // Compare trait identity so aliases and qualified syntax remain equivalent.
-    cx.tcx.is_diagnostic_item(sym::From, trait_def_id)
+    cx.tcx.trait_of_assoc(trait_item).is_some_and(|trait_id| {
+        cx.tcx.is_diagnostic_item(sym::From, trait_id)
+            || cx.tcx.is_diagnostic_item(sym::Into, trait_id)
+    })
 }
 
-/// Helper for qpath names analysis.
-fn qpath_names(qpath: QPath<'_>) -> Vec<String> {
-    match qpath {
-        QPath::Resolved(_, path) => path
-            .segments
-            .iter()
-            .map(|segment| segment.ident.name.to_ident_string())
-            .collect(),
-        QPath::TypeRelative(_, segment) => vec![segment.ident.name.to_ident_string()],
-    }
-}
-
-/// Return the binding name.
-const fn binding_name(pat: &Pat<'_>) -> Option<Symbol> {
-    let PatKind::Binding(_mode, _hir_id, ident, None) = pat.kind else {
-        return None;
-    };
-
-    Some(ident.name)
-}
-
-/// Helper for path is binding analysis.
-fn path_is_binding(expr: &Expr<'_>, name: Symbol) -> bool {
-    // Require a single resolved path segment matching the closure binding.
-    let ExprKind::Path(QPath::Resolved(None, path)) = expr.kind else {
-        return false;
-    };
-    let [segment] = path.segments else {
-        return false;
-    };
-
-    segment.ident.name == name
+/// Returns whether an expression is a path to one local binding.
+fn is_local(cx: &LateContext<'_>, expr: &Expr<'_>, local_id: HirId) -> bool {
+    matches!(
+        expr.kind,
+        ExprKind::Path(ref qpath)
+            if matches!(cx.qpath_res(qpath, expr.hir_id), Res::Local(id) if id == local_id)
+    )
 }
 
 /// Emit the lint, with a machine-applicable removal only before `?`.
 ///
 /// Without a following `?`, deleting `.map_err(..)` would return the receiver's
 /// error type unchanged, so the diagnostic only explains the rewrite.
-fn emit_map_err_lint(cx: &LateContext<'_>, span: Span, is_fixable: bool) {
+fn emit_map_err_lint(cx: &LateContext<'_>, expr: &Expr<'_>, receiver: &Expr<'_>) {
+    // A receiver from another expansion has no user-written boundary to cut at.
+    let shares_context = receiver.span.eq_ctxt(expr.span);
+    let span = if shares_context {
+        expr.span.with_lo(receiver.span.hi())
+    } else {
+        expr.span
+    };
+
+    // Macro bodies are shared by every expansion, so only user-written calls get a fix.
+    let is_fixable = shares_context && !expr.span.from_expansion() && is_try_operand(cx, expr);
     cx.emit_span_lint(
         UNNECESSARY_MAP_ERR,
         span,
@@ -327,7 +291,7 @@ fn emit_map_err_lint(cx: &LateContext<'_>, span: Span, is_fixable: bool) {
     );
 }
 
-/// Helper for ui analysis.
+/// Runs the UI fixtures.
 #[test]
 fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");

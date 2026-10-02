@@ -3,11 +3,11 @@
 
 fn adjacent(values: &[i32]) {
     // Trigger for the non-panicking range with two adjacent slice indexes.
-    for index in 0..values.len().saturating_sub(1) {
+    for window in values.windows(2) {
         println!(
             "{current} {next}",
-            current = values[index],
-            next = values[index + 1]
+            current = window[0],
+            next = window[1]
         );
     }
 }
@@ -15,8 +15,8 @@ fn adjacent(values: &[i32]) {
 fn owned(values: Vec<i32>) -> i32 {
     // Trigger for an owned `Vec` and indexes in reverse order.
     let mut total = 0;
-    for index in 0..values.len().saturating_sub(1) {
-        total += values[index + 1] - values[index];
+    for window in values.windows(2) {
+        total += window[1] - window[0];
     }
     total
 }
@@ -24,8 +24,8 @@ fn owned(values: Vec<i32>) -> i32 {
 fn array(values: [i32; 3]) -> i32 {
     // Trigger for an array and indexes inside a closure.
     let mut total = 0;
-    for index in 0..values.len().saturating_sub(1) {
-        let sum = || values[index] + values[index + 1];
+    for window in values.windows(2) {
+        let sum = || window[0] + window[1];
         total += sum();
     }
     total

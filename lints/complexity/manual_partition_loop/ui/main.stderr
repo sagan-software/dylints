@@ -1,5 +1,5 @@
 warning: two-way collection loop can use `Iterator::partition`
-  --> $DIR/main.rs:5:5
+  --> $DIR/main.rs:7:5
    |
 LL | /     for value in values {
 LL | |         if value > 0 {
@@ -12,5 +12,57 @@ LL | |     }
    = help: use `Iterator::partition` and bind its two returned collections
    = note: `#[warn(manual_partition_loop)]` on by default
 
-warning: 1 warning emitted
+warning: two-way collection loop can use `Iterator::partition`
+  --> $DIR/main.rs:21:5
+   |
+LL | /     for value in values {
+LL | |         if value > 0 {
+LL | |             accepted.push_back(value);
+LL | |         } else {
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::partition` and bind its two returned collections
+
+warning: two-way collection loop can use `Iterator::partition`
+  --> $DIR/main.rs:35:5
+   |
+LL | /     for value in values {
+LL | |         if value > 0 {
+LL | |             accepted.insert(value);
+LL | |         } else {
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::partition` and bind its two returned collections
+
+warning: two-way collection loop can use `Iterator::partition`
+  --> $DIR/main.rs:49:5
+   |
+LL | /     for value in values {
+LL | |         if value > 0 {
+LL | |             accepted.insert(value);
+LL | |         } else {
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::partition` and bind its two returned collections
+
+warning: two-way collection loop can use `Iterator::partition`
+  --> $DIR/main.rs:63:5
+   |
+LL | /     for value in values {
+LL | |         if value > 0 {
+LL | |             accepted.push(value);
+LL | |         } else {
+...  |
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::partition` and bind its two returned collections
+
+warning: 5 warnings emitted
 

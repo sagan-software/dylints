@@ -23,9 +23,10 @@ keeps the condition where the branch happens.
   name starts with `is_`, `has_`, `can_`, or `should_` (or is `contains`,
   `matches`, `starts_with`, `ends_with`, and similar), or a `!`, `&&`, or `||`
   combination of those.
-- Uses inside closures, array and tuple literals, and some macro arguments are
-  not counted. The lint can trigger when the binding is also used there, and
-  inlining it would then break that use.
+- The machine-applicable fix removes the `let` statement and writes the
+  initializer into the condition. It adds parentheses after `!` for a binary
+  operator and around any struct literal. An initializer written by a macro
+  call gets help without a fix, and a `let` produced by a macro is ignored.
 - `while` conditions are ignored because inlining would re-evaluate the
   expression on every iteration.
 

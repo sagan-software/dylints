@@ -16,12 +16,13 @@ expression.
 ## Known problems
 
 - The collection must be a standard `Vec`, `VecDeque`, `HashSet`, `BTreeSet`,
-  `HashMap`, or `BTreeMap` created with `::new()` or `::default()`. `vec![]` and
-  `Vec::with_capacity(n)` are ignored.
+  `HashMap`, or `BTreeMap` created by an argument-free `new` or `default` call.
+  `vec![]` and `Vec::with_capacity(n)` are ignored.
 - The loop body must be one `push`, `push_back`, or single-argument `insert`
   call. A body with any other statement is ignored, and so is a two-argument
   `HashMap::insert`.
-- The inserted expression must contain exactly one `?`. For `Result`, the
+- The inserted expression must contain exactly one `?` operator outside a
+  closure, and no `return`, `break`, `continue`, or `.await`. For `Result`, the
   failing expression must already have the function's error type. A `?` that
   converts the error through `From` is ignored.
 - `collect` can need a type annotation, so the lint emits help without an

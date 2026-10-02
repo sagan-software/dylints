@@ -3,8 +3,8 @@
 ## What it does
 
 Checks for a two-arm `match` on a `HashMap` or `BTreeMap` `Entry` where the
-`Occupied` arm updates the value through `get_mut()` or `into_mut()` and the
-`Vacant` arm calls `insert`.
+`Occupied` arm updates the value through one `get_mut()` or `into_mut()` call
+and the `Vacant` arm only calls `insert`. The match must produce `()`.
 
 ## Why is this bad?
 
@@ -15,10 +15,11 @@ chain.
 
 ## Known problems
 
-- The lint checks the match by source text. It requires exactly one `;`, one
-  `.insert(` call, and one `get_mut()` or `into_mut()` call in the whole match.
-  A match with extra statements in either arm is ignored, even when it could
-  still use the entry API.
+- Each arm must use its entry binding once. An `Occupied` arm that also calls
+  `get()` or `remove()`, or a `Vacant` arm that reads `key()`, is ignored.
+- An arm with a guard, a wildcard arm, or an arm that contains `return`,
+  `break`, `continue`, `?`, or `.await` is ignored, because the arm body moves
+  into a closure.
 - `if let Entry::Occupied(..) = ...` without a `Vacant` branch is ignored.
 
 ## Example

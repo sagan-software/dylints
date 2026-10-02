@@ -21,7 +21,7 @@ use rustc_hir::{
     def::{DefKind, Res},
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
-use rustc_span::Span;
+use rustc_span::{Span, sym};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -69,12 +69,16 @@ fn resolves_to_std_env_args(cx: &LateContext<'_>, qpath: QPath<'_>, hir_id: HirI
         return false;
     };
 
-    // The resolved definition catches fully qualified calls, module aliases, and imported
-    // functions while still rejecting unrelated local functions named `args`.
-    matches!(
-        cx.tcx.def_path_str(def_id).as_str(),
-        "std::env::args" | "std::env::args_os"
-    )
+    // `std::env::args` and `args_os` have no diagnostic items, so compare the resolved
+    // definition path segment by segment. This catches fully qualified calls, module aliases,
+    // and imported functions while rejecting unrelated local functions named `args`.
+    let def_path = cx.get_def_path(def_id);
+    let [krate, module, function] = def_path.as_slice() else {
+        return false;
+    };
+    *krate == sym::std
+        && *module == sym::env
+        && (*function == sym::args || function.as_str() == "args_os")
 }
 
 /// Emit the span lint with help diagnostic.

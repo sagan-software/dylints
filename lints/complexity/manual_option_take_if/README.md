@@ -3,7 +3,8 @@
 ## What it does
 
 Checks for `if option.as_ref().is_some_and(predicate) { option.take() } else { None }`
-on a standard `Option`, where both branches name the same receiver.
+on a standard `Option`, where both calls use the same local place: a local
+binding, a field of one, or a dereference of one.
 
 ## Why is this bad?
 
@@ -12,9 +13,10 @@ another. `Option::take_if` tests and takes the value in one call.
 
 ## Known problems
 
-- The lint compares the receivers by source text. It only matches the
-  `as_ref().is_some_and(..)` condition and a literal `None` in the `else`
-  branch. Conditions such as `matches!(option, Some(..))` are ignored.
+- Only the `as_ref().is_some_and(..)` condition and a literal `None` in the
+  `else` branch trigger. Conditions such as `matches!(option, Some(..))` are
+  ignored.
+- A receiver that is not a local place, such as `holder().slot`, is ignored.
 - The `take_if` predicate receives `&mut T` instead of `&T`, so the closure can
   need changes. The lint emits help without an automatic fix.
 

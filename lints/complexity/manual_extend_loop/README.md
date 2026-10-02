@@ -3,7 +3,9 @@
 ## What it does
 
 Checks for a `for` loop whose body is only one `Vec::push` or
-`VecDeque::push_back` call on a collection other than the loop source.
+`VecDeque::push_back` call on a local variable, a field, or a dereference of
+one. When the loop pushes its unchanged item, the lint suggests replacing the
+loop with one `extend` call.
 
 ## Why is this bad?
 
@@ -17,16 +19,21 @@ in one place.
 - Only the standard `Vec::push` and `VecDeque::push_back` trigger. Other
   collections, such as `HashSet::insert`, and local types with a `push` method
   are ignored.
-- The lint skips bodies whose source text contains `?`, `.await`, `break`,
-  `continue`, or `return`. The check is a text match, so a pushed name such as
-  `returned` also prevents the lint.
+- The lint skips bodies that contain `?`, `.await`, `break`, `continue`, or
+  `return`, and pushed values that read the target collection.
+- A target produced by a call or an index, such as `target().push(value)`, is
+  ignored because the loop evaluates it once per item.
+- The automatic fix applies only when the pushed value is the loop variable
+  without a coercion and the loop is a statement or a block tail. Other loops,
+  such as a loop in a match arm, get help without a fix. The fix removes
+  comments inside the loop.
 
 ## Example
 
 ```rust
-fn double_all(output: &mut Vec<i32>, values: Vec<i32>) {
+fn append_all(output: &mut Vec<i32>, values: Vec<i32>) {
     for value in values {
-        output.push(value * 2);
+        output.push(value);
     }
 }
 ```
@@ -34,7 +41,7 @@ fn double_all(output: &mut Vec<i32>, values: Vec<i32>) {
 ## Use instead
 
 ```rust
-fn double_all(output: &mut Vec<i32>, values: Vec<i32>) {
-    output.extend(values.into_iter().map(|value| value * 2));
+fn append_all(output: &mut Vec<i32>, values: Vec<i32>) {
+    output.extend(values);
 }
 ```

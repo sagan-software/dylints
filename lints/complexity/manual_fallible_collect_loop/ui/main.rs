@@ -1,4 +1,9 @@
-use std::{io, num::ParseIntError};
+use std::{
+    collections::{HashSet, VecDeque},
+    error::Error,
+    io,
+    num::ParseIntError,
+};
 
 fn parse_all(values: &[&str]) -> Result<Vec<i32>, ParseIntError> {
     let mut output = Vec::new();
@@ -6,6 +11,31 @@ fn parse_all(values: &[&str]) -> Result<Vec<i32>, ParseIntError> {
         output.push(value.parse()?);
     }
     Ok(output)
+}
+
+fn question_mark_in_text(values: &[&str]) -> Result<Vec<i32>, String> {
+    // A `?` inside a string literal is not an operator.
+    let mut output = Vec::default();
+    for value in values {
+        output.push(value.parse::<i32>().map_err(|_| String::from("bad ?"))?);
+    }
+    Ok(output)
+}
+
+fn parse_set(values: &[&str]) -> Result<HashSet<i32>, ParseIntError> {
+    let mut output = HashSet::new();
+    for value in values {
+        output.insert(value.parse()?);
+    }
+    Ok(output)
+}
+
+fn parse_deque(values: &[&str]) -> Option<VecDeque<i32>> {
+    let mut output: VecDeque<i32> = Default::default();
+    for value in values {
+        output.push_back(value.parse().ok()?);
+    }
+    Some(output)
 }
 
 fn converted_error(values: &[&str]) -> io::Result<Vec<i32>> {
@@ -18,12 +48,118 @@ fn converted_error(values: &[&str]) -> io::Result<Vec<i32>> {
     Ok(output)
 }
 
+fn from_conversion(values: &[&str]) -> Result<Vec<i32>, Box<dyn Error>> {
+    // `?` converts the error through `From`, which `collect` does not do.
+    let mut output = Vec::new();
+    for value in values {
+        output.push(value.parse::<i32>()?);
+    }
+    Ok(output)
+}
+
 fn parse_optional(values: &[&str]) -> Option<Vec<i32>> {
     let mut output = Vec::new();
     for value in values {
         output.push(value.parse().ok()?);
     }
     Some(output)
+}
+
+fn two_operators(values: &[&str]) -> Option<Vec<i32>> {
+    let mut output = Vec::new();
+    for value in values {
+        output.push(value.parse::<i32>().ok()?.checked_add(1)?);
+    }
+    Some(output)
+}
+
+fn early_return(values: &[&str]) -> Option<Vec<i32>> {
+    let mut output = Vec::new();
+    for value in values {
+        output.push(if value.is_empty() {
+            return None;
+        } else {
+            value.parse().ok()?
+        });
+    }
+    Some(output)
+}
+
+fn prefilled(values: &[&str]) -> Option<Vec<i32>> {
+    // A prefilled collection keeps its first items.
+    let mut output = vec![0];
+    for value in values {
+        output.push(value.parse().ok()?);
+    }
+    Some(output)
+}
+
+fn other_tail(values: &[&str], other: Vec<i32>) -> Option<Vec<i32>> {
+    let mut output: Vec<i32> = Vec::new();
+    for value in values {
+        output.push(value.parse().ok()?);
+    }
+    let _ = output;
+    Some(other)
+}
+
+fn other_target(values: &[&str], other: &mut Vec<i32>) -> Option<Vec<i32>> {
+    let mut output = Vec::new();
+    for value in values {
+        other.push(value.parse().ok()?);
+    }
+    Some(output)
+}
+
+fn not_insertion(values: &[&str]) -> Option<Vec<i32>> {
+    let mut output: Vec<i32> = Vec::new();
+    for value in values {
+        output.truncate(value.parse().ok()?);
+    }
+    Some(output)
+}
+
+fn not_loop(values: &[&str]) -> Option<Vec<i32>> {
+    let mut output = Vec::new();
+    output.push(values.first()?.parse().ok()?);
+    Some(output)
+}
+
+fn assignment(values: &[&str]) -> Option<Vec<i32>> {
+    let mut output = Vec::new();
+    for value in values {
+        output = vec![value.parse().ok()?];
+    }
+    Some(output)
+}
+
+fn scalar_sum(values: &[&str]) -> Option<i32> {
+    // A scalar accumulator is not a collection.
+    let mut total = 0;
+    for value in values {
+        total += value.parse::<i32>().ok()?;
+    }
+    Some(total)
+}
+
+fn plain_tail(values: &[&str]) -> usize {
+    let count = values.len();
+    count
+}
+
+fn binding_tail(values: &[&str]) -> Option<usize> {
+    let count = Some(values.len());
+    count
+}
+
+fn function_tail(values: &[&str]) -> Option<usize> {
+    let count = values.len();
+    std::convert::identity(Some(count))
+}
+
+fn closure_tail(values: &[&str]) -> Option<usize> {
+    let count = values.len();
+    (|count| Some(count))(count)
 }
 
 fn main() {

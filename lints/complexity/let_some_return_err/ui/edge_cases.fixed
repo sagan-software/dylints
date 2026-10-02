@@ -102,4 +102,93 @@ fn allowed_continue(items: &[Option<u64>]) -> u64 {
     sum
 }
 
+fn inferred_into(value: Option<u64>) -> Result<u64, String> {
+    let Some(value) = value else {
+        return Err("missing".into());
+    };
+    Ok(value)
+}
+
+fn inferred_default(value: Option<u64>) -> Result<u64, String> {
+    let Some(value) = value else {
+        return Err(Default::default());
+    };
+    Ok(value)
+}
+
+fn unsuffixed_literal(value: Option<u64>) -> Result<u64, i64> {
+    let Some(value) = value else {
+        return Err(5_000_000_000);
+    };
+    Ok(value)
+}
+
+fn coerced_box(value: Option<u64>) -> Result<u64, Box<dyn std::error::Error>> {
+    let Some(value) = value else {
+        return Err(Box::new(std::fmt::Error));
+    };
+    Ok(value)
+}
+
+fn generic_constructor(value: Option<u64>) -> Result<u64, Option<u8>> {
+    let Some(value) = value else {
+        return Err(None);
+    };
+    Ok(value)
+}
+
+fn concrete_method(value: Option<u64>) -> Result<u64, String> {
+    let value = (value).ok_or_else(|| "missing".to_string())?;
+    Ok(value)
+}
+
+fn suffixed_literal(value: Option<u64>) -> Result<u64, i64> {
+    let value = (value).ok_or_else(|| 5_i64)?;
+    Ok(value)
+}
+
+struct Detail {
+    code: u8,
+}
+
+fn struct_literal(value: Option<u64>) -> Result<u64, Detail> {
+    let value = (value).ok_or_else(|| Detail { code: 1 })?;
+    Ok(value)
+}
+
+const MISSING: &str = "missing";
+
+fn constant_error(value: Option<u64>) -> Result<u64, &'static str> {
+    let value = (value).ok_or_else(|| MISSING)?;
+    Ok(value)
+}
+
 fn main() {}
+
+fn wildcard_pattern(value: Option<u64>) -> Result<(), Error> {
+    let _ = (value).ok_or_else(|| Error::Missing)?;
+    Ok(())
+}
+
+fn reference_pattern(value: Option<&u64>) -> Result<u64, Error> {
+    let &value = (value).ok_or_else(|| Error::Missing)?;
+    Ok(value)
+}
+
+struct Wrapper(u64);
+
+fn lookup_wrapper() -> Option<Wrapper> {
+    Some(Wrapper(7))
+}
+
+fn wrapper_pattern() -> Result<u64, Error> {
+    let Wrapper(value) = (lookup_wrapper()).ok_or_else(|| Error::Missing)?;
+    Ok(value)
+}
+
+fn closure_error(value: Option<u64>) -> Result<u64, Error> {
+    let Some(value) = value else {
+        return Err((|| Error::Missing)());
+    };
+    Ok(value)
+}

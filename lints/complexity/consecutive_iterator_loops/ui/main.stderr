@@ -1,5 +1,5 @@
 warning: consecutive iterator loops can use `Iterator::chain`
-  --> $DIR/main.rs:5:5
+  --> $DIR/main.rs:7:5
    |
 LL | /     for value in first {
 LL | |         consume(value);
@@ -9,5 +9,70 @@ LL | |     }
    = help: use `Iterator::chain` and apply the shared body once
    = note: `#[warn(consecutive_iterator_loops)]` on by default
 
-warning: 1 warning emitted
+warning: consecutive iterator loops can use `Iterator::chain`
+  --> $DIR/main.rs:17:5
+   |
+LL | /     for left in first {
+LL | |         consume(left);
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::chain` and apply the shared body once
+
+warning: consecutive iterator loops can use `Iterator::chain`
+  --> $DIR/main.rs:27:5
+   |
+LL | /     for value in first {
+LL | |         consume(&value);
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::chain` and apply the shared body once
+
+warning: consecutive iterator loops can use `Iterator::chain`
+  --> $DIR/main.rs:37:5
+   |
+LL | /     for value in &mut first {
+LL | |         *value += 1;
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::chain` and apply the shared body once
+
+warning: consecutive iterator loops can use `Iterator::chain`
+  --> $DIR/main.rs:48:5
+   |
+LL | /     for &(number, ref maybe) in first {
+LL | |         let doubled = number * 2;
+LL | |         total += doubled;
+LL | |         total = -total;
+...  |
+LL | |         consume(&bumped.unwrap_or(0));
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::chain` and apply the shared body once
+
+warning: consecutive iterator loops can use `Iterator::chain`
+  --> $DIR/main.rs:91:5
+   |
+LL | /     for whole @ (left, _) in first {
+LL | |         show(whole);
+LL | |         consume(&left);
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::chain` and apply the shared body once
+
+warning: consecutive iterator loops can use `Iterator::chain`
+  --> $DIR/main.rs:103:5
+   |
+LL | /     for value in first {
+LL | |         println!("{value}");
+LL | |     }
+   | |_____^
+   |
+   = help: use `Iterator::chain` and apply the shared body once
+
+warning: 7 warnings emitted
 

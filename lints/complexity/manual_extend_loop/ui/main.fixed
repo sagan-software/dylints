@@ -5,9 +5,7 @@
 use std::collections::VecDeque;
 
 fn extend_vec(output: &mut Vec<i32>, values: Vec<i32>) {
-    for value in values {
-        output.push(value);
-    }
+    output.extend(values)
 }
 
 fn extend_deque(output: &mut VecDeque<i32>, values: Vec<i32>) {
@@ -18,34 +16,24 @@ fn extend_deque(output: &mut VecDeque<i32>, values: Vec<i32>) {
 }
 
 fn keyword_like_name(output: &mut Vec<i32>, returned: Vec<i32>) {
-    for value in returned {
-        output.push(value);
-    }
+    output.extend(returned)
 }
 
 fn tail_position(output: &mut Vec<i32>, values: &[i32]) {
-    for value in values.iter().copied() {
-        output.push(value)
-    }
+    output.extend(values.iter().copied())
 }
 
 fn labeled(output: &mut Vec<i32>, values: Vec<i32>) {
-    'items: for value in values {
-        output.push(value);
-    }
+    output.extend(values)
 }
 
 fn reference_items<'a>(output: &mut Vec<&'a i32>, values: &'a [i32]) {
-    for value in values {
-        output.push(value);
-    }
+    output.extend(values);
     let _ = output.len();
 }
 
 fn dereferenced_target(output: &mut Vec<i32>, values: Vec<i32>) {
-    for value in values {
-        (*output).push(value);
-    }
+    (*output).extend(values)
 }
 
 struct Holder {
@@ -54,9 +42,7 @@ struct Holder {
 
 impl Holder {
     fn add(&mut self, values: Vec<i32>) {
-        for value in values {
-            self.items.push(value);
-        }
+        self.items.extend(values)
     }
 }
 

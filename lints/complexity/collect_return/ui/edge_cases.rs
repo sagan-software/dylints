@@ -19,4 +19,56 @@ fn not_tail(values: &[u64]) -> usize {
     collected.len()
 }
 
-fn main() {}
+pub trait Source {
+    fn values(&self) -> Vec<u64>;
+}
+
+pub struct Numbers(pub Vec<u64>);
+
+impl Source for Numbers {
+    fn values(&self) -> Vec<u64> {
+        self.0.iter().copied().collect()
+    }
+}
+
+mod private {
+    pub fn hidden(values: &[u64]) -> Vec<u64> {
+        values.iter().copied().collect()
+    }
+}
+
+pub mod exported {
+    pub fn visible(values: &[u64]) -> Vec<u64> {
+        values.iter().copied().collect()
+    }
+}
+
+macro_rules! collecting_fn {
+    ($name:ident) => {
+        pub fn $name(values: &[u64]) -> Vec<u64> {
+            values.iter().copied().collect()
+        }
+    };
+}
+
+collecting_fn!(generated);
+
+fn main() {
+    let _ = private::hidden(&[]);
+}
+
+pub fn ordered_set(values: &[u64]) -> std::collections::BTreeSet<u64> {
+    values.iter().copied().collect()
+}
+
+pub fn scalar_count(values: &[u64]) -> usize {
+    values.len()
+}
+
+pub fn constructed_vector() -> Vec<u64> {
+    Vec::new()
+}
+
+pub fn early_vector() -> Vec<u64> {
+    return Vec::new();
+}

@@ -2,33 +2,31 @@
 #![expect(
     clippy::let_underscore_must_use,
     clippy::wildcard_enum_match_arm,
-    reason = "the lint traverses rustc syntax comprehensively and intentionally ignores diagnostic builders and unrelated variants"
-)]
-#![expect(
-    clippy::too_many_lines,
-    reason = "the syntax traversal keeps every use-counting branch in one function"
+    reason = "the lint intentionally ignores diagnostic builders and unrelated rustc variants"
 )]
 
 //! A lint to check for one-use predicate bindings.
 //!
 //! It identifies a local binding that stores one predicate and is consumed once
-//! in a nearby conditional, then recommends inlining the expression when that
-//! rewrite preserves evaluation order. The traversal follows resolved uses and
-//! rejects shadowing, mutation, control-flow, and syntax it cannot prove safe.
+//! as the condition of the `if` that follows it, then recommends inlining the
+//! expression. Uses are counted by resolved binding identity through every
+//! nested expression and closure body in the rest of the block.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_middle;
 extern crate rustc_span;
 
-use rustc_errors::DiagDecorator;
+use rustc_errors::{Applicability, DiagDecorator};
 use rustc_hir::{
-    BinOpKind, BindingMode, Block, ByRef, Expr, ExprKind, HirId, Mutability, Pat, PatKind, QPath,
-    Stmt, StmtKind, UnOp, def::Res,
+    BinOpKind, BindingMode, Block, ByRef, Expr, ExprKind, HirId, Mutability, PatKind, QPath, Stmt,
+    StmtKind, UnOp,
+    def::Res,
+    intravisit::{Visitor, walk_expr},
 };
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
-use rustc_middle::ty;
-use rustc_span::{Span, Symbol};
+use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_middle::ty::{self, TyCtxt};
+use rustc_span::{BytePos, Span, Symbol};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -39,148 +37,117 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for OneUsePredicateBinding {
-    /// Check block for this lint.
+    /// Checks each `let` statement against the `if` that follows it.
     fn check_block(&mut self, cx: &LateContext<'tcx>, block: &'tcx Block<'tcx>) {
         // Keep the lint local so the suggestion cannot cross intervening side effects.
-        for index in 0..block.stmts.len() {
-            let Some(offense) = one_use_predicate_binding(cx, block, index) else {
-                continue;
-            };
-            emit_span_lint_with_help(
-                cx,
-                ONE_USE_PREDICATE_BINDING,
-                offense.span,
-                "one-use predicate binding could be inlined",
-                "inline the predicate expression into the branch condition unless the name captures a domain concept",
-            );
-        }
+        (0..block.stmts.len())
+            .filter_map(|index| one_use_predicate_binding(cx, block, index))
+            .for_each(|offense| emit(cx, &offense));
     }
 }
 
-/// State used by the predicate binding analysis.
-struct PredicateBinding {
-    /// span stored for this lint's analysis.
-    span: Span,
+/// One reported binding and the data needed for its rewrite.
+struct Offense<'tcx> {
+    /// Span of the whole `let` statement.
+    stmt_span: Span,
+    /// Span of the `let` statement plus the whitespace up to the `if`.
+    removal_span: Span,
+    /// The binding's initializer.
+    init: &'tcx Expr<'tcx>,
+    /// The binding path inside the `if` condition.
+    use_expr: &'tcx Expr<'tcx>,
+    /// Whether the condition negates the binding with `!`.
+    is_negated: bool,
 }
 
-/// Helper for one use predicate binding analysis.
+/// Returns the offense for the statement at `index`, if it is a one-use predicate binding.
 fn one_use_predicate_binding<'tcx>(
     cx: &LateContext<'tcx>,
     block: &'tcx Block<'tcx>,
     index: usize,
-) -> Option<PredicateBinding> {
-    let local = predicate_local(cx, block.stmts.get(index)?)?;
-    let branch = adjacent_branch(block, index)?;
-
-    if !condition_is_binding(cx, branch.condition, local.hir_id)
-        || !branch.allows_inlining
-        || !is_bool_expr(cx, local.init)
-        || !is_predicate_initializer(local.init)
-        || !is_generic_predicate_name(local.name)
-    {
-        return None;
-    }
-
-    // Count resolved uses in the whole tail so body uses, later branches, and assignments suppress
-    // a warning even when another local happens to share the same name elsewhere.
-    (count_local_uses_in_tail(cx, block, index + 1, local.hir_id) == 1)
-        .then_some(PredicateBinding { span: local.span })
+) -> Option<Offense<'tcx>> {
+    // Pair the predicate `let` with a following `if` whose condition reads the binding.
+    let stmt = block.stmts.get(index)?;
+    predicate_local(cx, stmt)
+        .zip(following_if(block, index))
+        .and_then(|((hir_id, init), (next, condition))| {
+            condition_binding(condition, hir_id)
+                .map(|(use_expr, is_negated)| (hir_id, init, next, use_expr, is_negated))
+        })
+        // The condition must be the only use in the rest of the block.
+        .filter(|(hir_id, ..)| count_uses_after(cx.tcx, block, index + 1, *hir_id) == 1)
+        .map(|(_, init, next, use_expr, is_negated)| Offense {
+            stmt_span: stmt.span,
+            removal_span: removal_span(cx, stmt.span, next.span),
+            init,
+            use_expr,
+            is_negated,
+        })
 }
 
-/// State used by the predicate local analysis.
-struct PredicateLocal<'tcx> {
-    /// name stored for this lint's analysis.
-    name: Symbol,
-    /// hir id stored for this lint's analysis.
-    hir_id: HirId,
-    /// span stored for this lint's analysis.
-    span: Span,
-    /// init stored for this lint's analysis.
-    init: &'tcx Expr<'tcx>,
-}
-
-/// Helper for predicate local analysis.
+/// Returns the identity and initializer of a user-written generic predicate binding.
 fn predicate_local<'tcx>(
     cx: &LateContext<'tcx>,
     stmt: &'tcx Stmt<'tcx>,
-) -> Option<PredicateLocal<'tcx>> {
+) -> Option<(HirId, &'tcx Expr<'tcx>)> {
+    // Require an immutable local binding before validating its predicate initializer.
     let StmtKind::Let(local) = stmt.kind else {
         return None;
     };
-
-    let (name, hir_id) = immutable_ident(local.pat)?;
-    let init = local.init?;
-
-    // Prefer the typed local pattern when available; this protects annotated non-bool lookalikes.
-    if !matches!(cx.typeck_results().pat_ty(local.pat).kind(), ty::Bool) {
-        return None;
-    }
-
-    // Retain the binding identity and initializer for the later use-count analysis.
-    Some(PredicateLocal {
-        name,
-        hir_id,
-        span: local.span,
-        init,
-    })
-}
-
-/// Helper for immutable ident analysis.
-const fn immutable_ident(pat: &Pat<'_>) -> Option<(Symbol, HirId)> {
-    let PatKind::Binding(BindingMode(ByRef::No, Mutability::Not), hir_id, ident, None) = pat.kind
+    let PatKind::Binding(BindingMode(ByRef::No, Mutability::Not), hir_id, ident, None) =
+        local.pat.kind
     else {
         return None;
     };
 
-    Some((ident.name, hir_id))
+    // Use the typed pattern so annotated non-`bool` lookalikes stay quiet.
+    let is_bool = matches!(cx.typeck_results().pat_ty(local.pat).kind(), ty::Bool);
+    local
+        .init
+        .filter(|init| {
+            is_bool
+                && local.els.is_none()
+                && !local.span.from_expansion()
+                && is_predicate_initializer(init)
+                && is_generic_predicate_name(ident.name)
+        })
+        .map(|init| (hir_id, init))
 }
 
-/// State used by the branch condition analysis.
-struct BranchCondition<'tcx> {
-    /// condition stored for this lint's analysis.
-    condition: &'tcx Expr<'tcx>,
-    /// allows inlining stored for this lint's analysis.
-    allows_inlining: bool,
-}
-
-/// Helper for adjacent branch analysis.
-fn adjacent_branch<'tcx>(
+/// Returns the `if` expression after statement `index` and its condition.
+fn following_if<'tcx>(
     block: &'tcx Block<'tcx>,
-    local_index: usize,
-) -> Option<BranchCondition<'tcx>> {
-    if let Some(next_stmt) = block.stmts.get(local_index + 1) {
-        return branch_condition(stmt_expr(next_stmt)?);
-    }
-
-    branch_condition(block.expr?)
-}
-
-/// Helper for branch condition analysis.
-const fn branch_condition<'tcx>(expr: &'tcx Expr<'tcx>) -> Option<BranchCondition<'tcx>> {
-    match expr.kind {
-        ExprKind::If(condition, _, _) => Some(BranchCondition {
-            condition,
-            allows_inlining: true,
-        }),
+    index: usize,
+) -> Option<(&'tcx Expr<'tcx>, &'tcx Expr<'tcx>)> {
+    // The `if` is either the next statement or the block's tail expression.
+    let next = block.stmts.get(index + 1).map_or(block.expr, stmt_expr)?;
+    match next.kind {
+        ExprKind::If(condition, _, _) => Some((next, condition)),
         _ => None,
     }
 }
 
-/// Helper for condition is binding analysis.
-fn condition_is_binding(cx: &LateContext<'_>, condition: &Expr<'_>, hir_id: HirId) -> bool {
-    path_is_binding(cx, condition, hir_id)
-        || matches!(
-            condition.kind,
-            ExprKind::Unary(UnOp::Not, inner) if path_is_binding(cx, inner, hir_id)
-        )
+/// Returns the binding path when the condition is the binding or its negation.
+fn condition_binding<'tcx>(
+    condition: &'tcx Expr<'tcx>,
+    hir_id: HirId,
+) -> Option<(&'tcx Expr<'tcx>, bool)> {
+    match condition.kind {
+        _ if is_local(condition, hir_id) => Some((condition, false)),
+        ExprKind::Unary(UnOp::Not, inner) if is_local(inner, hir_id) => Some((inner, true)),
+        _ => None,
+    }
 }
 
-/// Return whether bool expr.
-fn is_bool_expr(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    matches!(cx.typeck_results().expr_ty(expr).kind(), ty::Bool)
+/// Returns whether an expression is a path to the given local binding.
+fn is_local(expr: &Expr<'_>, hir_id: HirId) -> bool {
+    matches!(
+        expr.kind,
+        ExprKind::Path(QPath::Resolved(None, path)) if path.res == Res::Local(hir_id)
+    )
 }
 
-/// Return whether predicate initializer.
+/// Returns whether an initializer has a predicate shape.
 fn is_predicate_initializer(expr: &Expr<'_>) -> bool {
     match expr.kind {
         ExprKind::Binary(op, lhs, rhs) => match op.node {
@@ -204,7 +171,7 @@ fn is_predicate_initializer(expr: &Expr<'_>) -> bool {
     }
 }
 
-/// Return whether predicate function name.
+/// Returns whether a function name reads as a predicate.
 fn is_predicate_function_name(name: Symbol) -> bool {
     let name = name.as_str();
 
@@ -223,7 +190,7 @@ fn is_predicate_function_name(name: Symbol) -> bool {
         )
 }
 
-/// Return whether generic predicate name.
+/// Returns whether a binding name is a predicate prefix followed only by generic words.
 fn is_generic_predicate_name(name: Symbol) -> bool {
     // Split the identifier into vocabulary tokens before checking its predicate prefix.
     let name = name.as_str();
@@ -231,25 +198,16 @@ fn is_generic_predicate_name(name: Symbol) -> bool {
         .split('_')
         .filter(|word| !word.is_empty())
         .collect::<Vec<_>>();
-    let Some(tail) = predicate_tail(&words) else {
-        return false;
-    };
-
-    !tail.is_empty() && tail.iter().all(|word| is_generic_predicate_word(word))
-}
-
-/// Helper for predicate tail analysis.
-fn predicate_tail<'a>(words: &'a [&str]) -> Option<&'a [&'a str]> {
-    match words {
+    match words.as_slice() {
         [
             "is" | "has" | "have" | "can" | "should" | "contains" | "matches",
             tail @ ..,
-        ] => Some(tail),
-        _ => None,
+        ] => !tail.is_empty() && tail.iter().all(|word| is_generic_predicate_word(word)),
+        _ => false,
     }
 }
 
-/// Return whether generic predicate word.
+/// Returns whether a word adds no domain meaning to a predicate name.
 fn is_generic_predicate_word(word: &str) -> bool {
     matches!(
         word,
@@ -285,112 +243,57 @@ fn is_generic_predicate_word(word: &str) -> bool {
     )
 }
 
-/// Count local uses in tail used by the lint.
-fn count_local_uses_in_tail<'tcx>(
-    cx: &LateContext<'tcx>,
+/// Counts resolved uses of a binding in the block from statement `start` onward.
+fn count_uses_after<'tcx>(
+    tcx: TyCtxt<'tcx>,
     block: &'tcx Block<'tcx>,
-    tail_start: usize,
+    start: usize,
     hir_id: HirId,
 ) -> usize {
-    block
-        .stmts
-        .get(tail_start..)
-        .unwrap_or_default()
-        .iter()
-        .map(|stmt| count_local_uses_in_stmt(cx, stmt, hir_id))
-        .sum::<usize>()
-        + block
-            .expr
-            .map_or(0, |expr| count_local_uses_in_expr(cx, expr, hir_id))
+    // Earlier statements cannot see the binding, so start at `start`.
+    let mut counter = UseCounter {
+        tcx,
+        hir_id,
+        count: 0,
+    };
+
+    // Visit the remaining statements, then the tail expression.
+    for stmt in block.stmts.get(start..).unwrap_or_default() {
+        counter.visit_stmt(stmt);
+    }
+    if let Some(expr) = block.expr {
+        counter.visit_expr(expr);
+    }
+    counter.count
 }
 
-/// Count local uses in stmt used by the lint.
-fn count_local_uses_in_stmt(cx: &LateContext<'_>, stmt: &Stmt<'_>, hir_id: HirId) -> usize {
-    match stmt.kind {
-        StmtKind::Let(local) => local
-            .init
-            .map_or(0, |init| count_local_uses_in_expr(cx, init, hir_id)),
-        StmtKind::Expr(expr) | StmtKind::Semi(expr) => count_local_uses_in_expr(cx, expr, hir_id),
-        StmtKind::Item(_) => 0,
+/// Visitor that counts resolved paths to one local, including inside closures.
+struct UseCounter<'tcx> {
+    /// Type context used to enter closure bodies.
+    tcx: TyCtxt<'tcx>,
+    /// The counted binding.
+    hir_id: HirId,
+    /// Number of uses found so far.
+    count: usize,
+}
+
+impl<'tcx> Visitor<'tcx> for UseCounter<'tcx> {
+    /// Counts one path use and descends into closure bodies.
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+        // Count a resolved path to the binding.
+        if is_local(expr, self.hir_id) {
+            self.count += 1;
+        }
+
+        // The default walk does not enter closure bodies, so visit them explicitly.
+        if let ExprKind::Closure(closure) = expr.kind {
+            self.visit_body(self.tcx.hir_body(closure.body));
+        }
+        walk_expr(self, expr);
     }
 }
 
-/// Count local uses in expr used by the lint.
-fn count_local_uses_in_expr(cx: &LateContext<'_>, expr: &Expr<'_>, hir_id: HirId) -> usize {
-    // Count a resolved reference to the selected binding as one use.
-    if path_is_binding(cx, expr, hir_id) {
-        return 1;
-    }
-
-    // Recurse through expression shapes that can contain executable child expressions.
-    match expr.kind {
-        ExprKind::Call(callee, args) => {
-            count_local_uses_in_expr(cx, callee, hir_id)
-                + args
-                    .iter()
-                    .map(|arg| count_local_uses_in_expr(cx, arg, hir_id))
-                    .sum::<usize>()
-        }
-        ExprKind::MethodCall(_, receiver, args, _) => {
-            count_local_uses_in_expr(cx, receiver, hir_id)
-                + args
-                    .iter()
-                    .map(|arg| count_local_uses_in_expr(cx, arg, hir_id))
-                    .sum::<usize>()
-        }
-        ExprKind::Binary(_, lhs, rhs)
-        | ExprKind::Assign(lhs, rhs, _)
-        | ExprKind::AssignOp(_, lhs, rhs)
-        | ExprKind::Index(lhs, rhs, _) => {
-            count_local_uses_in_expr(cx, lhs, hir_id) + count_local_uses_in_expr(cx, rhs, hir_id)
-        }
-        ExprKind::Unary(_, inner)
-        | ExprKind::Use(inner, _)
-        | ExprKind::Cast(inner, _)
-        | ExprKind::Type(inner, _)
-        | ExprKind::DropTemps(inner)
-        | ExprKind::Field(inner, _)
-        | ExprKind::AddrOf(_, _, inner)
-        | ExprKind::Ret(Some(inner))
-        | ExprKind::Break(_, Some(inner)) => count_local_uses_in_expr(cx, inner, hir_id),
-        ExprKind::Block(block, _) | ExprKind::Loop(block, ..) => {
-            count_local_uses_in_block(cx, block, hir_id)
-        }
-        ExprKind::If(condition, then_expr, else_expr) => {
-            count_local_uses_in_expr(cx, condition, hir_id)
-                + count_local_uses_in_expr(cx, then_expr, hir_id)
-                + else_expr.map_or(0, |else_expr| {
-                    count_local_uses_in_expr(cx, else_expr, hir_id)
-                })
-        }
-        ExprKind::Match(scrutinee, arms, _) => {
-            count_local_uses_in_expr(cx, scrutinee, hir_id)
-                + arms
-                    .iter()
-                    .map(|arm| {
-                        arm.guard
-                            .map_or(0, |guard| count_local_uses_in_expr(cx, guard, hir_id))
-                            + count_local_uses_in_expr(cx, arm.body, hir_id)
-                    })
-                    .sum::<usize>()
-        }
-        _ => 0,
-    }
-}
-
-/// Count local uses in block used by the lint.
-fn count_local_uses_in_block(cx: &LateContext<'_>, block: &Block<'_>, hir_id: HirId) -> usize {
-    block
-        .stmts
-        .iter()
-        .map(|stmt| count_local_uses_in_stmt(cx, stmt, hir_id))
-        .sum::<usize>()
-        + block
-            .expr
-            .map_or(0, |expr| count_local_uses_in_expr(cx, expr, hir_id))
-}
-
-/// Helper for stmt expr analysis.
+/// Returns the expression carried by an expression statement.
 const fn stmt_expr<'tcx>(stmt: &'tcx Stmt<'tcx>) -> Option<&'tcx Expr<'tcx>> {
     match stmt.kind {
         StmtKind::Expr(expr) | StmtKind::Semi(expr) => Some(expr),
@@ -398,19 +301,7 @@ const fn stmt_expr<'tcx>(stmt: &'tcx Stmt<'tcx>) -> Option<&'tcx Expr<'tcx>> {
     }
 }
 
-/// Helper for path is binding analysis.
-fn path_is_binding(cx: &LateContext<'_>, expr: &Expr<'_>, hir_id: HirId) -> bool {
-    let ExprKind::Path(qpath) = expr.kind else {
-        return false;
-    };
-
-    matches!(
-        cx.typeck_results().qpath_res(&qpath, expr.hir_id),
-        Res::Local(resolved_hir_id) if resolved_hir_id == hir_id
-    )
-}
-
-/// Return the path last segment name.
+/// Returns the last path segment of a callee.
 fn path_last_segment_name(expr: &Expr<'_>) -> Option<Symbol> {
     let ExprKind::Path(qpath) = expr.kind else {
         return None;
@@ -422,26 +313,88 @@ fn path_last_segment_name(expr: &Expr<'_>) -> Option<Symbol> {
     }
 }
 
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: &'static str,
-    help: &'static str,
-) {
-    // Use rustc's native diagnostic decorator to keep diagnostics consistent.
+/// Returns the `let` span extended over the whitespace that follows it.
+fn removal_span(cx: &LateContext<'_>, stmt_span: Span, next_span: Span) -> Span {
+    // Stop at the next comment or token so it moves into the `let` statement's position.
+    let gap = stmt_span.between(next_span);
+    let whitespace_len = cx
+        .sess()
+        .source_map()
+        .span_to_snippet(gap)
+        .ok()
+        .and_then(|text| u32::try_from(text.len() - text.trim_start().len()).ok())
+        .unwrap_or(0);
+    stmt_span.with_hi(gap.lo() + BytePos(whitespace_len))
+}
+
+/// Returns the replacement for the binding path, or `None` when no exact rewrite exists.
+fn replacement(cx: &LateContext<'_>, offense: &Offense<'_>) -> Option<String> {
+    // Macro-produced code has no user-written text to move.
+    let same_context = offense.init.span.eq_ctxt(offense.stmt_span)
+        && offense.use_expr.span.eq_ctxt(offense.stmt_span)
+        && !offense.stmt_span.from_expansion()
+        && !offense.use_expr.span.from_expansion();
+    if !same_context {
+        return None;
+    }
+    let text = cx
+        .sess()
+        .source_map()
+        .span_to_snippet(offense.init.span)
+        .ok()?;
+
+    // A struct literal cannot appear unparenthesized in an `if` condition, and `!` binds tighter
+    // than a binary operator.
+    let needs_parens = contains_struct_literal(offense.init)
+        || (offense.is_negated && matches!(offense.init.kind, ExprKind::Binary(..)));
+    Some(if needs_parens {
+        format!("({text})")
+    } else {
+        text
+    })
+}
+
+/// Returns whether an expression contains a struct literal outside a closure body.
+fn contains_struct_literal(expr: &Expr<'_>) -> bool {
+    /// Visitor that records whether it saw a struct literal.
+    struct Finder(bool);
+    impl<'tcx> Visitor<'tcx> for Finder {
+        /// Records struct literals.
+        fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+            self.0 |= matches!(expr.kind, ExprKind::Struct(..));
+            walk_expr(self, expr);
+        }
+    }
+    let mut finder = Finder(false);
+    finder.visit_expr(expr);
+    finder.0
+}
+
+/// Emits the lint with a machine-applicable rewrite when one is exact.
+fn emit(cx: &LateContext<'_>, offense: &Offense<'_>) {
+    let replacement = replacement(cx, offense);
+    let removal_span = offense.removal_span;
+    let use_span = offense.use_expr.span;
     cx.emit_span_lint(
-        lint,
-        span,
-        DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ = diag.help(help);
+        ONE_USE_PREDICATE_BINDING,
+        offense.stmt_span,
+        DiagDecorator(move |diag| {
+            let _ = diag.primary_message("one-use predicate binding could be inlined");
+            let help = "inline the predicate expression into the branch condition unless the name captures a domain concept";
+            if let Some(replacement) = replacement {
+                let _ = diag.multipart_suggestion(
+                    help,
+                    vec![(removal_span, String::new()), (use_span, replacement)],
+                    Applicability::MachineApplicable,
+                );
+            } else {
+                let _ = diag.help(help);
+            }
         }),
     );
 }
 
-/// Helper for ui analysis.
+/// Runs the UI fixtures.
 #[test]
 fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");

@@ -8,8 +8,10 @@
 //! A lint to check for complicated boolean conditionals.
 //!
 //! It flattens source boolean chains, scores resolved terms and nested control
-//! flow, and reports boolean gates and assignments with complex inline work.
-//! Diagnostics recommend named predicates while preserving evaluation semantics.
+//! flow, and reports `if`, `while`, and match-guard conditions with complex
+//! inline work. `let` initializers and assignments are skipped because they
+//! already name the result. Diagnostics recommend named predicates while
+//! preserving evaluation semantics.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
@@ -17,16 +19,22 @@ extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Arm, BinOpKind, Expr, ExprKind, LetStmt,
+    Arm, BinOpKind, Expr, ExprKind, MatchSource,
     intravisit::{self, Visitor},
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_span::{ExpnKind, MacroKind, Span};
 
-/// `COMPLEX_TERM_SCORE` configuration used by this lint.
-const COMPLEX_TERM_SCORE: usize = 4;
-/// `COMPLEX_CHAIN_SCORE` configuration used by this lint.
-const COMPLEX_CHAIN_SCORE: usize = 8;
+/// Score at which one `&&` or `||` term counts as complex.
+const COMPLEX_TERM_SCORE: usize = 6;
+/// Score at which a whole condition, or a condition without `&&` or `||`, is
+/// reported.
+const COMPLEX_CHAIN_SCORE: usize = 9;
+/// Maximum work counted inside one inline closure.
+const CLOSURE_WORK_CAP: usize = 8;
+/// Closure work that adds nothing, so a closure with one call or one comparison
+/// is free.
+const CLOSURE_WORK_ALLOWANCE: usize = 2;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -37,18 +45,14 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for ComplicatedConditional {
-    /// Check expr for this lint.
+    /// Inspect `if` and `while` conditions.
+    ///
+    /// A `let` initializer or an assignment already names its boolean, which is the
+    /// rewrite this lint recommends, so those contexts are not checked.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
         // HIR represents a while condition as an if inside the lowered loop.
-        if let ExprKind::If(condition, _, _) | ExprKind::Assign(_, condition, _) = expr.kind {
+        if let ExprKind::If(condition, _, _) = expr.kind {
             check_boolean(cx, condition);
-        }
-    }
-
-    /// Inspect inferred and explicitly typed local boolean initializers.
-    fn check_local(&mut self, cx: &LateContext<'tcx>, local: &'tcx LetStmt<'tcx>) {
-        if let Some(initializer) = local.init {
-            check_boolean(cx, initializer);
         }
     }
 
@@ -60,7 +64,7 @@ impl<'tcx> LateLintPass<'tcx> for ComplicatedConditional {
     }
 }
 
-/// Report one complete boolean gate or assignment without rewriting evaluation.
+/// Report one complete boolean gate without rewriting evaluation.
 fn check_boolean(cx: &LateContext<'_>, expression: &Expr<'_>) {
     if complicated_condition(cx, expression) {
         emit_span_lint_with_help(
@@ -77,12 +81,11 @@ fn check_boolean(cx: &LateContext<'_>, expression: &Expr<'_>) {
 fn complicated_condition(cx: &LateContext<'_>, condition: &Expr<'_>) -> bool {
     // Reject non-boolean values before traversing their potentially large initializers.
     // Exclude generated conditions because their source cannot be extracted safely.
-    if !cx
+    let is_bool = cx
         .typeck_results()
         .expr_ty(peel_drop_temps(condition))
-        .is_bool()
-        || contains_macro_expansion(condition)
-    {
+        .is_bool();
+    if !is_bool || contains_macro_expansion(condition) {
         return false;
     }
 
@@ -136,7 +139,7 @@ fn complexity_score(cx: &LateContext<'_>, expr: &Expr<'_>) -> usize {
 fn expression_complexity_score(cx: &LateContext<'_>, expr: &Expr<'_>) -> usize {
     // Weight control flow and call chains above direct field access.
     match expr.kind {
-        ExprKind::Field(receiver, _) => 1 + value_chain_score(cx, receiver),
+        ExprKind::Field(receiver, _) => field_score(cx, receiver),
         ExprKind::MethodCall(_, receiver, args, _) => {
             2 + value_chain_score(cx, receiver) + bool_args_complexity(cx, args)
         }
@@ -158,9 +161,22 @@ fn remaining_expression_complexity_score(cx: &LateContext<'_>, expr: &Expr<'_>) 
         | ExprKind::AddrOf(_, _, inner) => 1 + bool_child_score(cx, inner),
         ExprKind::Block(block, _) => 2 + block.expr.map_or(0, |expr| complexity_score(cx, expr)),
         ExprKind::If(condition, then_expr, else_expr) => {
-            if_complexity_score(cx, condition, then_expr, else_expr)
+            // Score the condition and each boolean-producing branch.
+            4 + complexity_score(cx, condition)
+                + bool_child_score(cx, then_expr)
+                + else_expr.map_or(0, |expr| bool_child_score(cx, expr))
         }
-        ExprKind::Match(scrutinee, arms, _) => match_complexity_score(cx, scrutinee, arms),
+        ExprKind::Match(scrutinee, arms, _) => {
+            // Include each match guard and boolean-producing arm body.
+            4 + bool_child_score(cx, scrutinee)
+                + arms
+                    .iter()
+                    .map(|arm| {
+                        arm.guard.map_or(0, |guard| bool_child_score(cx, guard))
+                            + bool_child_score(cx, arm.body)
+                    })
+                    .sum::<usize>()
+        }
         ExprKind::Let(..) => 2,
         ExprKind::Closure(_) => 3,
         ExprKind::DropTemps(inner) => complexity_score(cx, inner),
@@ -194,30 +210,6 @@ fn comparison_operand_score(cx: &LateContext<'_>, operand: &Expr<'_>) -> usize {
     }
 }
 
-/// Scores an if expression and its boolean branches.
-fn if_complexity_score(
-    cx: &LateContext<'_>,
-    condition: &Expr<'_>,
-    then_expr: &Expr<'_>,
-    else_expr: Option<&Expr<'_>>,
-) -> usize {
-    4 + complexity_score(cx, condition)
-        + bool_child_score(cx, then_expr)
-        + else_expr.map_or(0, |expr| bool_child_score(cx, expr))
-}
-
-/// Scores match guards and bodies that contribute boolean complexity.
-fn match_complexity_score(cx: &LateContext<'_>, scrutinee: &Expr<'_>, arms: &[Arm<'_>]) -> usize {
-    4 + bool_child_score(cx, scrutinee)
-        + arms
-            .iter()
-            .map(|arm| {
-                arm.guard.map_or(0, |guard| bool_child_score(cx, guard))
-                    + bool_child_score(cx, arm.body)
-            })
-            .sum::<usize>()
-}
-
 /// Helper for bool child score analysis.
 fn bool_child_score(cx: &LateContext<'_>, expr: &Expr<'_>) -> usize {
     let expr = peel_drop_temps(expr);
@@ -237,7 +229,7 @@ fn bool_args_complexity(cx: &LateContext<'_>, args: &[Expr<'_>]) -> usize {
                 let body = cx.tcx.hir_body(closure.body);
                 let mut visitor = ClosureWork { score: 0 };
                 visitor.visit_expr(body.value);
-                visitor.score
+                visitor.score.saturating_sub(CLOSURE_WORK_ALLOWANCE)
             } else {
                 bool_child_score(cx, arg)
             }
@@ -248,14 +240,14 @@ fn bool_args_complexity(cx: &LateContext<'_>, args: &[Expr<'_>]) -> usize {
 /// Helper for value chain score analysis.
 fn value_chain_score(cx: &LateContext<'_>, expr: &Expr<'_>) -> usize {
     match peel_drop_temps(expr).kind {
-        ExprKind::Field(receiver, _) => 1 + value_chain_score(cx, receiver),
+        ExprKind::Field(receiver, _) => field_score(cx, receiver),
         ExprKind::MethodCall(_, receiver, args, _) => {
             2 + value_chain_score(cx, receiver) + bool_args_complexity(cx, args)
         }
         ExprKind::Call(callee, args) => {
             2 + value_chain_score(cx, callee) + bool_args_complexity(cx, args)
         }
-        ExprKind::Match(scrutinee, _arms, _) => 3 + value_chain_score(cx, scrutinee),
+        ExprKind::Match(scrutinee, _arms, source) => match_chain_score(cx, scrutinee, source),
         ExprKind::Index(receiver, _index, _) => 2 + value_chain_score(cx, receiver),
         ExprKind::Unary(_, inner)
         | ExprKind::Cast(inner, _)
@@ -264,6 +256,39 @@ fn value_chain_score(cx: &LateContext<'_>, expr: &Expr<'_>) -> usize {
         | ExprKind::AddrOf(_, _, inner) => 1 + value_chain_score(cx, inner),
         ExprKind::DropTemps(inner) => value_chain_score(cx, inner),
         _ => 0,
+    }
+}
+
+/// Scores a `match` that produces a receiver or comparison operand.
+///
+/// rustc lowers `operand?` and `operand.await` to a match on a `Try::branch` or
+/// `IntoFuture::into_future` call. Those add nothing themselves; the chain the
+/// reader wrote as the operand is scored instead. A source `match` adds 3.
+fn match_chain_score(cx: &LateContext<'_>, scrutinee: &Expr<'_>, source: MatchSource) -> usize {
+    match (source, scrutinee.kind) {
+        (MatchSource::TryDesugar(_) | MatchSource::AwaitDesugar, ExprKind::Call(_, [operand])) => {
+            value_chain_score(cx, operand)
+        }
+        _ => 3 + value_chain_score(cx, scrutinee),
+    }
+}
+
+/// Scores a field access: free on a named place such as `self.cx.tcx`, 1 plus the
+/// receiver's chain score on a computed value such as `order.customer().address`.
+fn field_score(cx: &LateContext<'_>, receiver: &Expr<'_>) -> usize {
+    if is_named_place(receiver) {
+        0
+    } else {
+        1 + value_chain_score(cx, receiver)
+    }
+}
+
+/// Return whether an expression is a path or a chain of field accesses on a path.
+fn is_named_place(expr: &Expr<'_>) -> bool {
+    match peel_drop_temps(expr).kind {
+        ExprKind::Path(_) => true,
+        ExprKind::Field(receiver, _) => is_named_place(receiver),
+        _ => false,
     }
 }
 
@@ -277,29 +302,33 @@ fn peel_drop_temps<'tcx>(expr: &'tcx Expr<'tcx>) -> &'tcx Expr<'tcx> {
 
 /// Counts visible work inside a closure without entering nested item bodies.
 struct ClosureWork {
-    /// Structural work units, capped once the reporting threshold is reached.
+    /// Structural work units, capped at `CLOSURE_WORK_CAP`.
     score: usize,
 }
 
 impl<'tcx> Visitor<'tcx> for ClosureWork {
     /// Count calls and control flow while bounding work in large closure bodies.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        if self.score >= COMPLEX_CHAIN_SCORE || from_macro_expansion(expr.span) {
+        // Stop once the cap is reached or the code comes from a macro.
+        if self.score >= CLOSURE_WORK_CAP || from_macro_expansion(expr.span) {
             return;
         }
+        // Weight calls, branches, nested closures, and operators, then walk children.
         let weight = match expr.kind {
             ExprKind::Call(..) | ExprKind::MethodCall(..) => 2,
-            ExprKind::If(..) | ExprKind::Match(..) | ExprKind::Loop(..) => 4,
+            ExprKind::If(..) | ExprKind::Match(..) | ExprKind::Loop(..) | ExprKind::Closure(..) => {
+                4
+            }
             ExprKind::Binary(..) | ExprKind::Assign(..) => 1,
             _ => 0,
         };
-        self.score = (self.score + weight).min(COMPLEX_CHAIN_SCORE);
+        self.score = (self.score + weight).min(CLOSURE_WORK_CAP);
         intravisit::walk_expr(self, expr);
     }
 
     /// Count intermediate statements as work even when their values are simple.
     fn visit_stmt(&mut self, statement: &'tcx rustc_hir::Stmt<'tcx>) {
-        self.score = (self.score + 1).min(COMPLEX_CHAIN_SCORE);
+        self.score = (self.score + 1).min(CLOSURE_WORK_CAP);
         intravisit::walk_stmt(self, statement);
     }
 }

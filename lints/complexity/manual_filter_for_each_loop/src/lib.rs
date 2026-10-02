@@ -40,7 +40,7 @@ impl<'tcx> LateLintPass<'tcx> for ManualFilterForEachLoop {
         ) {
             return;
         }
-        if let Some(span) = filtered_loop_span(cx, expr) {
+        if let Some(span) = validate_filtered_loop(cx, expr) {
             // Report the verified loop span with its equivalent adapter chain.
             support::emit(
                 cx,
@@ -54,11 +54,12 @@ impl<'tcx> LateLintPass<'tcx> for ManualFilterForEachLoop {
 }
 
 /// Return the span of a loop whose body is one safe filtered action.
-fn filtered_loop_span<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Option<Span> {
-    // Keep the candidate pipeline ordered from compiler shape to source safety.
+fn validate_filtered_loop<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Option<Span> {
+    // Keep the candidate pipeline ordered from compiler shape to early-exit safety.
     (!matches!(expr.kind, ExprKind::DropTemps(_)))
         .then_some(expr)
         .and_then(|expr| support::for_loop(cx, expr))
+        .filter(|loop_info| !loop_info.body.span.from_expansion())
         .and_then(|loop_info| {
             support::block_only_expr(loop_info.body).map(|body| (loop_info, body))
         })
@@ -70,31 +71,36 @@ fn filtered_loop_span<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> O
                 _ => None,
             },
         )
-        .filter(|(_, _, condition, _)| cx.typeck_results().expr_ty(condition).is_bool())
+        .filter(|(_, _, condition, _)| is_plain_condition(condition))
         .filter(|(_, _, _, then_expr)| single_action(then_expr))
-        .and_then(|(loop_info, body, _, _)| {
-            support::snippet(cx, body.span).map(|source| (loop_info, source))
-        })
-        .filter(|(_, source)| {
-            !["?", ".await", "break", "continue", "return"]
-                .iter()
-                .any(|token| source.contains(token))
-        })
-        .map(|(loop_info, _)| loop_info.span)
+        .filter(|(_, body, _, _)| !support::contains_control_flow(body))
+        .map(|(loop_info, _, _, _)| loop_info.span)
+}
+
+/// Returns whether a condition is a boolean test without `let` bindings.
+///
+/// An `if let` or let chain belongs to `manual_filter_map_for_each_loop` or has
+/// no direct `filter` equivalent.
+fn is_plain_condition(expr: &Expr<'_>) -> bool {
+    match support::peel_drop_temps(expr).kind {
+        ExprKind::Let(_) => false,
+        ExprKind::Binary(_, left, right) => is_plain_condition(left) && is_plain_condition(right),
+        _ => true,
+    }
 }
 
 /// Returns whether an `if` branch contains one terminal action.
 fn single_action(expr: &Expr<'_>) -> bool {
     // Accept terminal expression categories that preserve immediate execution.
-    let ExprKind::Block(block, _) = support::peel_drop_temps(expr).kind else {
-        return false;
-    };
-    support::block_only_expr(block).is_some_and(|action| {
-        matches!(
-            support::peel_drop_temps(action).kind,
-            ExprKind::Call(..) | ExprKind::MethodCall(..) | ExprKind::Assign(..)
-        )
-    })
+    matches!(
+        support::peel_drop_temps(expr).kind,
+        ExprKind::Block(block, _) if support::block_only_expr(block).is_some_and(|action| {
+            matches!(
+                support::peel_drop_temps(action).kind,
+                ExprKind::Call(..) | ExprKind::MethodCall(..) | ExprKind::Assign(..)
+            )
+        })
+    )
 }
 
 /// Runs the UI fixture.

@@ -1,5 +1,5 @@
 warning: filtered `for` loop can use `filter(...).for_each(...)`
-  --> $DIR/main.rs:4:5
+  --> $DIR/main.rs:6:5
    |
 LL | /     for value in values {
 LL | |         if *value > 0 {
@@ -11,5 +11,29 @@ LL | |     }
    = help: use `filter(...).for_each(...)` for this filtered action
    = note: `#[warn(manual_filter_for_each_loop)]` on by default
 
-warning: 1 warning emitted
+warning: filtered `for` loop can use `filter(...).for_each(...)`
+  --> $DIR/main.rs:15:5
+   |
+LL | /     for value in returned {
+LL | |         if *value > 0 && *value < 10 {
+LL | |             *total = *value;
+LL | |         }
+LL | |     }
+   | |_____^
+   |
+   = help: use `filter(...).for_each(...)` for this filtered action
+
+warning: filtered `for` loop can use `filter(...).for_each(...)`
+  --> $DIR/main.rs:24:5
+   |
+LL | /     for value in values {
+LL | |         if *value > 0 {
+LL | |             consume((|| return *value)());
+LL | |         }
+LL | |     }
+   | |_____^
+   |
+   = help: use `filter(...).for_each(...)` for this filtered action
+
+warning: 3 warnings emitted
 

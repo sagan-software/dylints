@@ -20,3 +20,13 @@ fn local_args() {
 }
 
 fn main() {}
+
+fn local_function_pointer() {
+    // A local function pointer is not a resolved std::env call at this boundary.
+    let arguments = std::env::args;
+    let _ = arguments();
+}
+
+fn closure_callee() {
+    let _ = (|| Vec::<String>::new())();
+}

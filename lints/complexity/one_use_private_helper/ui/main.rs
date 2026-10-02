@@ -44,7 +44,7 @@ fn keep_domain_rule(user: &User) -> bool {
     can_release_funds(user)
 }
 
-#[allow(unused_variables)]
+#[cold]
 fn attributed_helper(amount: u64) -> u64 {
     amount + 1
 }

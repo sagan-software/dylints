@@ -1,38 +1,67 @@
 #![feature(rustc_private)]
 #![expect(
     clippy::let_underscore_must_use,
-    clippy::string_slice,
-    reason = "the lint intentionally ignores diagnostic builders and uses rustc-provided UTF-8 byte boundaries"
+    reason = "the lint intentionally ignores diagnostic builders"
 )]
 
 //! A lint to check for one-use private expression helpers.
 //!
-//! It inspects source structure and resolved rustc information to identify the
-//! pattern described by the lint documentation. The implementation keeps
-//! generated code and unsupported syntax conservative, then reports a focused
-//! diagnostic so callers can choose the documented replacement with confidence.
+//! It counts resolved references to each private free function across every
+//! body in the crate, then reports a single-expression helper whose only
+//! reference is one direct call from another function. A source check keeps
+//! helpers that `cfg`-disabled code also calls.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_middle;
 extern crate rustc_span;
 
-use std::{fs::File, io::Read, path::PathBuf};
+use std::collections::HashMap;
 
 use rustc_errors::DiagDecorator;
-use rustc_hir::{Body, Expr, ExprKind, intravisit::FnKind};
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
-use rustc_span::{Span, def_id::LocalDefId};
+use rustc_hir::{
+    Attribute, Body, Expr, ExprKind, GenericParamKind, QPath,
+    attrs::AttributeKind,
+    def::{DefKind, Res},
+    intravisit::{FnKind, Visitor, walk_expr},
+};
+use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_middle::ty::{TyCtxt, Visibility};
+use rustc_span::{
+    Span, Symbol,
+    def_id::{CRATE_DEF_ID, LocalDefId},
+    sym,
+};
 
-dylint_support::documented_late_lint! {
+dylint_support::documented_late_lint_with_pass! {
     #[doc = include_str!("../README.md")]
     pub ONE_USE_PRIVATE_HELPER,
     Warn,
     "private one-expression helper is only called once",
-    OneUsePrivateHelper
+    OneUsePrivateHelper,
+    OneUsePrivateHelper::default()
+}
+
+/// Late pass that caches the crate's references to local functions.
+#[derive(Default)]
+struct OneUsePrivateHelper {
+    /// References to each local function, built on the first checked function.
+    references: Option<HashMap<LocalDefId, Vec<Reference>>>,
+}
+
+/// One resolved path to a local function.
+#[derive(Clone, Copy)]
+struct Reference {
+    /// Span of the path expression.
+    span: Span,
+    /// Whether the path is the callee of a call expression.
+    is_call: bool,
+    /// Body owner that contains the path.
+    owner: LocalDefId,
 }
 
 impl<'tcx> LateLintPass<'tcx> for OneUsePrivateHelper {
-    /// Check fn for this lint.
+    /// Reports a private single-expression helper with exactly one call.
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
@@ -42,85 +71,96 @@ impl<'tcx> LateLintPass<'tcx> for OneUsePrivateHelper {
         span: Span,
         local_def_id: LocalDefId,
     ) {
-        if one_use_candidate(cx, kind, body, span, local_def_id).is_some() {
-            emit_span_lint_with_help(
-                cx,
-                ONE_USE_PRIVATE_HELPER,
-                span,
-                "private one-expression helper is only called once",
-                "inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule",
-            );
+        // Apply the cheap item checks before building the crate-wide reference map.
+        let Some(name) = candidate_name(cx, kind, body, span, local_def_id) else {
+            return;
+        };
+        let references = self
+            .references
+            .get_or_insert_with(|| collect_references(cx.tcx));
+
+        // Require one direct call from a different function, written outside a macro.
+        let Some(&[call]) = references.get(&local_def_id).map(Vec::as_slice) else {
+            return;
+        };
+        let is_outside_call = call.is_call
+            && !call.span.from_expansion()
+            && cx.tcx.typeck_root_def_id(call.owner.to_def_id()) != local_def_id.to_def_id();
+        if !is_outside_call || !is_named_twice_in_file(cx, span, name) {
+            return;
         }
+
+        cx.emit_span_lint(
+            ONE_USE_PRIVATE_HELPER,
+            cx.tcx.def_span(local_def_id),
+            DiagDecorator(|diag| {
+                let _ = diag.primary_message("private one-expression helper is only called once");
+                let _ = diag.span_note(call.span, "the only call is here");
+                let _ = diag.help(
+                    "inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule",
+                );
+            }),
+        );
     }
 }
 
-/// Return the source evidence for one diagnostic candidate.
-fn one_use_candidate<'tcx>(
-    cx: &LateContext<'tcx>,
-    kind: FnKind<'tcx>,
-    body: &Body<'tcx>,
-    span: Span,
-    local_def_id: LocalDefId,
-) -> Option<(String, String)> {
-    // Keep each source and semantic prerequisite in one composable filter.
-    private_item_function_name(cx, kind, span, local_def_id)
-        .filter(|name| single_expression_body(body) && !excluded_helper_name(name))
-        .and_then(|name| {
-            cx.sess()
-                .source_map()
-                .span_to_snippet(span)
-                .ok()
-                .filter(|source| !self_referential_body(source, &name))
-                .map(|_| name)
-        })
-        .and_then(|name| {
-            same_file_source(cx, span)
-                .filter(|source| direct_call_count(source, &name) == 1)
-                .map(|source| (name, source))
-        })
-}
-
-/// Return the private item function name.
-fn private_item_function_name(
+/// Returns the helper's name when the item itself qualifies.
+fn candidate_name(
     cx: &LateContext<'_>,
     kind: FnKind<'_>,
+    body: &Body<'_>,
     span: Span,
     local_def_id: LocalDefId,
-) -> Option<String> {
-    // Restrict the analysis to named free functions.
-    let FnKind::ItemFn(ident, ..) = kind else {
+) -> Option<Symbol> {
+    // Restrict the analysis to safe, synchronous free functions without type parameters.
+    let FnKind::ItemFn(ident, generics, header) = kind else {
         return None;
     };
-
-    // Exclude generated and attributed functions whose lifecycle may be implicit.
-    let from_expansion = span.from_expansion();
-    let has_attrs = !cx
-        .tcx
-        .hir_attrs(cx.tcx.local_def_id_to_hir_id(local_def_id))
-        .is_empty();
-    if from_expansion || has_attrs {
+    let has_type_params = generics
+        .params
+        .iter()
+        .any(|param| !matches!(param.kind, GenericParamKind::Lifetime { .. }));
+    if span.from_expansion() || has_type_params || header.is_unsafe() || header.is_async() {
         return None;
     }
 
-    let source = cx.sess().source_map().span_to_snippet(span).ok()?;
-    simple_private_function_source(&source, ident.name.as_str())
-        .then(|| ident.name.to_ident_string())
+    // Require visibility limited to the defining module.
+    let module = cx.tcx.parent_module_from_def_id(local_def_id).to_def_id();
+    if cx.tcx.visibility(local_def_id) != Visibility::Restricted(module) {
+        return None;
+    }
+
+    // Other attributes, such as `#[test]` or `#[no_mangle]`, give the function an implicit role.
+    let attrs = cx
+        .tcx
+        .hir_attrs(cx.tcx.local_def_id_to_hir_id(local_def_id));
+    let has_role_attr = attrs.iter().any(|attr| !is_neutral_attr(attr));
+    (!has_role_attr && single_expression_body(body) && !excluded_helper_name(ident.name.as_str()))
+        .then_some(ident.name)
 }
 
-/// Return source text for simple private function.
-fn simple_private_function_source(source: &str, name: &str) -> bool {
-    let Some(after_fn) = source.trim_start().strip_prefix("fn ") else {
-        return false;
-    };
-    let Some(after_name) = after_fn.strip_prefix(name) else {
-        return false;
-    };
-
-    // Requiring `(` immediately after the name skips generic helpers and other unusual item forms.
-    after_name.trim_start().starts_with('(')
+/// Returns whether an attribute leaves the function's role unchanged.
+fn is_neutral_attr(attr: &Attribute) -> bool {
+    // Rustc parses some built-in attributes, so match those by kind and the rest by name.
+    attr.doc_str().is_some()
+        || matches!(
+            attr,
+            Attribute::Parsed(AttributeKind::Inline(..) | AttributeKind::MustUse { .. })
+        )
+        || [
+            sym::allow,
+            sym::warn,
+            sym::deny,
+            sym::forbid,
+            sym::expect,
+            sym::inline,
+            sym::must_use,
+        ]
+        .iter()
+        .any(|name| attr.has_name(*name))
 }
 
-/// Helper for single expression body analysis.
+/// Returns whether the body is one tail expression without control flow.
 const fn single_expression_body(body: &Body<'_>) -> bool {
     // Require a statement-free block with one inlineable tail expression.
     let ExprKind::Block(block, _) = body.value.kind else {
@@ -130,24 +170,20 @@ const fn single_expression_body(body: &Body<'_>) -> bool {
         return false;
     };
 
-    block.stmts.is_empty() && simple_inlineable_expression(expr)
+    block.stmts.is_empty()
+        && !matches!(
+            expr.kind,
+            ExprKind::If(..)
+                | ExprKind::Match(..)
+                | ExprKind::Loop(..)
+                | ExprKind::Closure(..)
+                | ExprKind::Block(..)
+                | ExprKind::Ret(..)
+                | ExprKind::Break(..)
+        )
 }
 
-/// Helper for simple inlineable expression analysis.
-const fn simple_inlineable_expression(expr: &Expr<'_>) -> bool {
-    !matches!(
-        expr.kind,
-        ExprKind::If(..)
-            | ExprKind::Match(..)
-            | ExprKind::Loop(..)
-            | ExprKind::Closure(..)
-            | ExprKind::Block(..)
-            | ExprKind::Ret(..)
-            | ExprKind::Break(..)
-    )
-}
-
-/// Return the excluded helper name.
+/// Returns whether the name states a role that keeps the helper useful.
 fn excluded_helper_name(name: &str) -> bool {
     let lower = name.to_ascii_lowercase();
     let words = lower
@@ -184,147 +220,130 @@ fn excluded_helper_name(name: &str) -> bool {
     )
 }
 
-/// Helper for self referential body analysis.
-fn self_referential_body(function_source: &str, name: &str) -> bool {
-    direct_call_count(function_source, name) > 0
+/// Collects every resolved path to a local function in every body of the crate.
+fn collect_references(tcx: TyCtxt<'_>) -> HashMap<LocalDefId, Vec<Reference>> {
+    // Start with a placeholder owner; the loop sets the real owner before each visit.
+    let mut collector = ReferenceCollector {
+        owner: CRATE_DEF_ID,
+        references: HashMap::new(),
+    };
+
+    // Each closure and constant has its own body owner, so every body is visited once.
+    for owner in tcx.hir_body_owners() {
+        collector.owner = owner;
+        collector.visit_body(tcx.hir_body_owned_by(owner));
+    }
+    collector.references
 }
 
-/// Return whether file source match.
-fn same_file_source(cx: &LateContext<'_>, span: Span) -> Option<String> {
-    let path = local_source_path(cx, span)?;
-    let mut source = String::new();
-
-    // Reading the file keeps same-file counting independent of partial function snippets.
-    let mut file = File::open(path).ok()?;
-    let _ = file.read_to_string(&mut source).ok()?;
-
-    Some(source)
+/// Visitor that records paths to local functions.
+struct ReferenceCollector {
+    /// Body owner currently being visited.
+    owner: LocalDefId,
+    /// Recorded references keyed by the referenced function.
+    references: HashMap<LocalDefId, Vec<Reference>>,
 }
 
-/// Helper for local source path analysis.
-fn local_source_path(cx: &LateContext<'_>, span: Span) -> Option<PathBuf> {
-    cx.sess()
-        .source_map()
-        .span_to_filename(span)
-        .into_local_path()
+impl ReferenceCollector {
+    /// Records one reference to a local function.
+    fn record(&mut self, function: LocalDefId, span: Span, is_call: bool) {
+        self.references
+            .entry(function)
+            .or_default()
+            .push(Reference {
+                span,
+                is_call,
+                owner: self.owner,
+            });
+    }
 }
 
-/// Helper for direct call count analysis.
-fn direct_call_count(source: &str, name: &str) -> usize {
-    // Scan exact name occurrences while advancing beyond each candidate.
-    let mut count = 0;
-    let mut index = 0;
+/// Returns the local function that a path expression resolves to.
+fn local_function(expr: &Expr<'_>) -> Option<LocalDefId> {
+    // Accept only a resolved path to a function defined in this crate.
+    let ExprKind::Path(QPath::Resolved(_, path)) = expr.kind else {
+        return None;
+    };
+    let Res::Def(DefKind::Fn, def_id) = path.res else {
+        return None;
+    };
+    def_id.as_local()
+}
 
-    while let Some(relative_start) = source[index..].find(name) {
-        let start = index + relative_start;
-        let end = start + name.len();
-
-        // Count only unqualified call syntax at identifier boundaries.
-        if looks_like_direct_call(source, start, end) {
-            count += 1;
+impl<'tcx> Visitor<'tcx> for ReferenceCollector {
+    /// Records calls and value uses, then descends into child expressions.
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+        // Record a callee as a call and skip it so it is not counted again as a value use.
+        if let ExprKind::Call(callee, args) = expr.kind
+            && let Some(function) = local_function(callee)
+        {
+            self.record(function, callee.span, true);
+            for arg in args {
+                self.visit_expr(arg);
+            }
+            return;
         }
 
-        // Resume after the matched name to guarantee forward progress.
-        index = end;
+        // Any other path to a local function is a value use, such as `.map(helper)`.
+        if let Some(function) = local_function(expr) {
+            self.record(function, expr.span, false);
+        }
+        walk_expr(self, expr);
     }
-
-    count
 }
 
-/// Return whether the source looks like like direct call.
-fn looks_like_direct_call(source: &str, start: usize, end: usize) -> bool {
-    identifier_boundary_before(source, start)
-        && identifier_boundary_after(source, end)
-        && next_non_ws_char(source, end) == Some('(')
-        && !definition_site(source, start)
-        && !qualified_call(source, start)
+/// Returns whether the name appears exactly twice in the helper's source file.
+///
+/// HIR omits code removed by `cfg`, such as a `#[cfg(test)]` module in a
+/// library build. This source check keeps a helper that such code also calls,
+/// because the definition and the one call are then not the only mentions.
+fn is_named_twice_in_file(cx: &LateContext<'_>, span: Span, name: Symbol) -> bool {
+    let source_file = cx.sess().source_map().lookup_source_file(span.lo());
+    source_file
+        .src
+        .as_deref()
+        .is_some_and(|source| identifier_occurrences(source, name.as_str()) == 2)
 }
 
-/// Helper for identifier boundary before analysis.
-fn identifier_boundary_before(source: &str, start: usize) -> bool {
-    previous_char(source, start).is_none_or(|ch| !is_ident_continue(ch))
+/// Counts occurrences of `name` with identifier boundaries on both sides.
+fn identifier_occurrences(source: &str, name: &str) -> usize {
+    source
+        .match_indices(name)
+        .filter(|(start, _)| {
+            let before = source
+                .get(..*start)
+                .and_then(|text| text.chars().next_back());
+            let after = source
+                .get(start + name.len()..)
+                .and_then(|text| text.chars().next());
+            !before.is_some_and(is_ident_continue) && !after.is_some_and(is_ident_continue)
+        })
+        .count()
 }
 
-/// Helper for identifier boundary after analysis.
-fn identifier_boundary_after(source: &str, end: usize) -> bool {
-    source[end..]
-        .chars()
-        .next()
-        .is_none_or(|ch| !is_ident_continue(ch))
-}
-
-/// Return the previous char around a source position.
-fn previous_char(source: &str, byte_index: usize) -> Option<char> {
-    source[..byte_index].chars().next_back()
-}
-
-/// Return the next non ws char around a source position.
-fn next_non_ws_char(source: &str, byte_index: usize) -> Option<char> {
-    source[byte_index..].chars().find(|ch| !ch.is_whitespace())
-}
-
-/// Helper for definition site analysis.
-fn definition_site(source: &str, start: usize) -> bool {
-    previous_token(source, start).is_some_and(|token| token == "fn")
-}
-
-/// Helper for qualified call analysis.
-fn qualified_call(source: &str, start: usize) -> bool {
-    previous_non_ws_char(source, start).is_some_and(|ch| matches!(ch, '.' | ':'))
-}
-
-/// Return the previous non ws char around a source position.
-fn previous_non_ws_char(source: &str, byte_index: usize) -> Option<char> {
-    source[..byte_index]
-        .chars()
-        .rev()
-        .find(|ch| !ch.is_whitespace())
-}
-
-/// Return the previous token around a source position.
-fn previous_token(source: &str, byte_index: usize) -> Option<&str> {
-    let before = source[..byte_index].trim_end();
-    let start = before
-        .rfind(|ch: char| !is_ident_continue(ch))
-        .map_or(0, |index| index + ch_len_at(before, index));
-
-    before.get(start..)
-}
-
-/// Helper for ch len at analysis.
-fn ch_len_at(source: &str, byte_index: usize) -> usize {
-    source[byte_index..]
-        .chars()
-        .next()
-        .map_or(0, char::len_utf8)
-}
-
-/// Return whether ident continue.
+/// Returns whether a character can continue an identifier.
 const fn is_ident_continue(ch: char) -> bool {
     ch == '_' || ch.is_ascii_alphanumeric()
 }
 
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: &'static str,
-    help: &'static str,
-) {
-    // Use rustc's native diagnostic decorator to keep diagnostics consistent with the suite.
-    cx.emit_span_lint(
-        lint,
-        span,
-        DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ = diag.help(help);
-        }),
-    );
-}
-
-/// Helper for ui analysis.
+/// Runs the UI fixtures.
 #[test]
 fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");
+}
+
+/// Counts whole identifiers, including mentions in comments.
+#[test]
+fn counts_whole_identifiers() {
+    assert_eq!(identifier_occurrences("fn total() {} total()", "total"), 2);
+    assert_eq!(identifier_occurrences("x // total\ntotal", "total"), 2);
+}
+
+/// Ignores longer identifiers that contain the name.
+#[test]
+fn ignores_partial_identifiers() {
+    assert_eq!(
+        identifier_occurrences("subtotal totals total_x", "total"),
+        0
+    );
 }

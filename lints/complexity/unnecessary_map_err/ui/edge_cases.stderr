@@ -39,5 +39,35 @@ LL |     Ok(parse_port!(raw))
    = help: remove `.map_err(...)` and propagate the error with `?`, as in `Ok(value?)`
    = note: this warning originates in the macro `parse_port` (in Nightly b$DIRlds, run with -Z macro-backtrace for more info)
 
-warning: 5 warnings emitted
+warning: this `.map_err` only converts the error type
+  --> $DIR/edge_cases.rs:86:16
+   |
+LL |     let port = parse!(raw).map_err(Error::from)?;
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `.map_err(...)` and propagate the error with `?`, as in `Ok(value?)`
+
+warning: this `.map_err` only converts the error type
+  --> $DIR/edge_cases.rs:97:34
+   |
+LL |     let port = raw.parse::<u16>().map_err(|error| { Error::from(error) })?;
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `.map_err(...)` and let `?` apply the `From` conversion
+
+warning: this `.map_err` only converts the error type
+  --> $DIR/edge_cases.rs:120:36
+   |
+LL |     let result = raw.parse::<u16>().map_err(Error::from);
+   |                                    ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `.map_err(...)` and propagate the error with `?`, as in `Ok(value?)`
+
+warning: this `.map_err` only converts the error type
+  --> $DIR/edge_cases.rs:125:23
+   |
+LL |     raw.parse::<u16>().map_err(Error::from).map(|port| port + 1)
+   |                       ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `.map_err(...)` and propagate the error with `?`, as in `Ok(value?)`
+
+warning: 9 warnings emitted
 

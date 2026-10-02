@@ -11,10 +11,16 @@
 )]
 
 use rustc_errors::DiagDecorator;
-use rustc_hir::{Block, Expr, ExprKind, MatchSource, Stmt, StmtKind, def::Res};
+use rustc_hir::{
+    BindingMode, Block, ByRef, Expr, ExprKind, HirId, LangItem, MatchSource, Pat, PatKind, Stmt,
+    StmtKind,
+    def::{DefKind, Res},
+    def_id::DefId,
+    intravisit::{Visitor, walk_expr},
+};
 use rustc_lint::{LateContext, Lint, LintContext};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::Span;
+use rustc_span::{Span, Symbol, sym};
 
 /// The source, pattern, and body recovered from one standard `for` loop.
 pub(crate) struct ForLoop<'tcx> {
@@ -22,51 +28,44 @@ pub(crate) struct ForLoop<'tcx> {
     pub(crate) span: Span,
     /// Expression passed to `IntoIterator::into_iter`.
     pub(crate) source: &'tcx Expr<'tcx>,
+    /// User-written loop pattern that binds each item.
+    pub(crate) pat: &'tcx Pat<'tcx>,
     /// User-written loop body.
     pub(crate) body: &'tcx Block<'tcx>,
 }
 
 /// Recovers a standard `for` loop from rustc's desugared HIR.
+///
+/// rustc lowers `for pat in source { body }` to a match on
+/// `IntoIterator::into_iter(source)` whose arm loops over a second match on
+/// `next(&mut iter)` with `None => break` and `Some(pat) => body` arms.
 pub(crate) fn for_loop<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
 ) -> Option<ForLoop<'tcx>> {
-    // Peel the outer temporary wrapper and match rustc's standard for-loop shell.
+    // Peel the outer temporary wrapper and descend through the generated shell.
     let expr = peel_drop_temps(expr);
-    match expr.kind {
-        ExprKind::Match(iter_expr, [iter_arm], MatchSource::ForLoopDesugar) => {
-            Some((iter_expr, iter_arm))
-        }
-        _ => None,
+    if let ExprKind::Match(iter_expr, [iter_arm], MatchSource::ForLoopDesugar) = expr.kind
+        && let ExprKind::Call(callee, [source]) = iter_expr.kind
+        && resolved_into_iter(cx, callee)
+        && let ExprKind::Loop(loop_block, ..) = iter_arm.body.kind
+        && let Some(next_match) = block_only_expr(loop_block)
+        && let ExprKind::Match(_, arms, MatchSource::ForLoopDesugar) = next_match.kind
+    {
+        // Select the generated `Some(pat)` arm, lowered as a one-field struct pattern.
+        arms.iter()
+            .find_map(|arm| match (arm.pat.kind, arm.body.kind) {
+                (PatKind::Struct(_, [field], _), ExprKind::Block(body, _)) => Some(ForLoop {
+                    span: expr.span,
+                    source,
+                    pat: field.pat,
+                    body,
+                }),
+                _ => None,
+            })
+    } else {
+        None
     }
-    .and_then(|(iter_expr, iter_arm)| match iter_expr.kind {
-        ExprKind::Call(callee, [source]) if resolved_into_iter(cx, callee) => {
-            Some((source, iter_arm))
-        }
-        _ => None,
-    })
-    // Descend through the generated loop and iterator match to the user body.
-    .and_then(|(source, iter_arm)| match iter_arm.body.kind {
-        ExprKind::Loop(loop_block, _, _, _) => Some((source, loop_block)),
-        _ => None,
-    })
-    .and_then(|(source, loop_block)| {
-        block_only_expr(loop_block).and_then(|expr| match expr.kind {
-            ExprKind::Match(_, arms, MatchSource::ForLoopDesugar) => Some((source, arms)),
-            _ => None,
-        })
-    })
-    // Select the arm that carries the user-written block expression.
-    .and_then(|(source, arms)| {
-        arms.iter().find_map(|arm| match arm.body.kind {
-            ExprKind::Block(body, _) => Some(ForLoop {
-                span: expr.span,
-                source,
-                body,
-            }),
-            _ => None,
-        })
-    })
 }
 
 /// Returns the only expression in a block.
@@ -102,39 +101,28 @@ pub(crate) fn snippet(cx: &LateContext<'_>, span: Span) -> Option<String> {
         .ok()
 }
 
-/// Returns whether an expression resolves to a function with the target API path suffix.
-pub(crate) fn resolved_path_ends_with(cx: &LateContext<'_>, expr: &Expr<'_>, suffix: &str) -> bool {
-    // Compare the resolved definition because local functions can share the spelling.
-    let ExprKind::Path(qpath) = expr.kind else {
-        return false;
-    };
-    let Res::Def(_, def_id) = cx.qpath_res(&qpath, expr.hir_id) else {
-        return false;
-    };
-    cx.tcx.def_path_str(def_id).ends_with(suffix)
+/// Returns whether a path resolves to the `IntoIterator::into_iter` lang item.
+fn resolved_into_iter(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    matches!(
+        expr.kind,
+        ExprKind::Path(qpath) if matches!(
+            cx.qpath_res(&qpath, expr.hir_id),
+            Res::Def(_, def_id) if cx.tcx.is_lang_item(def_id, LangItem::IntoIterIntoIter)
+        )
+    )
 }
 
-/// Returns whether a path resolves to standard `IntoIterator::into_iter`.
-fn resolved_into_iter(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    // Accept rustc's generic path rendering while retaining the trait identity check.
-    let ExprKind::Path(qpath) = expr.kind else {
-        return false;
-    };
-    let Res::Def(_, def_id) = cx.qpath_res(&qpath, expr.hir_id) else {
-        return false;
-    };
-    // Require both the method suffix and the standard trait identity.
-    let path = cx.tcx.def_path_str(def_id);
-    path.ends_with("::into_iter") && path.contains("IntoIterator")
+/// Returns the definition resolved by a method call expression.
+fn method_def_id(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<DefId> {
+    // Paths can also carry type-dependent definitions, so require a method call.
+    matches!(expr.kind, ExprKind::MethodCall(..))
+        .then(|| cx.typeck_results().type_dependent_def_id(expr.hir_id))
+        .flatten()
 }
 
 /// Returns the resolved definition path for a method call.
 pub(crate) fn method_path<'tcx>(cx: &LateContext<'tcx>, expr: &Expr<'tcx>) -> Option<String> {
-    let ExprKind::MethodCall(..) = expr.kind else {
-        return None;
-    };
-    let def_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
-    Some(cx.tcx.def_path_str(def_id))
+    method_def_id(cx, expr).map(|def_id| cx.tcx.def_path_str(def_id))
 }
 
 /// Returns whether a method call resolves to the target definition suffix.
@@ -146,13 +134,44 @@ pub(crate) fn method_path_ends_with<'tcx>(
     method_path(cx, expr).is_some_and(|path| path.ends_with(suffix))
 }
 
+/// Returns the collection and method names of an inherent collection method.
+///
+/// The first symbol is the collection's diagnostic item, such as `Vec`, and the
+/// second is the method name, such as `push`.
+pub(crate) fn standard_collection_method(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+) -> Option<(Symbol, Symbol)> {
+    let (self_ty, method) = inherent_method(cx, expr)?;
+    standard_collection_name(cx, self_ty).map(|collection| (collection, method))
+}
+
+/// Returns the impl self type and method name of a resolved inherent method call.
+pub(crate) fn inherent_method<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &Expr<'_>,
+) -> Option<(Ty<'tcx>, Symbol)> {
+    // Resolve the call, then require that its parent is an inherent impl.
+    let def_id = method_def_id(cx, expr)?;
+    let impl_id = cx.tcx.opt_parent(def_id)?;
+    let DefKind::Impl { of_trait: false } = cx.tcx.def_kind(impl_id) else {
+        return None;
+    };
+    // The impl self type names the receiver type after autoderef.
+    let self_ty = cx
+        .tcx
+        .type_of(impl_id)
+        .instantiate_identity()
+        .skip_normalization();
+    Some((self_ty, cx.tcx.item_name(def_id)))
+}
+
 /// Returns whether a type is the standard `Option` type.
 pub(crate) fn is_option(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     let ty::Adt(adt, _) = ty.peel_refs().kind() else {
         return false;
     };
-    cx.tcx
-        .is_diagnostic_item(rustc_span::sym::Option, adt.did())
+    cx.tcx.is_diagnostic_item(sym::Option, adt.did())
 }
 
 /// Returns whether a type is the standard `Result` type.
@@ -160,42 +179,160 @@ pub(crate) fn is_result(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     let ty::Adt(adt, _) = ty.peel_refs().kind() else {
         return false;
     };
-    cx.tcx
-        .is_diagnostic_item(rustc_span::sym::Result, adt.did())
+    cx.tcx.is_diagnostic_item(sym::Result, adt.did())
+}
+
+/// Returns the diagnostic item of a supported standard collection type.
+fn standard_collection_name(cx: &LateContext<'_>, ty: Ty<'_>) -> Option<Symbol> {
+    // Resolve the collection by diagnostic item so local lookalikes stay distinct.
+    let ty::Adt(adt, _) = ty.peel_refs().kind() else {
+        return None;
+    };
+    cx.tcx.get_diagnostic_name(adt.did()).filter(|name| {
+        matches!(
+            name.as_str(),
+            "Vec" | "VecDeque" | "HashSet" | "BTreeSet" | "HashMap" | "BTreeMap"
+        )
+    })
 }
 
 /// Returns whether a type is one of the supported standard collections.
 pub(crate) fn is_standard_collection(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    // Pair the item name with its defining crate to reject local lookalikes.
-    let ty::Adt(adt, _) = ty.peel_refs().kind() else {
-        return false;
-    };
-    matches!(cx.tcx.crate_name(adt.did().krate).as_str(), "alloc" | "std")
-        && matches!(
-            cx.tcx.item_name(adt.did()).as_str(),
-            "Vec" | "VecDeque" | "HashSet" | "BTreeSet" | "HashMap" | "BTreeMap"
-        )
-}
-
-/// Returns whether a type is a standard sequence accepted by `extend` detection.
-pub(crate) fn is_standard_sequence(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    let ty::Adt(adt, _) = ty.peel_refs().kind() else {
-        return false;
-    };
-    matches!(cx.tcx.crate_name(adt.did().krate).as_str(), "alloc" | "std")
-        && matches!(cx.tcx.item_name(adt.did()).as_str(), "Vec" | "VecDeque")
+    standard_collection_name(cx, ty).is_some()
 }
 
 /// Returns whether a type is a slice, array, or standard `Vec`.
 pub(crate) fn is_slice_like(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    // Preserve primitive slices and arrays while resolving `Vec` by its crate.
+    // Preserve primitive slices and arrays while resolving `Vec` by diagnostic item.
     match ty.peel_refs().kind() {
         ty::Slice(_) | ty::Array(..) => true,
-        ty::Adt(adt, _) => {
-            cx.tcx.item_name(adt.did()).as_str() == "Vec"
-                && matches!(cx.tcx.crate_name(adt.did().krate).as_str(), "alloc" | "std")
+        _ => standard_collection_name(cx, ty) == Some(sym::Vec),
+    }
+}
+
+/// Returns whether a resolution names the constructor of a lang-item variant.
+pub(crate) fn is_lang_ctor(cx: &LateContext<'_>, res: Res, item: LangItem) -> bool {
+    // A tuple-variant constructor's parent is the variant that carries the lang item.
+    let Res::Def(DefKind::Ctor(..), ctor) = res else {
+        return false;
+    };
+    cx.tcx
+        .opt_parent(ctor)
+        .is_some_and(|variant| cx.tcx.is_lang_item(variant, item))
+}
+
+/// Returns the inner pattern of a one-field lang-item variant pattern such as `Some(inner)`.
+pub(crate) fn lang_ctor_pat<'tcx>(
+    cx: &LateContext<'_>,
+    pat: &'tcx Pat<'tcx>,
+    item: LangItem,
+) -> Option<&'tcx Pat<'tcx>> {
+    let PatKind::TupleStruct(qpath, [inner], _) = pat.kind else {
+        return None;
+    };
+    is_lang_ctor(cx, cx.qpath_res(&qpath, pat.hir_id), item).then_some(inner)
+}
+
+/// Returns the argument of a one-field lang-item variant construction such as `Ok(value)`.
+pub(crate) fn lang_ctor_call<'tcx>(
+    cx: &LateContext<'_>,
+    expr: &'tcx Expr<'tcx>,
+    item: LangItem,
+) -> Option<&'tcx Expr<'tcx>> {
+    // Resolve the callee path so a local function named `Ok` stays distinct.
+    let ExprKind::Call(callee, [argument]) = peel_drop_temps(expr).kind else {
+        return None;
+    };
+    let ExprKind::Path(qpath) = callee.kind else {
+        return None;
+    };
+    is_lang_ctor(cx, cx.qpath_res(&qpath, callee.hir_id), item).then_some(argument)
+}
+
+/// Returns the local binding resolved by a path expression.
+pub(crate) fn local_binding(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<HirId> {
+    // Use HIR resolution so shadowed names remain distinct.
+    let expr = peel_drop_temps(expr);
+    let ExprKind::Path(qpath) = expr.kind else {
+        return None;
+    };
+    // Statics, constants, and functions resolve to definitions, not locals.
+    let Res::Local(id) = cx.qpath_res(&qpath, expr.hir_id) else {
+        return None;
+    };
+    Some(id)
+}
+
+/// Returns the binding of a by-value identifier pattern without a subpattern.
+pub(crate) const fn simple_binding(pat: &Pat<'_>) -> Option<HirId> {
+    match pat.kind {
+        PatKind::Binding(BindingMode(ByRef::No, _), id, _, None) => Some(id),
+        _ => None,
+    }
+}
+
+/// Returns whether an expression is an argument-free associated `new` or
+/// `default` call.
+pub(crate) fn is_empty_constructor(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    // Resolve the callee so the constructor name comes from its definition.
+    let ExprKind::Call(callee, []) = peel_drop_temps(expr).kind else {
+        return false;
+    };
+    let ExprKind::Path(qpath) = callee.kind else {
+        return false;
+    };
+    // Free functions are rejected because their result can hold items.
+    let Res::Def(DefKind::AssocFn, def_id) = cx.qpath_res(&qpath, callee.hir_id) else {
+        return false;
+    };
+    matches!(cx.tcx.item_name(def_id).as_str(), "new" | "default")
+}
+
+/// Early exits found in one expression, excluding nested closure and async bodies.
+pub(crate) struct EarlyExits<'tcx> {
+    /// Operands of each `?` operator, in visiting order.
+    pub(crate) try_operands: Vec<&'tcx Expr<'tcx>>,
+    /// Whether the expression contains `return`, `break`, `continue`, `become`,
+    /// `yield`, or `.await`.
+    pub(crate) has_other: bool,
+}
+
+/// Collects the early exits in one expression from its HIR.
+pub(crate) fn early_exits<'tcx>(expr: &'tcx Expr<'tcx>) -> EarlyExits<'tcx> {
+    let mut exits = EarlyExits {
+        try_operands: Vec::new(),
+        has_other: false,
+    };
+    exits.visit_expr(expr);
+    exits
+}
+
+/// Returns whether an expression contains any `?` or other early exit.
+pub(crate) fn contains_control_flow(expr: &Expr<'_>) -> bool {
+    let exits = early_exits(expr);
+    exits.has_other || !exits.try_operands.is_empty()
+}
+
+impl<'tcx> Visitor<'tcx> for EarlyExits<'tcx> {
+    /// Records early exits without entering nested bodies.
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+        match expr.kind {
+            // `operand?` lowers to a match on `Try::branch(operand)` whose arm returns.
+            // Record the operand and skip the generated arms.
+            ExprKind::Match(scrutinee, _, MatchSource::TryDesugar(_)) => {
+                if let ExprKind::Call(_, operands) = scrutinee.kind {
+                    self.try_operands.extend(operands);
+                }
+                walk_expr(self, scrutinee);
+            }
+            ExprKind::Match(_, _, MatchSource::AwaitDesugar)
+            | ExprKind::Ret(_)
+            | ExprKind::Break(..)
+            | ExprKind::Continue(_)
+            | ExprKind::Become(_)
+            | ExprKind::Yield(..) => self.has_other = true,
+            _ => walk_expr(self, expr),
         }
-        _ => false,
     }
 }
 

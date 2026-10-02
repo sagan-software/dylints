@@ -3,11 +3,11 @@
 
 //! A lint for manual `Option::take_if` expressions.
 //!
-//! It recognizes the standard `as_ref().is_some_and(...)` plus `take` conditional
-//! and checks both receiver identity and the empty alternative before reporting.
-//! The recommendation preserves the predicate while moving it to `Option::take_if`.
-//! It avoids matching unrelated conditional expressions or nonstandard
-//! option-like types.
+//! It recognizes `if place.as_ref().is_some_and(predicate) { place.take() }
+//! else { None }`, resolves each call to the standard `Option` method, resolves
+//! the `else` value to the `None` constructor, and requires both receivers to
+//! name the same local place. The recommendation preserves the predicate while
+//! moving it to `Option::take_if`, which tests and takes the value in one call.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
@@ -17,7 +17,10 @@ extern crate rustc_span;
 #[path = "../../chaining_lint_support.rs"]
 mod support;
 
-use rustc_hir::{Expr, ExprKind};
+use rustc_hir::{
+    Expr, ExprKind, LangItem,
+    def::{CtorOf, DefKind, Res},
+};
 use rustc_lint::{LateContext, LateLintPass};
 
 dylint_support::documented_late_lint! {
@@ -31,7 +34,7 @@ dylint_support::documented_late_lint! {
 impl<'tcx> LateLintPass<'tcx> for ManualOptionTakeIf {
     /// Checks one `if` expression for a repeated standard `Option` receiver.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        if take_if_candidate(cx, expr).is_some() {
+        if is_take_if_candidate(cx, expr) {
             // Report the full conditional whose receiver can use `take_if`.
             support::emit(
                 cx,
@@ -44,69 +47,88 @@ impl<'tcx> LateLintPass<'tcx> for ManualOptionTakeIf {
     }
 }
 
-/// Return evidence for a conditional that can use `Option::take_if`.
-fn take_if_candidate<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Option<()> {
-    // Prove the result type, condition receiver, take receiver, and empty branch in order.
+/// Returns whether a conditional can use `Option::take_if`.
+fn is_take_if_candidate<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
+    // Prove the condition receiver and the take receiver.
     let ExprKind::If(condition, then_expr, Some(else_expr)) = expr.kind else {
-        return None;
+        return false;
     };
-    support::is_option(cx, cx.typeck_results().expr_ty(expr))
-        .then_some((condition, then_expr, else_expr))
-        .and_then(|(condition, then_expr, else_expr)| {
-            option_condition(cx, condition).and_then(|option_ref| {
-                branch_expr(then_expr).map(|take_expr| (option_ref, take_expr, else_expr))
-            })
-        })
-        .and_then(|(option_ref, take_expr, else_expr)| {
-            take_call(cx, take_expr).map(|take_receiver| (option_ref, take_receiver, else_expr))
-        })
-        .filter(|(_, take_receiver, _)| {
-            support::is_option(cx, cx.typeck_results().expr_ty(take_receiver))
-        })
-        .and_then(|(option_ref, take_receiver, else_expr)| {
-            branch_expr(else_expr).and_then(|else_value| {
-                support::snippet(cx, option_ref.span).and_then(|option_ref_source| {
-                    support::snippet(cx, take_receiver.span).and_then(|take_source| {
-                        support::snippet(cx, else_value.span)
-                            .map(|else_source| (option_ref_source, take_source, else_source))
-                    })
-                })
-            })
-        })
-        .filter(|(option_ref_source, take_source, else_source)| {
-            option_ref_source == &format!("{take_source}.as_ref()") && else_source.trim() == "None"
-        })
-        .map(|_| ())
+    let tested = option_method(cx, condition, "is_some_and")
+        .and_then(|borrowed| option_method(cx, borrowed, "as_ref"));
+    let taken = branch_expr(then_expr).and_then(|take| option_method(cx, take, "take"));
+
+    // Require one place on both sides and an empty `else` branch.
+    let is_empty_else = branch_expr(else_expr).is_some_and(|value| is_none(cx, value));
+    tested
+        .zip(taken)
+        .is_some_and(|(tested, taken)| same_place(cx, tested, taken))
+        && is_empty_else
 }
 
-/// Return the borrowed receiver of `Option::is_some_and`.
-fn option_condition<'tcx>(
+/// Returns the receiver of a standard `Option` method with the given name.
+fn option_method<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
+    name: &str,
 ) -> Option<&'tcx Expr<'tcx>> {
-    if let ExprKind::MethodCall(_, option_ref, [_], _) = expr.kind
-        && support::method_path_ends_with(cx, expr, "::is_some_and")
-    {
-        Some(option_ref)
-    } else {
-        None
-    }
+    // Resolve the method to an inherent `impl` block of `Option` itself.
+    let ExprKind::MethodCall(_, receiver, _, _) = expr.kind else {
+        return None;
+    };
+    let method = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
+    let owner = cx.tcx.inherent_impl_of_assoc(method)?;
+    let is_option = cx
+        .tcx
+        .type_of(owner)
+        .instantiate_identity()
+        .skip_normalization()
+        .ty_adt_def()
+        .is_some_and(|adt| {
+            cx.tcx
+                .is_diagnostic_item(rustc_span::sym::Option, adt.did())
+        });
+
+    // Compare the resolved method name only after the owner is known.
+    let is_named = cx.tcx.item_name(method).as_str() == name;
+    (is_option && is_named).then_some(receiver)
 }
 
-/// Return the receiver of `Option::take`.
-fn take_call<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Option<&'tcx Expr<'tcx>> {
-    if let ExprKind::MethodCall(_, receiver, [], _) = expr.kind
-        && support::method_path_ends_with(cx, expr, "::take")
-    {
-        Some(receiver)
-    } else {
-        None
+/// Returns whether an expression is the standard `None` constructor.
+fn is_none(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    let ExprKind::Path(qpath) = expr.kind else {
+        return false;
+    };
+    matches!(
+        cx.qpath_res(&qpath, expr.hir_id),
+        Res::Def(DefKind::Ctor(CtorOf::Variant, _), ctor)
+            if cx.tcx.is_lang_item(cx.tcx.parent(ctor), LangItem::OptionNone)
+    )
+}
+
+/// Returns whether two receivers name the same local place.
+fn same_place(cx: &LateContext<'_>, left: &Expr<'_>, right: &Expr<'_>) -> bool {
+    // Accept a local binding, then field projections and dereferences of the same place.
+    match (left.kind, right.kind) {
+        (ExprKind::Path(left_path), ExprKind::Path(right_path)) => matches!(
+            (
+                cx.qpath_res(&left_path, left.hir_id),
+                cx.qpath_res(&right_path, right.hir_id),
+            ),
+            (Res::Local(left_id), Res::Local(right_id)) if left_id == right_id
+        ),
+        (ExprKind::Field(left_base, left_name), ExprKind::Field(right_base, right_name)) => {
+            left_name.name == right_name.name && same_place(cx, left_base, right_base)
+        }
+        (ExprKind::Unary(left_op, left_base), ExprKind::Unary(right_op, right_base)) => {
+            left_op == right_op && same_place(cx, left_base, right_base)
+        }
+        _ => false,
     }
 }
 
 /// Returns the one expression inside a branch block.
-fn branch_expr<'tcx>(expr: &'tcx Expr<'tcx>) -> Option<&'tcx Expr<'tcx>> {
-    let ExprKind::Block(block, _) = support::peel_drop_temps(expr).kind else {
+const fn branch_expr<'tcx>(expr: &'tcx Expr<'tcx>) -> Option<&'tcx Expr<'tcx>> {
+    let ExprKind::Block(block, _) = expr.kind else {
         return Some(expr);
     };
     support::block_only_expr(block)

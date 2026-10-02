@@ -1,5 +1,5 @@
 warning: fallible collection loop can use `Iterator::collect`
-  --> $DIR/main.rs:5:5
+  --> $DIR/main.rs:10:5
    |
 LL | /     for value in values {
 LL | |         output.push(value.parse()?);
@@ -10,7 +10,37 @@ LL | |     }
    = note: `#[warn(manual_fallible_collect_loop)]` on by default
 
 warning: fallible collection loop can use `Iterator::collect`
-  --> $DIR/main.rs:23:5
+  --> $DIR/main.rs:19:5
+   |
+LL | /     for value in values {
+LL | |         output.push(value.parse::<i32>().map_err(|_| String::from("bad ?"))?);
+LL | |     }
+   | |_____^
+   |
+   = help: use `map(...).collect()` with the matching fallible collection type
+
+warning: fallible collection loop can use `Iterator::collect`
+  --> $DIR/main.rs:27:5
+   |
+LL | /     for value in values {
+LL | |         output.insert(value.parse()?);
+LL | |     }
+   | |_____^
+   |
+   = help: use `map(...).collect()` with the matching fallible collection type
+
+warning: fallible collection loop can use `Iterator::collect`
+  --> $DIR/main.rs:35:5
+   |
+LL | /     for value in values {
+LL | |         output.push_back(value.parse().ok()?);
+LL | |     }
+   | |_____^
+   |
+   = help: use `map(...).collect()` with the matching fallible collection type
+
+warning: fallible collection loop can use `Iterator::collect`
+  --> $DIR/main.rs:62:5
    |
 LL | /     for value in values {
 LL | |         output.push(value.parse().ok()?);
@@ -19,5 +49,5 @@ LL | |     }
    |
    = help: use `map(...).collect()` with the matching fallible collection type
 
-warning: 2 warnings emitted
+warning: 5 warnings emitted
 

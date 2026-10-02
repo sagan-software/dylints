@@ -22,7 +22,7 @@ use rustc_errors::DiagDecorator;
 use rustc_hir::{Body, Expr, ExprKind, FnDecl, intravisit::FnKind};
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::{Span, def_id::LocalDefId, sym};
+use rustc_span::{Span, Symbol, def_id::LocalDefId, sym};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -40,34 +40,36 @@ impl<'tcx> LateLintPass<'tcx> for CollectReturn {
         kind: FnKind<'tcx>,
         _decl: &'tcx FnDecl<'tcx>,
         body: &'tcx Body<'tcx>,
-        _span: Span,
+        span: Span,
         local_def_id: LocalDefId,
     ) {
-        // Ignore closures and private functions because they do not define public APIs.
-        if matches!(kind, FnKind::Closure) {
-            return;
-        }
-        if !cx.tcx.visibility(local_def_id).is_public() {
-            return;
-        }
+        // Skip closures, generated functions, functions outside the exported API, and trait
+        // impl methods, whose return type the trait fixes.
+        let is_candidate = !matches!(kind, FnKind::Closure)
+            && !span.from_expansion()
+            && cx.effective_visibilities.is_exported(local_def_id)
+            && cx
+                .tcx
+                .trait_impl_of_assoc(local_def_id.to_def_id())
+                .is_none();
 
         // Require a supported collection return type and a tail collect call.
-        let Some(collection) = collection_return(cx, local_def_id) else {
-            return;
-        };
-        let Some(collect_span) = tail_collect_call(cx, body.value) else {
-            return;
-        };
-
-        // Point at the eager collect call while preserving ownership as a valid exception.
-        let collection_label = collection.label();
-        emit_span_lint_with_help(
-            cx,
-            COLLECT_RETURN,
-            collect_span,
-            format!("this `{collection_label}` return value comes from a tail `.collect()` call"),
-            "consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract",
-        );
+        if is_candidate
+            && let Some(collection) = collection_return(cx, local_def_id)
+            && let Some(collect_span) = tail_collect_call(cx, body.value)
+        {
+            // Point at the eager collect call while preserving ownership as a valid exception.
+            let collection_label = collection.label();
+            emit_span_lint_with_help(
+                cx,
+                COLLECT_RETURN,
+                collect_span,
+                format!(
+                    "this `{collection_label}` return value comes from a tail `.collect()` call"
+                ),
+                "consider returning `impl Iterator<Item = ...>` when callers can consume lazily; keep the collection when ownership or materialization is part of the contract",
+            );
+        }
     }
 }
 
@@ -115,53 +117,35 @@ fn collection_return(cx: &LateContext<'_>, local_def_id: LocalDefId) -> Option<C
     collection_ty(cx, output)
 }
 
-/// Return type information for collection.
+/// Return the standard collection family of a resolved return type.
 fn collection_ty(cx: &LateContext<'_>, ty: Ty<'_>) -> Option<CollectionKind> {
-    // Recognize boxed slices before ordinary named collection ADTs.
     let ty::Adt(adt, args) = ty.kind() else {
         return None;
     };
-    let is_boxed_slice = is_std_box(cx, adt.did())
-        && args
-            .iter()
+    // Recognize boxed slices before the named collection ADTs.
+    if adt.is_box() {
+        return args
+            .types()
             .next()
-            .and_then(ty::GenericArg::as_type)
-            .is_some_and(|inner| matches!(inner.kind(), ty::Slice(_)));
-    if is_boxed_slice {
-        return Some(CollectionKind::BoxSlice);
+            .is_some_and(|inner| matches!(inner.kind(), ty::Slice(_)))
+            .then_some(CollectionKind::BoxSlice);
     }
 
-    // Require an alloc or std collection and map its resolved name to diagnostics.
-    let crate_name = cx.tcx.crate_name(adt.did().krate);
-    if !matches!(crate_name.as_str(), "alloc" | "std") {
-        return None;
-    }
-
-    collection_name(cx.tcx.item_name(adt.did()).as_str())
+    // Match the standard collections by diagnostic item so aliases and re-exports resolve.
+    COLLECTION_ITEMS
+        .iter()
+        .find(|(item, _)| cx.tcx.is_diagnostic_item(Symbol::intern(item), adt.did()))
+        .map(|(_, kind)| *kind)
 }
 
-/// Standard collection names mapped to their typed diagnostic families.
-const COLLECTION_NAMES: &[(&str, CollectionKind)] = &[
+/// Diagnostic items of the standard collections mapped to their families.
+const COLLECTION_ITEMS: [(&str, CollectionKind); 5] = [
     ("Vec", CollectionKind::Vec),
     ("HashMap", CollectionKind::HashMap),
     ("BTreeMap", CollectionKind::BTreeMap),
     ("HashSet", CollectionKind::HashSet),
     ("BTreeSet", CollectionKind::BTreeSet),
 ];
-
-/// Maps a resolved standard collection name to its typed diagnostic family.
-fn collection_name(name: &str) -> Option<CollectionKind> {
-    COLLECTION_NAMES
-        .iter()
-        .find(|(candidate, _)| *candidate == name)
-        .map(|(_, kind)| *kind)
-}
-
-/// Return whether std box.
-fn is_std_box(cx: &LateContext<'_>, def_id: rustc_span::def_id::DefId) -> bool {
-    cx.tcx.item_name(def_id).as_str() == "Box"
-        && matches!(cx.tcx.crate_name(def_id.krate).as_str(), "alloc" | "std")
-}
 
 /// Helper for tail collect call analysis.
 fn tail_collect_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Span> {
@@ -192,11 +176,8 @@ fn collect_call_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Span> {
             .and_then(|trait_item| cx.tcx.trait_of_assoc(trait_item))
             .map(|trait_def_id| (segment, def_id, trait_def_id))
     })
-    // Require the resolved standard iterator method so local `collect` methods stay excluded.
-    .filter(|(_, def_id, trait_def_id)| {
-        cx.tcx.item_name(*def_id).as_str() == "collect"
-            && cx.tcx.is_diagnostic_item(sym::Iterator, *trait_def_id)
-    })
+    // Require the resolved `Iterator::collect` item so local `collect` methods stay excluded.
+    .filter(|(_, def_id, _)| cx.tcx.is_diagnostic_item(sym::iterator_collect_fn, *def_id))
     .map(|(segment, _, _)| segment.ident.span)
 }
 

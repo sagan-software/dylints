@@ -1,26 +1,34 @@
 warning: boolean expression contains complex inline work
-  --> $DIR/main.rs:93:8
+  --> $DIR/main.rs:99:8
    |
 LL |       if client.complicated().await.map_err(WrappedError)?.is_enabled
    |  ________^
-LL | |         && account.profile.hello_world.is_something_enabled()
-   | |_____________________________________________________________^
+LL | |         && account
+LL | |             .refresh()
+LL | |             .map(|feature| feature.is_enabled)
+LL | |             .unwrap_or(false)
+   | |_____________________________^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
    = note: `#[warn(complicated_conditional)]` on by default
 
 warning: boolean expression contains complex inline work
-  --> $DIR/main.rs:103:8
+  --> $DIR/main.rs:112:8
    |
-LL |     if account.owner().hello_world.is_something_enabled() && config.hello_world.is_ready() {
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |       if account.owner().owner().hello_world.is_something_enabled()
+   |  ________^
+LL | |         && account
+LL | |             .refresh()
+LL | |             .map(|feature| feature.is_enabled)
+LL | |             .unwrap_or(false)
+   | |_____________________________^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/main.rs:109:8
+  --> $DIR/main.rs:123:8
    |
-LL |       if account.owner().hello_world.is_something_enabled()
+LL |       if account.owner().owner().hello_world.is_something_enabled()
    |  ________^
 LL | |         || (config.hello_world.is_ready() && account.refresh().is_ok())
    | |_______________________________________________________________________^
@@ -28,28 +36,27 @@ LL | |         || (config.hello_world.is_ready() && account.refresh().is_ok())
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/main.rs:117:8
+  --> $DIR/main.rs:131:8
    |
-LL |     if { client.feature().is_enabled } && account.profile.hello_world.is_something_enabled() {
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
-
-warning: boolean expression contains complex inline work
-  --> $DIR/main.rs:123:8
-   |
-LL |     if account.owner().hello_world.is_something_enabled() && config.hello_world.is_ready() {
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |       if { client.feature().is_enabled && client.is_enabled() }
+   |  ________^
+LL | |         && account.owner().hello_world.is_something_enabled()
+   | |_____________________________________________________________^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
 warning: boolean expression contains complex inline work
-  --> $DIR/main.rs:197:11
+  --> $DIR/main.rs:228:11
    |
-LL |     while account.owner().hello_world.is_something_enabled() && config.hello_world.is_ready() {
-   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |       while account.owner().owner().hello_world.is_something_enabled()
+   |  ___________^
+LL | |         && account
+LL | |             .refresh()
+LL | |             .map(|feature| feature.is_enabled)
+LL | |             .unwrap_or(false)
+   | |_____________________________^
    |
    = help: extract complex predicates into named boolean variables; preserve lazy evaluation and reevaluate loop predicates on every iteration
 
-warning: 6 warnings emitted
+warning: 5 warnings emitted
 

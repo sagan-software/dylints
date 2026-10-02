@@ -49,6 +49,12 @@ struct Config {
     is_enabled: bool,
 }
 
+impl Config {
+    fn owner(&self) -> &Config {
+        self
+    }
+}
+
 struct Account {
     profile: Config,
 }
@@ -91,7 +97,10 @@ macro_rules! complex_bool {
 
 async fn warn_fallible_async_chain(client: &Client, account: &Account) -> Result<(), WrappedError> {
     if client.complicated().await.map_err(WrappedError)?.is_enabled
-        && account.profile.hello_world.is_something_enabled()
+        && account
+            .refresh()
+            .map(|feature| feature.is_enabled)
+            .unwrap_or(false)
     {
         consume(());
     }
@@ -99,14 +108,19 @@ async fn warn_fallible_async_chain(client: &Client, account: &Account) -> Result
     Ok(())
 }
 
-fn warn_two_complex_field_chains(account: &Account, config: &Config) {
-    if account.owner().hello_world.is_something_enabled() && config.hello_world.is_ready() {
+fn warn_two_complex_terms(account: &Account) {
+    if account.owner().owner().hello_world.is_something_enabled()
+        && account
+            .refresh()
+            .map(|feature| feature.is_enabled)
+            .unwrap_or(false)
+    {
         consume(());
     }
 }
 
 fn warn_mixed_boolean_groups(account: &Account, config: &Config) {
-    if account.owner().hello_world.is_something_enabled()
+    if account.owner().owner().hello_world.is_something_enabled()
         || (config.hello_world.is_ready() && account.refresh().is_ok())
     {
         consume(());
@@ -114,13 +128,30 @@ fn warn_mixed_boolean_groups(account: &Account, config: &Config) {
 }
 
 fn warn_bool_block_tail(client: &Client, account: &Account) {
-    if { client.feature().is_enabled } && account.profile.hello_world.is_something_enabled() {
+    if { client.feature().is_enabled && client.is_enabled() }
+        && account.owner().hello_world.is_something_enabled()
+    {
         consume(());
     }
 }
 
-fn warn_possible_false_positive_fluent_api(account: &Account, config: &Config) {
+fn keep_fluent_field_chains(account: &Account, config: &Config) {
     if account.owner().hello_world.is_something_enabled() && config.hello_world.is_ready() {
+        consume(());
+    }
+}
+
+fn keep_context_field_chains(account: &Account, config: &Config) {
+    if account.profile.hello_world.is_something_enabled()
+        && config.hello_world.is_ready()
+        && account.profile.is_enabled
+    {
+        consume(());
+    }
+}
+
+fn keep_trivial_closure(values: &[Option<u64>], account: &Account) {
+    if account.is_open() && values.first().is_some_and(|value| value.is_some()) {
         consume(());
     }
 }
@@ -193,8 +224,13 @@ fn keep_cfg_disabled_condition(account: &Account, config: &Config) {
     }
 }
 
-fn warn_while_condition(account: &Account, config: &Config) {
-    while account.owner().hello_world.is_something_enabled() && config.hello_world.is_ready() {
+fn warn_while_condition(account: &Account) {
+    while account.owner().owner().hello_world.is_something_enabled()
+        && account
+            .refresh()
+            .map(|feature| feature.is_enabled)
+            .unwrap_or(false)
+    {
         break;
     }
 }

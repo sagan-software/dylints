@@ -14,9 +14,8 @@ fn guarded_match(document: &Document) -> bool {
     // Reproduce the original `matches!` guard and its complete key list.
     matches!(
         document,
-        _ if document.contains_key("address")
-            || [
-                "full_name",
+        _ if [
+                "address", "full_name",
                 "date_of_birth",
                 "country_of_birth",
                 "city_of_birth",
@@ -29,8 +28,7 @@ fn guarded_match(document: &Document) -> bool {
 }
 
 fn direct_condition(document: &Document) -> bool {
-    document.contains_key("address")
-        || ["full_name", "date_of_birth"]
+    ["address", "full_name", "date_of_birth"]
             .iter()
             .any(|key| document.contains_key(*key))
 }
@@ -67,7 +65,7 @@ fn extra_closure_condition(document: &Document) -> bool {
 }
 
 fn hash_map_receiver(document: &HashMap<String, String>) -> bool {
-    document.contains_key("address") || ["full_name"].iter().any(|key| document.contains_key(*key))
+    ["address", "full_name"].iter().any(|key| document.contains_key(*key))
 }
 
 fn empty_array(document: &Document) -> bool {

@@ -1,5 +1,5 @@
 warning: conditional `Option::take` can use `Option::take_if`
-  --> $DIR/main.rs:2:5
+  --> $DIR/main.rs:3:5
    |
 LL | /     if option.as_ref().is_some_and(|value| *value > 0) {
 LL | |         option.take()
@@ -11,5 +11,29 @@ LL | |     }
    = help: use `Option::take_if`; adjust the predicate for its mutable reference
    = note: `#[warn(manual_option_take_if)]` on by default
 
-warning: 1 warning emitted
+warning: conditional `Option::take` can use `Option::take_if`
+  --> $DIR/main.rs:18:9
+   |
+LL | /         if self.slot.as_ref().is_some_and(|value| *value > 0) {
+LL | |             self.slot.take()
+LL | |         } else {
+LL | |             None
+LL | |         }
+   | |_________^
+   |
+   = help: use `Option::take_if`; adjust the predicate for its mutable reference
+
+warning: conditional `Option::take` can use `Option::take_if`
+  --> $DIR/main.rs:37:5
+   |
+LL | /     if (*option).as_ref().is_some_and(|value| *value > 0) {
+LL | |         (*option).take()
+LL | |     } else {
+LL | |         None
+LL | |     }
+   | |_____^
+   |
+   = help: use `Option::take_if`; adjust the predicate for its mutable reference
+
+warning: 3 warnings emitted
 

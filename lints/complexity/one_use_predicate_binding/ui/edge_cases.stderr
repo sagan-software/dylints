@@ -1,0 +1,112 @@
+warning: unreachable `else` clause
+  --> $DIR/edge_cases.rs:104:37
+   |
+LL |     let is_empty = items.is_empty() else {
+   |     ------------------------------- ^^^^
+   |     |
+   |     assigning to binding pattern will always succeed
+   |
+   = note: this pattern always matches, so the else clause is unreachable
+   = note: `#[warn(irrefutable_let_patterns)]` on by default
+
+warning: one-use predicate binding could be inlined
+  --> $DIR/edge_cases.rs:44:5
+   |
+LL |     let is_valid = *point == Point { x: 0 };
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(one_use_predicate_binding)]` on by default
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let is_valid = *point == Point { x: 0 };
+LL -     if is_valid {
+LL +     if (*point == Point { x: 0 }) {
+   |
+
+warning: one-use predicate binding could be inlined
+  --> $DIR/edge_cases.rs:51:5
+   |
+LL |     let has_items = count > 0;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let has_items = count > 0;
+LL -     if !has_items {
+LL +     if !(count > 0) {
+   |
+
+warning: one-use predicate binding could be inlined
+  --> $DIR/edge_cases.rs:58:5
+   |
+LL |     let is_empty = items.is_empty();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let is_empty = items.is_empty();
+LL -     if !is_empty {
+LL +     if !items.is_empty() {
+   |
+
+warning: one-use predicate binding could be inlined
+  --> $DIR/edge_cases.rs:65:5
+   |
+LL |     let is_empty = items.is_empty();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL ~     // Explain the branch.
+LL ~     if items.is_empty() {
+   |
+
+warning: one-use predicate binding could be inlined
+  --> $DIR/edge_cases.rs:73:5
+   |
+LL |     let is_empty = items.is_empty();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let is_empty = items.is_empty();
+LL -     if is_empty { 0 } else { items.len() }
+LL +     if items.is_empty() { 0 } else { items.len() }
+   |
+
+warning: one-use predicate binding could be inlined
+  --> $DIR/edge_cases.rs:84:5
+   |
+LL |     let is_empty = empty_check!(items);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: inline the predicate expression into the branch condition unless the name captures a domain concept
+
+warning: one-use predicate binding could be inlined
+  --> $DIR/edge_cases.rs:149:5
+   |
+LL |     let is_empty = is_blank(text);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let is_empty = is_blank(text);
+LL -     if is_empty {
+LL +     if is_blank(text) {
+   |
+
+warning: one-use predicate binding could be inlined
+  --> $DIR/edge_cases.rs:153:5
+   |
+LL |     let is_valid = Checker::is_good(value);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: inline the predicate expression into the branch condition unless the name captures a domain concept
+   |
+LL -     let is_valid = Checker::is_good(value);
+LL -     if is_valid {
+LL +     if Checker::is_good(value) {
+   |
+
+warning: 9 warnings emitted
+

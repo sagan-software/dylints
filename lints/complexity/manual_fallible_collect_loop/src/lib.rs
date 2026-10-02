@@ -1,9 +1,5 @@
 #![feature(rustc_private)]
 #![warn(unused_extern_crates)]
-#![expect(
-    clippy::wildcard_enum_match_arm,
-    reason = "the lint intentionally ignores future rustc expression variants"
-)]
 
 //! A lint for loops that can use fallible `Iterator::collect`.
 //!
@@ -20,11 +16,7 @@ extern crate rustc_span;
 #[path = "../../chaining_lint_support.rs"]
 mod support;
 
-use rustc_hir::{
-    BindingMode, Block, ByRef, Expr, ExprKind, HirId, Mutability, PatKind, Stmt, StmtKind,
-    def::Res,
-    intravisit::{Visitor, walk_expr},
-};
+use rustc_hir::{Block, Expr, ExprKind, HirId, LangItem, Stmt, StmtKind};
 use rustc_lint::{LateContext, LateLintPass};
 use rustc_middle::ty::{self, Ty};
 
@@ -39,33 +31,27 @@ dylint_support::documented_late_lint! {
 impl<'tcx> LateLintPass<'tcx> for ManualFallibleCollectLoop {
     /// Checks adjacent accumulator and loop statements with a success tail.
     fn check_block(&mut self, cx: &LateContext<'tcx>, block: &'tcx Block<'tcx>) {
-        // Establish the fallible success type before scanning local statement pairs.
-        let Some(tail) = block.expr else {
+        // Establish the fallible success value before scanning local statement pairs.
+        if block.span.from_expansion() {
             return;
-        };
-        let Some(residual) = success_residual(cx, tail) else {
+        }
+        let Some((residual, value)) = block.expr.and_then(|tail| success_value(cx, tail)) else {
             return;
         };
         // Evaluate each accumulator and its immediately following loop.
-        for pair in block.stmts.windows(2) {
-            let [accumulator_stmt, loop_stmt] = pair else {
-                continue;
-            };
+        for [accumulator_stmt, loop_stmt] in block.stmts.array_windows() {
             let Some(accumulator) = accumulator(cx, accumulator_stmt) else {
                 continue;
             };
             // Resolve the loop only after establishing its accumulator identity.
-            let Some(loop_expr) = support::stmt_expr(loop_stmt) else {
+            let Some(loop_info) =
+                support::stmt_expr(loop_stmt).and_then(|expr| support::for_loop(cx, expr))
+            else {
                 continue;
             };
-            let Some(loop_info) = support::for_loop(cx, loop_expr) else {
-                continue;
-            };
-            let is_tail_match = tail_returns_binding(cx, tail, accumulator.id);
-            let is_insertion_match =
-                is_fallible_insertion(cx, loop_info.body, accumulator.id, residual);
             // Require the same accumulator in both the insertion and success tail.
-            if !is_tail_match || !is_insertion_match {
+            let is_tail_match = support::local_binding(cx, value) == Some(accumulator);
+            if !is_tail_match || !is_fallible_insertion(cx, loop_info.body, accumulator, residual) {
                 continue;
             }
             support::emit(
@@ -79,12 +65,6 @@ impl<'tcx> LateLintPass<'tcx> for ManualFallibleCollectLoop {
     }
 }
 
-/// One mutable standard collection accumulator.
-struct Accumulator {
-    /// Local binding resolved by HIR.
-    id: HirId,
-}
-
 /// A collection residual accepted by standard `collect`.
 #[derive(Clone, Copy)]
 enum Residual<'tcx> {
@@ -94,151 +74,76 @@ enum Residual<'tcx> {
     Option,
 }
 
-/// Returns the residual represented by a standard success constructor.
-fn success_residual<'tcx>(
+/// Returns the residual and value of an `Ok(value)` or `Some(value)` tail.
+fn success_value<'tcx>(
     cx: &LateContext<'tcx>,
     tail: &'tcx Expr<'tcx>,
-) -> Option<Residual<'tcx>> {
+) -> Option<(Residual<'tcx>, &'tcx Expr<'tcx>)> {
     // Resolve the constructor and retain the residual required by `collect`.
-    let ty::Adt(adt, args) = cx.typeck_results().expr_ty(tail).kind() else {
+    let ty::Adt(_, args) = cx.typeck_results().expr_ty(tail).kind() else {
         return None;
     };
-    // Pair resolved Result or Option identity with its written success constructor.
-    let source = support::snippet(cx, tail.span)?;
-    if cx
-        .tcx
-        .is_diagnostic_item(rustc_span::sym::Result, adt.did())
-        && source.trim_start().starts_with("Ok(")
-    {
-        Some(Residual::Result(args.type_at(1)))
-    } else if cx
-        .tcx
-        .is_diagnostic_item(rustc_span::sym::Option, adt.did())
-        && source.trim_start().starts_with("Some(")
-    {
-        Some(Residual::Option)
-    } else {
-        None
-    }
+    support::lang_ctor_call(cx, tail, LangItem::ResultOk)
+        .map(|value| (Residual::Result(args.type_at(1)), value))
+        .or_else(|| {
+            support::lang_ctor_call(cx, tail, LangItem::OptionSome)
+                .map(|value| (Residual::Option, value))
+        })
 }
 
-/// Parses an empty mutable standard collection binding.
-fn accumulator(cx: &LateContext<'_>, stmt: &Stmt<'_>) -> Option<Accumulator> {
-    // Require a mutable empty standard collection immediately before the loop.
-    match stmt.kind {
-        StmtKind::Let(local) => Some(local),
-        _ => None,
-    }
-    .and_then(|local| match local.pat.kind {
-        PatKind::Binding(BindingMode(ByRef::No, Mutability::Mut), id, _, None) => Some((local, id)),
-        _ => None,
-    })
-    // Recover the initializer and require a resolved standard collection type.
-    .and_then(|(local, id)| local.init.map(|init| (local, id, init)))
-    .and_then(|(local, id, init)| support::snippet(cx, init.span).map(|source| (local, id, source)))
-    .filter(|(local, _, source)| {
-        support::is_standard_collection(cx, cx.typeck_results().pat_ty(local.pat))
-            && (source.ends_with("::new()") || source.ends_with("::default()"))
-    })
-    .map(|(_, id, _)| Accumulator { id })
-}
-
-/// Returns whether the success tail contains the exact accumulator binding.
-fn tail_returns_binding(cx: &LateContext<'_>, tail: &Expr<'_>, id: HirId) -> bool {
-    let ExprKind::Call(_, [value]) = support::peel_drop_temps(tail).kind else {
-        return false;
+/// Returns the binding of an empty mutable standard collection.
+fn accumulator(cx: &LateContext<'_>, stmt: &Stmt<'_>) -> Option<HirId> {
+    // Require a standard collection constructed by an argument-free `new` or `default`.
+    let StmtKind::Let(local) = stmt.kind else {
+        return None;
     };
-    path_is_binding(cx, value, id)
+    let id = support::simple_binding(local.pat)?;
+    (support::is_standard_collection(cx, cx.typeck_results().pat_ty(local.pat))
+        && local
+            .init
+            .is_some_and(|init| support::is_empty_constructor(cx, init)))
+    .then_some(id)
 }
 
-/// Checks one standard collection insertion containing a matching residual.
+/// Checks one standard collection insertion whose argument has one matching `?`.
 fn is_fallible_insertion<'tcx>(
     cx: &LateContext<'tcx>,
     body: &'tcx Block<'tcx>,
     id: HirId,
     residual: Residual<'tcx>,
 ) -> bool {
-    // Match one resolved insertion before inspecting its `?` residual.
-    support::block_only_expr(body)
-        .and_then(|action| match action.kind {
-            ExprKind::MethodCall(_, receiver, [argument], _) => Some((action, receiver, argument)),
-            _ => None,
-        })
-        // Resolve the collection method before accepting insertion vocabulary.
-        .and_then(|(action, receiver, argument)| {
-            support::method_path(cx, action).map(|path| (receiver, argument, path))
-        })
-        .filter(|(_, _, path)| {
-            path.ends_with("::push") || path.ends_with("::push_back") || path.ends_with("::insert")
-        })
-        .filter(|(receiver, _, _)| path_is_binding(cx, receiver, id))
-        .and_then(|(_, argument, _)| {
-            support::snippet(cx, argument.span).map(|source| (argument, source))
-        })
-        // Require exactly one question-mark operation in the inserted expression.
-        .filter(|(_, source)| source.matches('?').count() == 1)
-        .map(|(argument, _)| {
-            let mut visitor = ResultVisitor {
-                cx,
-                residual,
-                is_found: false,
-            };
-            // Traverse the argument to prove that its fallible expression has the same residual.
-            visitor.visit_expr(argument);
-            visitor.is_found
-        })
-        .is_some_and(|is_found| is_found)
-}
-
-/// Finds a fallible expression with one exact residual type.
-struct ResultVisitor<'cx, 'tcx> {
-    /// Compiler context used for expression types.
-    cx: &'cx LateContext<'tcx>,
-    /// Required residual type.
-    residual: Residual<'tcx>,
-    /// Whether a matching result expression was found.
-    is_found: bool,
-}
-
-impl<'tcx> Visitor<'tcx> for ResultVisitor<'_, 'tcx> {
-    /// Visits expressions without entering nested closures.
-    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        // Record any expression whose standard residual matches the block tail.
-        self.is_found |= is_residual_match(
-            self.cx,
-            self.cx.typeck_results().expr_ty(expr),
-            self.residual,
-        );
-        if !matches!(expr.kind, ExprKind::Closure(_)) {
-            walk_expr(self, expr);
+    // Match one resolved insertion into the accumulator.
+    let Some(action) = support::block_only_expr(body) else {
+        return false;
+    };
+    let ExprKind::MethodCall(_, receiver, [argument], _) = action.kind else {
+        return false;
+    };
+    let is_insertion = support::standard_collection_method(cx, action)
+        .is_some_and(|(_, method)| matches!(method.as_str(), "push" | "push_back" | "insert"));
+    if !is_insertion || support::local_binding(cx, receiver) != Some(id) {
+        return false;
+    }
+    // Require exactly one `?` whose operand has the tail's residual, and no other exit.
+    let exits = support::early_exits(argument);
+    match exits.try_operands.as_slice() {
+        [operand] if !exits.has_other => {
+            is_residual_match(cx, cx.typeck_results().expr_ty(operand), residual)
         }
+        _ => false,
     }
 }
 
 /// Returns whether a type has the required standard collection residual.
 fn is_residual_match<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>, residual: Residual<'tcx>) -> bool {
     // Compare the residual while allowing the collected success type to differ.
-    let ty::Adt(adt, args) = ty.kind() else {
-        return false;
-    };
     match residual {
         Residual::Result(error_ty) => {
-            cx.tcx
-                .is_diagnostic_item(rustc_span::sym::Result, adt.did())
-                && args.type_at(1) == error_ty
+            support::is_result(cx, ty)
+                && matches!(ty.kind(), ty::Adt(_, args) if args.type_at(1) == error_ty)
         }
-        Residual::Option => cx
-            .tcx
-            .is_diagnostic_item(rustc_span::sym::Option, adt.did()),
+        Residual::Option => support::is_option(cx, ty),
     }
-}
-
-/// Returns whether an expression is one resolved local binding.
-fn path_is_binding(cx: &LateContext<'_>, expr: &Expr<'_>, id: HirId) -> bool {
-    let ExprKind::Path(qpath) = support::peel_drop_temps(expr).kind else {
-        return false;
-    };
-    matches!(cx.qpath_res(&qpath, expr.hir_id), Res::Local(found) if found == id)
 }
 
 /// Runs the UI fixture.

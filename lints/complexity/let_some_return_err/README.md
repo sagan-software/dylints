@@ -22,6 +22,12 @@ the `Option` into a `Result`, and `?` returns the error, in one line.
   `let`, a statement inside a macro, and an initializer that is a reference to
   an `Option`. A place initializer such as `holder.name` gets a fix only when
   its type is `Copy` and the pattern has no `ref` binding.
+- The fix also requires an error value whose type does not come from the
+  expected type, because `?` converts the closure's error through `From`. An
+  error such as `"x".into()`, `Default::default()`, an unsuffixed number,
+  `None`, or `Box::new(..)` coerced to `Box<dyn Error>` gets help without a fix.
+  Literals with a fixed type, constants, struct literals, and calls whose
+  declared return type has no type parameter keep the fix.
 - An `else` block with any other statement, a `return Err(..)` whose error type
   differs from the function's error type, and an `Err` value built through
   `From` are ignored.
