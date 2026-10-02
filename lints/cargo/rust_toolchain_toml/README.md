@@ -18,8 +18,8 @@ The search continues to the file system root, so a `rust-toolchain` file
 outside the repository also triggers the lint. The lint warns even when a
 `rust-toolchain.toml` file exists next to the bare file.
 
-When the file is not valid UTF-8, the warning points at the crate root source
-file instead.
+When the file is not valid UTF-8, the warning points at the source file at the
+crate root instead.
 
 ## Example
 

@@ -9,8 +9,8 @@ workspace root declares `[workspace.lints]`, the lint warns at the package's
 key, and an inline table all count.
 
 The workspace root is the package manifest itself when it has a `[workspace]`
-table, or the nearest ancestor `Cargo.toml` with a `[workspace]` table that
-does not exclude the package.
+table. Otherwise, it is the nearest ancestor `Cargo.toml` with a `[workspace]`
+table that does not exclude the package.
 
 ## Why is this bad?
 
@@ -20,7 +20,8 @@ Changes to the shared lint policy then miss that package without any warning.
 ## Known problems
 
 Manifests with no `lints` key do not warn; `package_lints_section` reports
-them. A `package.workspace` key that points at the workspace root is not read.
+them. The lint does not read a `package.workspace` key that points at the
+workspace root.
 
 ## Example
 

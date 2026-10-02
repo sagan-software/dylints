@@ -18,7 +18,7 @@ wrong. A parser such as `clap` derives that handling from one type definition.
 - Small throwaway binaries that do not need a parser also trigger.
 - Argument reads hidden behind a wrapper function in another crate are not
   detected.
-- Calls through function-pointer bindings are not resolved back to
+- The lint cannot resolve calls through function-pointer bindings back to
   `std::env::args` or `std::env::args_os`.
 
 ## Example

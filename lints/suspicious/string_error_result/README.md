@@ -17,9 +17,9 @@ message to react to a specific failure.
 The lint also warns at program edges where a text error is enough, such as a
 small command-line tool.
 
-It misses required trait methods without a body, closures, return types
-written as an associated type such as `<Self as Trait>::Out`, and other text
-error types such as `&str` or `Box<dyn Error>`.
+It misses required trait methods without a body and closures. It also misses
+return types written as an associated type such as `<Self as Trait>::Out`, and
+other text error types such as `&str` or `Box<dyn Error>`.
 
 ## Example
 

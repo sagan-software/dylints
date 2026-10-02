@@ -3,7 +3,7 @@
 ## What it does
 
 Checks the nearest `Cargo.toml` above the crate root file for dependency
-entries that are not sorted alphabetically. It checks `[dependencies]`,
+entries that do not follow alphabetical order. It checks `[dependencies]`,
 `[dev-dependencies]`, `[build-dependencies]`, `[workspace.dependencies]`, and
 their `[target.'...']` variants. The warning points at the out-of-order key.
 
@@ -15,12 +15,12 @@ also give new entries one correct position, which reduces merge conflicts.
 
 ## Known problems
 
-Only adjacent entries are compared, and the comparison ignores ASCII case.
-Blank lines and comment lines start a new block that is sorted on its own.
+The lint compares only adjacent entries and ignores ASCII case. Blank lines and
+comment lines start a new block, which the lint compares on its own.
 This lets you keep sorted groups, but a stray blank line also hides an
 ordering mistake across it.
 
-Dependency subtables such as `[dependencies.serde]` are not ordered.
+The lint does not order dependency subtables such as `[dependencies.serde]`.
 
 ## Example
 

@@ -5,35 +5,36 @@
 Checks for a mutable accumulator declared just before a `for` loop that fills
 it in one of four ways:
 
-- `Vec::new()`, then a body that is only `out.push(..)`.
-- An integer `0`, then one conditional increment using `count += 1`,
+- `Vec::new()` followed by a body that is only `out.push(..)`.
+- An integer `0` followed by one conditional increment using `count += 1`,
   `count = count + 1`, or `count = 1 + count`.
-- `false`, then a body that is only `if condition { found = true }`.
-- `true`, then a body that is only `if condition { all_ok = false }`.
+- `false` followed by a body that is only `if condition { found = true }`.
+- `true` followed by a body that is only `if condition { all_ok = false }`.
 
 ## Why is this bad?
 
 The mutable binding, the loop, and the update spread one result over several
-lines. The boolean loops also keep iterating after the answer is known.
+lines. The boolean loops also keep iterating after they find the answer.
 `map(...).collect()`, `filter(...).count()`, `any(...)`, and `all(...)` compute
 the same result in one expression, and `any` and `all` stop at the first
 decisive item.
 
 ## Known problems
 
-- The accumulator must be declared in the statement directly before the loop.
-  A loop separated from its accumulator by another statement is ignored.
-- The loop body must be the single push or the single `if` shown above. A
-  `push` inside an `if`, a body with extra statements, and a pushed value or
-  condition that contains `break`, `continue`, `return`, `?`, `.await`, a loop,
-  or an assignment are ignored.
-- A pushed value or condition that reads or captures the accumulator is ignored.
-  A nested closure that shadows the accumulator with a separate binding is allowed.
+- The lint requires the accumulator declaration directly before the loop. It
+  ignores a loop separated from its accumulator by another statement.
+- The loop body must be the single push or the single `if` shown above. The
+  lint ignores a `push` inside an `if`, a body with extra statements, and a
+  pushed value or condition that contains `break`, `continue`, `return`, `?`,
+  `.await`, a loop, or an assignment.
+- The lint ignores a pushed value or condition that reads or captures the
+  accumulator. The lint accepts a nested closure that shadows the accumulator
+  with a separate binding.
 - `any` and `all` stop at the first decisive item. If the condition or the
   iterator has side effects, the rewrite runs them fewer times.
-- An accumulator declared inside a macro expansion is ignored.
-- Only `Vec::new()` starts a collection. `vec![]` and `Vec::with_capacity(n)`
-  are ignored.
+- The lint ignores an accumulator declared inside a macro expansion.
+- Only `Vec::new()` starts a collection. The lint ignores `vec![]` and
+  `Vec::with_capacity(n)`.
 - A `Vec` push loop can also trigger `manual_extend_loop`.
 
 ## Example

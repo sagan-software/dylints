@@ -15,13 +15,12 @@ error message, and it exits with code 101. Returning `Result` from `main` lets
 
 ## Known problems
 
-Macros and methods are matched by their resolved definitions, so local macros
-or methods with the same names are not reported. Other panicking operations,
-such as indexing, slicing, `.unwrap_err()`, or `debug_assert!`, are not
-reported.
+The lint matches macros and methods by their resolved definitions, so it skips
+local macros or methods with the same names. The lint also skips other panicking
+operations, such as indexing, slicing, `.unwrap_err()`, or `debug_assert!`.
 
 A `main` that returns a non-`Result` type, such as `std::process::ExitCode`,
-is treated as infallible and is checked.
+is infallible for this lint, so the lint checks it.
 
 The lint does not look inside closures, `async` blocks, or functions that
 `main` calls. It skips `main` in `build.rs` files and functions marked

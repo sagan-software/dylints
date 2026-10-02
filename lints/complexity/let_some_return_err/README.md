@@ -28,9 +28,9 @@ the `Option` into a `Result`, and `?` returns the error, in one line.
   `None`, or `Box::new(..)` coerced to `Box<dyn Error>` gets help without a fix.
   Literals with a fixed type, constants, struct literals, and calls whose
   declared return type has no type parameter keep the fix.
-- An `else` block with any other statement, a `return Err(..)` whose error type
-  differs from the function's error type, and an `Err` value built through
-  `From` are ignored.
+- The lint ignores an `else` block with any other statement, a `return Err(..)`
+  whose error type differs from the function's error type, and an `Err` value
+  built through `From`.
 
 ## Example
 

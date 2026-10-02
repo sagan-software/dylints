@@ -8,10 +8,10 @@ package for dependencies that set their own `version` instead of using
 `[build-dependencies]`, and their `[target.'...']` variants. The warning points
 at the version value.
 
-The lint only applies when the workspace root declares
+The lint applies only when the workspace root declares
 `[workspace.dependencies]`. The workspace root is the package manifest itself
-when it has a `[workspace]` table, or the nearest ancestor `Cargo.toml` with a
-`[workspace]` table that does not exclude the package.
+when it has a `[workspace]` table. Otherwise, it is the nearest ancestor
+`Cargo.toml` with a `[workspace]` table that does not exclude the package.
 
 ## Why is this bad?
 
@@ -21,8 +21,8 @@ manifest instead of one entry in `[workspace.dependencies]`.
 
 ## Known problems
 
-Dependencies with only `path` or `git` and no `version` do not warn. A
-`package.workspace` key that points at the workspace root is not read.
+Dependencies with only `path` or `git` and no `version` do not warn. The lint
+does not read a `package.workspace` key that points at the workspace root.
 
 A package that needs two versions of one crate must give each version its own
 renamed key in `[workspace.dependencies]`, such as

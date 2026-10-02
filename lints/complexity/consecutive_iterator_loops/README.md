@@ -2,14 +2,14 @@
 
 ## What it does
 
-Checks for two adjacent `for` loops that iterate over local bindings (or a
-direct borrow of one), bind patterns of the same shape and item type, and have
-structurally equal bodies. A use of the first loop's binding must match a use
-of the second loop's binding at the same pattern position.
+Checks for two adjacent `for` loops that iterate over local bindings or a direct
+borrow of one. The loops must bind patterns of the same shape and item type and
+have structurally equal bodies. A use of the first loop's binding must match a
+use of the second loop's binding at the same pattern position.
 
 ## Why is this bad?
 
-The same body is written twice. A later change to one copy can miss the other,
+The code repeats the same body. A later change to one copy can miss the other,
 and the two loops then do different work by accident. `Iterator::chain` states
 one ordered sequence and keeps one copy of the body.
 
@@ -20,9 +20,9 @@ one ordered sequence and keeps one copy of the body.
   ignored.
 - The body comparison supports common expression and statement forms. A body
   that uses another form, such as a labeled block, a cast, a struct literal, or
-  a `while` loop, is ignored.
-- A body that contains `break` is ignored, because after chaining the `break`
-  would also skip the second sequence.
+  a `while` loop. The lint ignores that body.
+- The lint ignores a body that contains `break`, because after chaining the
+  `break` would also skip the second sequence.
 - `chain` converts the second source into an iterator before the first loop
   runs. The lint only emits help and does not offer an automatic fix.
 

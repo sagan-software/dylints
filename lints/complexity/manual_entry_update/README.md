@@ -15,12 +15,12 @@ chain.
 
 ## Known problems
 
-- Each arm must use its entry binding once. An `Occupied` arm that also calls
-  `get()` or `remove()`, or a `Vacant` arm that reads `key()`, is ignored.
-- An arm with a guard, a wildcard arm, or an arm that contains `return`,
-  `break`, `continue`, `?`, or `.await` is ignored, because the arm body moves
+- Each arm must use its entry binding once. The lint ignores an `Occupied` arm
+  that also calls `get()` or `remove()`, or a `Vacant` arm that reads `key()`.
+- The lint ignores an arm with a guard, a wildcard arm, or an arm that contains
+  `return`, `break`, `continue`, `?`, or `.await`, because the arm body moves
   into a closure.
-- `if let Entry::Occupied(..) = ...` without a `Vacant` branch is ignored.
+- The lint ignores `if let Entry::Occupied(..) = ...` without a `Vacant` branch.
 
 ## Example
 

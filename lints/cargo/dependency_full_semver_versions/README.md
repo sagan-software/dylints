@@ -12,19 +12,19 @@ points at the version string and suggests the full version.
 
 Cargo reads `"1"` as `^1.0.0`, so it accepts every `1.x` release, including
 releases older than the code needs. Reviewers cannot see which minimum version
-the crate was tested with.
+the crate uses in tests.
 
 ## Known problems
 
 The lint only flags plain numeric versions with one or two parts. Versions with
-operators, wildcards, or pre-release tags, such as `">=1"` or `"1.*"`, are not
-checked.
+operators, wildcards, or pre-release tags, such as `">=1"` or `"1.*"`. The lint
+skips those versions.
 
-A virtual workspace manifest is never checked, because no crate is compiled
+The lint skips a virtual workspace manifest because Cargo compiles no crate
 from it.
 
-The suggestion is marked as possibly incorrect, so `cargo fix` does not apply
-it.
+The lint marks the suggestion as possibly incorrect, so `cargo fix` does not
+apply it.
 
 ## Example
 

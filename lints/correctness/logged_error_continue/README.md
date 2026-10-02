@@ -14,12 +14,12 @@ The caller sees `Ok` and cannot retry, report, or handle the failure.
 
 ## Known problems
 
-The branch counts as logging only when every statement is a logging call:
-`eprintln!`, a `debug!`, `error!`, `event!`, `info!`, `log!`, `trace!`, or
-`warn!` macro of the `log` or `tracing` crates (directly or through a local
-macro that expands to one), or a function such as `warn` or `log_error` that
-resolves to a `kslog`, `log`, or `tracing` crate or module. `println!` and
-logging through helper functions do not count.
+The branch counts as logging only when every statement is a logging call.
+Logging calls include `eprintln!`, the `debug!`, `error!`, `event!`, `info!`,
+`log!`, `trace!`, and `warn!` macros from the `log` or `tracing` crates. A local
+macro that expands to one of those calls also counts. A function such as `warn`
+or `log_error` counts when it resolves to a `kslog`, `log`, or `tracing` crate
+or module. `println!` and logging through helper functions do not count.
 
 The lint misses:
 

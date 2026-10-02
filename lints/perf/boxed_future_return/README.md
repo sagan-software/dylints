@@ -11,18 +11,17 @@ a `Box<dyn Future>`, such as `Pin<Box<dyn Future<Output = T>>>` or a
 
 Each call allocates the future on the heap and calls it through a vtable. The
 signature also hides that the function is async and loses auto traits such as
-`Send` unless they are written out. An `async fn` or `-> impl Future` returns
+`Send` unless the signature includes them. An `async fn` or `-> impl Future` returns
 the concrete future without these costs.
 
 ## Known problems
 
-Boxing is sometimes required: recursive async functions, `dyn`-compatible
-traits, and collections of different futures. The lint warns in these cases
-too.
+Some cases require boxing: recursive async functions, `dyn`-compatible traits,
+and collections of different futures. The lint warns in these cases too.
 
-Trait impl methods are not reported, because the trait fixes their signature;
-the trait declaration is reported instead. Return types produced by a macro,
-such as the boxed futures that `#[async_trait]` generates, are not reported.
+The lint skips trait impl methods because the trait fixes their signature; it
+reports the trait declaration instead. It also skips return types produced by a
+macro, such as the boxed futures that `#[async_trait]` generates.
 
 ## Example
 

@@ -2,11 +2,11 @@
 
 ## What it does
 
-Checks that a `clippy.toml` or `.clippy.toml` file exists in the package
-directory or in a parent directory up to the workspace root. The workspace
-root is the package manifest itself when it has a `[workspace]` table, or the
-nearest ancestor `Cargo.toml` with a `[workspace]` table that does not exclude
-the package. The warning points at the `[package]` header of the manifest.
+Checks for a `clippy.toml` or `.clippy.toml` file in the package directory or a
+parent directory up to the workspace root. The workspace root is the package
+manifest itself when it has a `[workspace]` table. Otherwise, it is the nearest
+ancestor `Cargo.toml` with a `[workspace]` table that does not exclude the
+package. The warning points at the `[package]` header of the manifest.
 
 ## Why is this bad?
 
@@ -16,12 +16,12 @@ report different Clippy results for the same code.
 
 ## Known problems
 
-A `CLIPPY_CONF_DIR` setting, which Clippy accepts, does not satisfy the lint.
-A `clippy.toml` above the workspace root is ignored. A `package.workspace`
-key that points at the workspace root is not read.
+Clippy accepts a `CLIPPY_CONF_DIR` setting, but the lint does not treat it as
+satisfying. The lint ignores a `clippy.toml` above the workspace root. It does
+not read a `package.workspace` key that points at the workspace root.
 
-Crates without a package manifest, such as files compiled directly with
-`rustc`, are not checked.
+The lint skips crates without a package manifest, such as files compiled
+directly with `rustc`.
 
 ## Example
 

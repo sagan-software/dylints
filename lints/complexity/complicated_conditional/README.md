@@ -13,11 +13,12 @@ argument scores. An index in a receiver or comparison operand adds 2 plus its
 receiver chain score. A comparison adds 1 plus the scores of its operands.
 A field access adds nothing on a variable or on a field of a
 variable, such as `self.config.is_enabled`. On any other value, such as
-`order.customer().address`, it adds 1. A `!`, cast, or reference adds 1. An `if`
-or `match` adds 4, a block 2, and an `if let` pattern 2. A `match` inside a
-call chain or comparison operand adds 3. A `?` or `.await` adds nothing, and
-the expression before it is scored as part of the chain. A named `bool`
-variable scores 0.
+`order.customer().address`, it adds 1.
+
+A `!`, cast, or reference adds 1. An `if` or `match` adds 4, a block 2, and an
+`if let` pattern 2. A `match` inside a call chain or comparison operand adds 3.
+A `?` or `.await` adds nothing, and the lint scores the expression before it as
+part of the chain. A named `bool` variable scores 0.
 
 Each inline closure argument adds its work minus 2. Work counts 2 per call, 4
 per branch, `match`, loop, or nested closure, and 1 per statement, binary
@@ -30,7 +31,7 @@ without `&&` or `||` warns when its score reaches 9.
 
 ## Why is this bad?
 
-A dense condition mixes data access, calls, and the branch decision in one
+A dense condition puts data access, calls, and the branch decision in one
 expression. The reader must evaluate all of it to learn what the branch tests.
 Named `bool` bindings state each part of the decision and give each part a
 place for a comment.
@@ -38,19 +39,19 @@ place for a comment.
 ## Known problems
 
 - The score is a heuristic. It can warn on a fluent API call chain that reads
-  well, and it misses work hidden inside helper functions.
+  well, and it misses work hidden inside helpers.
 - Non-`bool` call arguments other than inline closures add nothing to the
   score.
-- A condition that contains a macro call outside a closure body is ignored.
-  Code removed by `cfg` is not checked.
-- `let` initializers and assignments are not checked, because the binding
-  already names the result. `const` and `static` initializers and `return`
-  expressions are not checked either.
+- The lint ignores a condition that contains a macro call outside a closure
+  body. It also skips code that `cfg` removes.
+- The lint skips `let` initializers and assignments because the binding already
+  names the result. It also skips `const` and `static` initializers and `return`
+  expressions.
 - Moving every term into a binding before the `if` evaluates all of them. That
   can change short-circuit behavior, side effects, borrows, `.await` points, or
   `?` propagation. In a `while` condition, a binding computed once is not
   re-evaluated on each iteration. Keep dependent terms inside the branch, or
-  move them into a helper function. The lint emits help without an automatic
+  move them into a named helper. The lint emits help without an automatic
   fix.
 
 ## Example
