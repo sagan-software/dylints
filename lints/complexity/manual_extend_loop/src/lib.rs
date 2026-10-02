@@ -167,6 +167,7 @@ fn is_unchanged_item(
 
 /// Returns whether `for` uses a source with standard, side-effect-free iteration metadata.
 fn is_known_standard_source(cx: &LateContext<'_>, source: &Expr<'_>) -> bool {
+    /// Returns whether a source type has a known side-effect-free `size_hint`.
     fn is_standard_source_type(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> bool {
         match ty.kind() {
             ty::Adt(adt, _) => {
@@ -226,6 +227,7 @@ fn place_root_shape(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<HirId> {
 
 /// Returns whether an expression has a `Vec`, `VecDeque`, or reference-to-one type.
 fn is_builtin_collection_type(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    /// Returns whether a type is the standard `Vec` or `VecDeque`, directly or by reference.
     fn is_collection(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> bool {
         match ty.kind() {
             ty::Adt(adt, _) => {
