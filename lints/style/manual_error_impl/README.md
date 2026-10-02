@@ -8,7 +8,7 @@ Checks types that have both a hand-written `Display` implementation whose
 ## Why is this bad?
 
 The message lives in a separate `Display` implementation, away from the type,
-and both implementations are boilerplate that must be kept in sync by hand.
+and developers must keep both boilerplate implementations synchronized by hand.
 `#[derive(thiserror::Error)]` with an `#[error("...")]` attribute keeps the
 message on the type and generates both implementations.
 

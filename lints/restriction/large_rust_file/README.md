@@ -4,13 +4,13 @@
 
 Checks each Rust source file compiled into the crate. It warns when a file has
 1,500 or more non-test lines or 2,000 or more total lines. Blank and comment
-lines count. When both limits are reached, it reports only the total-line
-violation.
+lines count. When a file reaches both limits, the lint reports only the
+total-line violation.
 
-A line is a test line when it belongs to an item marked `#[test]`, an attribute
-whose last path segment is `test` such as `#[tokio::test]`, or a `#[cfg(...)]`
-that requires `test`, such as `#[cfg(test)]` or `#[cfg(all(test, unix))]`. Test
-lines count only toward the total limit.
+A line is a test line when it belongs to an item marked `#[test]`, or to an
+attribute whose last path segment is `test`, such as `#[tokio::test]`. It also
+qualifies when a `#[cfg(...)]` requires `test`, such as `#[cfg(test)]` or
+`#[cfg(all(test, unix))]`. Test lines count only toward the total limit.
 
 ## Why is this bad?
 

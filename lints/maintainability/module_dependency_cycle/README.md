@@ -9,23 +9,23 @@ A dependency is a resolved path or method call to a definition in another
 module of the same crate. Nested modules count as part of their top-level
 ancestor. The crate root is not part of the graph, because it declares and re-exports
 every module.
-The chain `input -> policy -> output` is accepted. Adding `output -> input`
-reports all three modules.
+The lint accepts the chain `input -> policy -> output`. Adding `output -> input`
+makes it report all three modules.
 
 ## Why is this bad?
 
-A cycle removes the dependency direction between modules. No module in the
-cycle can be read, tested, or moved without the others, and a change in one can
-ripple around the whole cycle. Shared types tend to drift toward whichever
+A cycle removes the dependency direction between modules. Every module in the
+cycle depends on the others for reading, testing, and moving, and a change in
+one can ripple around the whole cycle. Shared types tend to drift toward whichever
 module is easiest to import, which adds more reverse edges over time.
 
 ## Known problems
 
-A cycle that passes through items defined in the crate root is not reported.
-Cycles between nested modules under one top-level module are not
-reported, so moving two cyclic modules under one parent silences the lint.
-References inside macro invocations and dependencies created at run time, such
-as trait objects or callbacks, are not counted.
+The lint does not report a cycle that passes through items defined in the crate
+root. It does not report cycles between nested modules under one top-level
+module, so moving two cyclic modules under one parent silences the lint. The
+lint does not count references inside macro invocations or dependencies created
+at run time, such as trait objects or callbacks.
 
 ## Example
 

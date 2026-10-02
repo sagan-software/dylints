@@ -3,16 +3,16 @@
 ## What it does
 
 Checks free functions and inherent associated functions named `parse_*` or
-`from_str*` that take one `&str` argument, have no `self` receiver, and return
-`Result<T, E>`, where `T` is a struct, enum, or union defined in the current
-crate without lifetime arguments. Types that already implement `FromStr` are
-skipped. Names that contain `_and_`, `_lenient`, `_lossy`, `_or_`, `_strict`,
-`_unchecked`, or `_with_` are skipped.
+`from_str*`. They must take one `&str` argument, have no `self` receiver, and
+return `Result<T, E>`, where `T` is a struct, enum, or union defined in the
+current crate without lifetime arguments. The lint skips types that already
+implement `FromStr` and names that contain `_and_`, `_lenient`, `_lossy`, `_or_`,
+`_strict`, `_unchecked`, or `_with_`.
 
 ## Why is this bad?
 
-A custom string parser cannot be used with `str::parse`, and generic code that
-asks for `T: FromStr` cannot accept the type. Callers must learn the local
+Callers cannot use a custom string parser with `str::parse`, and generic code
+that asks for `T: FromStr` cannot accept the type. Callers must learn the local
 function name instead of writing `"42".parse::<UserId>()`.
 
 ## Known problems

@@ -3,20 +3,20 @@
 ## What it does
 
 Checks hand-written `Debug` implementations for local structs without type or
-const parameters whose `fmt` body is one `debug_struct` or `debug_tuple` chain
-that uses the struct's name, shows every field in declaration order as
-`&self.field` under the field's own name, and ends with `.finish()`. That chain
-prints the same text as `#[derive(Debug)]`.
+const parameters. Their `fmt` body must be one `debug_struct` or `debug_tuple`
+chain. The chain must use the struct's name, show every field in declaration
+order as `&self.field` under the field's own name, and end with `.finish()`.
+That chain prints the same text as `#[derive(Debug)]`.
 
 The machine-applicable fix adds `#[derive(Debug)]` to the struct and removes
-the implementation. It is offered only when neither item comes from a macro
+the implementation. The lint offers it only when neither item comes from a macro
 and the implementation has no attributes or doc comments.
 
 ## Why is this bad?
 
-A hand-written `Debug` implementation must be updated whenever a field is added,
-removed, or renamed. `#[derive(Debug)]` stays in sync with the type definition
-and produces the same output.
+Adding, removing, or renaming a field requires an update to a hand-written
+`Debug` implementation. `#[derive(Debug)]` stays in sync with the type
+definition and produces the same output.
 
 ## Known problems
 
@@ -24,7 +24,7 @@ The lint misses implementations that write the output with `write!` or
 `f.write_str`, enums, and generic structs, where the derive adds a `Debug`
 bound to every type parameter. Implementations that leave out, reorder, rename,
 or redact a field, or that end with `.finish_non_exhaustive()`, print different
-text and are not reported.
+text, so the lint skips them.
 
 ## Example
 

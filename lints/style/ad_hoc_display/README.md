@@ -3,8 +3,8 @@
 ## What it does
 
 Checks inherent methods named `to_string`, `display`, `format`, or `render`
-that take only a `&self` receiver and return `String`. Types that already
-implement `Display` are skipped.
+that take only a `&self` receiver and return `String`. The lint skips types that
+already implement `Display`.
 
 ## Why is this bad?
 

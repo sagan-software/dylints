@@ -2,11 +2,11 @@
 
 ## What it does
 
-Checks for fields, function parameters, and function return types whose type is
-`String` or `&str` when the field or parameter is named `http_method` or
-`request_method`. A return type is checked when the function has one of those
-names. The generic names `method` and `verb` are also checked when the crate
-depends on an HTTP library: `actix_web`, `axum`, `http`, `hyper`, `isahc`,
+Checks fields, function parameters, and function return types that use `String`
+or `&str` when the field or parameter has the name `http_method` or
+`request_method`. The lint checks a return type when the function has one of
+those names. It also checks the generic names `method` and `verb` when the
+crate depends on an HTTP library: `actix_web`, `axum`, `http`, `hyper`, `isahc`,
 `poem`, `reqwest`, `rocket`, `surf`, `tide`, `ureq`, or `warp`.
 
 ## Why is this bad?

@@ -4,15 +4,16 @@
 
 Checks free functions and inherent associated functions named `make_*`,
 `build_*`, `convert_*`, `map_*`, `try_*`, or `validate_*` that take one
-argument, have no `self` receiver, and return `Result<T, E>`. The argument or
-`T` must be defined in the current crate, so that a `TryFrom` implementation is
-allowed. The lint skips a `T` that is `()`, `!`, or the argument type itself,
-an argument that is a bare type parameter, and conversions for which a
+argument, have no `self` receiver, and return `Result<T, E>`.
+The argument or `T` must come from the current crate, so this crate can add a
+`TryFrom` implementation. The lint skips a `T` that is `()`, `!`, or the argument
+type itself. It also skips an argument that is a bare type parameter and
+conversions for which a
 `TryFrom` implementation already applies, including through `From`.
 
 ## Why is this bad?
 
-A custom fallible conversion cannot be used with `.try_into()` or generic
+A custom fallible conversion does not support `.try_into()` or generic
 `T: TryInto<U>` bounds. Callers must learn the local function name instead of
 using the standard trait.
 

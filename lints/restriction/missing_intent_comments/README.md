@@ -13,19 +13,19 @@ statements written inside macro arguments count normally.
 
 A long body without comments shows what the code does but not why. Reviewers
 must work out the reason for the ordering, the invariants, and the error
-handling from the code alone, and a later edit can break an assumption that was
-never written down.
+handling from the code alone. A later edit can break an assumption that the code
+never records.
 
 ## Known problems
 
 The lint lexes the body's source text and counts the lines that hold a `//` line
 comment, including doc comments, commented-out code, and comments after code.
 A `//` inside a string literal does not count, and block comments do not count.
-The lint does not judge comment quality or check that comments are spread
+The lint does not judge comment quality or check how authors spread comments
 across the body.
 
-Statements inside closures are not counted toward the enclosing function, and
-closures are not checked on their own.
+The lint does not count statements inside closures toward the enclosing
+function, and it does not check closures on their own.
 
 ## Example
 

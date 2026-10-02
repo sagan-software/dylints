@@ -2,9 +2,10 @@
 
 ## What it does
 
-Checks for structs and enums that other crates can reach, including through
-re-exports, and that implement serde `Serialize` or `Deserialize` but not
-schemars `JsonSchema`, in crates that use schemars. A crate uses schemars when
+Checks structs and enums that other crates can reach, including through
+re-exports. The lint warns when they implement serde `Serialize` or
+`Deserialize` but not schemars `JsonSchema`, in crates that use schemars. A crate
+uses schemars when
 it has any `JsonSchema` impl or when Cargo passes `schemars` to the compiled
 target as a direct dependency.
 

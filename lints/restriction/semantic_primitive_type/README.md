@@ -10,8 +10,8 @@ domain value as a primitive. It flags three cases by name:
 - Names `reason`, `reasons`, `reason_code`, `reason_codes`, or ending in
   `_reason_code` or `_reason_codes`, with a `String` or `str` type.
 
-It looks through references, slices, arrays, `Option`, and `Vec`. A return type
-is checked against the function name. It also flags a `match` on a string that
+It looks through references, slices, arrays, `Option`, and `Vec`. The lint checks
+a return type against the function name. It also flags a `match` on a string that
 has three or more string-literal arms and a catch-all arm.
 
 ## Why is this bad?
@@ -25,8 +25,8 @@ newtype or enum makes the compiler reject these mixups.
 
 It warns on a free-text field named `reason` that holds a human-readable message.
 It skips the string `match` inside a `FromStr::from_str` or `TryFrom::try_from`
-impl, where parsing strings into an enum is the intended fix, and it skips the
-methods of trait impls, whose signature comes from the trait.
+impl, where parsing strings into an enum is the intended fix. It also skips the
+methods of trait impls because the trait supplies their signature.
 
 The `match` check counts arms whose pattern is only string literals, including
 `"a" | "b"`, and needs an unguarded `_` or binding arm such as `other =>`. It

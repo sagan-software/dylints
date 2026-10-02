@@ -3,27 +3,27 @@
 ## What it does
 
 Checks hand-written `Default` implementations for local structs without type or
-const parameters whose `default` method returns one struct expression, such as
+const parameters. The `default` method must return one struct expression, such as
 `Self { ... }`, `Self(...)`, or `Self`, with every field set to its type's
 default value. A default value is a call that resolves to `Default::default`,
 such as `Default::default()`, `u8::default()`, or `<Vec<T>>::default()`, or
 `false`, the integer `0`, or `None`.
 
 The machine-applicable fix adds `#[derive(Default)]` to the struct and removes
-the implementation. It is offered only when neither item comes from a macro
+the implementation. The lint offers it only when neither item comes from a macro
 and the implementation has no attributes or doc comments.
 
 ## Why is this bad?
 
-A hand-written `Default` implementation must be updated whenever a field is
-added, removed, or renamed. `#[derive(Default)]` stays in sync with the type
+Adding, removing, or renaming a field requires an update to a hand-written
+`Default` implementation. `#[derive(Default)]` stays in sync with the type
 definition and produces the same value.
 
 ## Known problems
 
 The lint misses fields set with constructors such as `Vec::new()` or
 `String::new()`, bodies with statements, and enums, where a derive needs a
-`#[default]` variant. Generic structs are skipped because the derive adds a
+`#[default]` variant. The lint skips generic structs because the derive adds a
 `Default` bound to every type parameter. Clippy's `derivable_impls` lint
 reports many of the same implementations.
 

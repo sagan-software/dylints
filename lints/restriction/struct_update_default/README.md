@@ -8,14 +8,15 @@ Checks for struct literals whose update base is `Default::default()`, such as
 ## Why is this bad?
 
 The literal does not show which fields take default values. When someone adds a
-field to the struct, every such literal compiles unchanged and takes the default,
-so no call site is reviewed for the new field.
+field to the struct, every such literal still compiles and takes the default.
+Adding a field triggers no call-site review.
 
 ## Known problems
 
-When the base is the built-in `#[derive(Default)]` of a struct in the same
-crate, and the remaining fields have no default field values, the lint suggests
-listing each remaining field as `field: Default::default()`. That derive calls
+When the base is the built-in `#[derive(Default)]` of a struct in the same crate,
+the lint suggests listing each remaining field as `field: Default::default()`.
+It makes this suggestion only when those fields have no default field values.
+That derive calls
 `Default::default()` for each field, so the values do not change. Other cases,
 such as a handwritten `Default` impl, get help text only.
 

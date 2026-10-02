@@ -2,8 +2,8 @@
 
 ## What it does
 
-Runs the [rumdl](https://github.com/rvben/rumdl) Markdown rules on the doc
-comments of the crate, items, associated items, fields, and enum variants, and
+Runs the [rumdl](https://github.com/rvben/rumdl) Markdown rules on doc comments
+attached to the crate, items, associated items, fields, and enum variants. It
 reports the first rule violation in each doc comment block.
 
 The rules come from the nearest project configuration that `rumdl check` would
@@ -23,10 +23,11 @@ nothing else in a normal build reports them.
 The lint does not read the user-level rumdl configuration, and a project
 configuration that fails to load falls back to rumdl's defaults without a
 warning. The default line-length rule (MD013) reports doc lines longer than 80
-characters. Only the first violation in each block is reported, so fixing one
-can reveal the next. A machine-applicable fix is offered only for `///` and
-`//!` comments with LF line endings; block doc comments, `#[doc = "..."]`
-attributes, and generated docs get a warning on the whole item without a fix.
+characters. The lint reports only the first violation in each block, so fixing
+one can reveal the next. It offers a machine-applicable fix only for `///` and
+`//!` comments with LF line endings. Block doc comments, `#[doc = "..."]`
+attributes, and generated docs receive a warning on the whole item without a
+fix.
 
 ## Example
 

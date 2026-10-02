@@ -8,15 +8,15 @@ block, when that type does not implement `Default`.
 
 ## Why is this bad?
 
-A custom zero-argument constructor cannot be used where generic code asks for
-`T: Default`, and it does not work with `#[derive(Default)]` on containing
+Generic code that asks for `T: Default` cannot call a custom zero-argument
+constructor, and it does not work with `#[derive(Default)]` on containing
 types, `..Default::default()`, or `unwrap_or_default()`.
 
 ## Known problems
 
 The lint does not read the function body. It warns on constructors that
 allocate resources, have side effects, or set up an invariant that a `Default`
-value should not have. For a public `new`, Clippy's `new_without_default` lint
+value must not have. For a public `new`, Clippy's `new_without_default` lint
 reports the same missing implementation.
 
 ## Example

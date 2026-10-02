@@ -4,9 +4,9 @@
 
 Checks inherent methods named `next` or `next_*` that take only a `&mut self`
 receiver and return `Option<T>`, where `T` is not the `impl` type itself.
-Types that already implement `Iterator` are skipped. Names that contain a word
-such as `state`, `status`, `transition`, `page`, `retry`, `event`, or `advance`
-are skipped.
+The lint skips types that already implement `Iterator`. It also skips names that
+contain a word such as `state`, `status`, `transition`, `page`, `retry`, `event`,
+or `advance`.
 
 ## Why is this bad?
 
@@ -17,8 +17,8 @@ such as `map`, `filter`, and `collect`. Callers must write the loop by hand.
 
 The lint checks only the name and signature. It warns on a `next_*` method that
 is one of several ways to step through the type rather than its one item
-sequence. The skipped words match anywhere in the name, so `next_statement` is
-skipped.
+sequence. The lint skips names containing those words, so it skips
+`next_statement`.
 
 ## Example
 

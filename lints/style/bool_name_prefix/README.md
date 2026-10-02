@@ -4,7 +4,7 @@
 
 Checks the names of `bool` struct fields, local variables, function and method
 parameters, functions and methods that return `bool`, and `bool` constants,
-statics, and associated constants. It warns when the name does not read as a
+statics, and associated constants. It warns when the name does not identify a
 predicate.
 
 A snake_case name passes when it starts with a predicate word such as `is_`,
@@ -21,14 +21,14 @@ meaning clear at the call site.
 
 ## Known problems
 
-The list of accepted names is long and tuned to this repository. Names that
-start with words such as `default_`, `from_`, `in_`, or `path_`, names that end
-with `_name`, `_type`, `_value`, or `_path`, and a few exact names such as
-`value`, `seen`, and `escaped` pass without a predicate word.
+This repository uses a long, repository-specific list of accepted names. Names
+that start with words such as `default_`, `from_`, `in_`, or `path_` pass. Names
+that end with `_name`, `_type`, `_value`, or `_path`, and a few exact names such
+as `value`, `seen`, and `escaped` pass without a predicate word.
 
-The names of methods and associated constants in trait implementations,
-closure parameters, destructuring patterns, `_` placeholders, and names created
-by macros are not checked.
+The lint skips method and associated constant names in trait implementations,
+closure parameters, destructuring patterns, `_` placeholders, and names that
+macros create.
 
 ## Example
 

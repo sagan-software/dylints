@@ -22,8 +22,8 @@ It warns on values that only mention a secret word, such as a hashed
 secret names, such as `private_key` or `credentials`.
 
 It does not flag `Option<String>`, `Box<str>`, closure parameters, or
-destructured bindings. It skips the parameters of trait impl methods, whose
-types come from the trait; the trait declaration is checked instead.
+destructured bindings. The lint skips trait impl method parameters because the
+trait supplies their types; it checks the trait declaration instead.
 
 ## Example
 

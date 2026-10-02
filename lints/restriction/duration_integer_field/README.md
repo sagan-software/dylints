@@ -11,9 +11,9 @@ which usually means minimum, do not count.
 
 ## Why is this bad?
 
-The unit lives only in the field name, so code that passes milliseconds where
-seconds are expected still compiles. `std::time::Duration` stores one value and
-converts units explicitly.
+The unit lives only in the field name, so code can pass milliseconds where
+callers expect seconds and still compile. `std::time::Duration` stores one value
+and converts units explicitly.
 
 ## Known problems
 

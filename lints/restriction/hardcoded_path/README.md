@@ -2,19 +2,20 @@
 
 ## What it does
 
-Checks for string literals that hold a machine-specific filesystem path: a Unix
-absolute path under a host root directory such as `/home/alice/cache` or
-`/Users/alice`, a home path such as `~/cache` or `~alice/cache`, a Windows drive
-path such as `C:\Users`, or a UNC path such as `\\server\share`.
+Checks for string literals that hold a machine-specific filesystem path. It
+recognizes Unix absolute paths under host root directories. Examples include
+`/home/alice/cache` and `/Users/alice`, home paths such as `~/cache` or
+`~alice/cache`, Windows drive paths such as `C:\Users`, and UNC paths such as
+`\\server\share`.
 
 ## Why is this bad?
 
-The path exists only on the machine where it was written. Builds, tests, and
-tools that use it fail on other machines, in CI, and in containers.
+The code hardcodes a location on one machine. Builds, tests, and tools that use
+it fail on other machines, in CI, and in containers.
 
 ## Known problems
 
-The lint reads only the literal's text, not how the value is used. A Unix path
+The lint reads only the literal's text, not how code uses the value. A Unix path
 warns only when its first component is a standard top-level directory: `bin`,
 `boot`, `dev`, `etc`, `home`, `lib`, `lib64`, `media`, `mnt`, `nix`, `opt`,
 `private`, `proc`, `root`, `run`, `sbin`, `snap`, `srv`, `sys`, `tmp`, `usr`,

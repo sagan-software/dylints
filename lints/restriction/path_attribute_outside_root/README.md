@@ -16,7 +16,7 @@ find the module. Outside a crate root, the override is hard to spot.
 
 The lint compares the attribute's file with the crate root file. It allows every
 crate root, including `examples/demo.rs` and `tests/api.rs`, and it warns in a
-nested module file even when that file is named `lib.rs` or `main.rs`. It skips
+nested module file even when its name is `lib.rs` or `main.rs`. It skips
 files that the compiler cannot map to a real path.
 
 ## Example

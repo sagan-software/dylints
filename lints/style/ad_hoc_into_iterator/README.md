@@ -5,11 +5,11 @@
 Checks inherent methods named `into_*`, `iter_*`, or `items` that take only a
 `self`, `&self`, or `&mut self` receiver and return a type that implements
 `Iterator`, such as `std::vec::IntoIter<T>`, `std::slice::Iter<'_, T>`, or
-`impl Iterator`. The method is skipped when the receiver type already
-implements `IntoIterator`. Names that contain a policy word such as `filter`,
-`sorted`, `unique`, `page`, `owned`, or `active` are skipped. Methods that
-return a collection such as `Vec<T>` are conversions, not iteration views, and
-are not checked.
+`impl Iterator`. The lint skips the method when the receiver type already
+implements `IntoIterator`. The lint skips names that contain a policy word such
+as `filter`, `sorted`, `unique`, `page`, `owned`, or `active`. The lint treats
+methods that return a collection such as `Vec<T>` as conversions rather than
+iteration views, so it skips them.
 
 ## Why is this bad?
 
@@ -21,7 +21,7 @@ Callers must learn the local method name instead.
 
 The lint checks only the name and signature, so it warns on an iteration view
 that is one of several valid views of the type. The policy words match anywhere
-in the name, so `into_pages` and `iter_validated` are skipped. For a method
+in the name, so the lint skips `into_pages` and `iter_validated`. For a method
 that borrows, such as `iter_rows(&self)`, the help asks for
 `IntoIterator for &Rows` instead of `IntoIterator for Rows`.
 
