@@ -249,7 +249,10 @@ fn keep_called_and_indexed_receivers(values: &[Option<bool>]) {
 
 // A boolean block may diverge instead of producing a boolean tail value.
 fn keep_diverging_boolean_block(ready: bool) {
-    if { return; } && ready {
+    if {
+        return;
+    } && ready
+    {
         consume(());
     }
 }
