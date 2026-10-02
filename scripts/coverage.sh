@@ -8,19 +8,26 @@
 # libraries that `dylint_testing` builds, then merges every profile and reports
 # against every instrumented test binary and shared library.
 #
-# Usage: scripts/coverage.sh [--min-lines PERCENT] [-- CARGO_TEST_ARGS...]
-# Without test arguments, it runs `cargo test --workspace --lib --bins --tests`.
-# Pass package selections after `--` to measure only part of the workspace,
-# for example `-- -p ad_hoc_display --lib`.
+# Usage: scripts/coverage.sh [--min-lines PERCENT] [--path DIR]... [-- CARGO_TEST_ARGS...]
+# Without test arguments, it runs `cargo test --workspace --tests`. Pass package
+# selections after `--` to measure part of the workspace, for example
+# `-- -p ad_hoc_display --tests`, and `--path lints/style/ad_hoc_display` to
+# limit the report to those directories. Doctests are not run: instrumented
+# doctest builds cannot link the standard library twice.
 # Environment: COVERAGE_TARGET_DIR (default: target/coverage).
 set -euo pipefail
 
 min_lines=0
-test_args=(--workspace --lib --bins --tests)
+test_args=(--workspace --tests)
+paths=()
 while (($# > 0)); do
     case "$1" in
     --min-lines)
         min_lines="$2"
+        shift 2
+        ;;
+    --path)
+        paths+=("$(realpath "$2")")
         shift 2
         ;;
     --)
@@ -29,7 +36,7 @@ while (($# > 0)); do
         break
         ;;
     *)
-        echo "usage: coverage.sh [--min-lines PERCENT] [-- CARGO_TEST_ARGS...]" >&2
+        echo "usage: coverage.sh [--min-lines PERCENT] [--path DIR]... [-- CARGO_TEST_ARGS...]" >&2
         exit 2
         ;;
     esac
@@ -66,9 +73,9 @@ done < <(find "$target_dir/debug" -maxdepth 2 -type f \( -name '*.so' -o -perm -
 
 ignore='(/\.cargo/registry/|/rustc/|/nix/store/|/ui/|/tests/fixtures/|/target/)'
 common=(--instr-profile "$target_dir/coverage.profdata" --ignore-filename-regex "$ignore")
-"$llvm_bin/llvm-cov" report "${common[@]}" "${objects[@]}" >"$report_dir/summary.txt" 2>/dev/null
-"$llvm_bin/llvm-cov" export --format=lcov "${common[@]}" "${objects[@]}" >"$report_dir/lcov.info" 2>/dev/null
-"$llvm_bin/llvm-cov" export --summary-only "${common[@]}" "${objects[@]}" >"$report_dir/summary.json" 2>/dev/null
+"$llvm_bin/llvm-cov" report "${common[@]}" "${objects[@]}" "${paths[@]}" >"$report_dir/summary.txt" 2>/dev/null
+"$llvm_bin/llvm-cov" export --format=lcov "${common[@]}" "${objects[@]}" "${paths[@]}" >"$report_dir/lcov.info" 2>/dev/null
+"$llvm_bin/llvm-cov" export --summary-only "${common[@]}" "${objects[@]}" "${paths[@]}" >"$report_dir/summary.json" 2>/dev/null
 
 # Print the least covered files and the totals, then enforce the threshold.
 jq -r '.data[0].files[]
