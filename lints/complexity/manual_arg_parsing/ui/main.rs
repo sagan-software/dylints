@@ -31,3 +31,11 @@ fn allowed_calls() {
 }
 
 fn main() {}
+
+// Local callable bindings are not resolved standard-library function calls.
+fn callable_bindings() {
+    let args = || Vec::<String>::new();
+    let _ = args();
+    let args_fn = std::env::args;
+    let _ = args_fn();
+}
