@@ -8,13 +8,13 @@ disables thiserror's default features without enabling its `std` feature.
 
 ## Why is this bad?
 
-Thiserror displays `Path` and `PathBuf` fields only when its `std` feature is
-enabled. Without it, the derive fails with a missing `Display` implementation
-that does not mention the feature.
+Thiserror's `Path` and `PathBuf` display support requires its `std` feature.
+Without it, the derive fails with a missing `Display` implementation that does
+not mention the feature.
 
 ## Known problems
 
-The lint reads the manifest of the package being compiled, including
+The lint reads the manifest for the package Cargo compiles, including
 `[dependencies.thiserror]` tables, `[target.*]` tables, renamed
 dependencies, and `workspace = true` declarations. It still warns when
 another dependency enables thiserror's `std` feature through Cargo feature

@@ -3,15 +3,15 @@
 ## What it does
 
 Checks for calls to `serde::Deserializer::deserialize_any`, written either as
-a method call or as a path call. Calls inside an implementation of
-`Deserializer` are not checked, because a format forwards to its own
-`deserialize_any` by design.
+a method call or as a path call. The lint skips calls inside an implementation
+of `Deserializer`, because a format forwards to its own `deserialize_any` by
+design.
 
 ## Why is this bad?
 
 `deserialize_any` asks the input to say what type comes next. Only
 self-describing formats such as JSON can do that. Formats such as Postcard and
-Bincode return an error, so the type cannot be read from them.
+Bincode return an error, so they cannot decode the type.
 
 ## Known problems
 

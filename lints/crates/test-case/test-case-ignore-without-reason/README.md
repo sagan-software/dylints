@@ -7,9 +7,9 @@ the bare `ignore` modifier instead of `ignore["reason"]`.
 
 ## Why is this bad?
 
-The test harness skips the case and records no reason. Readers cannot tell why
-the case is skipped or what must change before it can run again, so the skip
-tends to become permanent.
+The test harness skips the case without recording a reason. Readers cannot tell
+why the harness skips it or what must change before it can run again, so the
+skip tends to become permanent.
 
 ## Known problems
 

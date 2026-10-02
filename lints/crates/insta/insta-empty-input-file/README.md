@@ -8,14 +8,14 @@ string literal `""`.
 ## Why is this bad?
 
 Insta stores the input file path with the snapshot so reviewers can find the
-input that produced it. An empty path points to no file, and it often means a
-value was left out by mistake.
+input that produced it. An empty path points to no file, and it often means the
+author left out a value by mistake.
 
 ## Known problems
 
 The lint checks a string literal passed directly as the argument, or
-a `const` defined in the same crate and initialized with a string literal. It does not check values held in variables or built at
-runtime.
+a `const` defined in the same crate and initialized with a string literal. It
+does not check values held in variables or built at runtime.
 
 ## Example
 

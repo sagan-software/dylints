@@ -10,8 +10,8 @@ as `with validate` or `with checks::validate`.
 
 test-case documents `with` for an inline closure and `using` for a named
 validation function. Both run the same check here. Using `with` for a named
-function makes the case look like it holds an inline assertion and hides that
-the validator is shared.
+validation function makes the case look like it holds an inline assertion and
+hides the validator's reuse across cases.
 
 ## Known problems
 

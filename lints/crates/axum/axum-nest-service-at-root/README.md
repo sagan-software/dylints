@@ -8,8 +8,8 @@ Checks for `axum::Router::nest_service` calls whose path is the string literal
 ## Why is this bad?
 
 Axum 0.8 does not support nesting a service at the root. `Router::nest_service`
-panics with either path when the router is built, so the error shows up only
-when the application starts or a test builds that router.
+panics with either path when application code builds the router, so the error
+appears only when the application starts or a test builds that router.
 `Router::fallback_service` sends every request that matches no route to the
 service.
 

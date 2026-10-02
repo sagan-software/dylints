@@ -2,10 +2,10 @@
 
 ## What it does
 
-Checks for a `#[serde(flatten)]` field in a struct that derives
-`Deserialize` when the struct has `#[serde(deny_unknown_fields)]`, or when
-the field type, or the `T` of an `Option<T>` field, is a struct in the crate
-that has `#[serde(deny_unknown_fields)]`.
+Checks for a `#[serde(flatten)]` field in a struct that derives `Deserialize`.
+The lint reports it when the struct has `#[serde(deny_unknown_fields)]`. It also
+reports a field when its type, or the `T` of an `Option<T>` field, names a
+struct in the crate with that attribute.
 
 ## Why is this bad?
 

@@ -3,14 +3,14 @@
 ## What it does
 
 Checks for a `Cow<'a, str>` or `Cow<'a, [u8]>` field without
-`#[serde(borrow)]` in a type that derives `Deserialize`. Fields with a
-`'static` lifetime are not checked.
+`#[serde(borrow)]` in a type that derives `Deserialize`. The lint skips fields
+with a `'static` lifetime.
 
 ## Why is this bad?
 
 Serde only borrows a `Cow` field when it has `#[serde(borrow)]`. Without it,
-the field is always deserialized as `Cow::Owned`, so every value is copied
-into a new allocation even though the type has a lifetime for borrowing.
+Serde always deserializes the field as `Cow::Owned`, so Serde allocates and
+copies every value even though the type has a lifetime for borrowing.
 
 ## Known problems
 
@@ -19,7 +19,7 @@ only a field whose type path ends in `Cow` and resolves to the standard
 `Cow`. Serde does not borrow through a renamed import, a type alias, or a
 wrapper such as `Option<Cow<'a, str>>`, so the lint skips those fields.
 
-A field that should always own its data also triggers the lint.
+A field intended to own its data also triggers the lint.
 
 ## Example
 

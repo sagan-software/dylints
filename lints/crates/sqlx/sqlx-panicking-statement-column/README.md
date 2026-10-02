@@ -12,7 +12,7 @@ error the caller can handle.
 
 ## Known problems
 
-The lint flags calls with an index that is known to be valid.
+The lint flags calls even when it knows the index is valid.
 
 ## Example
 

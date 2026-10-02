@@ -13,8 +13,8 @@ coverage while none of it runs.
 
 ## Known problems
 
-The lint also warns when the whole matrix is skipped on purpose, for example
-during a short migration. An `ignore` modifier without a reason also triggers
+The lint also warns when a project intentionally skips the whole matrix, for
+example during a short migration. An `ignore` modifier without a reason also triggers
 `test-case-ignore-without-reason`, and `inconclusive` also triggers
 `test-case-inconclusive-modifier`.
 

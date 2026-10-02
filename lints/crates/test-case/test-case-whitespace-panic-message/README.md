@@ -3,8 +3,8 @@
 ## What it does
 
 Checks for a `panics "..."` output in a `#[test_case(...)]` or
-`#[test_matrix(...)]` attribute whose expected message is not empty but
-contains only whitespace.
+`#[test_matrix(...)]` attribute whose expected message contains at least one
+whitespace character and no other character.
 
 ## Why is this bad?
 

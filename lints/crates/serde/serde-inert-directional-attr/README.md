@@ -12,7 +12,8 @@ checks `alias`, `default`, `deserialize_with`, `borrow`, and
 ## Why is this bad?
 
 The derive ignores the attribute, so it has no effect. Readers expect it to
-change behavior, and the author may have meant to derive the other direction.
+change behavior, and the author might have intended to derive the other
+direction.
 
 ## Known problems
 

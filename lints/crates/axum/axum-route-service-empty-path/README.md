@@ -8,8 +8,8 @@ literal `""`.
 ## Why is this bad?
 
 Axum route paths must start with `/`. `Router::route_service` panics on an
-empty path when the router is built, so the error shows up only when the
-application starts or a test builds that router. The root route is `"/"`.
+empty path when application code builds the router. The error appears only when
+the application starts or a test builds that router. The root route is `"/"`.
 
 ## Known problems
 

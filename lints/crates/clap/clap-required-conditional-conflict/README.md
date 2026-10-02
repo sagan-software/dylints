@@ -10,15 +10,15 @@ Checks for a `clap::Arg` method chain whose final `required` setting is
 
 ## Why is this bad?
 
-An argument cannot be required always and required only under a condition.
-Clap panics in debug builds when the command is built.
+An argument cannot require unconditional presence and conditional presence at
+the same time. Clap panics in debug builds when code builds the command.
 
 ## Known problems
 
 The lint checks only one method chain. It does not check an `Arg` changed in
 later statements. `required_if_eq` and `required_unless_present` count with any
 arguments. The `_any` and `_all` forms count only when their argument is a
-nonempty array literal, so conditions passed through variables are missed.
+nonempty array literal, so the lint misses conditions passed through variables.
 
 ## Example
 

@@ -6,10 +6,10 @@ Checks fieldless enums for two problems:
 
 - The enum has hand-written implementations of both `Display` and `FromStr`.
 - The enum derives Serde and Strum traits, and the two produce or accept
-  different names for a variant. Output names are compared when the enum
+  different names for a variant. The lint compares output names when the enum
   derives `Serialize` and one of `strum::Display`, `AsRefStr`,
-  `IntoStaticStr`, or `VariantNames`. Accepted input names are compared when
-  it derives `Deserialize` and `strum::EnumString`.
+  `IntoStaticStr`, or `VariantNames`. It compares accepted input names when it
+  derives `Deserialize` and `strum::EnumString`.
 
 The comparison applies Serde's `rename_all`, `rename`, `alias`, `skip`,
 `skip_serializing`, `skip_deserializing`, and `other` attributes, and Strum's
@@ -29,8 +29,8 @@ while Strum produces `http_response`.
 ## Known problems
 
 The lint does not read the bodies of the hand-written implementations. It also
-flags an enum whose `Display` output is meant for people and differs on
-purpose from the names that `FromStr` parses.
+flags an enum whose `Display` output targets people and differs on purpose from
+the names that `FromStr` parses.
 
 The lint reports only the first divergent variant of each enum. It skips
 variants with non-ASCII names.

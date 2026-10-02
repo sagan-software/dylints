@@ -9,7 +9,7 @@ literal with no `.`, such as `"response"`.
 
 Insta splits a binary snapshot name at the first `.` to get the file
 extension. A name with no `.` makes the macro panic when the test runs, so the
-snapshot is never recorded or compared.
+macro never records or compares the snapshot.
 
 ## Known problems
 

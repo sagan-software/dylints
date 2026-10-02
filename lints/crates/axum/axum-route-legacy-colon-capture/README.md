@@ -9,8 +9,8 @@ Axum 0.7 and earlier, such as `"/users/:id"`.
 ## Why is this bad?
 
 Axum 0.8 writes captures as `{name}`. By default, these methods panic on a
-segment that starts with `:` when the router is built. Code that still uses
-the old syntax after an upgrade fails when the application starts.
+segment that starts with `:` when application code builds the router. Code that
+still uses the old syntax after an upgrade fails when the application starts.
 
 ## Known problems
 

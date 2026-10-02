@@ -9,7 +9,7 @@ such as `#[test_case(1)]`.
 
 Without a description, test-case builds the test name from the argument
 expressions. These names can be long and unclear in test output, and they
-change whenever an input expression is rewritten.
+change whenever someone rewrites an input expression.
 
 ## Known problems
 

@@ -9,8 +9,8 @@ no `#[serde(expecting = "...")]` message.
 
 When no variant matches, an untagged enum fails with a generic error such as
 "data did not match any variant of untagged enum Value". The error does not
-say what input is accepted. An `expecting` message replaces it with a
-description of valid input.
+describe accepted input. An `expecting` message replaces it with a description
+of valid input.
 
 ## Known problems
 

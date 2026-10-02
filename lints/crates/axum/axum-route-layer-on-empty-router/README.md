@@ -10,14 +10,15 @@ builder calls, such as `layer`, `fallback`, and `with_state`, to
 ## Why is this bad?
 
 `Router::route_layer` wraps only the routes that already exist. On a router
-with no routes it would do nothing, so Axum panics when the router is built.
+with no routes it would do nothing, so Axum panics when code builds the router.
 The error shows up only when the application starts or a test builds that
 router.
 
 ## Known problems
 
-The lint does not follow an empty router through a helper function, a function
-parameter, or `Router::merge`. It does not check `Router::default()`.
+The lint does not follow an empty router returned by another function, passed as
+a parameter, or merged with `Router::merge`. It does not check
+`Router::default()`.
 
 ## Example
 

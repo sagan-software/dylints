@@ -3,8 +3,8 @@
 ## What it does
 
 Checks for an `#[error(...)]` attribute on a tuple struct or tuple variant
-that derives `thiserror::Error` when the format string has a numeric
-placeholder such as `{0}` and any extra format argument is unnamed.
+that derives `thiserror::Error`. It reports a numeric placeholder such as `{0}`
+when an extra format argument has no name.
 
 ## Why is this bad?
 
@@ -16,8 +16,8 @@ removes the ambiguity in both versions.
 ## Known problems
 
 With thiserror 2, an active item with this pattern already fails to compile
-with thiserror's own error, so the lint is most useful on thiserror 1 code
-before a migration. It gives help text but no automatic fix.
+with thiserror's own error. The lint is most useful on thiserror 1 code before
+a migration. It gives help text but no automatic fix.
 
 ## Example
 

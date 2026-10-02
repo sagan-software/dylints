@@ -3,15 +3,15 @@
 ## What it does
 
 Checks for an `#[error(...)]` attribute on a type that derives
-`thiserror::Error` when a `{}` placeholder takes a positional argument that is
-just the name of a field, such as `#[error("failed: {}", source)]`.
+`thiserror::Error`. It reports a `{}` placeholder when a positional argument
+contains only a field name, such as `#[error("failed: {}", source)]`.
 
 ## Why is this bad?
 
-A positional placeholder hides which field supplies the displayed value. When
-format arguments are added or reordered, a placeholder can silently show the
-wrong field. Thiserror can capture a named field inside the format string, so
-the extra argument is redundant.
+A positional placeholder hides which field supplies the displayed value. Adding
+or reordering format arguments can make a placeholder show the wrong field.
+Thiserror can capture a named field inside the format string, so the extra
+argument is redundant.
 
 ## Known problems
 

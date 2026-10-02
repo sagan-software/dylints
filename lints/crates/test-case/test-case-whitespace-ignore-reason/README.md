@@ -9,8 +9,8 @@ but contains only whitespace.
 ## Why is this bad?
 
 The test harness skips the case. A blank reason looks like a reason in the
-source but says nothing about why the case is skipped or what must change
-before it can run again. It is also easy to miss in review.
+source but gives no explanation of the skip or condition for rerunning it.
+Reviewers can easily miss the blank content.
 
 ## Known problems
 

@@ -7,9 +7,9 @@ an `ignore[""]` or `inconclusive[""]` modifier with an empty reason.
 
 ## Why is this bad?
 
-The case is generated but skipped by the test harness. An empty reason does
-not say why the case is skipped or what must change before it can run again,
-so the case can stay disabled indefinitely.
+The test harness generates the case and skips it. An empty reason gives no
+explanation or condition for rerunning it, so the case can stay disabled
+indefinitely.
 
 ## Known problems
 

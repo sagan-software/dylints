@@ -8,8 +8,8 @@ that also has a `long` or `short` name.
 ## Why is this bad?
 
 `last` applies only to positional arguments. An argument with a `long` or
-`short` name is an option, so clap panics in debug builds when the command is
-built.
+`short` name is an option, so clap panics in debug builds when code builds the
+command.
 
 ## Known problems
 

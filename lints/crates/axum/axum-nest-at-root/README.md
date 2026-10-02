@@ -8,9 +8,9 @@ Checks for `axum::Router::nest` calls whose path is the string literal `""` or
 ## Why is this bad?
 
 Axum 0.8 does not support nesting a router at the root. `Router::nest` panics
-with either path when the router is built, so the error shows up only when the
-application starts or a test builds that router. `Router::merge` combines two
-routers at the same level.
+with either path when application code builds the router, so the error appears
+only when the application starts or a test builds that router. `Router::merge`
+combines two routers at the same level.
 
 ## Known problems
 

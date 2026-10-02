@@ -10,7 +10,7 @@ starts with the word `inconclusive` followed by a space, `-`, or `:`, such as
 
 Before test-case 2.0, `inconclusive` in a description marked the case as
 ignored. Test-case 2.0 removed that behavior. The description is now only a
-name, so the case runs even though its name says it is skipped.
+name, so the case runs despite its skip-like name.
 
 ## Known problems
 

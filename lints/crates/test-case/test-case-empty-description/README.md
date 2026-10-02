@@ -8,8 +8,8 @@ an empty string literal, such as `#[test_case(1; "")]`.
 ## Why is this bad?
 
 test-case builds the generated test name from the description. An empty
-description produces a name that does not say which input or behavior the case
-covers, so a failure report does not identify the case.
+description produces an uninformative name. A failure report then cannot
+identify the input or behavior that the case covers.
 
 ## Known problems
 

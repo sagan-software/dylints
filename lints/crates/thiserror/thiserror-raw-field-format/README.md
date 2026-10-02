@@ -14,14 +14,14 @@ refers to the same `r#type` field.
 ## Known problems
 
 With thiserror 2, an active item with this pattern already fails to compile
-with thiserror's own error, so the lint is most useful on thiserror 1 code
-before a migration.
+with thiserror's own error. The lint is most useful on thiserror 1 code before
+a migration.
 
-thiserror 1 cannot format a keyword field such as `r#type` as `{type}`, so
-that rewrite is offered but not applied automatically. A rewrite of a
-non-keyword name such as `{r#kind}` to `{kind}` works with both versions and is
-applied automatically. A format string with escape sequences gets help text
-but no rewrite.
+thiserror 1 cannot format a keyword field such as `r#type` as `{type}`, so the
+lint offers that rewrite as help but does not apply it automatically. A rewrite
+of a non-keyword name such as `{r#kind}` to `{kind}` works with both versions,
+and the lint applies it automatically. A format string with escape sequences
+gets help text but no rewrite.
 
 ## Example
 

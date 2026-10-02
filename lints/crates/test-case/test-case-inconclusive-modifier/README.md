@@ -14,7 +14,7 @@ shows.
 
 ## Known problems
 
-test-case still supports `inconclusive`, so a project may keep it on purpose.
+test-case still supports `inconclusive`, so a project might keep it on purpose.
 The fix renames the keyword to `ignore` and keeps any reason.
 
 ## Example

@@ -20,7 +20,7 @@ The lint only detects `PascalCase`, `camelCase`,
 struct where any field has no rename, and it does not check enum variants or
 tuple structs.
 
-The machine-applicable fix is offered only when each field attribute holds
+The lint offers a machine-applicable fix only when each field attribute holds
 just the `rename` entry.
 
 ## Example

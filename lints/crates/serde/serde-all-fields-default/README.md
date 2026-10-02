@@ -14,8 +14,8 @@ required by mistake.
 
 ## Known problems
 
-The lint skips a struct whose `Default` is implemented by hand, because its
-values can differ from the per-field defaults. It skips a struct where any
+The lint skips a struct with a handwritten `Default` implementation, because
+its values can differ from the per-field defaults. It skips a struct where any
 field uses `default = "path"`.
 
 ## Example

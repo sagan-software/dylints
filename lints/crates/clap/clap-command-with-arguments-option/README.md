@@ -10,7 +10,7 @@ Checks for a `clap::Arg` method chain that sets
 
 Clap allows `ValueHint::CommandWithArguments` only on a positional argument. An
 argument with a `long` or `short` name is an option, so clap panics in debug
-builds when the command is built.
+builds when code builds the command.
 
 ## Known problems
 

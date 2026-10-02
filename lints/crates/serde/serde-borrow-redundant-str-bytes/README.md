@@ -3,8 +3,7 @@
 ## What it does
 
 Checks for `#[serde(borrow)]` on a field of a type that derives
-`Deserialize` when the field is written as `&str`, `&[u8]`, or an `Option` of
-either.
+`Deserialize` when the field type is `&str`, `&[u8]`, or an `Option` of either.
 
 ## Why is this bad?
 
@@ -18,8 +17,8 @@ setting.
 Serde decides implicit borrowing from the written type, so a type alias for
 `&str` still needs `#[serde(borrow)]` and the lint does not flag it.
 
-The machine-applicable fix deletes the whole attribute, so it is offered only
-when `borrow` is the attribute's only entry. An attribute such as
+The machine-applicable fix deletes the whole attribute, so the lint offers it
+only when `borrow` is the attribute's only entry. An attribute such as
 `#[serde(borrow, rename = "name")]` gets help without a fix.
 
 ## Example
