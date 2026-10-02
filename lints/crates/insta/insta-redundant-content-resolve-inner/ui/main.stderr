@@ -1,5 +1,5 @@
 warning: Insta `Content::as_*` accessors already resolve wrappers
-  --> $DIR/main.rs:6:5
+  --> $DIR/main.rs:8:5
    |
 LL |     content.resolve_inner().as_str()
    |     ^^^^^^^^^^^^^^^^^^^^^^^ help: call the accessor directly on the original `Content` value: `content`

@@ -1,0 +1,35 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#![allow(dead_code)]
+
+use clap::{ArgAction, Parser, Subcommand};
+
+#[derive(Parser)]
+struct RedundantActions {
+    #[arg(long, action = ArgAction::SetTrue)]
+    verbose: bool,
+    #[arg(long, action = clap::ArgAction::Set)]
+    output: Option<String>,
+    #[arg(long, action = ArgAction::Append)]
+    include: Vec<String>,
+    
+    standalone: bool,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Run {
+        #[arg(long, action = ArgAction::Set)]
+        profile: String,
+    },
+}
+
+#[derive(Parser)]
+struct CustomActions {
+    #[arg(long, action = ArgAction::Count)]
+    verbose: u8,
+    #[arg(long = "no-color", action = ArgAction::SetFalse)]
+    color: bool,
+}
+
+fn main() {}

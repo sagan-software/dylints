@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 use thiserror::Error as ThisError;
 
 #[cfg(any())]

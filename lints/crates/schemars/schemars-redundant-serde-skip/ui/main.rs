@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 use schemars::JsonSchema;
 use serde::Serialize;
 

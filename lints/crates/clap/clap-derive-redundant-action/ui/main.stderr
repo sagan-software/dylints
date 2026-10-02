@@ -1,5 +1,5 @@
 warning: Clap already infers `ArgAction::SetTrue` from this field type
-  --> $DIR/main.rs:7:5
+  --> $DIR/main.rs:9:5
    |
 LL |     #[arg(long, action = ArgAction::SetTrue)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL |     #[arg(long, action = ArgAction::SetTrue)]
    = note: `#[warn(clap_derive_redundant_action)]` on by default
 
 warning: Clap already infers `ArgAction::Set` from this field type
-  --> $DIR/main.rs:9:5
+  --> $DIR/main.rs:11:5
    |
 LL |     #[arg(long, action = clap::ArgAction::Set)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL |     #[arg(long, action = clap::ArgAction::Set)]
    = help: remove the redundant `action` setting
 
 warning: Clap already infers `ArgAction::Append` from this field type
-  --> $DIR/main.rs:11:5
+  --> $DIR/main.rs:13:5
    |
 LL |     #[arg(long, action = ArgAction::Append)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -24,13 +24,13 @@ LL |     #[arg(long, action = ArgAction::Append)]
    = help: remove the redundant `action` setting
 
 warning: Clap already infers `ArgAction::SetTrue` from this field type
-  --> $DIR/main.rs:13:5
+  --> $DIR/main.rs:15:5
    |
 LL |     #[arg(action = ArgAction::SetTrue)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove the redundant `action` setting
 
 warning: Clap already infers `ArgAction::Set` from this field type
-  --> $DIR/main.rs:20:9
+  --> $DIR/main.rs:22:9
    |
 LL |         #[arg(long, action = ArgAction::Set)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

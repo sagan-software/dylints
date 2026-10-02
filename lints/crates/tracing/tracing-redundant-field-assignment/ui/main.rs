@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(dead_code)]
 
 use tracing::{debug_span, info};
@@ -9,6 +11,7 @@ struct User {
 
 fn invalid_assignments(request_id: u64, user: User) {
     info!(request_id = request_id, user.id = user.id);
+    info!(request_id = request_id);
     debug_span!("request", request_id = %request_id, user = ?user);
 }
 

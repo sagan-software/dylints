@@ -1,5 +1,5 @@
 warning: this Schemars attribute duplicates Serde
-  --> $DIR/main.rs:7:5
+  --> $DIR/main.rs:9:5
    |
 LL |     #[schemars(default)]
    |     ^^^^^^^^^^^^^^^^^^^^ help: remove the redundant Schemars attribute

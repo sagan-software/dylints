@@ -1,5 +1,5 @@
 warning: tracing field assignment repeats the same path
-  --> $DIR/main.rs:11:5
+  --> $DIR/main.rs:13:5
    |
 LL |     info!(request_id = request_id, user.id = user.id);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use tracing field shorthand: `request_id, user.id`: `info!(request_id, user.id)`
@@ -7,10 +7,16 @@ LL |     info!(request_id = request_id, user.id = user.id);
    = note: `#[warn(tracing_redundant_field_assignment)]` on by default
 
 warning: tracing field assignment repeats the same path
-  --> $DIR/main.rs:12:5
+  --> $DIR/main.rs:14:5
+   |
+LL |     info!(request_id = request_id);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use tracing field shorthand: `request_id`: `info!(request_id)`
+
+warning: tracing field assignment repeats the same path
+  --> $DIR/main.rs:15:5
    |
 LL |     debug_span!("request", request_id = %request_id, user = ?user);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use tracing field shorthand: `%request_id, ?user`: `debug_span!("request", %request_id, ?user)`
 
-warning: 2 warnings emitted
+warning: 3 warnings emitted
 

@@ -1,5 +1,5 @@
 warning: this empty route-service path panics
-  --> $DIR/main.rs:6:49
+  --> $DIR/main.rs:8:49
    |
 LL |     let _: Router = Router::new().route_service("", Router::new());
    |                                                 ^^ help: use a nonempty path beginning with `/`: `"/"`
