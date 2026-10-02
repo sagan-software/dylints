@@ -116,15 +116,14 @@ fn rewrite_literal(source: &str, style: StrStyle, value: &str, normalized: &str)
         StrStyle::Raw(hashes) => (usize::from(hashes) + 2, usize::from(hashes) + 1),
     };
     let contents_end = source.len().checked_sub(close)?;
+    // A successful range lookup validates both bounds and their UTF-8 boundaries.
     let contents = source.get(open..contents_end)?;
     let rewritten = rewrite_contents(contents, value, normalized)?;
 
     // Reattach the original delimiters around the edited contents.
-    Some(format!(
-        "{}{rewritten}{}",
-        source.get(..open)?,
-        source.get(contents_end..)?
-    ))
+    let (prefix, _) = source.split_at(open);
+    let (_, suffix) = source.split_at(contents_end);
+    Some(format!("{prefix}{rewritten}{suffix}"))
 }
 
 /// Apply the period and capital edits to the literal's source contents.
