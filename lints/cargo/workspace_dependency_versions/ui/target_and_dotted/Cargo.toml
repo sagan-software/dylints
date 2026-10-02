@@ -8,6 +8,13 @@ dotted_dep.package = "bad_dep"
 dotted_dep.path = "../bad_dep"
 dotted_dep.version = "0.1.0"
 path_only_dep = { path = "../path_only_dep" }
+"quoted-dep" = { package = "bad_dep", path = "../bad_dep", version = "0.1.0" }
+# The `#` inside the path string does not start a comment.
+hash_dep = { package = "bad_dep", path = "../bad_dep/#/..", version = "0.1.0" }
+multiline_dep = { package = "bad_dep", path = "../bad_dep", features = [
+  "x",
+], version = "0.1.0" }
+inherited_dep = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 target_bad = { package = "bad_dep", path = "../bad_dep", version = "0.1.0" }
@@ -17,3 +24,6 @@ path = "lib.rs"
 
 [workspace]
 resolver = "3"
+
+[workspace.dependencies]
+inherited_dep = { package = "bad_dep", path = "../bad_dep", version = "0.1.0" }

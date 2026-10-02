@@ -7,7 +7,8 @@ use std::{
     fs,
     io::{self, Write as _},
     path::{Component, Path, PathBuf},
-    process::{Command, ExitStatus, Stdio},
+    process::{Child, Command, ExitStatus, Output, Stdio},
+    sync::mpsc,
     thread,
     time::{Duration, Instant},
 };
@@ -21,7 +22,7 @@ use crate::{
         filter_diagnostics, format_diagnostic, parse_machine_fixes,
     },
     driver,
-    error::{PanicMessage, RunnerError},
+    error::RunnerError,
     runtime::Runtime,
 };
 use serde::Serialize;
@@ -61,12 +62,13 @@ struct TargetDirectory {
 }
 
 /// Cleanup guard for a runner-managed target directory.
+///
+/// The guard prunes on the success path through [`TargetCacheGuard::prune`] and
+/// on early failure through `Drop`, so an aborted run still bounds the cache.
 #[derive(Debug)]
 struct TargetCacheGuard {
-    /// Managed target path retained until cleanup completes.
-    path: Option<PathBuf>,
-    /// Maximum retained size, or `None` for an explicitly selected directory.
-    maximum_bytes: Option<u64>,
+    /// Managed target path and its size limit, or `None` once disarmed or unlimited.
+    armed: Option<(PathBuf, u64)>,
 }
 
 /// One executable phase and its isolated environment additions.
@@ -149,7 +151,7 @@ struct TimingReport<'a> {
 }
 
 impl TargetCacheGuard {
-    /// Prepare cleanup only for the default runner-owned target directory.
+    /// Arm cleanup only for the default runner-owned target directory with a size limit.
     fn new(target: &TargetDirectory) -> Result<Self, RunnerError> {
         let maximum_bytes = if target.is_managed {
             target_cache_limit()?
@@ -157,79 +159,55 @@ impl TargetCacheGuard {
             None
         };
         Ok(Self {
-            path: target.is_managed.then(|| target.path.clone()),
-            maximum_bytes,
+            armed: maximum_bytes.map(|maximum_bytes| (target.path.clone(), maximum_bytes)),
         })
     }
 
-    /// Remove an oversized managed target directory and disarm the guard.
-    #[expect(
-        many_exit_points,
-        missing_intent_comments,
-        reason = "cache pruning must preserve each filesystem failure boundary"
-    )]
+    /// Disarm the guard and remove the managed target directory when it is oversized.
     fn prune(&mut self) -> Result<Option<u64>, RunnerError> {
-        let Some(path) = self.path.clone() else {
-            return Ok(None);
-        };
-        let Some(maximum_bytes) = self.maximum_bytes else {
-            self.path = None;
-            return Ok(None);
-        };
-        let size = match directory_size(&path) {
-            Ok(size) => size,
-            Err(source) if source.kind() == io::ErrorKind::NotFound => {
-                self.path = None;
-                return Ok(None);
-            }
-            Err(source) => {
-                return Err(RunnerError::external(
-                    format!(
-                        "could not measure managed target directory {}",
-                        path.display()
-                    ),
-                    source,
-                ));
-            }
-        };
-        if size <= maximum_bytes {
-            self.path = None;
-            return Ok(None);
-        }
-        fs::remove_dir_all(&path).map_err(|source| {
-            RunnerError::external(
-                format!(
-                    "could not prune managed target directory {}",
-                    path.display()
-                ),
-                source,
-            )
-        })?;
-        self.path = None;
-        Ok(Some(size))
+        self.armed.take().map_or(Ok(None), |(path, maximum_bytes)| {
+            prune_target(&path, maximum_bytes)
+        })
     }
 }
 
 impl Drop for TargetCacheGuard {
-    /// Remove an oversized managed target directory during early failure cleanup.
-    #[expect(
-        missing_intent_comments,
-        reason = "Drop keeps cleanup best-effort and non-panicking"
-    )]
+    /// Bound the managed cache after an early failure without masking that failure.
     fn drop(&mut self) {
-        let Some(path) = self.path.take() else {
-            return;
-        };
-        let Some(maximum_bytes) = self.maximum_bytes else {
-            return;
-        };
-        let Ok(size) = directory_size(&path) else {
-            return;
-        };
-        if size > maximum_bytes {
-            drop(fs::remove_dir_all(path));
-        }
+        // The original error is already propagating, so cleanup stays best-effort.
+        drop(self.prune());
     }
+}
+
+/// Remove one target directory and return its size when it exceeds the limit.
+fn prune_target(path: &Path, maximum_bytes: u64) -> Result<Option<u64>, RunnerError> {
+    // A run that never built anything leaves no directory to measure.
+    let size = match directory_size(path) {
+        Err(source) if source.kind() == io::ErrorKind::NotFound => return Ok(None),
+        measured => measured.map_err(|source| {
+            RunnerError::external(
+                format!(
+                    "could not measure managed target directory {}",
+                    path.display()
+                ),
+                source,
+            )
+        })?,
+    };
+    // Keep a directory within its limit so later runs reuse the build cache.
+    if size <= maximum_bytes {
+        return Ok(None);
+    }
+    fs::remove_dir_all(path).map_err(|source| {
+        RunnerError::external(
+            format!(
+                "could not prune managed target directory {}",
+                path.display()
+            ),
+            source,
+        )
+    })?;
+    Ok(Some(size))
 }
 
 /// Execute the selected lint phases and return their stable process exit code.
@@ -257,7 +235,6 @@ pub(super) fn run(args: &Cli, cache_roots: &[PathBuf]) -> Result<u8, RunnerError
     // Keep the default Cargo target directory outside the target repository.
     let inherited_target = env::var_os("CARGO_TARGET_DIR").map(PathBuf::from);
     let target = target_directory(args, &repo, &cache, inherited_target.as_deref());
-    let mut target_cache_guard = TargetCacheGuard::new(&target)?;
     // Changed-range, fix, and report modes all need structured compiler diagnostics.
     let is_json_mode =
         args.changed_range.is_some() || args.fix.is_some() || args.gitlab_code_quality.is_some();
@@ -268,7 +245,7 @@ pub(super) fn run(args: &Cli, cache_roots: &[PathBuf]) -> Result<u8, RunnerError
     // An empty selection succeeds without preparing toolchains or logs.
     if phases.is_empty() {
         if let Some(path) = &args.gitlab_code_quality {
-            write_code_quality(path, &[])?;
+            write_json(path, &code_quality::violations(&[]))?;
         }
         write_stdout("No commands selected.\n")?;
         return Ok(0);
@@ -287,6 +264,8 @@ pub(super) fn run(args: &Cli, cache_roots: &[PathBuf]) -> Result<u8, RunnerError
         }
         return Ok(0);
     }
+    // Arm cache cleanup only after planning modes have returned, because they never build.
+    let mut target_cache_guard = TargetCacheGuard::new(&target)?;
     // Resolve changed hunks once so every phase uses the same revision boundary.
     let ranges = args
         .changed_range
@@ -358,6 +337,8 @@ fn run_selected_phases(
     loop {
         // Create a distinct log root for each verification pass.
         pass += 1;
+        // Report only the final pass, because earlier passes describe source that fixes changed.
+        report_diagnostics.clear();
         let pass_log_root = prepare_pass_log_root(args, log_root, pass)?;
         // Pass the immutable phase selection and mutable accumulators to the worker.
         let phase_pass = PhasePass {
@@ -404,10 +385,10 @@ fn run_selected_phases(
         write_stdout(&format!("Full logs: {}\n", log_root.display()))?;
     }
     if let Some(path) = &args.timings_json {
-        write_timings(path, &results, total)?;
+        write_json(path, &timing_report(&results, total))?;
     }
     if let Some(path) = &args.gitlab_code_quality {
-        write_code_quality(path, &report_diagnostics)?;
+        write_json(path, &code_quality::violations(&report_diagnostics))?;
     }
     // In filter mode, only selected diagnostics and infrastructure failures fail the run.
     Ok(u8::from(if ranges.is_some() {
@@ -589,6 +570,13 @@ fn process_fix_result(
                 result.name, applied.suggestions, applied.files
             ))?;
         }
+        // Overlapping suggestions wait for the next pass, which re-derives them from new source.
+        if applied.deferred > 0 {
+            write_stdout(&format!(
+                "{}: deferred {} overlapping suggestions to the next pass.\n",
+                result.name, applied.deferred
+            ))?;
+        }
         applied.suggestions
     };
     if !result.status.success() && applied == 0 {
@@ -711,16 +699,7 @@ fn clippy_phase(
     is_json_mode: bool,
 ) -> Result<Phase, RunnerError> {
     // Build Cargo selection before applying the runner-owned lint and environment policy.
-    let (program, mut command_args) = if let Some(cargo_command) = &args.cargo_cmd {
-        // Split the explicit command into its executable and fixed prefix arguments.
-        let mut cargo = cargo_command.split_ascii_whitespace();
-        let program = cargo.next().ok_or(RunnerError::MissingCargoCommand)?.into();
-        (program, cargo.map(OsString::from).collect())
-    } else {
-        // Default to Cargo from the exact nightly that built this executable.
-        (runtime.cargo.as_os_str().to_owned(), Vec::new())
-    };
-    // Apply Cargo selection before the separator that begins lint arguments.
+    let (program, mut command_args) = cargo_invocation(args, runtime)?;
     command_args.push("clippy".into());
     command_args.extend(selection_args(args, repo));
     if args.no_deps.is_some() {
@@ -741,15 +720,9 @@ fn clippy_phase(
     configure_fast_environment(args, &mut environment);
     if args.use_repo_clippy_config.is_none() {
         // Materialize the private configuration only when repository policy is disabled.
-        let config = cache.join("clippy").join("clippy.toml");
-        write_file_if_changed(&config, CLIPPY_CONFIG.as_bytes())?;
-        if let Some(parent) = config.parent() {
-            set_environment(
-                &mut environment,
-                "CLIPPY_CONF_DIR",
-                parent.as_os_str().to_owned(),
-            );
-        }
+        let config_dir = cache.join("clippy");
+        write_file_if_changed(&config_dir.join("clippy.toml"), CLIPPY_CONFIG.as_bytes())?;
+        set_environment(&mut environment, "CLIPPY_CONF_DIR", config_dir);
     }
     // Put the exact compiler tools ahead of any inherited Rust installation.
     prepend_path(&mut environment, &runtime.toolchain_bin());
@@ -761,13 +734,24 @@ fn clippy_phase(
     })
 }
 
+/// Split the caller's Cargo wrapper into its executable and fixed prefix arguments.
+fn cargo_invocation(
+    args: &Cli,
+    runtime: &Runtime,
+) -> Result<(OsString, Vec<OsString>), RunnerError> {
+    // Default to Cargo from the exact nightly that built this executable.
+    let Some(cargo_command) = &args.cargo_cmd else {
+        return Ok((runtime.cargo.as_os_str().to_owned(), Vec::new()));
+    };
+    // An explicit wrapper must still name an executable before its prefix arguments.
+    let mut cargo = cargo_command.split_ascii_whitespace();
+    let program = cargo.next().ok_or(RunnerError::MissingCargoCommand)?;
+    Ok((program.into(), cargo.map(OsString::from).collect()))
+}
+
 /// Build one aggregate, category, or listing private-lint phase.
 #[expect(
-    clippy::too_many_lines,
     abc_size,
-    cyclomatic_complexity,
-    npath_complexity,
-    missing_intent_comments,
     reason = "private-lint construction keeps Cargo and embedded-driver policy together"
 )]
 fn private_lint_phase(
@@ -777,74 +761,39 @@ fn private_lint_phase(
     runtime: &Runtime,
     spec: PrivateLintPhaseSpec<'_>,
 ) -> Result<Phase, RunnerError> {
-    let (program, mut command_args) = if spec.is_list {
-        // Listing re-enters this executable directly and stops after lint registration.
-        (
-            env::current_exe()
-                .map_err(|source| {
-                    RunnerError::external("could not resolve current executable", source)
-                })?
-                .into_os_string(),
-            vec!["rustc".into(), "-W".into(), "help".into()],
-        )
-    } else if let Some(cargo_command) = &args.cargo_cmd {
-        // Preserve an explicit target-repository Cargo wrapper for private checks too.
-        let mut cargo = cargo_command.split_ascii_whitespace();
-        let program = cargo.next().ok_or(RunnerError::MissingCargoCommand)?.into();
-        let mut command_args = cargo.map(OsString::from).collect::<Vec<_>>();
-        command_args.push(
-            if args.no_deps.is_some() {
-                "clippy"
-            } else {
-                "check"
-            }
-            .into(),
-        );
-        if args.no_deps.is_some() {
-            command_args.push("--no-deps".into());
-        }
-        (program, command_args)
-    } else {
-        let mut command_args = vec![OsString::from(if args.no_deps.is_some() {
-            "clippy"
-        } else {
-            "check"
-        })];
-        if args.no_deps.is_some() {
-            command_args.push("--no-deps".into());
-        }
-        (runtime.cargo.as_os_str().to_owned(), command_args)
-    };
-
-    if spec.is_list {
-        // rustc's help path activates registration without reading target source.
-    } else {
-        // Direct Cargo owns target selection; lint arguments travel through typed environment.
-        command_args.extend(selection_args(args, repo));
-        if args.is_all_targets_selected() {
-            command_args.push("--all-targets".into());
-        }
-        if spec.is_json_mode {
-            command_args.push("--message-format=json".into());
-        }
-    }
+    // Every private phase re-enters this executable as the compiler driver.
+    let executable = env::current_exe()
+        .map_err(|source| RunnerError::external("could not resolve current executable", source))?;
     let mut environment = private_lint_environment(args, target, runtime);
-    let rustflags = private_lint_args(args);
-    driver::configure_environment(&mut environment, spec.categories, &rustflags, spec.is_list)
-        .map_err(|source| {
-            RunnerError::external("could not encode compiler-driver state", source)
-        })?;
-    if !spec.is_list {
-        set_environment(
-            &mut environment,
-            "RUSTC_WORKSPACE_WRAPPER",
-            env::current_exe()
-                .map_err(|source| {
-                    RunnerError::external("could not resolve current executable", source)
-                })?
-                .into_os_string(),
-        );
+    driver::configure_environment(
+        &mut environment,
+        driver::DriverSelection {
+            categories: spec.categories,
+            rustflags: &private_lint_args(args),
+            is_list: spec.is_list,
+            is_no_deps: args.no_deps.is_some() && !spec.is_list,
+        },
+    );
+    // Listing runs rustc's help path, which registers lints without reading target source.
+    if spec.is_list {
+        return Ok(Phase {
+            name: spec.name.to_owned(),
+            program: executable.into_os_string(),
+            args: vec!["rustc".into(), "-W".into(), "help".into()],
+            environment,
+        });
     }
+    // Cargo check owns target selection; the workspace wrapper limits lints to local packages.
+    let (program, mut command_args) = cargo_invocation(args, runtime)?;
+    command_args.push("check".into());
+    command_args.extend(selection_args(args, repo));
+    if args.is_all_targets_selected() {
+        command_args.push("--all-targets".into());
+    }
+    if spec.is_json_mode {
+        command_args.push("--message-format=json".into());
+    }
+    set_environment(&mut environment, "RUSTC_WORKSPACE_WRAPPER", executable);
     Ok(Phase {
         name: spec.name.to_owned(),
         program,
@@ -1025,16 +974,7 @@ fn prepend_path(environment: &mut BTreeMap<OsString, OsString>, path: &Path) {
     }
 }
 
-/// Run one process while draining both pipes and emitting progress heartbeats.
-#[expect(
-    clippy::too_many_lines,
-    abc_size,
-    cyclomatic_complexity,
-    many_exit_points,
-    npath_complexity,
-    missing_intent_comments,
-    reason = "the process boundary must set up pipes, wait, and retain both streams together"
-)]
+/// Run one process, capture its streams when requested, and emit progress heartbeats.
 fn run_phase(
     phase: &Phase,
     repo: &Path,
@@ -1043,98 +983,71 @@ fn run_phase(
 ) -> Result<PhaseResult, RunnerError> {
     // In ordinary mode, stream child output directly to avoid retaining large diagnostics.
     let started = Instant::now();
-    let mut command = Command::new(&phase.program);
-    let _command = command
+    let stream = || {
+        if is_capture_output {
+            Stdio::piped()
+        } else {
+            Stdio::inherit()
+        }
+    };
+    let output = Command::new(&phase.program)
         .args(&phase.args)
         .envs(&phase.environment)
         .current_dir(repo)
-        .stdout(if is_capture_output {
-            Stdio::piped()
-        } else {
-            Stdio::inherit()
-        })
-        .stderr(if is_capture_output {
-            Stdio::piped()
-        } else {
-            Stdio::inherit()
-        });
-    let mut child = command.spawn().map_err(|source| {
-        RunnerError::external(format!("could not start phase `{}`", phase.name), source)
-    })?;
-    // Start both stream readers before polling so a verbose child cannot fill either pipe.
-    let readers = if is_capture_output {
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or_else(|| RunnerError::PipeUnavailable {
-                phase: phase.name.clone(),
-                stream: "stdout",
-            })?;
-        let stderr = child
-            .stderr
-            .take()
-            .ok_or_else(|| RunnerError::PipeUnavailable {
-                phase: phase.name.clone(),
-                stream: "stderr",
-            })?;
-        Some((
-            thread::spawn(move || read_pipe(stdout)),
-            thread::spawn(move || read_pipe(stderr)),
-        ))
-    } else {
-        None
-    };
-    // Use a blocking wait when heartbeats are disabled to avoid polling overhead on warm runs.
-    let status = if heartbeat_interval.is_zero() {
-        child.wait().map_err(|source| {
-            RunnerError::external(format!("could not wait for phase `{}`", phase.name), source)
-        })?
-    } else {
-        let mut next_heartbeat = heartbeat_interval;
-        // Poll the child while emitting bounded progress messages.
-        loop {
-            if let Some(status) = child.try_wait().map_err(|source| {
-                RunnerError::external(format!("could not wait for phase `{}`", phase.name), source)
-            })? {
-                break status;
-            }
-            // Advance the deadline by one interval to preserve heartbeat cadence.
-            let elapsed = started.elapsed();
-            if elapsed >= next_heartbeat {
-                write_stdout(&format!(
-                    "{}: still running ({:.0}s elapsed)\n",
-                    phase.name,
-                    elapsed.as_secs_f64()
-                ))?;
-                next_heartbeat += heartbeat_interval;
-            }
-            thread::sleep(Duration::from_millis(100));
-        }
-    };
-    // Join both readers after the child closes its stream handles.
-    let (stdout, stderr) = if let Some((stdout_reader, stderr_reader)) = readers {
-        (
-            join_reader(stdout_reader, &phase.name, "stdout")?,
-            join_reader(stderr_reader, &phase.name, "stderr")?,
-        )
-    } else {
-        (Vec::new(), Vec::new())
-    };
+        .stdout(stream())
+        .stderr(stream())
+        .spawn()
+        .and_then(|child| wait_with_heartbeats(child, &phase.name, started, heartbeat_interval))
+        .map_err(|source| {
+            RunnerError::external(format!("could not run phase `{}`", phase.name), source)
+        })?;
     Ok(PhaseResult {
         name: phase.name.clone(),
         command: render_command(phase),
-        status,
-        stdout,
-        stderr,
+        status: output.status,
+        stdout: output.stdout,
+        stderr: output.stderr,
         elapsed: started.elapsed(),
     })
 }
 
-/// Drain one child pipe without blocking its sibling stream.
-fn read_pipe(mut pipe: impl io::Read) -> io::Result<Vec<u8>> {
-    let mut output = Vec::new();
-    let _byte_count = pipe.read_to_end(&mut output)?;
-    Ok(output)
+/// Drain a child's pipes while a scoped sibling thread reports progress until the wait ends.
+fn wait_with_heartbeats(
+    child: Child,
+    name: &str,
+    started: Instant,
+    interval: Duration,
+) -> io::Result<Output> {
+    thread::scope(|scope| {
+        let (finished, is_finished) = mpsc::channel::<()>();
+        // A zero interval disables progress output and the extra thread.
+        if !interval.is_zero() {
+            let _heartbeat = scope.spawn(move || {
+                emit_heartbeats(name, started, interval, &is_finished);
+            });
+        }
+        let output = child.wait_with_output();
+        // Closing the channel stops the heartbeat thread before the scope joins it.
+        drop(finished);
+        output
+    })
+}
+
+/// Print one progress line per interval until the phase's completion channel closes.
+fn emit_heartbeats(
+    name: &str,
+    started: Instant,
+    interval: Duration,
+    is_finished: &mpsc::Receiver<()>,
+) {
+    // A closed channel ends the loop; a timeout means the child is still running.
+    while is_finished.recv_timeout(interval) == Err(mpsc::RecvTimeoutError::Timeout) {
+        let elapsed = started.elapsed().as_secs_f64();
+        // Progress output is advisory, so a closed stdout must not abort the running phase.
+        drop(write_stdout(&format!(
+            "{name}: still running ({elapsed:.0}s elapsed)\n"
+        )));
+    }
 }
 
 /// Set one child environment value while deliberately replacing inherited policy.
@@ -1146,106 +1059,61 @@ fn set_environment(
     let _previous = environment.insert(key.into(), value.into());
 }
 
-/// Join one child pipe reader and retain its typed failure source.
-fn join_reader(
-    reader: thread::JoinHandle<io::Result<Vec<u8>>>,
-    phase: &str,
-    stream: &'static str,
-) -> Result<Vec<u8>, RunnerError> {
-    reader
-        .join()
-        .map_err(|panic_payload| {
-            let message = panic_payload
-                .downcast_ref::<&str>()
-                .map_or_else(
-                    || {
-                        panic_payload
-                            .downcast_ref::<String>()
-                            .map_or("non-string panic payload", String::as_str)
-                    },
-                    |message| *message,
-                )
-                .to_owned()
-                .into_boxed_str();
-            RunnerError::ReaderPanicked {
-                phase: phase.to_owned(),
-                stream,
-                source: PanicMessage(message),
-            }
-        })?
-        .map_err(|source| {
-            RunnerError::external(
-                format!("could not read {stream} for phase `{phase}`"),
-                source,
-            )
+/// Resolve a writable cache directory outside the target repository.
+///
+/// Relative candidates are skipped, as the XDG base-directory specification
+/// requires for a relative `XDG_CACHE_HOME`, so the cache never depends on the
+/// caller's working directory.
+fn cache_root(candidates: &[PathBuf], repo: &Path) -> Result<PathBuf, RunnerError> {
+    // Use the first caller-prioritized directory that can be created safely.
+    candidates
+        .iter()
+        .find(|candidate| {
+            candidate.is_absolute()
+                && !resolves_inside(candidate, repo)
+                && fs::create_dir_all(candidate).is_ok()
+        })
+        .cloned()
+        .ok_or_else(|| RunnerError::NoWritableCache {
+            candidates: candidates.to_vec(),
         })
 }
 
-/// Resolve a writable cache directory outside the target repository.
-#[expect(
-    missing_intent_comments,
-    reason = "cache selection keeps every safety rejection visible"
-)]
-fn cache_root(candidates: &[PathBuf], repo: &Path) -> Result<PathBuf, RunnerError> {
-    let mut attempted = Vec::new();
-    // Use the first caller-prioritized directory that can be created safely.
-    for candidate in candidates {
-        let root = if candidate.is_absolute() {
-            candidate.clone()
-        } else {
-            env::current_dir()
-                .map_err(|source| {
-                    RunnerError::external("could not resolve cache directory", source)
-                })?
-                .join(candidate)
-        };
-        attempted.push(root.clone());
-        if root.starts_with(repo) {
-            continue;
-        }
-        if create_dir(&root).is_err() {
-            continue;
-        }
-        // Reject a symlink or mount that resolves back into the target repository.
-        if fs::canonicalize(&root).is_ok_and(|resolved| resolved.starts_with(repo)) {
-            continue;
-        }
-        return Ok(root);
-    }
-    Err(RunnerError::NoWritableCache {
-        candidates: attempted,
-    })
+/// Return whether a possibly missing path resolves inside the canonical repository.
+///
+/// The deepest existing ancestor is resolved, so a symbolic link into the
+/// repository is rejected before the runner creates anything below it.
+fn resolves_inside(path: &Path, repo: &Path) -> bool {
+    path.ancestors()
+        .find_map(|ancestor| fs::canonicalize(ancestor).ok())
+        .is_some_and(|resolved| resolved.starts_with(repo))
 }
 
 /// Resolve the caller-selected or runner-managed Cargo target directory.
-#[expect(
-    missing_intent_comments,
-    reason = "target selection preserves explicit and inherited paths"
-)]
 fn target_directory(
     args: &Cli,
     repo: &Path,
     cache: &Path,
     inherited_target: Option<&Path>,
 ) -> TargetDirectory {
+    // An explicit `--target-dir` always wins and is never pruned.
     if let Some(path) = &args.target_dir {
         return TargetDirectory {
             path: resolve_target_path(path, repo),
             is_managed: false,
         };
     }
-    // Preserve an absolute external Cargo target directory supplied by a benchmark or CI.
+    // Preserve an external Cargo target directory supplied by a benchmark or CI.
     if let Some(path) = inherited_target {
         let path = resolve_target_path(path, repo);
-        let resolves_inside_repo =
-            fs::canonicalize(&path).is_ok_and(|resolved| resolved.starts_with(repo));
-        if path.is_absolute() && is_external_path(&path, repo) && !resolves_inside_repo {
+        if is_external_path(&path, repo) && !resolves_inside(&path, repo) {
             return TargetDirectory {
                 path,
                 is_managed: false,
             };
         }
     }
+    // Otherwise, namespace one runner-owned directory per canonical repository.
     let label = repository_label(repo);
     TargetDirectory {
         path: cache
@@ -1306,43 +1174,34 @@ fn is_external_path(path: &Path, repo: &Path) -> bool {
         && !path.starts_with(repo)
 }
 
-/// Parse the managed target-cache size limit.
+/// Parse the managed target-cache size limit, where zero disables pruning.
 #[expect(
-    missing_intent_comments,
     runtime_env_read,
     reason = "the cache limit is an explicit runner configuration boundary"
 )]
 fn target_cache_limit() -> Result<Option<u64>, RunnerError> {
-    match env::var(TARGET_CACHE_MAX_BYTES_ENV) {
-        Ok(value) if value == "0" => Ok(None),
-        Ok(value) => value
-            .parse()
-            .map(Some)
-            .map_err(|_source| RunnerError::InvalidTargetCacheLimit(value)),
-        Err(env::VarError::NotPresent) => Ok(Some(DEFAULT_TARGET_CACHE_MAX_BYTES)),
-        Err(source) => Err(RunnerError::external(
-            format!("could not read {TARGET_CACHE_MAX_BYTES_ENV}"),
-            source,
-        )),
-    }
+    // Keep the default limit when the caller did not configure one.
+    let Some(value) = env::var_os(TARGET_CACHE_MAX_BYTES_ENV) else {
+        return Ok(Some(DEFAULT_TARGET_CACHE_MAX_BYTES));
+    };
+    // Accept only an unsigned decimal byte count; every zero spelling disables pruning.
+    value
+        .to_str()
+        .and_then(|text| text.parse::<u64>().ok())
+        .map(|limit| (limit != 0).then_some(limit))
+        .ok_or_else(|| RunnerError::InvalidTargetCacheLimit(value.to_string_lossy().into_owned()))
 }
 
 /// Measure a directory without following symbolic links.
-#[expect(
-    missing_intent_comments,
-    reason = "directory measurement preserves symlink safety branches"
-)]
 fn directory_size(path: &Path) -> io::Result<u64> {
+    // A symbolic link or special file counts only its own metadata length.
     let metadata = fs::symlink_metadata(path)?;
-    if metadata.file_type().is_symlink() || metadata.is_file() {
+    if !metadata.is_dir() {
         return Ok(metadata.len());
     }
-    if !metadata.is_dir() {
-        return Ok(0);
-    }
+    // Saturate instead of overflowing on implausibly large trees.
     fs::read_dir(path)?.try_fold(0_u64, |size, entry| {
-        let entry = entry?;
-        Ok(size.saturating_add(directory_size(&entry.path())?))
+        Ok(size.saturating_add(directory_size(&entry?.path())?))
     })
 }
 
@@ -1358,21 +1217,25 @@ fn log_root(args: &Cli) -> Result<Option<PathBuf>, RunnerError> {
 /// Write one phase's complete command and streams.
 fn write_logs(root: &Path, result: &PhaseResult) -> Result<(), RunnerError> {
     // Persist stdout before stderr to keep the file set predictable after partial failure.
-    write_file(root.join(format!("{}.stdout", result.name)), &result.stdout)?;
+    write_file(
+        &root.join(format!("{}.stdout", result.name)),
+        &result.stdout,
+    )?;
     // Preserve stderr separately so raw tool diagnostics remain inspectable.
-    write_file(root.join(format!("{}.stderr", result.name)), &result.stderr)?;
-    // Record the exact rendered command that produced both streams.
-    // Derive every filename from the phase name within this run's log root.
+    write_file(
+        &root.join(format!("{}.stderr", result.name)),
+        &result.stderr,
+    )?;
     // End the command file with a newline so shell and editor views remain complete.
     write_file(
-        root.join(format!("{}.command", result.name)),
+        &root.join(format!("{}.command", result.name)),
         format!("{}\n", result.command).as_bytes(),
     )
 }
 
-/// Write a machine-readable timing report.
-fn write_timings(path: &Path, results: &[PhaseResult], total: Duration) -> Result<(), RunnerError> {
-    let report = TimingReport {
+/// Build the machine-readable timing report for every retained phase result.
+fn timing_report(results: &[PhaseResult], total: Duration) -> TimingReport<'_> {
+    TimingReport {
         total_seconds: total.as_secs_f64(),
         phases: results
             .iter()
@@ -1382,47 +1245,47 @@ fn write_timings(path: &Path, results: &[PhaseResult], total: Duration) -> Resul
                 return_code: status_code(result.status),
             })
             .collect(),
-    };
-    let output = serde_json::to_vec_pretty(&report)
-        .map_err(|source| RunnerError::external("could not serialize timing report", source))?;
-    write_file(path, &[output, b"\n".to_vec()].concat())
+    }
 }
 
-/// Write one GitLab Code Quality JSON array without a byte order mark.
-fn write_code_quality(
-    path: &Path,
-    diagnostics: &[crate::diagnostics::Diagnostic],
-) -> Result<(), RunnerError> {
-    // Terminate the JSON document for command-line tools that consume line-oriented files.
-    let mut output = code_quality::serialize(diagnostics).map_err(|source| {
-        RunnerError::external("could not serialize GitLab Code Quality report", source)
-    })?;
-    output.push(b'\n');
-    write_file(path, &output)
+/// Write one pretty JSON document, terminated by a newline and without a byte order mark.
+fn write_json(path: &Path, value: &impl Serialize) -> Result<(), RunnerError> {
+    // Serialization and filesystem failures share the report path as their context.
+    serde_json::to_vec_pretty(value)
+        .map_err(io::Error::from)
+        .and_then(|mut bytes| {
+            bytes.push(b'\n');
+            write_bytes(path, &bytes)
+        })
+        .map_err(filesystem_error(path))
 }
 
 /// Create a directory tree with its affected path in any failure.
 fn create_dir(path: &Path) -> Result<(), RunnerError> {
-    fs::create_dir_all(path).map_err(|source| {
-        RunnerError::external(
-            format!("filesystem operation failed for {}", path.display()),
-            source,
-        )
-    })
+    fs::create_dir_all(path).map_err(filesystem_error(path))
 }
 
 /// Write a complete file and create its parent directory first.
-fn write_file(path: impl AsRef<Path>, bytes: &[u8]) -> Result<(), RunnerError> {
-    let path = path.as_ref();
+fn write_file(path: &Path, bytes: &[u8]) -> Result<(), RunnerError> {
+    write_bytes(path, bytes).map_err(filesystem_error(path))
+}
+
+/// Write a complete file after creating its parent directory.
+fn write_bytes(path: &Path, bytes: &[u8]) -> io::Result<()> {
     if let Some(parent) = path.parent() {
-        create_dir(parent)?;
+        fs::create_dir_all(parent)?;
     }
-    fs::write(path, bytes).map_err(|source| {
+    fs::write(path, bytes)
+}
+
+/// Return a converter that attaches one affected path to a filesystem failure.
+fn filesystem_error(path: &Path) -> impl FnOnce(io::Error) -> RunnerError + '_ {
+    move |source| {
         RunnerError::external(
             format!("filesystem operation failed for {}", path.display()),
             source,
         )
-    })
+    }
 }
 
 /// Avoid touching stable configuration files when their contents are unchanged.
@@ -1468,10 +1331,8 @@ fn write_stdout(text: &str) -> Result<(), RunnerError> {
     let mut stdout = io::stdout().lock();
     stdout
         .write_all(text.as_bytes())
-        .map_err(|source| RunnerError::external("could not write runner output", source))?;
-    stdout
-        .flush()
-        .map_err(|source| RunnerError::external("could not write runner output", source))
+        .and_then(|()| stdout.flush())
+        .map_err(output_error)
 }
 
 /// Forward captured child output to its original stream.
@@ -1479,19 +1340,73 @@ fn write_raw_output(stdout: &[u8], stderr: &[u8]) -> Result<(), RunnerError> {
     io::stdout()
         .lock()
         .write_all(stdout)
-        .map_err(|source| RunnerError::external("could not write runner output", source))?;
-    io::stderr()
-        .lock()
-        .write_all(stderr)
-        .map_err(|source| RunnerError::external("could not write runner output", source))
+        .and_then(|()| io::stderr().lock().write_all(stderr))
+        .map_err(output_error)
+}
+
+/// Attach runner-output context to a closed or failing standard stream.
+fn output_error(source: io::Error) -> RunnerError {
+    RunnerError::external("could not write runner output", source)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{CLIPPY_CONFIG, STRICT_CLIPPY_LINTS, is_external_path, log_root, target_directory};
-    use crate::cli::Cli;
+    use std::{
+        collections::BTreeMap,
+        ffi::{OsStr, OsString},
+        path::{Path, PathBuf},
+    };
+
     use clap::Parser as _;
-    use std::path::Path;
+
+    use super::{
+        AGGRESSIVE_CLIPPY_LINTS, CLIPPY_CONFIG, Phase, STRICT_CLIPPY_LINTS, build_phases,
+        is_external_path, lint_level_args, log_root, prepend_path, private_lint_args,
+        quote_argument, repository_label, selection_args, target_directory,
+    };
+    use crate::{cli::Cli, runtime::Runtime};
+
+    /// Parse runner arguments after the executable name.
+    fn cli(args: &[&str]) -> Cli {
+        Cli::try_parse_from(std::iter::once("sagan-lints").chain(args.iter().copied())).unwrap()
+    }
+
+    /// Convert rendered process arguments to UTF-8 strings.
+    fn strings(values: &[OsString]) -> Vec<String> {
+        values
+            .iter()
+            .map(|value| value.to_string_lossy().into_owned())
+            .collect()
+    }
+
+    /// Return one phase environment value as UTF-8.
+    fn variable<'phase>(phase: &'phase Phase, key: &str) -> Option<&'phase OsStr> {
+        phase
+            .environment
+            .get(OsStr::new(key))
+            .map(OsString::as_os_str)
+    }
+
+    /// Build phases against a fixed runtime and a temporary cache.
+    fn phases(args: &[&str], is_json_mode: bool) -> (tempfile::TempDir, Vec<Phase>) {
+        let cache = tempfile::tempdir().unwrap();
+        let runtime = Runtime {
+            cargo: PathBuf::from("/toolchain/bin/cargo"),
+            rustc: PathBuf::from("/toolchain/bin/rustc"),
+            sysroot: PathBuf::from("/toolchain"),
+            toolchain_name: "nightly-test",
+        };
+        let phases = build_phases(
+            &cli(args),
+            Path::new("/repo"),
+            cache.path(),
+            Path::new("/target"),
+            &runtime,
+            is_json_mode,
+        )
+        .unwrap();
+        (cache, phases)
+    }
 
     #[test]
     fn personal_clippy_policy_enables_cognitive_complexity_at_fifteen() {
@@ -1505,7 +1420,7 @@ mod tests {
 
     #[test]
     fn explicit_target_directory_is_resolved_against_the_repository() {
-        let args = Cli::try_parse_from(["sagan-lints", "--target-dir", "build-target"]).unwrap();
+        let args = cli(&["--target-dir", "build-target"]);
         let target = target_directory(
             &args,
             Path::new("/tmp/example-repository"),
@@ -1522,7 +1437,7 @@ mod tests {
 
     #[test]
     fn default_target_directory_is_namespaced_under_the_cache() {
-        let args = Cli::try_parse_from(["sagan-lints", "--fast"]).unwrap();
+        let args = cli(&["--fast"]);
         let cache = Path::new("/tmp/sagan-cache");
         let target = target_directory(&args, Path::new("/tmp/example-repository"), cache, None);
 
@@ -1530,11 +1445,24 @@ mod tests {
         assert!(target.path.starts_with(cache.join("targets")));
     }
 
+    /// An inherited Cargo target is kept only when it lies outside the repository.
+    #[test]
+    fn inherited_target_directory_must_be_external() {
+        let args = cli(&[]);
+        let repo = Path::new("/tmp/example-repository");
+        let cache = Path::new("/tmp/sagan-cache");
+
+        let external = target_directory(&args, repo, cache, Some(Path::new("/tmp/ci-target")));
+        let relative = target_directory(&args, repo, cache, Some(Path::new("target")));
+
+        assert_eq!(external.path, Path::new("/tmp/ci-target"));
+        assert!(!external.is_managed);
+        assert!(relative.is_managed);
+    }
+
     #[test]
     fn ordinary_runs_do_not_create_a_log_directory() {
-        let args = Cli::try_parse_from(["sagan-lints"]).unwrap();
-
-        assert!(log_root(&args).unwrap().is_none());
+        assert!(log_root(&cli(&[])).unwrap().is_none());
     }
 
     #[test]
@@ -1543,5 +1471,272 @@ mod tests {
             Path::new("/tmp/example-repository/../outside"),
             Path::new("/tmp/example-repository")
         ));
+    }
+
+    /// Repository labels keep a portable byte set and name the root directory.
+    #[test]
+    fn repository_labels_are_filesystem_safe() {
+        assert_eq!(repository_label(Path::new("/")), "repo");
+        assert_eq!(
+            repository_label(Path::new("/work/my repo.v2")),
+            "my_repo_v2"
+        );
+    }
+
+    /// Display quoting leaves safe arguments bare and single-quotes the rest.
+    #[test]
+    fn quotes_shell_unsafe_arguments() {
+        assert_eq!(
+            quote_argument(OsStr::new("--features=a,b")),
+            "--features=a,b"
+        );
+        assert_eq!(quote_argument(OsStr::new("")), "''");
+        assert_eq!(quote_argument(OsStr::new("it's")), r"'it'\''s'");
+    }
+
+    /// Cargo selection flags keep Cargo's documented order and the caller's escape hatches.
+    #[test]
+    fn selection_arguments_preserve_cargo_order() {
+        let args = cli(&[
+            "--manifest-path",
+            "crates/a/Cargo.toml",
+            "-p",
+            "a",
+            "-p",
+            "b",
+            "--exclude",
+            "c",
+            "--all-features",
+            "--no-default-features",
+            "--features",
+            "x y",
+            "--target",
+            "wasm32-unknown-unknown",
+            "--locked",
+            "--frozen",
+            "--offline",
+            "--extra-cargo-arg=--lib",
+        ]);
+
+        assert_eq!(
+            strings(&selection_args(&args, Path::new("/repo"))),
+            [
+                "--manifest-path",
+                "/repo/crates/a/Cargo.toml",
+                "--package",
+                "a",
+                "--package",
+                "b",
+                "--exclude",
+                "c",
+                "--all-features",
+                "--no-default-features",
+                "--features",
+                "x y",
+                "--target",
+                "wasm32-unknown-unknown",
+                "--locked",
+                "--frozen",
+                "--offline",
+                "--lib",
+            ]
+        );
+    }
+
+    /// Workspace selection applies only without packages or a manifest.
+    #[test]
+    fn workspace_selection_yields_to_narrower_selection() {
+        let repo = Path::new("/repo");
+
+        assert_eq!(strings(&selection_args(&cli(&[]), repo)), ["--workspace"]);
+        assert!(selection_args(&cli(&["--no-workspace"]), repo).is_empty());
+        assert_eq!(
+            strings(&selection_args(
+                &cli(&["--manifest-path", "/elsewhere/Cargo.toml"]),
+                repo
+            )),
+            ["--manifest-path", "/elsewhere/Cargo.toml"]
+        );
+    }
+
+    /// Lint levels follow the public precedence: deny, strict, aggressive, caller, allow, raw.
+    #[test]
+    fn lint_levels_follow_cli_precedence() {
+        let strict = lint_level_args(&cli(&["--rustc-lint", "custom_rustc"]));
+        let relaxed = lint_level_args(&cli(&[
+            "--no-deny-warnings",
+            "--no-strict-rustc",
+            "--aggressive-clippy",
+            "--clippy-lint",
+            "clippy::custom",
+            "--allow-clippy-lint",
+            "clippy::waived",
+            "--extra-rustc-arg=--cap-lints=warn",
+        ]));
+
+        assert_eq!(strict[..2], ["-D", "warnings"]);
+        assert!(strict.windows(2).any(|pair| pair == ["-W", "custom_rustc"]));
+        assert_ne!(relaxed[0], "-D");
+        assert!(!relaxed.contains(&"custom_rustc".to_owned()));
+        assert!(
+            AGGRESSIVE_CLIPPY_LINTS
+                .lines()
+                .all(|lint| relaxed.contains(&lint.to_owned()))
+        );
+        assert!(
+            relaxed.ends_with(
+                &[
+                    "-W",
+                    "clippy::custom",
+                    "-A",
+                    "clippy::waived",
+                    "--cap-lints=warn"
+                ]
+                .map(String::from)
+            )
+        );
+    }
+
+    /// Repository-policy lints are allowed unless the caller opts in.
+    #[test]
+    fn private_lint_levels_allow_repository_policy_by_default() {
+        let external = private_lint_args(&cli(&[]));
+        let repository = private_lint_args(&cli(&["--include-repo-policy-lints"]));
+
+        assert!(
+            external
+                .windows(2)
+                .any(|pair| pair == ["-A", "unknown_lints"])
+        );
+        assert_eq!(repository, ["-D", "warnings"]);
+    }
+
+    /// The default selection runs strict Clippy and one aggregate private-lint check.
+    #[test]
+    fn default_phases_run_clippy_then_private_lints() {
+        let (cache, phases) = phases(&["--fast", "--no-deps"], true);
+
+        assert_eq!(
+            phases
+                .iter()
+                .map(|phase| phase.name.as_str())
+                .collect::<Vec<_>>(),
+            ["clippy", "dylint"]
+        );
+        let (clippy, dylint) = (&phases[0], &phases[1]);
+        assert_eq!(
+            strings(&clippy.args)[..5],
+            [
+                "clippy",
+                "--workspace",
+                "--no-deps",
+                "--message-format=json",
+                "--"
+            ]
+        );
+        assert_eq!(
+            variable(clippy, "CLIPPY_CONF_DIR"),
+            Some(cache.path().join("clippy").as_os_str())
+        );
+        assert_eq!(
+            variable(clippy, "CARGO_PROFILE_TEST_DEBUG"),
+            Some(OsStr::new("0"))
+        );
+        assert_eq!(
+            strings(&dylint.args),
+            ["check", "--workspace", "--message-format=json"]
+        );
+        assert_eq!(
+            variable(dylint, "SAGAN_LINTS_DRIVER_NO_DEPS"),
+            Some(OsStr::new("1"))
+        );
+        assert!(variable(dylint, "RUSTC_WORKSPACE_WRAPPER").is_some());
+        assert!(
+            variable(dylint, "PATH")
+                .is_some_and(|path| path.to_string_lossy().starts_with("/toolchain/bin"))
+        );
+    }
+
+    /// Category selection keeps repeated categories, and wrappers prefix every Cargo phase.
+    #[test]
+    fn category_phases_preserve_order_and_cargo_wrapper() {
+        let (_cache, phases) = phases(
+            &[
+                "--cargo-cmd",
+                "nix develop -c cargo",
+                "--use-repo-clippy-config",
+                "--dylint-category",
+                "style",
+                "--dylint-category",
+                "perf",
+            ],
+            false,
+        );
+
+        assert_eq!(
+            phases
+                .iter()
+                .map(|phase| (phase.name.as_str(), phase.program.to_string_lossy()))
+                .collect::<Vec<_>>(),
+            [
+                ("clippy", "nix".into()),
+                ("dylint-style", "nix".into()),
+                ("dylint-perf", "nix".into()),
+            ]
+        );
+        assert_eq!(
+            strings(&phases[1].args),
+            [
+                "develop",
+                "-c",
+                "cargo",
+                "check",
+                "--workspace",
+                "--all-targets"
+            ]
+        );
+        assert!(variable(&phases[0], "CLIPPY_CONF_DIR").is_none());
+        assert_eq!(
+            variable(&phases[2], "SAGAN_LINTS_DRIVER_CATEGORIES"),
+            Some(OsStr::new("perf"))
+        );
+    }
+
+    /// Listing runs the executable directly and never selects no-deps filtering.
+    #[test]
+    fn list_phases_reenter_the_executable() {
+        let (_cache, phases) = phases(&["--list-private-lints", "--no-deps"], false);
+
+        assert_eq!(phases.len(), 9);
+        assert!(phases.iter().all(|phase| {
+            strings(&phase.args) == ["rustc", "-W", "help"]
+                && variable(phase, "SAGAN_LINTS_DRIVER_LIST").is_some()
+                && variable(phase, "SAGAN_LINTS_DRIVER_NO_DEPS").is_none()
+        }));
+    }
+
+    /// Skipping both suites selects no phases.
+    #[test]
+    fn skipping_every_suite_selects_no_phases() {
+        assert!(
+            phases(&["--skip-clippy", "--skip-dylint"], false)
+                .1
+                .is_empty()
+        );
+    }
+
+    /// A phase-local PATH is extended, and an unjoinable entry leaves it unchanged.
+    #[test]
+    fn prepend_path_extends_phase_path() {
+        let mut environment =
+            BTreeMap::from([(OsString::from("PATH"), OsString::from("/usr/bin"))]);
+
+        prepend_path(&mut environment, Path::new("/toolchain/bin"));
+        prepend_path(&mut environment, Path::new("/bad:entry"));
+
+        assert_eq!(
+            environment.get(OsStr::new("PATH")),
+            Some(&OsString::from("/toolchain/bin:/usr/bin"))
+        );
     }
 }

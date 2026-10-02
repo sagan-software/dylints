@@ -3,7 +3,10 @@
 ## What it does
 
 Checks the nearest `Cargo.toml` above the crate root file. If that manifest has
-a `[package]` table but no `[lints]` or `[lints.*]` table, the lint warns.
+a `[package]` table but no top-level `lints` key, the lint warns at the
+`[package]` header. A `[lints]` or `[lints.*]` table, a dotted key such as
+`lints.workspace = true`, and an inline table such as
+`lints = { workspace = true }` all satisfy the lint.
 
 ## Why is this bad?
 
@@ -13,11 +16,7 @@ without any visible setting in the manifest.
 
 ## Known problems
 
-The warning points at the crate root source file.
-
-Only table headers count. A top-level `lints.workspace = true` or
-`lints = { workspace = true }` is valid Cargo syntax but still triggers the
-lint.
+An empty `[lints]` table satisfies the lint even though it configures nothing.
 
 ## Example
 

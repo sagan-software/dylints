@@ -1,8 +1,8 @@
 warning: crate has no `rust-toolchain.toml` file
-  --> $DIR/main.rs:1:1
+  --> $DIR/Cargo.toml:1:1
    |
-LL | fn main() {}
-   | ^^^^^^^^^^^^
+LL | [package]
+   | ^^^^^^^^^
    |
    = help: add `rust-toolchain.toml` in the crate directory or workspace root
    = note: `#[warn(missing_rust_toolchain_toml)]` on by default

@@ -20,8 +20,9 @@ Boxing is sometimes required: recursive async functions, `dyn`-compatible
 traits, and collections of different futures. The lint warns in these cases
 too.
 
-Trait impl methods are reported when the trait declares a boxed future. The
-fix then belongs in the trait, which may live in another crate.
+Trait impl methods are not reported, because the trait fixes their signature;
+the trait declaration is reported instead. Return types produced by a macro,
+such as the boxed futures that `#[async_trait]` generates, are not reported.
 
 ## Example
 

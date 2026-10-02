@@ -1,23 +1,63 @@
 warning: inherent method `as_parsed` does work that should not hide behind `as_*`
-  --> $DIR/edge_cases.rs:14:5
+  --> $DIR/edge_cases.rs:63:8
    |
-LL | /     fn as_parsed(&self) -> Result<u64, Error> {
-LL | |         self.raw.parse::<u64>().map_err(|_| Error)
-LL | |     }
-   | |_____^
+LL |     fn as_parsed(&self) -> Result<u64, Error> {
+   |        ^^^^^^^^^
+LL |         self.raw.parse::<u64>().map_err(|_| Error)
+   |         ----------------------- this `parse` does fallible parsing
    |
    = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
    = note: `#[warn(expensive_as_method)]` on by default
 
 warning: inherent method `as_owned_string` does work that should not hide behind `as_*`
-  --> $DIR/edge_cases.rs:18:5
+  --> $DIR/edge_cases.rs:67:8
    |
-LL | /     fn as_owned_string(&self) -> String {
-LL | |         self.raw.clone()
-LL | |     }
-   | |_____^
+LL |     fn as_owned_string(&self) -> String {
+   |        ^^^^^^^^^^^^^^^
+LL |         Clone::clone(&self.raw)
+   |         ----------------------- this clone copies owned data
    |
    = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
 
-warning: 2 warnings emitted
+warning: inherent method `as_question` does work that should not hide behind `as_*`
+  --> $DIR/edge_cases.rs:71:8
+   |
+LL |     fn as_question(&self) -> Result<u64, Error> {
+   |        ^^^^^^^^^^^
+LL |         let number = self.as_number().map_err(|_| Error)?;
+   |                      ------------------------------------ this `?` makes the method fallible
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+
+warning: inherent method `as_borrowed_owned` does work that should not hide behind `as_*`
+  --> $DIR/edge_cases.rs:76:8
+   |
+LL |     fn as_borrowed_owned(&self) -> String {
+   |        ^^^^^^^^^^^^^^^^^
+LL |         self.as_str().to_owned()
+   |         ------------------------ this `to_owned` allocates owned data
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+
+warning: inherent method `as_converted` does work that should not hide behind `as_*`
+  --> $DIR/edge_cases.rs:80:8
+   |
+LL |     fn as_converted(&self) -> Vec<u8> {
+   |        ^^^^^^^^^^^^
+LL |         Vec::from(self.as_str())
+   |         ------------------------ this conversion allocates owned data
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+
+warning: inherent method `as_in_closure` does work that should not hide behind `as_*`
+  --> $DIR/edge_cases.rs:84:8
+   |
+LL |     fn as_in_closure(&self) -> Option<String> {
+   |        ^^^^^^^^^^^^^
+LL |         self.as_text().map(|text| text.to_string())
+   |                                   ---------------- this `to_string` allocates a `String`
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+
+warning: 6 warnings emitted
 

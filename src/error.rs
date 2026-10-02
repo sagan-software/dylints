@@ -1,6 +1,6 @@
 //! Shared runner failures used by the outer process and compiler runtime.
 
-use std::{error::Error as StdError, fmt};
+use std::error::Error as StdError;
 
 use thiserror::Error;
 
@@ -27,29 +27,11 @@ pub(super) enum RunnerError {
     InvalidTargetCacheLimit(String),
     /// Every configured cache candidate was unavailable or unsafe.
     #[error(
-        "no writable Sagan-lints cache directory; set SAGAN_LINTS_CACHE_DIR to a writable path (tried: {candidates:?})"
+        "no writable Sagan-lints cache directory; set SAGAN_LINTS_CACHE_DIR to a writable absolute path outside the repository (tried: {candidates:?})"
     )]
     NoWritableCache {
         /// Candidate directories inspected by the runner.
         candidates: Vec<std::path::PathBuf>,
-    },
-    /// A child process did not expose an expected output pipe.
-    #[error("{stream} pipe unavailable for phase `{phase}`")]
-    PipeUnavailable {
-        /// Phase whose pipe was absent.
-        phase: String,
-        /// Missing standard stream.
-        stream: &'static str,
-    },
-    /// A child stream reader panicked before returning its output.
-    #[error("{stream} reader terminated unexpectedly for phase `{phase}`: {source}")]
-    ReaderPanicked {
-        /// Phase whose reader panicked.
-        phase: String,
-        /// Affected standard stream.
-        stream: &'static str,
-        /// Readable representation of the panic payload.
-        source: PanicMessage,
     },
     /// Failure retaining its operation context and source chain.
     #[error("{context}: {source}")]
@@ -60,19 +42,6 @@ pub(super) enum RunnerError {
         source: Box<dyn StdError + Send + Sync>,
     },
 }
-
-/// Displayable child-reader panic payload retained without a broad error string variant.
-#[derive(Debug)]
-pub(super) struct PanicMessage(pub(super) Box<str>);
-
-impl fmt::Display for PanicMessage {
-    /// Write the original readable panic payload.
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(&self.0)
-    }
-}
-
-impl StdError for PanicMessage {}
 
 impl RunnerError {
     /// Attach operation context without erasing the original error source.

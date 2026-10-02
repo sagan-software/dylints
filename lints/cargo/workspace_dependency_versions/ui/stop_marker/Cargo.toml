@@ -1,0 +1,14 @@
+[package]
+name = "stop-marker"
+version = "0.1.0"
+edition = "2024"
+
+# This `[workspace]` table only stops Cargo from searching parent directories.
+# It has no `[workspace.dependencies]`, so there is nothing to inherit from.
+[workspace]
+
+[dependencies]
+bad_dep = { path = "../bad_dep", version = "0.1.0" }
+
+[lib]
+path = "lib.rs"

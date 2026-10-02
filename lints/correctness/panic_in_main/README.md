@@ -3,8 +3,9 @@
 ## What it does
 
 Checks the crate's entry `main` function, when it does not return `Result`, for
-calls to `panic!`, `todo!`, `unimplemented!`, `assert!`, `assert_eq!`,
-`assert_ne!`, `.unwrap()`, and `.expect(..)`.
+calls to the standard `panic!`, `todo!`, `unimplemented!`, `unreachable!`,
+`assert!`, `assert_eq!`, and `assert_ne!` macros, and to `Option` or `Result`
+`.unwrap()` and `.expect(..)`.
 
 ## Why is this bad?
 
@@ -14,9 +15,10 @@ error message, and it exits with code 101. Returning `Result` from `main` lets
 
 ## Known problems
 
-Any method named `unwrap` or `expect` is reported, whatever its receiver type.
-Other panicking operations, such as indexing, slicing, or `.unwrap_err()`,
-are not reported.
+Macros and methods are matched by their resolved definitions, so local macros
+or methods with the same names are not reported. Other panicking operations,
+such as indexing, slicing, `.unwrap_err()`, or `debug_assert!`, are not
+reported.
 
 A `main` that returns a non-`Result` type, such as `std::process::ExitCode`,
 is treated as infallible and is checked.

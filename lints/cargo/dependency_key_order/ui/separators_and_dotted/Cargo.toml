@@ -1,15 +1,22 @@
+dev-dependencies = { dev_zeta_dep = { path = "../dev_zeta_dep" }, dev_alpha_dep = { path = "../dev_alpha_dep" } }
+
 [package]
 name = "separators-and-dotted"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-zeta_dep.path = "../zeta_dep"
-alpha_dep.path = "../alpha_dep"
+zeta_dep.path = "../zeta_dep" # a trailing comment does not separate blocks
+"alpha_dep".path = "../alpha_dep"
 
 gamma_dep.path = "../gamma_dep"
 # comment separators allow independently sorted groups
 beta_dep.path = "../beta_dep"
+build_zeta_dep = { path = "../build_zeta_dep", features = [
+  "x",
+] }
+comment_zeta_dep = { path = "../comment_zeta_dep/#/.." }
+comment_alpha_dep = { path = "../comment_alpha_dep" }
 
 [target.'cfg(unix)'.dependencies]
 unix_zeta_dep.path = "../unix_zeta_dep"

@@ -18,7 +18,8 @@ extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Body, FnDecl, FnRetTy, GenericArg, QPath, Ty as HirTy, TyKind, intravisit::FnKind,
+    Body, FnDecl, FnRetTy, GenericArg, GenericBound, LangItem, OpaqueTyOrigin, QPath, Ty as HirTy,
+    TyKind, intravisit::FnKind,
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty::{self, Ty};
@@ -39,7 +40,7 @@ impl<'tcx> LateLintPass<'tcx> for StringErrorResult {
         cx: &LateContext<'tcx>,
         kind: FnKind<'tcx>,
         decl: &'tcx FnDecl<'tcx>,
-        _body: &'tcx Body<'tcx>,
+        body: &'tcx Body<'tcx>,
         _span: Span,
         local_def_id: LocalDefId,
     ) {
@@ -52,6 +53,12 @@ impl<'tcx> LateLintPass<'tcx> for StringErrorResult {
             return;
         };
 
+        // An `async fn` returns an opaque future; compare its written `Output` type instead.
+        if let Some(async_output) = async_fn_output(cx, output, body) {
+            check_result_string_error_ty(cx, async_output.0, async_output.1);
+            return;
+        }
+
         // Resolve aliases before comparing the returned error type.
         let output_ty = cx
             .tcx
@@ -61,6 +68,33 @@ impl<'tcx> LateLintPass<'tcx> for StringErrorResult {
             .output()
             .skip_binder();
         check_result_string_error_ty(cx, output_ty, output);
+    }
+}
+
+/// Return the semantic and written `Output` type of an `async fn`.
+///
+/// rustc lowers `async fn f() -> T` to an opaque `impl Future<Output = T>` whose
+/// bound keeps the written `T`, and to a coroutine body whose return type is `T`.
+fn async_fn_output<'tcx>(
+    cx: &LateContext<'tcx>,
+    output: &'tcx HirTy<'tcx>,
+    body: &'tcx Body<'tcx>,
+) -> Option<(Ty<'tcx>, &'tcx HirTy<'tcx>)> {
+    // The opaque type's `Future<Output = T>` bound carries the written `T`.
+    if let TyKind::OpaqueDef(opaque) = output.kind
+        && let OpaqueTyOrigin::AsyncFn { .. } = opaque.origin
+        && let Some(written) = opaque
+            .bounds
+            .iter()
+            .filter_map(GenericBound::trait_ref)
+            .filter_map(|trait_ref| trait_ref.path.segments.last()?.args)
+            .flat_map(|args| args.constraints)
+            .find_map(|constraint| constraint.ty())
+        && let ty::Coroutine(_, args) = cx.typeck_results().expr_ty(body.value).kind()
+    {
+        Some((args.as_coroutine().return_ty(), written))
+    } else {
+        None
     }
 }
 
@@ -141,14 +175,9 @@ fn check_nested_type_args<'tcx, I>(
     }
 }
 
-/// Return whether string ty.
+/// Return whether the type is the standard `String`, however it is spelled.
 fn is_string_ty(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    let ty::Adt(adt, _) = ty.kind() else {
-        return false;
-    };
-
-    // `String` is defined in `alloc`; `std::string::String` and renamed imports resolve there.
-    cx.tcx.item_name(adt.did()) == sym::String && cx.tcx.crate_name(adt.did().krate) == sym::alloc
+    matches!(ty.kind(), ty::Adt(adt, _) if cx.tcx.is_lang_item(adt.did(), LangItem::String))
 }
 
 /// Return the span for error arg.

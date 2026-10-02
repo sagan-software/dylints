@@ -2,10 +2,12 @@
 
 ## What it does
 
-Checks methods in `From`, `TryFrom`, and `FromStr` impls for logging calls.
-Logging calls are macros named `debug!`, `eprintln!`, `error!`, `info!`,
-`trace!`, or `warn!`, and functions such as `log::warn(..)` or
-`tracing::error(..)` from a `kslog`, `log`, or `tracing` path.
+Checks methods in `From`, `TryFrom`, and `FromStr` impls, including closures
+inside them, for logging calls. Logging calls are `eprintln!`, the `debug!`,
+`error!`, `event!`, `info!`, `log!`, `trace!`, and `warn!` macros of the `log`
+and `tracing` crates, and functions such as `warn` or `log_error` that resolve
+to a `kslog`, `log`, or `tracing` crate or module. A local macro that expands
+to one of these logging macros also counts.
 
 ## Why is this bad?
 
@@ -16,15 +18,11 @@ and wording away from the caller.
 
 ## Known problems
 
-Macros are matched by name. A user-defined macro named `warn!` or `error!`
-also triggers the lint. The method source text is also searched for these
-macro names, so a match inside a comment, string, or closure, or a longer
-name such as `my_warn!`, triggers the lint. In that case the whole method is
-highlighted.
-
 The lint reports only the first logging call in each method. It misses
-logging done through helper functions, function calls inside closures, and
-logging in impls of other traits, such as `Into`.
+logging done through helper functions, logging macros from other crates, and
+logging in impls of other traits, such as `Into`. Conversion impls generated
+by a macro are skipped, because the generated code cannot be edited where the
+lint would point.
 
 ## Example
 

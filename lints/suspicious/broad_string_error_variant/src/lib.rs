@@ -14,11 +14,13 @@
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_middle;
 extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
-use rustc_hir::{FieldDef, Item, ItemKind, QPath, Ty, TyKind, Variant, VariantData};
+use rustc_hir::{FieldDef, Item, ItemKind, LangItem, Variant, VariantData};
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
+use rustc_middle::ty;
 use rustc_span::Span;
 
 dylint_support::documented_late_lint! {
@@ -35,6 +37,10 @@ impl<'tcx> LateLintPass<'tcx> for BroadStringErrorVariant {
         let ItemKind::Enum(enum_name, _generics, enum_def) = item.kind else {
             return;
         };
+        // Generated enums cannot be edited at the reported field.
+        if item.span.from_expansion() {
+            return;
+        }
         let enum_name = enum_name.name.to_ident_string();
         if !error_like_enum_name(&enum_name) {
             return;
@@ -64,7 +70,7 @@ fn check_struct_variant(cx: &LateContext<'_>, variant: &Variant<'_>, fields: &[F
     for field in fields {
         let field_name = field.ident.name.to_ident_string();
         if broad_payload_name(&field_name)
-            && let Some(string_ty) = string_ty(field.ty)
+            && let Some(string_ty) = string_ty(cx, field)
         {
             emit_broad_string_lint(cx, field.ty.span, "field", &field_name, string_ty, variant);
         }
@@ -73,20 +79,17 @@ fn check_struct_variant(cx: &LateContext<'_>, variant: &Variant<'_>, fields: &[F
 
 /// Check tuple variant for this lint.
 fn check_tuple_variant(cx: &LateContext<'_>, variant: &Variant<'_>, fields: &[FieldDef<'_>]) {
-    if fields.len() != 1 {
+    // A single tuple payload with a broad variant name makes the string the contract.
+    let [field] = fields else {
         return;
-    }
+    };
     let variant_name = variant.ident.name.to_ident_string();
     if !broad_payload_variant_name(&variant_name) {
         return;
     }
 
-    // A single tuple payload with a broad variant name makes the string the contract.
-    let Some(field) = fields.first() else {
-        return;
-    };
     // Report only when that sole payload resolves to a string type.
-    if let Some(string_ty) = string_ty(field.ty) {
+    if let Some(string_ty) = string_ty(cx, field) {
         emit_broad_string_lint(
             cx,
             field.ty.span,
@@ -157,28 +160,20 @@ fn broad_payload_variant_name(name: &str) -> bool {
     matches!(name, "Message" | "Details" | "Reason" | "Error")
 }
 
-/// Return type information for string.
-fn string_ty(ty: &Ty<'_>) -> Option<&'static str> {
-    match ty.kind {
-        TyKind::Path(QPath::Resolved(_, path)) => {
-            let segment_name = path.segments.last()?.ident.name.to_ident_string();
-            (segment_name == "String").then_some("String")
-        }
-        TyKind::Ref(_, mut_ty) => str_ty(mut_ty.ty).then_some("&str"),
+/// Return the display name of a field type that resolves to `String` or `&str`.
+fn string_ty(cx: &LateContext<'_>, field: &FieldDef<'_>) -> Option<&'static str> {
+    // Resolve aliases and paths through the field's semantic type.
+    match cx
+        .tcx
+        .type_of(field.def_id)
+        .instantiate_identity()
+        .skip_norm_wip()
+        .kind()
+    {
+        ty::Adt(adt, _) if cx.tcx.is_lang_item(adt.did(), LangItem::String) => Some("String"),
+        ty::Ref(_, inner, _) if inner.is_str() => Some("&str"),
         _ => None,
     }
-}
-
-/// Return type information for str.
-fn str_ty(ty: &Ty<'_>) -> bool {
-    // Keep aliases out of scope so the diagnostic is tied to source-written broad strings.
-    let TyKind::Path(QPath::Resolved(_, path)) = ty.kind else {
-        return false;
-    };
-
-    path.segments
-        .last()
-        .is_some_and(|segment| segment.ident.name.to_ident_string() == "str")
 }
 
 /// Helper for ui analysis.

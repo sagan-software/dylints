@@ -8,7 +8,7 @@ use crate::diagnostics::Diagnostic;
 
 /// One GitLab Code Quality report entry.
 #[derive(Debug, Eq, PartialEq, Serialize)]
-struct CodeQualityViolation<'diagnostic> {
+pub(super) struct CodeQualityViolation<'diagnostic> {
     /// Human-readable violation text.
     description: &'diagnostic str,
     /// Stable lint, compiler, or phase name.
@@ -47,11 +47,10 @@ struct CodeQualityLines {
     begin: u64,
 }
 
-/// Serialize every source-backed diagnostic as one GitLab report array.
-pub(super) fn serialize(diagnostics: &[Diagnostic]) -> Result<Vec<u8>, serde_json::Error> {
+/// Project every source-backed diagnostic into one GitLab report array.
+pub(super) fn violations(diagnostics: &[Diagnostic]) -> Vec<CodeQualityViolation<'_>> {
     // GitLab requires a source location, so infrastructure diagnostics remain in runner logs.
-    let violations: Vec<_> = diagnostics.iter().filter_map(project).collect();
-    serde_json::to_vec_pretty(&violations)
+    diagnostics.iter().filter_map(project).collect()
 }
 
 /// Project one compiler diagnostic into GitLab's required report fields.
@@ -107,19 +106,25 @@ fn fingerprint(fields: &[&str]) -> String {
 mod tests {
     use std::path::Path;
 
-    use super::serialize;
+    use super::violations;
     use crate::diagnostics::diagnostics_from_cargo_output;
+
+    /// Render the report exactly as the runner serializes it.
+    fn report(cargo_output: &str, tool: &str) -> String {
+        let diagnostics = diagnostics_from_cargo_output(tool, Path::new("/repo"), cargo_output);
+        serde_json::to_string_pretty(&violations(&diagnostics))
+            .expect("the typed report should serialize")
+    }
 
     #[test]
     fn serializes_required_gitlab_fields() {
         // Start from Cargo's public JSON message format rather than constructing internals.
-        let cargo_output = r#"{"reason":"compiler-message","message":{"level":"warning","message":"prefer a borrowed input","code":{"code":"ownership_at_boundaries"},"spans":[{"file_name":"src/lib.rs","line_start":7,"line_end":7,"is_primary":true}]}}"#;
-        let diagnostics = diagnostics_from_cargo_output("dylint", Path::new("/repo"), cargo_output);
+        let report = report(
+            r#"{"reason":"compiler-message","message":{"level":"warning","message":"prefer a borrowed input","code":{"code":"ownership_at_boundaries"},"spans":[{"file_name":"src/lib.rs","line_start":7,"line_end":7,"is_primary":true}]}}"#,
+            "dylint",
+        );
 
         // Verify GitLab's required fields and UTF-8 array framing together.
-        let report = serialize(&diagnostics).expect("the typed report should serialize");
-        let report = String::from_utf8(report).expect("JSON output should be UTF-8");
-
         assert!(report.starts_with('['));
         assert!(report.contains("\"check_name\": \"ownership_at_boundaries\""));
         assert!(report.contains("\"severity\": \"major\""));
@@ -129,15 +134,26 @@ mod tests {
     }
 
     #[test]
+    fn uncoded_errors_use_the_tool_name_and_blocker_severity() {
+        // A hard compiler error without a lint code still needs a stable check name.
+        let report = report(
+            r#"{"reason":"compiler-message","message":{"level":"error","message":"cannot find value","code":null,"spans":[{"file_name":"src/main.rs","line_start":3,"line_end":3,"is_primary":true}]}}"#,
+            "clippy",
+        );
+
+        assert!(report.contains("\"check_name\": \"clippy\""), "{report}");
+        assert!(report.contains("\"severity\": \"blocker\""), "{report}");
+    }
+
+    #[test]
     fn omits_diagnostics_without_source_locations() {
         // GitLab cannot represent a compiler diagnostic without a source location.
-        let cargo_output = r#"{"reason":"compiler-message","message":{"level":"error","message":"build failed","code":null,"spans":[]}}"#;
-        let diagnostics = diagnostics_from_cargo_output("clippy", Path::new("/repo"), cargo_output);
+        let report = report(
+            r#"{"reason":"compiler-message","message":{"level":"error","message":"build failed","code":null,"spans":[]}}"#,
+            "clippy",
+        );
 
         // Retain a valid empty JSON report rather than inventing a location.
-        assert_eq!(
-            serialize(&diagnostics).expect("an empty report is valid"),
-            b"[]"
-        );
+        assert_eq!(report, "[]");
     }
 }

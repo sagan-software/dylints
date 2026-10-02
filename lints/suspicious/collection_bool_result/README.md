@@ -2,10 +2,11 @@
 
 ## What it does
 
-Checks function return types for a two-element tuple of a collection and a
-`bool`, in either order. The tuple can also be inside `Result` or `Option`.
-The collections are arrays, `Vec`, `VecDeque`, `HashMap`, `HashSet`,
-`BTreeMap`, and `BTreeSet`.
+Checks function return types, including the output of an `async fn`, for a
+two-element tuple of a collection and a `bool`, in either order. The tuple
+can also be inside `Result` or `Option`. The collections are arrays and the
+standard `Vec`, `VecDeque`, `HashMap`, `HashSet`, `BTreeMap`, and `BTreeSet`
+types.
 
 ## Why is this bad?
 
@@ -20,8 +21,7 @@ next to a list of lines. The lint warns in that case too.
 
 The lint misses tuples with more than two elements, structs with a
 collection field and a `bool` field, references such as `(&[T], bool)`, and
-`async fn` return types. Collections are matched by type name, so any type
-named `Vec` or `HashMap` counts.
+collections from other crates.
 
 ## Example
 

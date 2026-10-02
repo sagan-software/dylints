@@ -4,8 +4,9 @@
 
 Checks the nearest `Cargo.toml` above the crate root file for dependency
 versions that omit the patch part, such as `"1"` or `"0.1"`. It checks
-`[dependencies]`, `[dev-dependencies]`, `[build-dependencies]`, and
-`[workspace.dependencies]`.
+`[dependencies]`, `[dev-dependencies]`, `[build-dependencies]`, the same
+tables under `[target.'...']`, and `[workspace.dependencies]`. The warning
+points at the version string and suggests the full version.
 
 ## Why is this bad?
 
@@ -15,18 +16,15 @@ the crate was tested with.
 
 ## Known problems
 
-The warning points at the crate root source file because the lint has no span
-in `Cargo.toml`. The message names the dependency and its version.
-
 The lint only flags plain numeric versions with one or two parts. Versions with
 operators, wildcards, or pre-release tags, such as `">=1"` or `"1.*"`, are not
 checked.
 
-Target-specific tables such as `[target.'cfg(unix)'.dependencies]` are not
-checked.
+A virtual workspace manifest is never checked, because no crate is compiled
+from it.
 
-The manifest is read line by line. Multiline inline tables, quoted dependency
-names, and escaped strings can be skipped or misread.
+The suggestion is marked as possibly incorrect, so `cargo fix` does not apply
+it.
 
 ## Example
 

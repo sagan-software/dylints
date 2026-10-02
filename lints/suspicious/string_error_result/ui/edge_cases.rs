@@ -1,3 +1,5 @@
+// compile-flags: --edition=2024
+
 #![allow(dead_code)]
 
 type StdResult<T, E> = std::result::Result<T, E>;
@@ -41,6 +43,42 @@ mod domain_string {
 
     pub fn custom_string_error() -> std::result::Result<(), String> {
         Err(String)
+    }
+}
+
+async fn async_string_error() -> Result<(), String> {
+    Err("async".to_owned())
+}
+
+async fn async_typed_error() -> Result<(), std::io::Error> {
+    Ok(())
+}
+
+async fn async_unit() {}
+
+trait Store {
+    async fn load(&self) -> Result<u8, String>;
+}
+
+type PlainStringResult = Result<(), String>;
+
+fn plain_alias() -> PlainStringResult {
+    Ok(())
+}
+
+trait Output {
+    type Out;
+}
+
+struct Job;
+
+impl Output for Job {
+    type Out = Result<(), String>;
+}
+
+impl Job {
+    fn associated(&self) -> <Self as Output>::Out {
+        Ok(())
     }
 }
 

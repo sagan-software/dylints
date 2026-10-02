@@ -1,19 +1,40 @@
-warning: dependency `dotted_major` has incomplete semver version `1`
-  --> $DIR/lib.rs:3:1
+warning: dependency `inline_minor` has incomplete semver version `1.2`
+  --> $DIR/Cargo.toml:7:74
    |
-LL | pub fn marker() {}
-   | ^^^^^^^^^^^^^^^^^^
+LL | inline_minor = { package = "good_full", path = "../good_full", version = "1.2" }
+   |                                                                          ^^^^^ help: write the full version: `"1.2.0"`
    |
-   = help: write a full version such as `1.0.0` for `dotted_major`
    = note: `#[warn(dependency_full_semver_versions)]` on by default
 
-warning: dependency `inline_minor` has incomplete semver version `1.2`
-  --> $DIR/lib.rs:3:1
+warning: dependency `dotted_major` has incomplete semver version `1`
+  --> $DIR/Cargo.toml:10:24
    |
-LL | pub fn marker() {}
-   | ^^^^^^^^^^^^^^^^^^
-   |
-   = help: write a full version such as `1.2.0` for `inline_minor`
+LL | dotted_major.version = "1"
+   |                        ^^^ help: write the full version: `"1.0.0"`
 
-warning: 2 warnings emitted
+warning: dependency `quoted-name` has incomplete semver version `0.2`
+  --> $DIR/Cargo.toml:13:75
+   |
+LL | "quoted-name" = { package = "good_full", path = "../good_full", version = "0.2" }
+   |                                                                           ^^^^^ help: write the full version: `"0.2.0"`
+
+warning: dependency `hash_in_string` has incomplete semver version `3`
+  --> $DIR/Cargo.toml:15:81
+   |
+LL | hash_in_string = { package = "good_full", path = "../good_full/#/..", version = "3" }
+   |                                                                                 ^^^ help: write the full version: `"3.0.0"`
+
+warning: dependency `multiline_array` has incomplete semver version `4`
+  --> $DIR/Cargo.toml:19:14
+   |
+LL | ], version = "4" }
+   |              ^^^ help: write the full version: `"4.0.0"`
+
+warning: dependency `target_minor` has incomplete semver version `1.2`
+  --> $DIR/Cargo.toml:22:74
+   |
+LL | target_minor = { package = "good_full", path = "../good_full", version = "1.2" }
+   |                                                                          ^^^^^ help: write the full version: `"1.2.0"`
+
+warning: 6 warnings emitted
 

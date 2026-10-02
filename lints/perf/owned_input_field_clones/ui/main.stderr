@@ -1,14 +1,19 @@
 warning: owned parameter `input` is only borrowed to clone fields into the returned struct
-  --> $DIR/main.rs:23:23
+  --> $DIR/main.rs:25:23
    |
 LL | fn clones_owned_input(input: Input) -> Output {
    |                       ^^^^^
    |
-   = help: consume the input by destructuring it, or take it by reference if cloning is intentional
    = note: `#[warn(owned_input_field_clones)]` on by default
+help: move the fields out of the owned input
+   |
+LL ~         id: input.id,
+LL ~         name: input.name,
+LL ~         note: input.note,
+   |
 
 warning: borrowed parameter `input` is cloned into the returned struct
-  --> $DIR/main.rs:31:19
+  --> $DIR/main.rs:33:19
    |
 LL | fn borrowed_input(input: InputRef<'_>) -> Output {
    |                   ^^^^^
@@ -16,7 +21,7 @@ LL | fn borrowed_input(input: InputRef<'_>) -> Output {
    = help: take ownership when the output must own data copied from the input
 
 warning: borrowed parameter `other` is cloned into the returned struct
-  --> $DIR/main.rs:107:22
+  --> $DIR/main.rs:109:22
    |
 LL |     fn merged(&self, other: &Input) -> Output {
    |                      ^^^^^

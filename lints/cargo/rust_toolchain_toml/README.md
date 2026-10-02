@@ -3,7 +3,8 @@
 ## What it does
 
 Checks for a file named `rust-toolchain`, without the `.toml` extension, in
-the crate root file's directory or any parent directory.
+the crate root file's directory or any parent directory. The warning points at
+the start of that file.
 
 ## Why is this bad?
 
@@ -13,11 +14,12 @@ tools do not treat it as TOML.
 
 ## Known problems
 
-The warning points at the crate root source file.
-
 The search continues to the file system root, so a `rust-toolchain` file
 outside the repository also triggers the lint. The lint warns even when a
 `rust-toolchain.toml` file exists next to the bare file.
+
+When the file is not valid UTF-8, the warning points at the crate root source
+file instead.
 
 ## Example
 

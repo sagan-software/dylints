@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >>"$FAKE_CARGO_LOG"
+mkdir -p "$CARGO_TARGET_DIR/debug"
+printf 'fresh object\n' >"$CARGO_TARGET_DIR/debug/fresh-object"
+chmod +x "$CARGO_TARGET_DIR/debug/fresh-object"

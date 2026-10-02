@@ -1,14 +1,6 @@
-[package]
-name = "ancestor-workspace-lints"
-version = "0.1.0"
-edition = "2024"
-
-[lints.rust]
-unsafe_code = "forbid"
-
-[[bin]]
-name = "ancestor-workspace-lints"
-path = "main.rs"
-
 [workspace]
+members = ["member"]
 resolver = "3"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"

@@ -1,0 +1,14 @@
+[package]
+name = "no-workspace-lints"
+version = "0.1.0"
+edition = "2024"
+
+# This workspace has no `[workspace.lints]`, so there is nothing to inherit.
+[workspace]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[[bin]]
+name = "no-workspace-lints"
+path = "main.rs"

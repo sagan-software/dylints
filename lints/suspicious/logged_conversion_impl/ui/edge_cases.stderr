@@ -1,25 +1,27 @@
 warning: this standard conversion impl logs while converting
-  --> $DIR/edge_cases.rs:26:5
+  --> $DIR/edge_cases.rs:63:9
    |
-LL | /     fn from(value: String) -> Self {
-LL | |         tracing::warn!("converting user id");
-LL | |         Self(value)
-LL | |     }
-   | |_____^
+LL |         audit!("wrapped logging macro");
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: return a value or error and let the caller choose where to log
    = note: `#[warn(logged_conversion_impl)]` on by default
 
 warning: this standard conversion impl logs while converting
-  --> $DIR/edge_cases.rs:43:5
+  --> $DIR/edge_cases.rs:75:17
    |
-LL | /     fn from_str(value: &str) -> Result<Self, Self::Err> {
-LL | |         local_log::warn!("parsing user id");
-LL | |         Ok(Self(value.to_owned()))
-LL | |     }
-   | |_____^
+LL |                 tracing::debug!(%error, "logging inside a closure");
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: return a value or error and let the caller choose where to log
 
-warning: 2 warnings emitted
+warning: this standard conversion impl logs while converting
+  --> $DIR/edge_cases.rs:87:9
+   |
+LL |         event!(tracing::Level::WARN, value, "event macro through an import");
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return a value or error and let the caller choose where to log
+
+warning: 3 warnings emitted
 

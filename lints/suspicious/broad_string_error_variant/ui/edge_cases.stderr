@@ -16,12 +16,28 @@ LL |     Message(&'static str),
    = help: use a concrete source error, a focused variant, or a redacted domain value
 
 warning: error variant `Rejected` has broad field `error` using `&str`
-  --> $DIR/edge_cases.rs:10:23
+  --> $DIR/edge_cases.rs:11:23
    |
 LL |     Rejected { error: &'static str },
    |                       ^^^^^^^^^^^^
    |
    = help: use a concrete source error, a focused variant, or a redacted domain value
 
-warning: 3 warnings emitted
+warning: error variant `Aliased` has broad field `reason` using `String`
+  --> $DIR/edge_cases.rs:23:23
+   |
+LL |     Aliased { reason: Text },
+   |                       ^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+
+warning: error variant `Details` has broad tuple variant `Details` using `&str`
+  --> $DIR/edge_cases.rs:24:13
+   |
+LL |     Details(Borrowed<'a>),
+   |             ^^^^^^^^^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+
+warning: 5 warnings emitted
 

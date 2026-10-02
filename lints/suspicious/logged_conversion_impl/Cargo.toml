@@ -14,6 +14,15 @@ dylint_support = { package = "dylint-support", path = "../../../support/dylint" 
 
 [dev-dependencies]
 dylint_testing.workspace = true
+tracing.workspace = true
+
+[[example]]
+name = "main"
+path = "ui/main.rs"
+
+[[example]]
+name = "edge_cases"
+path = "ui/edge_cases.rs"
 
 [features]
 rlib = ["dylint_linting/constituent"]

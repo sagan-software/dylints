@@ -1,0 +1,15 @@
+[package]
+name = "package-lints-multiline-string"
+version = "0.1.0"
+edition = "2024"
+description = """
+[lints]
+A table header inside a string does not configure lints.
+"""
+
+[[bin]]
+name = "package-lints-multiline-string"
+path = "main.rs"
+
+[workspace]
+resolver = "3"

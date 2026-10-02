@@ -1,35 +1,43 @@
-warning: this parameter takes owned `String` at the boundary
-  --> $DIR/edge_cases.rs:3:31
+warning: this parameter takes owned `String` but the function only borrows it
+  --> $DIR/edge_cases.rs:4:31
    |
 LL | pub fn contains_any(haystack: String, needles: Vec<String>) -> bool {
    |                               ^^^^^^
    |
-   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+   = help: take `&str` instead
    = note: `#[warn(ownership_at_boundaries)]` on by default
 
-warning: this parameter takes owned `Vec` at the boundary
-  --> $DIR/edge_cases.rs:3:48
+warning: this parameter takes owned `Vec` but the function only borrows it
+  --> $DIR/edge_cases.rs:4:48
    |
 LL | pub fn contains_any(haystack: String, needles: Vec<String>) -> bool {
    |                                                ^^^^^^^^^^^
    |
-   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+   = help: take a slice `&[T]` instead
 
-warning: this parameter takes owned `String` at the boundary
-  --> $DIR/edge_cases.rs:7:28
+warning: this parameter takes owned `String` but the function only borrows it
+  --> $DIR/edge_cases.rs:8:37
    |
-LL | pub fn stores_owned(value: String) -> String {
-   |                            ^^^^^^
+LL | pub fn reads_through_closure(value: String) -> impl Fn() -> usize {
+   |                                     ^^^^^^
    |
-   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+   = help: take `&str` instead
 
-warning: this parameter takes owned `Vec` at the boundary
-  --> $DIR/edge_cases.rs:11:34
+warning: this parameter takes owned `String` but the function only borrows it
+  --> $DIR/edge_cases.rs:57:30
    |
-LL | pub fn mutates_owned(mut values: Vec<String>) -> usize {
-   |                                  ^^^^^^^^^^^
+LL | pub fn assigns_locals(value: String) -> usize {
+   |                              ^^^^^^
    |
-   = help: take a borrowed type instead unless the value is stored, mutated, or consumed
+   = help: take `&str` instead
 
-warning: 4 warnings emitted
+warning: this parameter takes owned `Vec` but the function only borrows it
+  --> $DIR/edge_cases.rs:63:29
+   |
+LL | pub fn element_copy(values: Vec<u8>) -> u8 {
+   |                             ^^^^^^^
+   |
+   = help: take a slice `&[T]` instead
+
+warning: 5 warnings emitted
 

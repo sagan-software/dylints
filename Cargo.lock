@@ -2080,6 +2080,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-support"
+version = "0.1.0"
+dependencies = [
+ "dylint_linting",
+ "toml_edit 0.25.13+spec-1.1.0",
+]
+
+[[package]]
 name = "cargo_metadata"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2958,6 +2966,7 @@ dependencies = [
 name = "dependency_full_semver_versions"
 version = "0.1.0"
 dependencies = [
+ "cargo-support",
  "dylint-support",
  "dylint_linting",
  "dylint_testing",
@@ -2967,6 +2976,7 @@ dependencies = [
 name = "dependency_key_order"
 version = "0.1.0"
 dependencies = [
+ "cargo-support",
  "dylint-support",
  "dylint_linting",
  "dylint_testing",
@@ -4521,6 +4531,7 @@ dependencies = [
  "dylint-support",
  "dylint_linting",
  "dylint_testing",
+ "tracing 0.1.44",
 ]
 
 [[package]]
@@ -4530,6 +4541,7 @@ dependencies = [
  "dylint-support",
  "dylint_linting",
  "dylint_testing",
+ "tracing 0.1.44",
 ]
 
 [[package]]
@@ -4796,6 +4808,7 @@ dependencies = [
 name = "missing_clippy_toml"
 version = "0.1.0"
 dependencies = [
+ "cargo-support",
  "dylint-support",
  "dylint_linting",
  "dylint_testing",
@@ -4825,6 +4838,7 @@ dependencies = [
 name = "missing_rust_toolchain_toml"
 version = "0.1.0"
 dependencies = [
+ "cargo-support",
  "dylint-support",
  "dylint_linting",
  "dylint_testing",
@@ -5047,6 +5061,7 @@ dependencies = [
 name = "package_lints_section"
 version = "0.1.0"
 dependencies = [
+ "cargo-support",
  "dylint-support",
  "dylint_linting",
  "dylint_testing",
@@ -5811,6 +5826,7 @@ dependencies = [
 name = "rust_toolchain_toml"
 version = "0.1.0"
 dependencies = [
+ "cargo-support",
  "dylint-support",
  "dylint_linting",
  "dylint_testing",
@@ -8558,6 +8574,7 @@ checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 name = "workspace_dependency_versions"
 version = "0.1.0"
 dependencies = [
+ "cargo-support",
  "dylint-support",
  "dylint_linting",
  "dylint_testing",
@@ -8567,6 +8584,7 @@ dependencies = [
 name = "workspace_lints_inheritance"
 version = "0.1.0"
 dependencies = [
+ "cargo-support",
  "dylint-support",
  "dylint_linting",
  "dylint_testing",

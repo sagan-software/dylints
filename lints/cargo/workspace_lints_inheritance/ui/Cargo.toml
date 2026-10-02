@@ -5,6 +5,9 @@ edition = "2024"
 
 [workspace]
 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
 [lints.rust]
 unsafe_code = "forbid"
 

@@ -17,7 +17,7 @@ extern crate rustc_middle;
 extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
-use rustc_hir::{FnDecl, FnRetTy, TraitFn, TraitItem, TraitItemKind, intravisit::FnKind};
+use rustc_hir::{FnDecl, FnRetTy, LangItem, TraitFn, TraitItem, TraitItemKind, intravisit::FnKind};
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty::{self, GenericArgKind, Ty};
 use rustc_span::{Span, def_id::LocalDefId};
@@ -41,7 +41,13 @@ impl<'tcx> LateLintPass<'tcx> for BoxedFutureReturn {
         _span: Span,
         local_def_id: LocalDefId,
     ) {
-        if matches!(kind, FnKind::Closure) {
+        // A trait impl method cannot change the signature its trait declares.
+        if matches!(kind, FnKind::Closure)
+            || cx
+                .tcx
+                .trait_impl_of_assoc(local_def_id.to_def_id())
+                .is_some()
+        {
             return;
         }
 
@@ -67,8 +73,9 @@ const fn explicit_return_span(decl: &FnDecl<'_>) -> Option<Span> {
 
 /// Check return ty for this lint.
 fn check_return_ty(cx: &LateContext<'_>, local_def_id: LocalDefId, span: Option<Span>) {
-    // Inspect only explicit return types with a source span for diagnostics.
-    let Some(span) = span else {
+    // Inspect only explicit return types written in source. Macro output, such as the
+    // boxed future that `#[async_trait]` generates for an `async fn`, is not the user's choice.
+    let Some(span) = span.filter(|span| !span.from_expansion()) else {
         return;
     };
 
@@ -86,7 +93,7 @@ fn check_return_ty(cx: &LateContext<'_>, local_def_id: LocalDefId, span: Option<
             BOXED_FUTURE_RETURN,
             span,
             "this API returns a boxed future",
-            "prefer `async fn`, native async trait methods, or `async-trait` unless boxing is required",
+            "use `async fn` or return `impl Future` unless the future must be type-erased",
         );
     }
 }
@@ -110,10 +117,10 @@ fn emit_span_lint_with_help(
     );
 }
 
-/// Return type information for boxed future.
+/// Return whether the type contains a `Box<dyn Future>` in its structure.
 fn boxed_future_ty(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     match ty.kind() {
-        ty::Adt(adt, args) if is_std_box(cx, adt.did()) => dyn_future_ty(cx, args.type_at(0)),
+        ty::Adt(adt, args) if adt.is_box() => dyn_future_ty(cx, args.type_at(0)),
         ty::Adt(_, args) => args.iter().any(
             |arg| matches!(arg.kind(), GenericArgKind::Type(inner) if boxed_future_ty(cx, inner)),
         ),
@@ -123,22 +130,15 @@ fn boxed_future_ty(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     }
 }
 
-/// Return whether std box.
-fn is_std_box(cx: &LateContext<'_>, def_id: rustc_span::def_id::DefId) -> bool {
-    cx.tcx.item_name(def_id).as_str() == "Box"
-        && matches!(cx.tcx.crate_name(def_id.krate).as_str(), "alloc" | "std")
-}
-
-/// Return type information for dyn future.
+/// Return whether the type is a trait object whose principal trait is `Future`.
 fn dyn_future_ty(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     let ty::Dynamic(predicates, _) = ty.kind() else {
         return false;
     };
 
-    predicates.principal_def_id().is_some_and(|def_id| {
-        cx.tcx.def_path_str(def_id) == "core::future::future::Future"
-            || cx.tcx.def_path_str(def_id) == "std::future::Future"
-    })
+    predicates
+        .principal_def_id()
+        .is_some_and(|def_id| cx.tcx.is_lang_item(def_id, LangItem::Future))
 }
 
 /// Helper for ui analysis.

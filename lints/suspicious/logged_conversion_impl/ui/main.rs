@@ -11,24 +11,6 @@ mod kslog {
     pub fn warn(_message: &str) {}
 }
 
-#[macro_export]
-macro_rules! error {
-    ($($tt:tt)*) => {};
-}
-
-#[macro_export]
-macro_rules! warn {
-    ($($tt:tt)*) => {};
-}
-
-mod log {
-    pub(crate) use crate::error;
-}
-
-mod tracing {
-    pub(crate) use crate::warn;
-}
-
 impl From<String> for UserId {
     fn from(raw: String) -> Self {
         eprintln!("converting user id: {raw}");
@@ -40,7 +22,7 @@ impl TryFrom<&str> for UserId {
     type Error = UserIdError;
 
     fn try_from(raw: &str) -> Result<Self, Self::Error> {
-        log::error!("bad user id: {raw}");
+        tracing::error!("bad user id: {raw}");
         Ok(UserId(raw.to_owned()))
     }
 }
@@ -49,7 +31,7 @@ impl FromStr for UserId {
     type Err = UserIdError;
 
     fn from_str(raw: &str) -> Result<Self, Self::Err> {
-        tracing::warn!("parsing user id: {raw}");
+        tracing::warn!(raw, "parsing user id");
         Ok(UserId(raw.to_owned()))
     }
 }
@@ -89,4 +71,5 @@ fn main() {
     let id = UserId::from("alice".as_bytes());
     let _ = &id.0;
     let _ = ordinary_function_logs("bob");
+    let _ = UserId::from_str_like("carol");
 }

@@ -3,8 +3,14 @@
 ## What it does
 
 Checks the nearest `Cargo.toml` above the crate root file of a workspace
-package. If the manifest has a `[lints]` or `[lints.*]` table without
-`workspace = true` under `[lints]`, the lint warns.
+package. If the manifest defines `lints` without `workspace = true` and the
+workspace root declares `[workspace.lints]`, the lint warns at the package's
+`lints` key or table header. A `[lints]` table, a `[lints.*]` table, a dotted
+key, and an inline table all count.
+
+The workspace root is the package manifest itself when it has a `[workspace]`
+table, or the nearest ancestor `Cargo.toml` with a `[workspace]` table that
+does not exclude the package.
 
 ## Why is this bad?
 
@@ -13,16 +19,8 @@ Changes to the shared lint policy then miss that package without any warning.
 
 ## Known problems
 
-The warning points at the crate root source file.
-
-A package counts as a workspace package when its manifest has a `[workspace]`
-table, uses a key such as `version.workspace = true`, or has an ancestor
-`Cargo.toml` with a `[workspace]` table. A single-package `[workspace]` used
-only to stop Cargo from searching parent directories therefore also triggers
-the lint.
-
-The lint does not check that `[workspace.lints]` exists. Manifests with no
-`[lints]` table do not warn; `package_lints_section` reports them.
+Manifests with no `lints` key do not warn; `package_lints_section` reports
+them. A `package.workspace` key that points at the workspace root is not read.
 
 ## Example
 
@@ -33,6 +31,9 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
 
 [lints.rust]
 unsafe_code = "forbid"

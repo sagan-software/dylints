@@ -1,0 +1,10 @@
+[package]
+name = "dot-clippy-toml-fixture"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+
+[[bin]]
+name = "dot-clippy-toml-fixture"
+path = "main.rs"

@@ -62,4 +62,38 @@ mod domain_box {
     }
 }
 
+trait Loader {
+    fn load(&self) -> LocalBoxFuture<'_, ()>;
+}
+
+// The trait fixes the impl's signature, so only the trait declaration is reported.
+impl Loader for Ready {
+    fn load(&self) -> LocalBoxFuture<'_, ()> {
+        Box::pin(Ready)
+    }
+}
+
+// A macro-generated boxed future, like `#[async_trait]` output, is not reported.
+macro_rules! boxed_method {
+    ($name:ident) => {
+        fn $name() -> Pin<Box<dyn Future<Output = ()> + Send>> {
+            Box::pin(Ready)
+        }
+    };
+}
+
+boxed_method!(generated);
+
+fn boxed_value() -> Box<u8> {
+    Box::new(1)
+}
+
+fn boxed_iterator() -> Box<dyn Iterator<Item = u8>> {
+    Box::new(std::iter::empty())
+}
+
+fn nested_in_option<'a>() -> Option<(u8, &'a BoxFuture<'a, ()>)> {
+    None
+}
+
 fn main() {}

@@ -4,7 +4,7 @@ warning: this API returns a boxed future
 LL |     fn load(&self) -> Pin<Box<dyn Future<Output = usize> + Send + '_>>;
    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: prefer `async fn`, native async trait methods, or `async-trait` unless boxing is req$DIRred
+   = help: use `async fn` or return `impl Future` unless the future must be type-erased
    = note: `#[warn(boxed_future_return)]` on by default
 
 warning: this API returns a boxed future
@@ -13,15 +13,7 @@ warning: this API returns a boxed future
 LL |     fn run(&self) -> Pin<Box<dyn Future<Output = ()> + '_>> {
    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: prefer `async fn`, native async trait methods, or `async-trait` unless boxing is req$DIRred
+   = help: use `async fn` or return `impl Future` unless the future must be type-erased
 
-warning: this API returns a boxed future
-  --> $DIR/edge_cases.rs:23:23
-   |
-LL |     fn load(&self) -> Pin<Box<dyn Future<Output = usize> + Send + '_>> {
-   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: prefer `async fn`, native async trait methods, or `async-trait` unless boxing is req$DIRred
-
-warning: 3 warnings emitted
+warning: 2 warnings emitted
 

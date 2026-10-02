@@ -1,8 +1,8 @@
 warning: repository uses `rust-toolchain` instead of `rust-toolchain.toml`
-  --> $DIR/main.rs:1:1
+  --> ui/rust-toolchain:1:1
    |
-LL | fn main() {}
-   | ^^^^^^^^^^^^
+LL | nightly
+   | ^
    |
    = help: rename `rust-toolchain` to `rust-toolchain.toml`
    = note: `#[warn(rust_toolchain_toml)]` on by default

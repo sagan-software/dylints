@@ -1,5 +1,5 @@
 warning: `Result` uses `String` as its error type
-  --> $DIR/edge_cases.rs:7:32
+  --> $DIR/edge_cases.rs:9:32
    |
 LL | fn owned_error() -> Result<(), String> {
    |                                ^^^^^^
@@ -8,7 +8,7 @@ LL | fn owned_error() -> Result<(), String> {
    = note: `#[warn(string_error_result)]` on by default
 
 warning: `Result` uses `String` as its error type
-  --> $DIR/edge_cases.rs:11:63
+  --> $DIR/edge_cases.rs:13:63
    |
 LL | fn nested_result() -> std::result::Result<Result<u8, String>, String> {
    |                                                               ^^^^^^
@@ -16,7 +16,7 @@ LL | fn nested_result() -> std::result::Result<Result<u8, String>, String> {
    = help: use a concrete error type or a focused `thiserror` enum
 
 warning: `Result` uses `String` as its error type
-  --> $DIR/edge_cases.rs:11:54
+  --> $DIR/edge_cases.rs:13:54
    |
 LL | fn nested_result() -> std::result::Result<Result<u8, String>, String> {
    |                                                      ^^^^^^
@@ -24,7 +24,7 @@ LL | fn nested_result() -> std::result::Result<Result<u8, String>, String> {
    = help: use a concrete error type or a focused `thiserror` enum
 
 warning: `Result` uses `String` as its error type
-  --> $DIR/edge_cases.rs:15:36
+  --> $DIR/edge_cases.rs:17:36
    |
 LL | fn alias_result() -> StdResult<(), String> {
    |                                    ^^^^^^
@@ -32,7 +32,7 @@ LL | fn alias_result() -> StdResult<(), String> {
    = help: use a concrete error type or a focused `thiserror` enum
 
 warning: `Result` uses `String` as its error type
-  --> $DIR/edge_cases.rs:19:42
+  --> $DIR/edge_cases.rs:21:42
    |
 LL | fn alias_error_result() -> StdResult<(), ErrorText> {
    |                                          ^^^^^^^^^
@@ -40,12 +40,28 @@ LL | fn alias_error_result() -> StdResult<(), ErrorText> {
    = help: use a concrete error type or a focused `thiserror` enum
 
 warning: `Result` uses `String` as its error type
-  --> $DIR/edge_cases.rs:23:29
+  --> $DIR/edge_cases.rs:25:29
    |
 LL | fn baked_string_result() -> StringResult<()> {
    |                             ^^^^^^^^^^^^^^^^
    |
    = help: use a concrete error type or a focused `thiserror` enum
 
-warning: 6 warnings emitted
+warning: `Result` uses `String` as its error type
+  --> $DIR/edge_cases.rs:49:45
+   |
+LL | async fn async_string_error() -> Result<(), String> {
+   |                                             ^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: `Result` uses `String` as its error type
+  --> $DIR/edge_cases.rs:65:21
+   |
+LL | fn plain_alias() -> PlainStringResult {
+   |                     ^^^^^^^^^^^^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: 8 warnings emitted
 

@@ -5,7 +5,13 @@
 Checks the nearest `Cargo.toml` above the crate root file of a workspace
 package for dependencies that set their own `version` instead of using
 `workspace = true`. It checks `[dependencies]`, `[dev-dependencies]`,
-`[build-dependencies]`, and their `[target.'...']` variants.
+`[build-dependencies]`, and their `[target.'...']` variants. The warning points
+at the version value.
+
+The lint only applies when the workspace root declares
+`[workspace.dependencies]`. The workspace root is the package manifest itself
+when it has a `[workspace]` table, or the nearest ancestor `Cargo.toml` with a
+`[workspace]` table that does not exclude the package.
 
 ## Why is this bad?
 
@@ -15,21 +21,12 @@ manifest instead of one entry in `[workspace.dependencies]`.
 
 ## Known problems
 
-The warning points at the crate root source file. The message names the
-dependency.
+Dependencies with only `path` or `git` and no `version` do not warn. A
+`package.workspace` key that points at the workspace root is not read.
 
-A package counts as a workspace package when its manifest has a `[workspace]`
-table, uses a key such as `version.workspace = true`, or has an ancestor
-`Cargo.toml` with a `[workspace]` table. A single-package `[workspace]` used
-only to stop Cargo from searching parent directories therefore also triggers
-the lint.
-
-Dev-dependencies are not checked when the manifest declares an `[[example]]`
-target.
-
-Dependencies with only `path` or `git` and no `version` do not warn. The
-manifest is read line by line, so multiline inline tables and quoted
-dependency names can be skipped or misread.
+A package that needs two versions of one crate must give each version its own
+renamed key in `[workspace.dependencies]`, such as
+`bevy_018 = { package = "bevy", version = "0.18.0" }`.
 
 ## Example
 
@@ -41,7 +38,11 @@ edition = "2024"
 
 [workspace]
 
+[workspace.dependencies]
+anyhow = "1.0.0"
+
 [dependencies]
+anyhow.workspace = true
 serde = "1.0.0"
 ```
 
@@ -56,8 +57,10 @@ edition = "2024"
 [workspace]
 
 [workspace.dependencies]
+anyhow = "1.0.0"
 serde = "1.0.0"
 
 [dependencies]
+anyhow.workspace = true
 serde.workspace = true
 ```

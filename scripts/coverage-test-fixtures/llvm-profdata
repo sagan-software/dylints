@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+while (($# > 0)); do
+    if [[ "$1" == -o ]]; then
+        printf 'profile\n' >"$2"
+        exit 0
+    fi
+    shift
+done

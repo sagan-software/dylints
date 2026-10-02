@@ -7,28 +7,39 @@
 
 //! A lint to check for logged errors that should be propagated.
 //!
-//! It resolves common logging calls in error branches, distinguishes handled
-//! recovery from ignored failure, and reports control-flow paths that continue
-//! after recording an error. The diagnostic recommends returning or propagating
-//! the error when the surrounding function has an honest failure boundary.
+//! It resolves logging macros and functions in `Err` branches, compares the
+//! caught error type with the enclosing function's error type, and reports
+//! branches that only log before continuing. `async fn` bodies are checked
+//! through their desugared coroutine, whose return type is the written `Result`.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_middle;
 extern crate rustc_span;
 
+/// The UI examples depend on `tracing` to exercise real logging macro expansions.
+#[cfg(test)]
+use tracing as _;
+
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Arm, Block, Body, Expr, ExprKind, FnDecl, Pat, PatKind, QPath, Stmt, StmtKind,
+    Arm, Block, Body, Expr, ExprKind, FnDecl, LangItem, Pat, PatKind, Stmt, StmtKind,
+    def::{CtorOf, DefKind, Res},
     intravisit::{FnKind, Visitor, walk_expr},
 };
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
+use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::{ExpnKind, MacroKind, Span, sym};
+use rustc_span::{
+    ExpnKind, MacroKind, Span,
+    def_id::{DefId, LocalDefId},
+    sym,
+};
 
-/// `LOG_MACROS` configuration used by this lint.
-const LOG_MACROS: &[&str] = &["debug", "eprintln", "error", "info", "trace", "warn"];
-/// `LOG_FUNCTION_NAMES` configuration used by this lint.
+/// Crates and module names whose logging macros and functions the lint recognizes.
+const LOG_NAMESPACES: &[&str] = &["kslog", "log", "tracing"];
+/// Event macro names exported by the `log` and `tracing` crates.
+const LOG_MACROS: &[&str] = &["debug", "error", "event", "info", "log", "trace", "warn"];
+/// Logging function names recognized inside a logging namespace.
 const LOG_FUNCTION_NAMES: &[&str] = &[
     "debug",
     "error",
@@ -38,8 +49,6 @@ const LOG_FUNCTION_NAMES: &[&str] = &[
     "trace",
     "warn",
 ];
-/// `LOG_MODULE_NAMES` configuration used by this lint.
-const LOG_MODULE_NAMES: &[&str] = &["kslog", "log", "tracing"];
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -50,7 +59,7 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for LoggedErrorContinue {
-    /// Check fn for this lint.
+    /// Check each named function or method that returns `Result`.
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
@@ -58,13 +67,32 @@ impl<'tcx> LateLintPass<'tcx> for LoggedErrorContinue {
         _decl: &'tcx FnDecl<'tcx>,
         body: &'tcx Body<'tcx>,
         _span: Span,
-        _local_def_id: rustc_span::def_id::LocalDefId,
+        local_def_id: LocalDefId,
     ) {
         if matches!(kind, FnKind::Closure) {
             return;
         }
-        let Some(function_error_ty) = result_error_ty(cx, cx.typeck_results().expr_ty(body.value))
-        else {
+
+        // An `async fn` body is a coroutine; its return type and statements live inside it.
+        let (returned_ty, value) = if let ExprKind::Closure(closure) = body.value.kind
+            && let ty::Coroutine(_, args) = cx.typeck_results().expr_ty(body.value).kind()
+        {
+            (
+                args.as_coroutine().return_ty(),
+                cx.tcx.hir_body(closure.body).value,
+            )
+        } else {
+            (
+                cx.tcx
+                    .fn_sig(local_def_id)
+                    .instantiate_identity()
+                    .skip_norm_wip()
+                    .output()
+                    .skip_binder(),
+                body.value,
+            )
+        };
+        let Some(function_error_ty) = result_error_ty(cx, returned_ty) else {
             return;
         };
 
@@ -74,32 +102,36 @@ impl<'tcx> LateLintPass<'tcx> for LoggedErrorContinue {
             cx,
             function_error_ty,
         }
-        .visit_expr(body.value);
+        .visit_expr(value);
     }
 }
 
-/// State used by the logged error visitor analysis.
+/// Visitor that reports log-only `Err` branches outside nested closures.
 struct LoggedErrorVisitor<'cx, 'tcx> {
-    /// cx stored for this lint's analysis.
+    /// Lint context used for type and resolution queries.
     cx: &'cx LateContext<'tcx>,
-    /// function error ty stored for this lint's analysis.
+    /// Error type of the enclosing function's `Result`.
     function_error_ty: Ty<'tcx>,
 }
 
 impl<'tcx> Visitor<'tcx> for LoggedErrorVisitor<'_, 'tcx> {
-    /// Helper for visit expr analysis.
+    /// Report a log-only error branch, then continue into child expressions.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        // Report a matching ignored error before descending into child expressions.
         if let Some(span) = ignored_logged_error(self.cx, self.function_error_ty, expr) {
-            emit_span_lint_with_help(
-                self.cx,
+            self.cx.emit_span_lint(
                 LOGGED_ERROR_CONTINUE,
                 span,
-                "this error branch only logs the failure and then continues",
-                "return the error or use `?` so the caller receives the failure",
+                DiagDecorator(|diag| {
+                    let _ = diag.primary_message(
+                        "this error branch only logs the failure and then continues",
+                    );
+                    let _ =
+                        diag.help("return the error or use `?` so the caller receives the failure");
+                }),
             );
         }
 
+        // `?` inside a closure cannot return from the enclosing function.
         if matches!(expr.kind, ExprKind::Closure(_)) {
             return;
         }
@@ -108,7 +140,7 @@ impl<'tcx> Visitor<'tcx> for LoggedErrorVisitor<'_, 'tcx> {
     }
 }
 
-/// Helper for ignored logged error analysis.
+/// Return the pattern span of a log-only `Err` branch in an `if let` or `match`.
 fn ignored_logged_error<'tcx>(
     cx: &LateContext<'tcx>,
     function_error_ty: Ty<'tcx>,
@@ -116,7 +148,14 @@ fn ignored_logged_error<'tcx>(
 ) -> Option<Span> {
     match expr.kind {
         ExprKind::If(condition, then_branch, _else_branch) => {
-            ignored_if_let_error(cx, function_error_ty, condition, then_branch)
+            // Require an `Err` pattern, the enclosing error type, and a log-only body.
+            let ExprKind::Let(let_expr) = condition.kind else {
+                return None;
+            };
+            (err_pattern(cx, let_expr.pat)
+                && same_result_error_type(cx, function_error_ty, let_expr.init)
+                && expr_only_logs(cx, then_branch))
+            .then_some(let_expr.pat.span)
         }
         ExprKind::Match(scrutinee, arms, _source) => {
             ignored_match_error(cx, function_error_ty, scrutinee, arms)
@@ -125,28 +164,7 @@ fn ignored_logged_error<'tcx>(
     }
 }
 
-/// Helper for ignored if let error analysis.
-fn ignored_if_let_error<'tcx>(
-    cx: &LateContext<'tcx>,
-    function_error_ty: Ty<'tcx>,
-    condition: &'tcx Expr<'tcx>,
-    then_branch: &'tcx Expr<'tcx>,
-) -> Option<Span> {
-    // Require a simple Err pattern, the enclosing error type, and a log-only body.
-    let ExprKind::Let(let_expr) = condition.kind else {
-        return None;
-    };
-    if !err_pattern(let_expr.pat)
-        || !same_result_error_type(cx, function_error_ty, let_expr.init)
-        || !expr_only_logs(then_branch)
-    {
-        return None;
-    }
-
-    Some(let_expr.pat.span)
-}
-
-/// Helper for ignored match error analysis.
+/// Return the pattern span of the first unguarded log-only `Err` arm.
 fn ignored_match_error<'tcx>(
     cx: &LateContext<'tcx>,
     function_error_ty: Ty<'tcx>,
@@ -157,13 +175,12 @@ fn ignored_match_error<'tcx>(
         return None;
     }
 
-    // Report the first simple `Err` arm that only logs; other arms may keep their own behavior.
     arms.iter()
-        .find(|arm| arm.guard.is_none() && err_pattern(arm.pat) && expr_only_logs(arm.body))
+        .find(|arm| arm.guard.is_none() && err_pattern(cx, arm.pat) && expr_only_logs(cx, arm.body))
         .map(|arm| arm.pat.span)
 }
 
-/// Return whether result error type match.
+/// Return whether the expression is a `Result` with the function's error type.
 fn same_result_error_type<'tcx>(
     cx: &LateContext<'tcx>,
     function_error_ty: Ty<'tcx>,
@@ -172,157 +189,109 @@ fn same_result_error_type<'tcx>(
     result_error_ty(cx, cx.typeck_results().expr_ty(expr)) == Some(function_error_ty)
 }
 
-/// Return type information for result error.
+/// Return the error argument of a standard `Result` type.
 fn result_error_ty<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    // Extract the error argument only from the standard Result diagnostic item.
     let ty::Adt(adt, args) = ty.kind() else {
         return None;
     };
-    if !cx.tcx.is_diagnostic_item(sym::Result, adt.did()) {
-        return None;
-    }
 
-    Some(args.type_at(1))
+    cx.tcx
+        .is_diagnostic_item(sym::Result, adt.did())
+        .then(|| args.type_at(1))
 }
 
-/// Helper for err pattern analysis.
-fn err_pattern(pat: &Pat<'_>) -> bool {
-    let PatKind::TupleStruct(qpath, fields, _) = pat.kind else {
+/// Return whether the pattern is `Err(binding)` resolved to `Result::Err`.
+fn err_pattern(cx: &LateContext<'_>, pat: &Pat<'_>) -> bool {
+    let PatKind::TupleStruct(qpath, [_field], _) = pat.kind else {
         return false;
     };
 
-    // `Err(error)` is the only catch shape this lint can safely propose replacing with `?`.
-    fields.len() == 1 && qpath_last_segment_name(qpath).is_some_and(|name| name == "Err")
+    matches!(
+        cx.typeck_results().qpath_res(&qpath, pat.hir_id),
+        Res::Def(DefKind::Ctor(CtorOf::Variant, _), ctor_id)
+            if cx.tcx.is_lang_item(cx.tcx.parent(ctor_id), LangItem::ResultErr)
+    )
 }
 
-/// Helper for expr only logs analysis.
-fn expr_only_logs(expr: &Expr<'_>) -> bool {
-    if logging_call(expr) {
+/// Return whether the branch body consists only of logging calls.
+fn expr_only_logs(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    if logging_call(cx, expr) {
         return true;
     }
 
     match expr.kind {
-        ExprKind::Block(block, _) => block_only_logs(block),
+        ExprKind::Block(block, _) => block_only_logs(cx, block),
         _ => false,
     }
 }
 
-/// Helper for block only logs analysis.
-fn block_only_logs(block: &Block<'_>) -> bool {
-    let stmts_only_log = block.stmts.iter().all(stmt_only_logs);
-    let tail_only_logs = block.expr.is_none_or(expr_only_logs);
+/// Return whether a non-empty block contains only logging statements.
+fn block_only_logs(cx: &LateContext<'_>, block: &Block<'_>) -> bool {
+    let stmts_only_log = block.stmts.iter().all(|stmt| stmt_only_logs(cx, stmt));
+    let tail_only_logs = block.expr.is_none_or(|expr| expr_only_logs(cx, expr));
 
     // Empty blocks do not log anything, so require at least one logging expression.
     stmts_only_log && tail_only_logs && (!block.stmts.is_empty() || block.expr.is_some())
 }
 
-/// Helper for stmt only logs analysis.
-fn stmt_only_logs(stmt: &Stmt<'_>) -> bool {
+/// Return whether a statement is a logging expression.
+fn stmt_only_logs(cx: &LateContext<'_>, stmt: &Stmt<'_>) -> bool {
     match stmt.kind {
-        StmtKind::Expr(expr) | StmtKind::Semi(expr) => expr_only_logs(expr),
+        StmtKind::Expr(expr) | StmtKind::Semi(expr) => expr_only_logs(cx, expr),
         StmtKind::Let(_) | StmtKind::Item(_) => false,
     }
 }
 
-/// Helper for logging call analysis.
-fn logging_call(expr: &Expr<'_>) -> bool {
-    logging_macro_call(expr.span) || logging_function_call(expr)
+/// Return whether the expression is a recognized logging macro or function call.
+fn logging_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    logging_macro_call(cx, expr.span) || logging_function_call(cx, expr)
 }
 
-/// Helper for logging macro call analysis.
-fn logging_macro_call(span: Span) -> bool {
-    let mut expn_data = span.ctxt().outer_expn_data();
-
-    // Macro-expanded logging calls can lower to several HIR nodes; use the outer call site name.
-    loop {
-        if let ExpnKind::Macro(MacroKind::Bang, name) = expn_data.kind {
-            let macro_name = normalize_path_name(name.as_str());
-            if LOG_MACROS.contains(&macro_name) {
-                return true;
-            }
-        }
-
-        if !expn_data.call_site.from_expansion() {
-            return false;
-        }
-
-        // Walk outward until a recognized logging macro or source call site appears.
-        expn_data = expn_data.call_site.ctxt().outer_expn_data();
-    }
+/// Return whether any macro expansion that produced the span is a logging macro.
+fn logging_macro_call(cx: &LateContext<'_>, span: Span) -> bool {
+    span.macro_backtrace().any(|expn_data| {
+        matches!(expn_data.kind, ExpnKind::Macro(MacroKind::Bang, _))
+            && expn_data
+                .macro_def_id
+                .is_some_and(|def_id| logging_macro(cx, def_id))
+    })
 }
 
-/// Helper for logging function call analysis.
-fn logging_function_call(expr: &Expr<'_>) -> bool {
+/// Return whether a macro definition is `eprintln!` or a `log` or `tracing` event macro.
+fn logging_macro(cx: &LateContext<'_>, def_id: DefId) -> bool {
+    cx.tcx
+        .get_diagnostic_name(def_id)
+        .is_some_and(|name| name.as_str() == "eprintln_macro")
+        || (LOG_NAMESPACES.contains(&cx.tcx.crate_name(def_id.krate).as_str())
+            && LOG_MACROS.contains(&cx.tcx.item_name(def_id).as_str()))
+}
+
+/// Return whether the expression calls a function that resolves to a logging namespace.
+fn logging_function_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    // Only a call through a path can resolve to a named logging function.
     let ExprKind::Call(callee, _args) = expr.kind else {
         return false;
     };
     let ExprKind::Path(qpath) = callee.kind else {
         return false;
     };
-    let names = qpath_names(qpath);
-    let Some(last_name) = names.last().map(String::as_str) else {
+    let Res::Def(DefKind::Fn, def_id) = cx.typeck_results().qpath_res(&qpath, callee.hir_id) else {
         return false;
     };
 
-    // Keep function-call matching namespaced so ordinary `warn(...)` helpers remain valid.
-    // Require both a logging function name and a known logging module segment.
-    LOG_FUNCTION_NAMES.contains(&last_name)
-        && names
-            .iter()
-            .any(|name| LOG_MODULE_NAMES.contains(&name.as_str()))
+    // Resolve through imports and renames, then require a logging crate or module in the path.
+    LOG_FUNCTION_NAMES.contains(&cx.tcx.item_name(def_id).as_str())
+        && (LOG_NAMESPACES.contains(&cx.tcx.crate_name(def_id.krate).as_str())
+            || cx.tcx.def_path(def_id).data.iter().any(|segment| {
+                segment
+                    .data
+                    .get_opt_name()
+                    .is_some_and(|name| LOG_NAMESPACES.contains(&name.as_str()))
+            }))
 }
 
-/// Return the qpath last segment name.
-fn qpath_last_segment_name(qpath: QPath<'_>) -> Option<String> {
-    match qpath {
-        QPath::Resolved(_, path) => path.segments.last(),
-        QPath::TypeRelative(_, segment) => Some(segment),
-    }
-    .map(|segment| segment.ident.name.to_ident_string())
-}
-
-/// Helper for qpath names analysis.
-fn qpath_names(qpath: QPath<'_>) -> Vec<String> {
-    match qpath {
-        QPath::Resolved(_, path) => path
-            .segments
-            .iter()
-            .map(|segment| segment.ident.name.to_ident_string())
-            .collect(),
-        QPath::TypeRelative(_, segment) => vec![segment.ident.name.to_ident_string()],
-    }
-}
-
-/// Return the normalized path name.
-fn normalize_path_name(name: &str) -> &str {
-    name.rsplit("::")
-        .next()
-        .unwrap_or(name)
-        .strip_suffix("_macro")
-        .unwrap_or_else(|| name.rsplit("::").next().unwrap_or(name))
-}
-
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: &'static str,
-    help: &'static str,
-) {
-    // Use rustc's native diagnostic decorator to match the rest of this lint suite.
-    cx.emit_span_lint(
-        lint,
-        span,
-        DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ = diag.help(help);
-        }),
-    );
-}
-
-/// Helper for ui analysis.
+/// Run the UI examples, which depend on the real `tracing` crate.
 #[test]
 fn ui() {
-    dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");
+    dylint_testing::ui_test_examples(env!("CARGO_PKG_NAME"));
 }

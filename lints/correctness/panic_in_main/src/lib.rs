@@ -24,19 +24,25 @@ use rustc_hir::{
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::{ExpnKind, MacroKind, Span, def_id::LocalDefId, sym};
+use rustc_span::{
+    ExpnKind, MacroKind, Span,
+    def_id::{DefId, LocalDefId},
+    sym,
+};
 
-/// `PANICKING_MACROS` configuration used by this lint.
-const PANICKING_MACROS: &[&str] = &[
-    "panic",
-    "todo",
-    "unimplemented",
-    "assert",
-    "assert_eq",
-    "assert_ne",
+/// Diagnostic items of panicking macros and the name the diagnostic reports for each.
+const PANICKING_MACROS: &[(&str, &str)] = &[
+    ("assert_eq_macro", "assert_eq"),
+    ("assert_macro", "assert"),
+    ("assert_ne_macro", "assert_ne"),
+    ("core_panic_macro", "panic"),
+    ("std_panic_macro", "panic"),
+    ("todo_macro", "todo"),
+    ("unimplemented_macro", "unimplemented"),
+    ("unreachable_macro", "unreachable"),
 ];
-/// `PANICKING_METHODS` configuration used by this lint.
-const PANICKING_METHODS: &[&str] = &["unwrap", "expect"];
+/// Panicking `Option` and `Result` methods.
+const PANICKING_METHODS: &[&str] = &["expect", "unwrap"];
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -63,7 +69,7 @@ impl<'tcx> LateLintPass<'tcx> for PanicInMain {
         }
 
         // Report every panicking operation at its user-visible call site.
-        for operation in PanickingOperationFinder::find(body) {
+        for operation in PanickingOperationFinder::find(cx, body) {
             emit_span_lint_with_help(
                 cx,
                 PANIC_IN_MAIN,
@@ -156,16 +162,19 @@ struct PanickingOperation {
     span: Span,
 }
 
-/// State used by the panicking operation finder analysis.
-struct PanickingOperationFinder {
-    /// operations stored for this lint's analysis.
+/// Visitor that collects panicking operations in source order.
+struct PanickingOperationFinder<'cx, 'tcx> {
+    /// Lint context used to resolve macros and methods.
+    cx: &'cx LateContext<'tcx>,
+    /// Panicking operations found so far, without duplicate call sites.
     operations: Vec<PanickingOperation>,
 }
 
-impl PanickingOperationFinder {
-    /// Helper for find analysis.
-    fn find<'tcx>(body: &'tcx Body<'tcx>) -> Vec<PanickingOperation> {
+impl<'cx, 'tcx> PanickingOperationFinder<'cx, 'tcx> {
+    /// Collect every panicking operation in the body outside nested closures.
+    fn find(cx: &'cx LateContext<'tcx>, body: &'tcx Body<'tcx>) -> Vec<PanickingOperation> {
         let mut finder = Self {
+            cx,
             operations: Vec::new(),
         };
 
@@ -174,25 +183,23 @@ impl PanickingOperationFinder {
         finder.operations
     }
 
-    /// Helper for push unique analysis.
+    /// Record an operation unless the same call site was already recorded.
     fn push_unique(&mut self, operation: PanickingOperation) {
         // Macro expansion can surface several HIR nodes for one call; keep one diagnostic.
-        if self.operations.iter().any(|existing| {
-            existing.name == operation.name
-                && existing.span.lo() == operation.span.lo()
-                && existing.span.hi() == operation.span.hi()
-        }) {
-            return;
+        let is_duplicate = self
+            .operations
+            .iter()
+            .any(|existing| existing.name == operation.name && existing.span == operation.span);
+        if !is_duplicate {
+            self.operations.push(operation);
         }
-
-        self.operations.push(operation);
     }
 }
 
-impl<'tcx> Visitor<'tcx> for PanickingOperationFinder {
-    /// Helper for visit expr analysis.
+impl<'tcx> Visitor<'tcx> for PanickingOperationFinder<'_, 'tcx> {
+    /// Record a panicking operation, then continue into child expressions.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        if let Some(operation) = panicking_operation(expr) {
+        if let Some(operation) = panicking_operation(self.cx, expr) {
             self.push_unique(operation);
         }
 
@@ -200,71 +207,68 @@ impl<'tcx> Visitor<'tcx> for PanickingOperationFinder {
     }
 }
 
-/// Helper for panicking operation analysis.
-fn panicking_operation(expr: &Expr<'_>) -> Option<PanickingOperation> {
-    if let Some(operation) = panicking_method_call(expr) {
+/// Return the panicking method call or macro call that produced the expression.
+fn panicking_operation(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<PanickingOperation> {
+    if let Some(operation) = panicking_method_call(cx, expr) {
         return Some(operation);
     }
 
-    panicking_macro_call(expr.span)
+    panicking_macro_call(cx, expr.span)
 }
 
-/// Helper for panicking method call analysis.
-fn panicking_method_call(expr: &Expr<'_>) -> Option<PanickingOperation> {
+/// Return an `Option` or `Result` `unwrap` or `expect` call.
+fn panicking_method_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<PanickingOperation> {
+    // Resolve the called method before comparing its name.
     let ExprKind::MethodCall(segment, _receiver, _args, _call_span) = expr.kind else {
         return None;
     };
-    let method_name = segment.ident.name.as_str();
-
-    PANICKING_METHODS
+    let method_def_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
+    let method_name = cx.tcx.item_name(method_def_id);
+    let name = PANICKING_METHODS
         .iter()
         .copied()
-        .find(|candidate| *candidate == method_name)
-        .map(|name| PanickingOperation {
-            name,
-            span: segment.ident.span,
-        })
+        .find(|name| *name == method_name.as_str())?;
+
+    // Resolve the method to an inherent impl on `Option` or `Result`, whatever its spelling.
+    let impl_def_id = cx.tcx.impl_of_assoc(method_def_id)?;
+    let self_ty = cx
+        .tcx
+        .type_of(impl_def_id)
+        .instantiate_identity()
+        .skip_norm_wip();
+    matches!(self_ty.kind(), ty::Adt(adt, _)
+        if cx.tcx.is_diagnostic_item(sym::Option, adt.did())
+            || cx.tcx.is_diagnostic_item(sym::Result, adt.did()))
+    .then_some(PanickingOperation {
+        name,
+        span: segment.ident.span,
+    })
 }
 
-/// Helper for panicking macro call analysis.
-fn panicking_macro_call(span: Span) -> Option<PanickingOperation> {
-    let mut expn_data = span.ctxt().outer_expn_data();
-    let mut found = None;
-
-    // Walk outward so nested panic implementations prefer the user's outer macro call.
-    loop {
-        if let ExpnKind::Macro(MacroKind::Bang, name) = expn_data.kind
-            && let Some(macro_name) = panicking_macro_name(name.as_str())
-        {
-            found = Some(PanickingOperation {
-                name: macro_name,
+/// Return the outermost panicking standard macro call that produced the span.
+fn panicking_macro_call(cx: &LateContext<'_>, span: Span) -> Option<PanickingOperation> {
+    // The backtrace runs from the innermost expansion outward, so the last match is the
+    // user's macro call rather than a nested panic implementation.
+    span.macro_backtrace()
+        .filter(|expn_data| matches!(expn_data.kind, ExpnKind::Macro(MacroKind::Bang, _)))
+        .filter_map(|expn_data| {
+            let name = panicking_macro_name(cx, expn_data.macro_def_id?)?;
+            Some(PanickingOperation {
+                name,
                 span: expn_data.call_site,
-            });
-        }
-
-        if !expn_data.call_site.from_expansion() {
-            return found;
-        }
-        // Continue through nested expansions until reaching the user's source call.
-        expn_data = expn_data.call_site.ctxt().outer_expn_data();
-    }
+            })
+        })
+        .last()
 }
 
-/// Return the panicking macro name.
-fn panicking_macro_name(name: &str) -> Option<&'static str> {
-    let normalized = name.strip_suffix("_macro").unwrap_or(name);
-    if PANICKING_MACROS.contains(&normalized) {
-        return PANICKING_MACROS
-            .iter()
-            .copied()
-            .find(|candidate| *candidate == normalized);
-    }
+/// Return the reported name of a standard panicking macro, matched by diagnostic item.
+fn panicking_macro_name(cx: &LateContext<'_>, def_id: DefId) -> Option<&'static str> {
+    let diagnostic_name = cx.tcx.get_diagnostic_name(def_id)?;
 
-    match normalized {
-        "core_panic" | "std_panic" => Some("panic"),
-        name if name.starts_with("panic_") => Some("panic"),
-        _ => None,
-    }
+    PANICKING_MACROS
+        .iter()
+        .find(|(item, _)| *item == diagnostic_name.as_str())
+        .map(|(_, name)| *name)
 }
 
 /// Emit the span lint with help diagnostic.

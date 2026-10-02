@@ -1,35 +1,28 @@
 warning: dependency `workspace_bad` has incomplete semver version `1`
-  --> $DIR/main.rs:1:1
+  --> $DIR/Cargo.toml:18:53
    |
-LL | fn main() {}
-   | ^^^^^^^^^^^^
+LL | workspace_bad = { path = "workspace_bad", version = "1" }
+   |                                                     ^^^ help: write the full version: `"1.0.0"`
    |
-   = help: write a full version such as `1.0.0` for `workspace_bad`
    = note: `#[warn(dependency_full_semver_versions)]` on by default
 
 warning: dependency `bad_major` has incomplete semver version `1`
-  --> $DIR/main.rs:1:1
+  --> $DIR/Cargo.toml:22:45
    |
-LL | fn main() {}
-   | ^^^^^^^^^^^^
-   |
-   = help: write a full version such as `1.0.0` for `bad_major`
+LL | bad_major = { path = "bad_major", version = "1" }
+   |                                             ^^^ help: write the full version: `"1.0.0"`
 
 warning: dependency `dev_bad` has incomplete semver version `0.1`
-  --> $DIR/main.rs:1:1
+  --> $DIR/Cargo.toml:28:41
    |
-LL | fn main() {}
-   | ^^^^^^^^^^^^
-   |
-   = help: write a full version such as `0.1.0` for `dev_bad`
+LL | dev_bad = { path = "dev_bad", version = "0.1" }
+   |                                         ^^^^^ help: write the full version: `"0.1.0"`
 
 warning: dependency `make_bad` has incomplete semver version `1`
-  --> $DIR/main.rs:1:1
+  --> $DIR/Cargo.toml:31:43
    |
-LL | fn main() {}
-   | ^^^^^^^^^^^^
-   |
-   = help: write a full version such as `1.0.0` for `make_bad`
+LL | make_bad = { path = "make_bad", version = "1" }
+   |                                           ^^^ help: write the full version: `"1.0.0"`
 
 warning: 4 warnings emitted
 

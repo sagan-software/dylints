@@ -1,8 +1,8 @@
 warning: workspace package defines `[lints]` without `workspace = true`
-  --> $DIR/main.rs:1:1
+  --> $DIR/Cargo.toml:6:1
    |
-LL | fn main() {}
-   | ^^^^^^^^^^^^
+LL | [lints]
+   | ^^^^^^^
    |
    = help: add `workspace = true` to the package `[lints]` table
    = note: `#[warn(workspace_lints_inheritance)]` on by default

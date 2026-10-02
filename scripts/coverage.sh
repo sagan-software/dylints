@@ -48,6 +48,11 @@ done
 repository_root="$(git rev-parse --show-toplevel)"
 target_dir="${COVERAGE_TARGET_DIR:-$repository_root/target/coverage}"
 report_dir="$target_dir/report"
+
+# Instrumented objects retain source mappings from the build that produced them.
+# Remove the previous build before compiling so stale mappings cannot enter the report.
+rm -rf "$target_dir/debug" "$target_dir/report" "$target_dir/profiles" \
+    "$target_dir/profiles.txt" "$target_dir/coverage.profdata"
 mkdir -p "$target_dir" "$report_dir"
 
 # Build every crate, including the libraries dylint_testing builds, into one target directory.
@@ -55,7 +60,6 @@ export CARGO_TARGET_DIR="$target_dir"
 export CARGO_INCREMENTAL=0
 export RUSTFLAGS="${RUSTFLAGS:-} -C instrument-coverage"
 export LLVM_PROFILE_FILE="$target_dir/profiles/%p-%m.profraw"
-rm -rf "$target_dir/profiles"
 mkdir -p "$target_dir/profiles"
 
 # Run every selected test even after a failure, then report and fail at the end.
@@ -81,9 +85,81 @@ done < <(find "$target_dir/debug" -maxdepth 2 -type f \( -name '*.so' -o -perm -
 
 ignore='(/\.cargo/registry/|/rustc/|/nix/store/|/ui/|/tests/fixtures/|/target/)'
 common=(--instr-profile "$target_dir/coverage.profdata" --ignore-filename-regex "$ignore")
-"$llvm_bin/llvm-cov" report "${common[@]}" "${objects[@]}" "${paths[@]}" >"$report_dir/summary.txt" 2>/dev/null
-"$llvm_bin/llvm-cov" export --format=lcov "${common[@]}" "${objects[@]}" "${paths[@]}" >"$report_dir/lcov.info" 2>/dev/null
-"$llvm_bin/llvm-cov" export --summary-only "${common[@]}" "${objects[@]}" "${paths[@]}" >"$report_dir/summary.json" 2>/dev/null
+
+# llvm-cov records #[path] modules with their lexical source paths, such as
+# `lint/src/../../shared.rs`. Normalize those paths before filtering the report.
+allowed_filenames_file=''
+if ((${#paths[@]} > 0)); then
+    selected_sources_file="$(mktemp "$target_dir/selected-sources.XXXXXX")"
+    all_summary_file="$(mktemp "$target_dir/all-summary.XXXXXX.json")"
+    allowed_filenames_file="$(mktemp "$target_dir/allowed-filenames.XXXXXX")"
+    trap 'rm -f "$selected_sources_file" "$all_summary_file" "$allowed_filenames_file"' EXIT
+
+    for source in "${paths[@]}"; do
+        realpath -m "$source"
+    done | sort -u >"$selected_sources_file"
+
+    # Build the candidate filename set before applying the scoped filter. This
+    # retains each lexical alias that resolves to a selected source file.
+    "$llvm_bin/llvm-cov" export --summary-only "${common[@]}" "${objects[@]}" \
+        >"$all_summary_file" 2>/dev/null
+    while IFS= read -r filename; do
+        filename_for_match="$filename"
+        if [[ "$filename_for_match" != /* ]]; then
+            filename_for_match="$repository_root/$filename_for_match"
+        fi
+        canonical_filename="$(realpath -m "$filename_for_match")"
+        if grep -F -x -q "$canonical_filename" "$selected_sources_file"; then
+            printf '%s\n' "$filename" >>"$allowed_filenames_file"
+        fi
+    done < <(jq -r '.data[0].files[].filename' "$all_summary_file")
+
+    # llvm-cov has no include-filename option. Exclude every discovered source
+    # file outside the selected set, including lexical aliases of #[path] files.
+    excluded_regex=''
+    while IFS= read -r filename; do
+        if grep -F -x -q "$filename" "$allowed_filenames_file"; then
+            continue
+        fi
+        escaped_filename="$(printf '%s' "$filename" | sed 's/[][\\.^$*+?(){}|]/\\&/g')"
+        if [[ -n "$excluded_regex" ]]; then
+            excluded_regex+='|'
+        fi
+        excluded_regex+="$escaped_filename"
+    done < <(jq -r '.data[0].files[].filename' "$all_summary_file")
+    if [[ -n "$excluded_regex" ]]; then
+        scoped_ignore="$ignore|$excluded_regex"
+        common=(--instr-profile "$target_dir/coverage.profdata" \
+            --ignore-filename-regex "$scoped_ignore")
+    fi
+fi
+
+"$llvm_bin/llvm-cov" report "${common[@]}" "${objects[@]}" >"$report_dir/summary.txt" 2>/dev/null
+"$llvm_bin/llvm-cov" export --format=lcov "${common[@]}" "${objects[@]}" >"$report_dir/lcov.info" 2>/dev/null
+"$llvm_bin/llvm-cov" export --summary-only "${common[@]}" "${objects[@]}" >"$report_dir/summary.json" 2>/dev/null
+
+if [[ -n "$allowed_filenames_file" ]]; then
+    filtered_summary_file="$(mktemp "$target_dir/filtered-summary.XXXXXX.json")"
+    jq --rawfile allowed "$allowed_filenames_file" '
+        ($allowed | split("\n") | map(select(length > 0))) as $allowed_files
+        | .data[0].files |= map(select(.filename as $filename
+            | any($allowed_files[]; . == $filename)))
+        | ["branches", "functions", "instantiations", "lines", "mcdc", "regions"] as $metrics
+        | reduce $metrics[] as $metric (.;
+            ([(.data[0].files[]?.summary[$metric].count // 0)] | add) // 0
+                as $count
+            | ([(.data[0].files[]?.summary[$metric].covered // 0)] | add) // 0
+                as $covered
+            | .data[0].totals[$metric] = {
+                count: $count,
+                covered: $covered,
+                notcovered: ($count - $covered),
+                percent: (if $count == 0 then 0 else 100 * $covered / $count end)
+            }
+        )
+    ' "$report_dir/summary.json" >"$filtered_summary_file"
+    mv "$filtered_summary_file" "$report_dir/summary.json"
+fi
 
 # Print the least covered files and the totals, then enforce the threshold.
 jq -r '.data[0].files[]

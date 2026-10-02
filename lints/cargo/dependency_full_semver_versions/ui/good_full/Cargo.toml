@@ -5,3 +5,7 @@ edition = "2024"
 
 [lib]
 path = "lib.rs"
+
+[features]
+a = []
+b = []

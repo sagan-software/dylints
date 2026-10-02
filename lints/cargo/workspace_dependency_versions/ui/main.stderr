@@ -1,8 +1,8 @@
 warning: dependency `bad_dep` specifies an explicit version instead of inheriting from `[workspace.dependencies]`
-  --> $DIR/main.rs:1:1
+  --> $DIR/Cargo.toml:13:41
    |
-LL | fn main() {}
-   | ^^^^^^^^^^^^
+LL | bad_dep = { path = "bad_dep", version = "0.1.0" }
+   |                                         ^^^^^^^
    |
    = help: move the version for `bad_dep` into `[workspace.dependencies]` and use `bad_dep.workspace = true` here
    = note: `#[warn(workspace_dependency_versions)]` on by default

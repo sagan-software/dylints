@@ -1,26 +1,19 @@
 #![feature(rustc_private)]
-#![expect(
-    clippy::let_underscore_must_use,
-    reason = "the lint intentionally ignores the diagnostic builder after emitting its message"
-)]
 
 //! A lint to check for bare rust-toolchain files.
 //!
-//! It inspects source structure and resolved rustc information to identify the
-//! pattern described by the lint documentation. The implementation keeps
-//! generated code and unsupported syntax conservative, then reports a focused
-//! diagnostic so callers can choose the documented replacement with confidence.
+//! It walks from the crate root file's directory toward the file system root
+//! and reports the first `rust-toolchain` file without the `.toml` extension.
+//! The diagnostic points at the start of that file, or at the crate root when
+//! rustc cannot load the file as text.
 
 extern crate rustc_ast;
-extern crate rustc_errors;
-extern crate rustc_span;
 
 use std::path::{Path, PathBuf};
 
+use cargo_support::{crate_root_path, emit_with_help, file_start_span};
 use rustc_ast::Crate;
-use rustc_errors::DiagDecorator;
-use rustc_lint::{EarlyContext, EarlyLintPass, Lint, LintContext};
-use rustc_span::Span;
+use rustc_lint::{EarlyContext, EarlyLintPass};
 
 dylint_support::documented_early_lint! {
     #[doc = include_str!("../README.md")]
@@ -31,78 +24,36 @@ dylint_support::documented_early_lint! {
 }
 
 impl EarlyLintPass for RustToolchainToml {
-    /// Check crate for this lint.
+    /// Check the crate root's ancestors for a bare `rust-toolchain` file.
     fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &Crate) {
-        let crate_root_span = krate.spans.inner_span;
+        if let Some(toolchain) =
+            crate_root_path(cx, krate).and_then(|crate_root| find_bare_toolchain(&crate_root))
+        {
+            // A file that is not valid UTF-8 cannot be shown, so report at the crate root instead.
+            let span = file_start_span(cx, &toolchain).unwrap_or(krate.spans.inner_span);
 
-        // Start from the real crate root source file so fixtures and workspace roots are handled
-        // the same way rustc saw them during this compilation.
-        let Some(crate_root) = crate_root_path(cx, krate.spans.inner_span) else {
-            return;
-        };
-
-        if find_bare_toolchain(&crate_root).is_none() {
-            return;
+            emit_with_help(
+                cx,
+                RUST_TOOLCHAIN_TOML,
+                span,
+                "repository uses `rust-toolchain` instead of `rust-toolchain.toml`",
+                "rename `rust-toolchain` to `rust-toolchain.toml`",
+            );
         }
-
-        emit_span_lint_with_help(
-            cx,
-            RUST_TOOLCHAIN_TOML,
-            crate_root_span,
-            "repository uses `rust-toolchain` instead of `rust-toolchain.toml`",
-            "rename `rust-toolchain` to `rust-toolchain.toml`",
-        );
     }
 }
 
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &EarlyContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: &'static str,
-    help: &'static str,
-) {
-    // Use rustc's native diagnostic decorator to keep the lint dependency-free.
-    cx.emit_span_lint(
-        lint,
-        span,
-        DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ = diag.help(help);
-        }),
-    );
-}
-
-/// Helper for crate root path analysis.
-fn crate_root_path(cx: &EarlyContext<'_>, span: Span) -> Option<PathBuf> {
-    // Virtual or path-remapped inputs may not have a readable local path, so skip those rather
-    // than guessing from the process working directory.
-    cx.sess()
-        .source_map()
-        .span_to_filename(span)
-        .into_local_path()
-}
-
-/// Find bare toolchain used by the lint.
+/// Return the nearest bare `rust-toolchain` file above the crate root file.
 fn find_bare_toolchain(crate_root: &Path) -> Option<PathBuf> {
-    // Walk upward because a toolchain file applies to every descendant crate.
-    let mut directory = crate_root.parent();
-
-    while let Some(path) = directory {
-        // A bare rust-toolchain file applies to descendants, so any source ancestor can trigger.
-        let candidate = path.join("rust-toolchain");
-        if candidate.is_file() {
-            return Some(candidate);
-        }
-
-        directory = path.parent();
-    }
-
-    None
+    // A toolchain file applies to every descendant directory.
+    crate_root
+        .ancestors()
+        .skip(1)
+        .map(|directory| directory.join("rust-toolchain"))
+        .find(|candidate| candidate.is_file())
 }
 
-/// Helper for ui analysis.
+/// Run the UI tests.
 #[test]
 fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");

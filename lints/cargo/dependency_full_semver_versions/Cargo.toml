@@ -9,6 +9,7 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+cargo_support = { package = "cargo-support", path = "../support" }
 dylint_linting.workspace = true
 dylint_support = { package = "dylint-support", path = "../../../support/dylint" }
 

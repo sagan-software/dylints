@@ -2,9 +2,9 @@
 
 ## What it does
 
-Checks function and method return types for `Result<T, String>`, including
-aliases of `Result` or `String` and a `Result` nested in the type arguments
-of the return type.
+Checks function, method, and `async fn` return types for `Result<T, String>`,
+including aliases of `Result` or `String` and a `Result` nested in the type
+arguments of the return type.
 
 ## Why is this bad?
 
@@ -17,8 +17,9 @@ message to react to a specific failure.
 The lint also warns at program edges where a text error is enough, such as a
 small command-line tool.
 
-It misses `async fn` return types, required trait methods without a body,
-closures, and other text error types such as `&str` or `Box<dyn Error>`.
+It misses required trait methods without a body, closures, return types
+written as an associated type such as `<Self as Trait>::Out`, and other text
+error types such as `&str` or `Box<dyn Error>`.
 
 ## Example
 

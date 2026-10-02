@@ -1,5 +1,5 @@
 warning: this error branch only logs the failure and then continues
-  --> $DIR/edge_cases.rs:29:9
+  --> $DIR/edge_cases.rs:36:9
    |
 LL |         Err(error) => {
    |         ^^^^^^^^^^
@@ -7,5 +7,37 @@ LL |         Err(error) => {
    = help: return the error or use `?` so the caller receives the failure
    = note: `#[warn(logged_error_continue)]` on by default
 
-warning: 1 warning emitted
+warning: this error branch only logs the failure and then continues
+  --> $DIR/edge_cases.rs:44:12
+   |
+LL |     if let Err(error) = fallible() {
+   |            ^^^^^^^^^^
+   |
+   = help: return the error or use `?` so the caller receives the failure
+
+warning: this error branch only logs the failure and then continues
+  --> $DIR/edge_cases.rs:51:12
+   |
+LL |     if let Err(error) = fallible() {
+   |            ^^^^^^^^^^
+   |
+   = help: return the error or use `?` so the caller receives the failure
+
+warning: this error branch only logs the failure and then continues
+  --> $DIR/edge_cases.rs:58:12
+   |
+LL |     if let Err(error) = fallible() {
+   |            ^^^^^^^^^^
+   |
+   = help: return the error or use `?` so the caller receives the failure
+
+warning: this error branch only logs the failure and then continues
+  --> $DIR/edge_cases.rs:66:16
+   |
+LL |         if let Err(error) = fallible() {
+   |                ^^^^^^^^^^
+   |
+   = help: return the error or use `?` so the caller receives the failure
+
+warning: 5 warnings emitted
 
