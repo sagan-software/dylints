@@ -31,41 +31,38 @@ dylint_support::documented_early_lint! {
 impl EarlyLintPass for DocAttrComment {
     /// Check attribute for this lint.
     fn check_attribute(&mut self, cx: &EarlyContext<'_>, attr: &Attribute) {
-        let Some(replacement) = simple_doc_comment_replacement(cx, attr) else {
+        // Rustc keeps doc comments separate from normal attributes, so reject all
+        // generated or non-doc forms before reading the source spelling.
+        if attr.span.from_expansion()
+            || !matches!(attr.kind, AttrKind::Normal(_))
+            || !attr.has_name(sym::doc)
+        {
+            return;
+        }
+        let Some(doc) = attr.value_str() else {
             return;
         };
+        let doc = doc.as_str();
+        if !is_simple_line_doc_text(doc) {
+            return;
+        }
+        let Some(source) = cx.sess().source_map().span_to_snippet(attr.span).ok() else {
+            return;
+        };
+        if !is_direct_doc_attr_source(&source, attr.style) {
+            return;
+        }
+        let replacement = doc_comment_replacement(attr.style, doc);
         // A line comment runs to the end of the line, so code after the attribute
         // would become doc text. Those attributes get help without a rewrite.
-        let replacement = ends_its_line(cx, attr.span).then_some(replacement);
+        let replacement = is_at_line_end(cx, attr.span).then_some(replacement);
 
         emit_span_lint_with_suggestion(cx, DOC_ATTR_COMMENT, attr.span, attr.style, replacement);
     }
 }
 
-/// Helper for simple doc comment replacement analysis.
-fn simple_doc_comment_replacement(cx: &EarlyContext<'_>, attr: &Attribute) -> Option<String> {
-    // Rustc keeps `///`, `//!`, and block doc comments in `AttrKind::DocComment`;
-    // only normal attributes can be replaceable explicit `doc` attributes.
-    (!attr.span.from_expansion() && matches!(attr.kind, AttrKind::Normal(_)))
-        .then_some(())
-        .filter(|()| attr.has_name(sym::doc))
-        // Require a direct, single-line string value before reading its source spelling.
-        .and_then(|()| attr.value_str())
-        .map(|doc| doc.as_str().to_owned())
-        .filter(|doc| is_simple_line_doc_text(doc))
-        .and_then(|doc| {
-            cx.sess()
-                .source_map()
-                .span_to_snippet(attr.span)
-                .ok()
-                .filter(|source| is_direct_doc_attr_source(source, attr.style))
-                .map(|_| doc)
-        })
-        .map(|doc| doc_comment_replacement(attr.style, &doc))
-}
-
 /// Return whether only whitespace follows `span` on its line.
-fn ends_its_line(cx: &EarlyContext<'_>, span: Span) -> bool {
+fn is_at_line_end(cx: &EarlyContext<'_>, span: Span) -> bool {
     cx.sess()
         .source_map()
         .span_to_next_source(span)
@@ -93,21 +90,18 @@ fn is_direct_doc_attr_source(source: &str, style: AttrStyle) -> bool {
     // plain string-valued `doc` attributes. Source spelling is the remaining signal
     // that this attribute was directly written as `#[doc = "..."]`.
     let source = source.trim_start();
-    if !match style {
+    let has_expected_prefix = match style {
         AttrStyle::Outer => source.starts_with("#[doc"),
         AttrStyle::Inner => source.starts_with("#![doc"),
-    } {
+    };
+    if !has_expected_prefix {
         return false;
     }
 
-    source
-        .split_once('=')
-        .is_some_and(|(_, value)| starts_with_string_literal(value.trim_start()))
-}
-
-/// Helper for starts with string literal analysis.
-fn starts_with_string_literal(source: &str) -> bool {
-    source.starts_with('"') || starts_with_raw_string_literal(source)
+    source.split_once('=').is_some_and(|(_, value)| {
+        let value = value.trim_start();
+        value.starts_with('"') || starts_with_raw_string_literal(value)
+    })
 }
 
 /// Helper for starts with raw string literal analysis.

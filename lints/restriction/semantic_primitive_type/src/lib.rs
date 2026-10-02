@@ -221,7 +221,10 @@ fn check_named_type<'tcx>(
     let Some(domain) = semantic_domain(cx, name, base) else {
         return;
     };
-    let primitive = primitive_name(base);
+    let primitive = base
+        .to_string()
+        .replace("std::string::", "")
+        .replace("alloc::string::", "");
 
     // Report the primitive and prescribe conversion at the system boundary.
     emit_lint(
@@ -234,22 +237,37 @@ fn check_named_type<'tcx>(
 
 /// Return the semantic domain when a boundary name and primitive type match.
 fn semantic_domain(cx: &LateContext<'_>, name: &str, base: Ty<'_>) -> Option<&'static str> {
-    // Pair recognized boundary names with the primitive family each domain disallows.
-    let domain = if name.ends_with("_id") && is_integer(base) {
-        Some("identity data")
-    } else if (name == "http_status" || name.ends_with("_http_status")) && is_integer(base) {
-        Some("an HTTP status")
-    } else if (matches!(name, "reason" | "reasons" | "reason_code" | "reason_codes")
+    // Integer domains use names that identify either an object or an HTTP status.
+    if is_integer(base) {
+        if is_identity_name(name) {
+            return Some("identity data");
+        }
+        if is_http_status_name(name) {
+            return Some("an HTTP status");
+        }
+    }
+    // String domains use closed names for machine-readable reason codes.
+    if is_string(cx, base) && is_reason_name(name) {
+        return Some("a reason code");
+    }
+    None
+}
+
+/// Return whether a name identifies an object or resource.
+fn is_identity_name(name: &str) -> bool {
+    name.ends_with("_id")
+}
+
+/// Return whether a name identifies an HTTP status value.
+fn is_http_status_name(name: &str) -> bool {
+    name == "http_status" || name.ends_with("_http_status")
+}
+
+/// Return whether a name identifies a machine-readable reason code.
+fn is_reason_name(name: &str) -> bool {
+    matches!(name, "reason" | "reasons" | "reason_code" | "reason_codes")
         || name.ends_with("_reason_code")
-        || name.ends_with("_reason_codes"))
-        && is_string(cx, base)
-    {
-        Some("a reason code")
-    } else {
-        None
-    };
-    // Keep the caller focused on emitting the diagnostic after classification.
-    domain
+        || name.ends_with("_reason_codes")
 }
 
 /// Peel transparent containers before classifying the stored domain value.
@@ -281,13 +299,6 @@ fn is_integer(ty: Ty<'_>) -> bool {
 fn is_string(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Str)
         || matches!(ty.kind(), ty::Adt(adt, _) if cx.tcx.is_lang_item(adt.did(), LangItem::String))
-}
-
-/// Render the semantic primitive for the diagnostic.
-fn primitive_name(ty: Ty<'_>) -> String {
-    ty.to_string()
-        .replace("std::string::", "")
-        .replace("alloc::string::", "")
 }
 
 /// Return a simple parameter name.

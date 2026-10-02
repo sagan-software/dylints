@@ -142,7 +142,7 @@ fn conversion_signature<'tcx>(
     local_def_id: LocalDefId,
 ) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
     // Resolve the conversion signature before inspecting its trait implementation.
-    if !conversion_name(name.as_str()) {
+    if !is_conversion_name(name.as_str()) {
         return None;
     }
     // Erase late-bound lifetimes so the trait solver sees closed types.
@@ -165,14 +165,14 @@ fn is_valid_from_conversion<'tcx>(
     output: Ty<'tcx>,
 ) -> bool {
     concrete_target_type(cx, output)
-        && meaningful_input(input)
+        && is_meaningful_input(input)
         && input != output
         && (outer_local_type(input) || outer_local_type(output))
         && !has_from_impl(cx, output, input)
 }
 
 /// Return whether the name uses conversion vocabulary without joining two operations.
-fn conversion_name(name: &str) -> bool {
+fn is_conversion_name(name: &str) -> bool {
     [
         "make_",
         "build_",
@@ -210,7 +210,7 @@ fn concrete_target_type(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
 ///
 /// A bare type parameter is rejected because `impl<T> From<T> for Target` overlaps
 /// the standard reflexive `impl<T> From<T> for T`.
-fn meaningful_input(ty: Ty<'_>) -> bool {
+fn is_meaningful_input(ty: Ty<'_>) -> bool {
     !matches!(ty.kind(), ty::Never | ty::Param(_))
         && !matches!(ty.kind(), ty::Tuple(fields) if fields.is_empty())
 }

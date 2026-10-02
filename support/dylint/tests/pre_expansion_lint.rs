@@ -4,7 +4,9 @@
     reason = "this test crate imports only the declaration macro under test"
 )]
 
-//! Expands `documented_pre_expansion_lint!` and checks the generated lint-pass metadata.
+//! This integration test expands `documented_pre_expansion_lint!` and checks the generated lint
+//! declaration before macro expansion. Compilation checks early-pass trait compatibility, while
+//! runtime assertions verify the pass name and registered lint name used by the compiler driver.
 
 extern crate rustc_driver as _;
 

@@ -4,13 +4,19 @@
     reason = "this test crate imports only the declaration macro under test"
 )]
 
-//! Expands `documented_early_lint_with_pass!` and checks the generated lint-pass metadata.
+//! This integration test expands `documented_early_lint_with_pass!` with an explicitly constructed
+//! pass. Compilation checks the generated declaration and pass traits, while runtime assertions
+//! verify the pass name and registered lint name so callers retain the metadata contract.
 
 extern crate rustc_driver as _;
 
 use rustc_lint::{EarlyLintPass, LintPass as _};
 
-/// Explicitly constructed pass used by the generated registration function.
+/// Explicitly constructed pass supplied to the generated declaration. This unit type carries no
+/// state and implements `EarlyLintPass`.
+///
+/// Its constructor and trait implementation keep the macro's explicit pass registration type
+/// checks visible to callers.
 #[derive(Clone, Copy, Debug)]
 pub struct DemoPass;
 

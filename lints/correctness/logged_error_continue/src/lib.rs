@@ -215,7 +215,7 @@ fn err_pattern(cx: &LateContext<'_>, pat: &Pat<'_>) -> bool {
 
 /// Return whether the branch body consists only of logging calls.
 fn expr_only_logs(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    if logging_call(cx, expr) {
+    if is_logging_call(cx, expr) {
         return true;
     }
 
@@ -243,22 +243,22 @@ fn stmt_only_logs(cx: &LateContext<'_>, stmt: &Stmt<'_>) -> bool {
 }
 
 /// Return whether the expression is a recognized logging macro or function call.
-fn logging_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    logging_macro_call(cx, expr.span) || logging_function_call(cx, expr)
+fn is_logging_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    is_logging_macro_call(cx, expr.span) || logging_function_call(cx, expr)
 }
 
 /// Return whether any macro expansion that produced the span is a logging macro.
-fn logging_macro_call(cx: &LateContext<'_>, span: Span) -> bool {
+fn is_logging_macro_call(cx: &LateContext<'_>, span: Span) -> bool {
     span.macro_backtrace().any(|expn_data| {
         matches!(expn_data.kind, ExpnKind::Macro(MacroKind::Bang, _))
             && expn_data
                 .macro_def_id
-                .is_some_and(|def_id| logging_macro(cx, def_id))
+                .is_some_and(|def_id| is_logging_macro(cx, def_id))
     })
 }
 
 /// Return whether a macro definition is `eprintln!` or a `log` or `tracing` event macro.
-fn logging_macro(cx: &LateContext<'_>, def_id: DefId) -> bool {
+fn is_logging_macro(cx: &LateContext<'_>, def_id: DefId) -> bool {
     cx.tcx
         .get_diagnostic_name(def_id)
         .is_some_and(|name| name.as_str() == "eprintln_macro")

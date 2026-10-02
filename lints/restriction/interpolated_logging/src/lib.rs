@@ -31,20 +31,26 @@ dylint_support::documented_pre_expansion_lint! {
 impl EarlyLintPass for InterpolatedLogging {
     /// Check mac for this lint.
     fn check_mac(&mut self, cx: &EarlyContext<'_>, mac: &MacCall) {
-        if !logging_macro(mac) {
+        if !is_logging_macro(mac) {
             return;
         }
 
         // Inspect the raw macro tokens before expansion so both `log` and `tracing` macros work.
-        if let Some(span) = interpolated_string_span(mac) {
-            emit_span_lint_with_help(
-                cx,
-                INTERPOLATED_LOGGING,
-                span,
-                "logging message uses string interpolation",
-                "put runtime values in structured key/value fields and keep the message static",
-            );
-        }
+        let Some(span) = mac
+            .args
+            .tokens
+            .iter()
+            .find_map(interpolated_string_token_span)
+        else {
+            return;
+        };
+        emit_span_lint_with_help(
+            cx,
+            INTERPOLATED_LOGGING,
+            span,
+            "logging message uses string interpolation",
+            "put runtime values in structured key/value fields and keep the message static",
+        );
     }
 }
 
@@ -72,22 +78,13 @@ fn emit_span_lint_with_help(
 /// Formatted-output macros such as `println!` and `write!` are not logging.
 ///
 /// Their text is program output, such as a `Display` impl or a command-line report.
-fn logging_macro(mac: &MacCall) -> bool {
+fn is_logging_macro(mac: &MacCall) -> bool {
     mac.path.segments.last().is_some_and(|segment| {
         matches!(
             segment.ident.name.as_str(),
             "trace" | "debug" | "info" | "warn" | "error" | "event"
         )
     })
-}
-
-/// Return the first string literal span that contains an unescaped format placeholder.
-fn interpolated_string_span(mac: &MacCall) -> Option<Span> {
-    // The first interpolated string is enough to explain the logging call pattern.
-    mac.args
-        .tokens
-        .iter()
-        .find_map(interpolated_string_token_span)
 }
 
 /// Search a token tree recursively for an interpolated string literal.

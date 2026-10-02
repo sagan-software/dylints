@@ -92,7 +92,7 @@ impl<'tcx> LateLintPass<'tcx> for HttpMethodString {
         let (FnKind::ItemFn(ident, ..) | FnKind::Method(ident, _)) = kind else {
             return;
         };
-        if implements_trait_item(cx, local_def_id) {
+        if is_trait_impl_method(cx, local_def_id) {
             return;
         }
 
@@ -215,7 +215,7 @@ fn has_loaded_http_crate(cx: &LateContext<'_>) -> bool {
 }
 
 /// Return whether a function implements an item of a trait impl.
-fn implements_trait_item(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+fn is_trait_impl_method(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
     cx.tcx
         .impl_of_assoc(local_def_id.to_def_id())
         .is_some_and(|impl_def_id| cx.tcx.impl_opt_trait_id(impl_def_id).is_some())

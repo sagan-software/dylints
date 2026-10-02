@@ -157,23 +157,63 @@ fn integer_ty(ty: ty::Ty<'_>) -> Option<&'static str> {
 mod tests {
     use super::{ambiguous_measurement_name, has_unit_token};
 
-    /// Accept only field names whose final token denotes a measurement.
+    /// Accept a field whose final token denotes a size measurement.
     #[test]
-    fn identifies_ambiguous_measurement_names() {
+    fn identifies_size_measurement_name() {
         assert!(ambiguous_measurement_name("maximum_size"));
+    }
+
+    /// Accept a field whose final token denotes a length measurement.
+    #[test]
+    fn identifies_length_measurement_name() {
         assert!(ambiguous_measurement_name("payload_length"));
+    }
+
+    /// Accept a field whose final token denotes an offset measurement.
+    #[test]
+    fn identifies_offset_measurement_name() {
         assert!(ambiguous_measurement_name("file_offset"));
+    }
+
+    /// Reject names whose final token is a more specific noun.
+    #[test]
+    fn rejects_compound_size_name() {
         assert!(!ambiguous_measurement_name("size_hint"));
+    }
+
+    /// Reject names that do not identify a measurement.
+    #[test]
+    fn rejects_non_measurement_name() {
         assert!(!ambiguous_measurement_name("retries"));
     }
 
-    /// Recognize unit tokens without treating adjacent nouns as units.
+    /// Recognize a byte unit token.
     #[test]
-    fn identifies_unit_tokens() {
+    fn identifies_byte_unit_token() {
         assert!(has_unit_token("maximum_size_bytes"));
+    }
+
+    /// Recognize a binary-size unit token case-insensitively.
+    #[test]
+    fn identifies_binary_size_unit_token() {
         assert!(has_unit_token("Size in KiB"));
+    }
+
+    /// Recognize a character-count unit token.
+    #[test]
+    fn identifies_character_unit_token() {
         assert!(has_unit_token("number of characters"));
+    }
+
+    /// Reject a measurement name without a unit token.
+    #[test]
+    fn rejects_unqualified_measurement_name() {
         assert!(!has_unit_token("maximum_size"));
+    }
+
+    /// Reject an offset name without a unit token.
+    #[test]
+    fn rejects_unqualified_offset_name() {
         assert!(!has_unit_token("file_offset"));
     }
 }

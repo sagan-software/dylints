@@ -43,7 +43,7 @@ dylint_support::documented_early_lint! {
 impl EarlyLintPass for UnnecessaryModuleDirectory {
     /// Check every loaded module file after rustc has resolved module paths.
     fn check_crate(&mut self, cx: &EarlyContext<'_>, _krate: &Crate) {
-        for directory in unnecessary_module_directories(cx) {
+        for directory in loaded_mod_rs_files(cx).iter().filter_map(module_directory) {
             emit_unnecessary_module_directory(cx, &directory);
         }
     }
@@ -79,21 +79,18 @@ struct SourceCandidate {
     start_pos: BytePos,
 }
 
-/// Return loaded folder modules whose directory tree has no second file.
-fn unnecessary_module_directories(cx: &EarlyContext<'_>) -> Vec<ModuleDirectory> {
-    loaded_mod_rs_files(cx)
-        .iter()
-        .filter_map(module_directory)
-        .collect()
-}
-
 /// Return loaded local `mod.rs` files inside the current Cargo package.
 fn loaded_mod_rs_files(cx: &EarlyContext<'_>) -> Vec<SourceCandidate> {
     // Anchor containment to the compiled crate root, then to its nearest package manifest.
     let Some(crate_source_path) = crate_source_path(cx) else {
         return Vec::new();
     };
-    let Some(package_root) = nearest_package_root(&crate_source_path) else {
+    let Some(package_root) = crate_source_path.parent().and_then(|parent| {
+        parent
+            .ancestors()
+            .find(|directory| directory.join("Cargo.toml").is_file())
+            .map(Path::to_path_buf)
+    }) else {
         return Vec::new();
     };
     let source_map = cx.sess().source_map();
@@ -131,15 +128,6 @@ fn loaded_mod_rs_files(cx: &EarlyContext<'_>) -> Vec<SourceCandidate> {
 fn crate_source_path(cx: &EarlyContext<'_>) -> Option<PathBuf> {
     let path = cx.sess().local_crate_source_file()?.into_local_path()?;
     absolute_canonical_path(path)
-}
-
-/// Find the nearest Cargo package root above one compiled source file.
-fn nearest_package_root(source_path: &Path) -> Option<PathBuf> {
-    source_path
-        .parent()?
-        .ancestors()
-        .find(|directory| directory.join("Cargo.toml").is_file())
-        .map(Path::to_path_buf)
 }
 
 /// Resolve one source-map file to a canonical local path.

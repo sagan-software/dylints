@@ -124,21 +124,52 @@ fn completes_one_and_two_part_versions() {
     assert_eq!(full_version("0.1").as_deref(), Some("0.1.0"));
 }
 
-/// Complete versions and other requirement forms are not changed.
+/// Complete versions are not changed.
 #[test]
-fn skips_full_versions_and_other_requirements() {
-    for version in [
-        "1.2.3",
-        "1.2.3.4",
-        ">=1",
-        "1.*",
-        "1.",
-        ".1",
-        "",
-        "1.0-alpha",
-    ] {
-        assert_eq!(full_version(version), None, "{version}");
-    }
+fn skips_complete_versions() {
+    assert_eq!(full_version("1.2.3"), None);
+}
+
+/// Versions with more than three components are not changed.
+#[test]
+fn skips_versions_with_extra_components() {
+    assert_eq!(full_version("1.2.3.4"), None);
+}
+
+/// Operator requirements are not changed.
+#[test]
+fn skips_operator_requirements() {
+    assert_eq!(full_version(">=1"), None);
+}
+
+/// Wildcard requirements are not changed.
+#[test]
+fn skips_wildcard_requirements() {
+    assert_eq!(full_version("1.*"), None);
+}
+
+/// Empty numeric components are not changed.
+#[test]
+fn skips_trailing_empty_components() {
+    assert_eq!(full_version("1."), None);
+}
+
+/// Leading empty components are not changed.
+#[test]
+fn skips_leading_empty_components() {
+    assert_eq!(full_version(".1"), None);
+}
+
+/// Empty requirements are not changed.
+#[test]
+fn skips_empty_requirements() {
+    assert_eq!(full_version(""), None);
+}
+
+/// Pre-release requirements are not changed.
+#[test]
+fn skips_pre_release_requirements() {
+    assert_eq!(full_version("1.0-alpha"), None);
 }
 
 /// Run the UI tests.
