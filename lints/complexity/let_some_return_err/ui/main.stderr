@@ -1,5 +1,5 @@
 warning: `Option` mismatch returns `Err` manually
-  --> $DIR/main.rs:32:5
+  --> $DIR/main.rs:34:5
    |
 LL | /     let Some(user) = find_user(id) else {
 LL | |         return Err(Error::Missing);
@@ -16,7 +16,7 @@ LL +     let user = (find_user(id)).ok_or_else(|| Error::Missing)?;
    |
 
 warning: `Option` mismatch returns `Err` manually
-  --> $DIR/main.rs:40:5
+  --> $DIR/main.rs:42:5
    |
 LL | /     let std::option::Option::Some(user) = find_alias_user(id) else {
 LL | |         return Err(Error::Empty);
@@ -32,7 +32,7 @@ LL +     let user = (find_alias_user(id)).ok_or_else(|| Error::Empty)?;
    |
 
 warning: `Option` mismatch returns `Err` manually
-  --> $DIR/main.rs:49:9
+  --> $DIR/main.rs:51:9
    |
 LL | /         let Some(user) = find_user(id) else {
 LL | |             return Err(Error::Missing);
@@ -48,7 +48,7 @@ LL +         let user = (find_user(id)).ok_or_else(|| Error::Missing)?;
    |
 
 warning: `Option` mismatch returns `Err` manually
-  --> $DIR/main.rs:61:9
+  --> $DIR/main.rs:63:9
    |
 LL | /         let Some(user) = find_user(id) else {
 LL | |             return Err(Error::Empty);

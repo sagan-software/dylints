@@ -5,7 +5,7 @@
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-#[serde(expecting = "A user id.")]
+#[serde(expecting = "a user id")]
 struct BadUserId(String);
 
 #[derive(Deserialize)]

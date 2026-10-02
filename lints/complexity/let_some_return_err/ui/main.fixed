@@ -31,26 +31,20 @@ fn find_lookup(id: u64) -> Lookup<&'static str> {
 }
 
 fn direct_return(id: u64) -> Result<&'static str, Error> {
-    let Some(user) = find_user(id) else {
-        return Err(Error::Missing);
-    };
+    let user = (find_user(id)).ok_or_else(|| Error::Missing)?;
 
     Ok(user)
 }
 
 fn alias_option_and_result(id: u64) -> Fallible<&'static str> {
-    let std::option::Option::Some(user) = find_alias_user(id) else {
-        return Err(Error::Empty);
-    };
+    let user = (find_alias_user(id)).ok_or_else(|| Error::Empty)?;
 
     Ok(user)
 }
 
 fn nested_control_flow(id: u64) -> Result<&'static str, Error> {
     if id > 0 {
-        let Some(user) = find_user(id) else {
-            return Err(Error::Missing);
-        };
+        let user = (find_user(id)).ok_or_else(|| Error::Missing)?;
 
         return Ok(user);
     }
@@ -60,9 +54,7 @@ fn nested_control_flow(id: u64) -> Result<&'static str, Error> {
 
 fn closure_return(id: u64) -> Result<&'static str, Error> {
     let load = || -> Result<&'static str, Error> {
-        let Some(user) = find_user(id) else {
-            return Err(Error::Empty);
-        };
+        let user = (find_user(id)).ok_or_else(|| Error::Empty)?;
 
         Ok(user)
     };

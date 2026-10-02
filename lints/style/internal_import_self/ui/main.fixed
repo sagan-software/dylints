@@ -16,8 +16,8 @@ mod nested_parent {
 use self::nested_parent::child::SelfQualifiedNested;
 use self::some_internal_thing::SelfQualified;
 use crate::some_internal_thing::CrateQualified;
-use nested_parent::child::NestedThing;
-use some_internal_thing::Whatever;
+use self::nested_parent::child::NestedThing;
+use self::some_internal_thing::Whatever;
 
 mod outer {
     mod inner {

@@ -77,14 +77,19 @@ fn check_use_path(cx: &LateContext<'_>, path: &UsePath<'_>, child_modules: &[Def
         return;
     }
 
+    // Grouped imports lower to leaf spans such as `nested::Deep` in `use root::{nested::Deep}`,
+    // so only suggest when the span starts at the first segment and holds the full path.
+    let starts_at_root = path
+        .segments
+        .first()
+        .is_some_and(|segment| segment.ident.span.lo() == path.span.lo());
     let suggestion = cx
         .sess()
         .source_map()
         .span_to_snippet(path.span)
         .ok()
-        // Grouped imports lower to leaf spans, so only suggest when the snippet contains the full path.
-        .filter(|path| path.contains("::"))
-        .map(|path| format!("self::{path}"));
+        .filter(|snippet| starts_at_root && snippet.contains("::"))
+        .map(|snippet| format!("self::{snippet}"));
 
     emit_span_lint_with_help(
         cx,

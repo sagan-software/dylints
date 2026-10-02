@@ -12,9 +12,7 @@ fn lookup_pair() -> Option<(u64, &'static str)> {
 }
 
 fn destructured_return() -> Result<u64, Error> {
-    let Some((id, _name)) = lookup_pair() else {
-        return Err(Error::Missing);
-    };
+    let (id, _name) = (lookup_pair()).ok_or_else(|| Error::Missing)?;
     Ok(id)
 }
 
@@ -28,9 +26,7 @@ fn lookup_point() -> Option<Point> {
 }
 
 fn struct_pattern_return() -> Result<u64, Error> {
-    let Some(Point { x, y }) = lookup_point() else {
-        return Err(Error::Missing);
-    };
+    let Point { x, y } = (lookup_point()).ok_or_else(|| Error::Missing)?;
     Ok(x + y)
 }
 
@@ -77,9 +73,7 @@ fn mutated_copy_place(holder: &mut Holder) -> Result<u64, Error> {
 }
 
 fn copied_place(holder: &Holder) -> Result<u64, Error> {
-    let Some(count) = holder.count else {
-        return Err(Error::Missing);
-    };
+    let count = (holder.count).ok_or_else(|| Error::Missing)?;
     Ok(count)
 }
 

@@ -19,6 +19,10 @@ The fix changes `source()`. After the change, the wrapper's `source()` returns
 the inner error's source instead of the inner error. Code that downcasts the
 wrapper's source to the inner type stops matching.
 
+Thiserror rejects `#[source]` on the field of a transparent item, so a field
+with `#[source]` gets help without a fix. Remove `#[source]` by hand when you
+apply the change.
+
 The lint recognizes the derive only as `thiserror::Error` or through a
 `use thiserror::Error` or `use thiserror::Error as Name` import. A glob import
 such as `use thiserror::*` hides the derive from the lint.

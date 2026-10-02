@@ -3,7 +3,7 @@
 ## What it does
 
 Checks for `serializer.serialize_str(&value.to_string())`, where `to_string`
-is `ToString::to_string`.
+is `ToString::to_string` and the type of `value` implements `Display`.
 
 ## Why is this bad?
 
@@ -17,6 +17,10 @@ The lint misses a `to_string` result stored in a variable first, and other
 ways to build the string, such as `format!`. Serde's default `collect_str`
 still allocates, so the change only saves memory with serializers that
 override it.
+
+The lint skips a value whose own type does not implement `Display`, such as a
+type with a manual `ToString` impl or a type that only dereferences to a
+`Display` type, because `collect_str` would not accept it.
 
 ## Example
 

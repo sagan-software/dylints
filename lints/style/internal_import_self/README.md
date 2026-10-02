@@ -15,8 +15,8 @@ that the path is local.
 ## Known problems
 
 `use` items inside function bodies are not checked. For grouped imports such
-as `use helpers::{One, Two};`, the lint reports each name but cannot suggest a
-fix. Paths that start with a module brought into scope by another `use` item
+as `use helpers::{One, nested::Two};`, the lint reports each name but cannot
+suggest a fix. Paths that start with a module brought into scope by another `use` item
 are not checked.
 
 ## Example

@@ -9,26 +9,26 @@ use thiserror::{Error, Error as ThisError};
 pub struct Inner;
 
 #[derive(thiserror::Error, Debug)]
-#[error("{source}")]
+#[error(transparent)]
 pub struct QualifiedManualSourceDisplay {
     #[from]
     source: Inner,
 }
 
 #[derive(Error, Debug)]
-#[error("{source}")]
+#[error(transparent)]
 pub struct ImportedManualSourceDisplay {
     #[from]
     source: Inner,
 }
 
 #[derive(ThisError, Debug)]
-#[error("{0}")]
+#[error(transparent)]
 pub struct RenamedManualTupleDisplay(#[from] Inner);
 
 #[derive(ThisError, Debug)]
 pub enum VariantManualSourceDisplay {
-    #[error("{0}")]
+    #[error(transparent)]
     Variant(#[from] Inner),
 }
 

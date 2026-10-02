@@ -6,7 +6,7 @@ fn allocated<S>(serializer: S, value: u64) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    serializer.serialize_str(&value.to_string())
+    serializer.collect_str(&value)
 }
 
 fn already_rendered<S>(serializer: S, rendered: &str) -> Result<S::Ok, S::Error>

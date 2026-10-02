@@ -8,7 +8,7 @@ async fn work() {}
 
 async fn invalid() {
     let settings = Settings::clone_current();
-    let future = settings.bind(|| async { work().await });
+    let future = settings.bind_async(async { work().await });
     future.await;
 }
 
@@ -16,7 +16,7 @@ async fn invalid_async_move() {
     let settings = Settings::clone_current();
     let name = String::from("name");
     settings
-        .bind(|| async move {
+        .bind_async(async move {
             drop(name);
             work().await;
         })

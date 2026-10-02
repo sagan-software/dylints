@@ -15,9 +15,13 @@ Snapshots inside the future do not see the settings.
 ## Known problems
 
 The lint does not check a closure that returns a future from a function call,
-such as `settings.bind(|| work())`. The suggested fix renames `bind` to
-`bind_async` but keeps the closure. Remove `||` as well, because `bind_async`
-takes the future itself.
+such as `settings.bind(|| work())`.
+
+The machine-applicable fix renames `bind` to `bind_async` and removes the
+closure head, so `bind(|| async { .. })` becomes `bind_async(async { .. })`. It
+is offered only when the parameterless closure returns the async block
+directly. A `move` closure also needs an `async move` block. Async closures
+and other `move` closures get help without a fix.
 
 ## Example
 

@@ -20,17 +20,17 @@ struct CfgDisabled<'a> {
 
 #[derive(serde::Deserialize)]
 struct User<'a> {
-    #[serde(borrow)]
+    
     name: &'a str,
-    #[serde(borrow)]
+    
     raw: &'a [u8],
-    #[serde(borrow)]
+    
     aliased_name: BorrowedStr<'a>,
-    #[serde(borrow)]
+    
     aliased_raw: BorrowedBytes<'a>,
     #[serde(borrow)]
     path: BorrowedPath<'a>,
-    #[serde(borrow)]
+    
     inline_name: &'a str,
     #[serde(borrow, rename = "renamed")]
     renamed_name: &'a str,

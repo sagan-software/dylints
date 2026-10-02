@@ -16,7 +16,8 @@ be capitalized and should not end with a period.
 
 The lint flags a message that starts with an acronym, such as `"UUID string"`,
 and suggests `"uUID string"`. It only checks plain string literals and misses
-raw strings.
+raw strings. A message with an escape sequence, such as `"A \"quoted\" id."`,
+gets help without a fix.
 
 The lint reads source files as text, so it also checks items disabled by
 `cfg`.

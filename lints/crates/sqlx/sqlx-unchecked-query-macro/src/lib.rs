@@ -60,12 +60,15 @@ impl<'tcx> LateLintPass<'tcx> for SqlxUncheckedQueryMacro {
                     "`{}!` skips SQLx input or output type checking",
                     macro_call.name
                 ));
+                // The checked macro verifies the query against the database at compile
+                // time and can reject code that compiles today, so `cargo fix` must not
+                // apply this rewrite automatically.
                 if let Some(replacement) = replacement {
                     let _configured_suggestion = diagnostic.span_suggestion(
                         macro_call.span,
                         format!("use the checked `{checked_name}!` macro"),
                         replacement,
-                        Applicability::MachineApplicable,
+                        Applicability::MaybeIncorrect,
                     );
                 } else {
                     let _configured_help =

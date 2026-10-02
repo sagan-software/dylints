@@ -1,5 +1,5 @@
 warning: `thiserror` can forward this source transparently
-  --> $DIR/main.rs:10:1
+  --> $DIR/main.rs:12:1
    |
 LL | #[error("{source}")]
    | ^^^^^^^^^^^^^^^^^^^^ help: replace the manual display forwarding with `#[error(transparent)]`: `#[error(transparent)]`
@@ -7,22 +7,38 @@ LL | #[error("{source}")]
    = note: `#[warn(thiserror_transparent_single_source_display)]` on by default
 
 warning: `thiserror` can forward this source transparently
-  --> $DIR/main.rs:17:1
+  --> $DIR/main.rs:19:1
    |
 LL | #[error("{source}")]
    | ^^^^^^^^^^^^^^^^^^^^ help: replace the manual display forwarding with `#[error(transparent)]`: `#[error(transparent)]`
 
 warning: `thiserror` can forward this source transparently
-  --> $DIR/main.rs:24:1
+  --> $DIR/main.rs:26:1
    |
 LL | #[error("{0}")]
    | ^^^^^^^^^^^^^^^ help: replace the manual display forwarding with `#[error(transparent)]`: `#[error(transparent)]`
 
 warning: `thiserror` can forward this source transparently
-  --> $DIR/main.rs:29:5
+  --> $DIR/main.rs:31:5
    |
 LL |     #[error("{0}")]
    |     ^^^^^^^^^^^^^^^ help: replace the manual display forwarding with `#[error(transparent)]`: `#[error(transparent)]`
 
-warning: 4 warnings emitted
+warning: `thiserror` can forward this source transparently
+  --> $DIR/main.rs:59:1
+   |
+LL | #[error("{0}")]
+   | ^^^^^^^^^^^^^^^
+   |
+   = help: replace the manual display forwarding with `#[error(transparent)]`
+
+warning: `thiserror` can forward this source transparently
+  --> $DIR/main.rs:63:1
+   |
+LL | #[error("{source}")]
+   | ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: replace the manual display forwarding with `#[error(transparent)]`
+
+warning: 6 warnings emitted
 

@@ -15,6 +15,10 @@ setting.
 
 The lint misses a type alias from another crate.
 
+The machine-applicable fix deletes the whole attribute, so it is offered only
+when `borrow` is the attribute's only entry. An attribute such as
+`#[serde(borrow, rename = "name")]` gets help without a fix.
+
 The lint matches derives to types by name, so two types with the same name in
 one crate can share the same derive result.
 

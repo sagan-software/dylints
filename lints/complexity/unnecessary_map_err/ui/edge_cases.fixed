@@ -22,11 +22,11 @@ fn nested_result(raw: &str) -> Result<Result<u16, Error>, Error> {
 }
 
 fn nested_result_with_try(raw: &str) -> Result<Result<u16, Error>, Error> {
-    Ok(Ok(raw.parse::<u16>().map_err(Error::from)?))
+    Ok(Ok(raw.parse::<u16>()?))
 }
 
 fn block_closure_with_try(raw: &str) -> Result<u16, Error> {
-    let port = raw.parse::<u16>().map_err(|error| Error::from(error))?;
+    let port = raw.parse::<u16>()?;
     Ok(port)
 }
 

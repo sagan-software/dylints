@@ -1,5 +1,5 @@
 warning: `Option` mismatch returns `Err` manually
-  --> $DIR/edge_cases.rs:13:5
+  --> $DIR/edge_cases.rs:15:5
    |
 LL | /     let Some((id, _name)) = lookup_pair() else {
 LL | |         return Err(Error::Missing);
@@ -15,5 +15,107 @@ LL -     };
 LL +     let (id, _name) = (lookup_pair()).ok_or_else(|| Error::Missing)?;
    |
 
-warning: 1 warning emitted
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:31:5
+   |
+LL | /     let Some(Point { x, y }) = lookup_point() else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some(Point { x, y }) = lookup_point() else {
+LL -         return Err(Error::Missing);
+LL -     };
+LL +     let Point { x, y } = (lookup_point()).ok_or_else(|| Error::Missing)?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:38:5
+   |
+LL | /     let Some(0) = count else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:45:5
+   |
+LL | /     let Some((7, name)) = lookup_pair() else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:52:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(error);
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:65:5
+   |
+LL | /     let Some(ref name) = holder.name else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:72:5
+   |
+LL | /     let Some(ref mut count) = holder.count else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:80:5
+   |
+LL | /     let Some(count) = holder.count else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   |
+LL -     let Some(count) = holder.count else {
+LL -         return Err(Error::Missing);
+LL -     };
+LL +     let count = (holder.count).ok_or_else(|| Error::Missing)?;
+   |
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:87:5
+   |
+LL | /     let Some(value): Option<u64> = raw.parse().ok() else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/edge_cases.rs:94:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(Error::Missing);
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: 10 warnings emitted
 

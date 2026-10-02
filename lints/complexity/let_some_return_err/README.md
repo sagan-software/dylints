@@ -15,9 +15,13 @@ the `Option` into a `Result`, and `?` returns the error, in one line.
 
 - The machine-applicable fix always uses `ok_or_else` and wraps the initializer
   in parentheses, for example `(find_user(id)).ok_or_else(|| error)?`.
-- The lint does not check that the pattern inside `Some(..)` is irrefutable.
-  `let Some(0) = count else { return Err(..) };` triggers, and the suggested
-  `let 0 = ...?;` does not compile.
+- The lint gives help without a fix when the rewrite could fail to compile or
+  change behavior. This covers a refutable pattern inside `Some(..)`, such as
+  `Some(0)`, and an error value that uses a local variable or contains a
+  closure, `return`, `?`, or `.await`. It also covers a type annotation on the
+  `let`, a statement inside a macro, and an initializer that is a reference to
+  an `Option`. A place initializer such as `holder.name` gets a fix only when
+  its type is `Copy` and the pattern has no `ref` binding.
 - An `else` block with any other statement, a `return Err(..)` whose error type
   differs from the function's error type, and an `Err` value built through
   `From` are ignored.

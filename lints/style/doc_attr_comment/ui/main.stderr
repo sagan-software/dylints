@@ -1,5 +1,5 @@
 warning: inner `doc` attribute can be written as `//!`
-  --> $DIR/main.rs:5:1
+  --> $DIR/main.rs:7:1
    |
 LL | #![doc = "Crate docs written as an attribute."]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: write this as an inner line doc comment: `//! Crate docs written as an attribute.`
@@ -7,39 +7,55 @@ LL | #![doc = "Crate docs written as an attribute."]
    = note: `#[warn(doc_attr_comment)]` on by default
 
 warning: outer `doc` attribute can be written as `///`
-  --> $DIR/main.rs:18:1
+  --> $DIR/main.rs:20:1
    |
 LL | #[doc = "Parses a port number."]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: write this as an outer line doc comment: `/// Parses a port number.`
 
 warning: outer `doc` attribute can be written as `///`
-  --> $DIR/main.rs:23:1
+  --> $DIR/main.rs:25:1
    |
 LL | #[doc = ""]
    | ^^^^^^^^^^^ help: write this as an outer line doc comment: `///`
 
 warning: outer `doc` attribute can be written as `///`
-  --> $DIR/main.rs:26:1
+  --> $DIR/main.rs:28:1
    |
 LL | #[doc = r"Raw one-line docs are still simple."]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: write this as an outer line doc comment: `/// Raw one-line docs are still simple.`
 
 warning: outer `doc` attribute can be written as `///`
-  --> $DIR/main.rs:29:1
+  --> $DIR/main.rs:31:1
    |
 LL | #[doc = "Module outer docs written as an attribute."]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: write this as an outer line doc comment: `/// Module outer docs written as an attribute.`
 
 warning: inner `doc` attribute can be written as `//!`
-  --> $DIR/main.rs:33:5
+  --> $DIR/main.rs:35:5
    |
 LL |     #![doc = "Module inner docs written as an attribute."]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: write this as an inner line doc comment: `//! Module inner docs written as an attribute.`
 
 warning: outer `doc` attribute can be written as `///`
-  --> $DIR/main.rs:35:5
+  --> $DIR/main.rs:37:5
    |
 LL |     #[doc = "Nested item docs written as an attribute."]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: write this as an outer line doc comment: `/// Nested item docs written as an attribute.`
 
-warning: 7 warnings emitted
+warning: outer `doc` attribute can be written as `///`
+  --> $DIR/main.rs:82:1
+   |
+LL | #[doc = "Same-line docs need human review."] pub fn warn_same_line_doc_attr() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: write this as an outer line doc comment
+
+warning: outer `doc` attribute can be written as `///`
+  --> $DIR/main.rs:84:1
+   |
+LL | #[doc = "Docs before another attribute."] #[inline]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: write this as an outer line doc comment
+
+warning: 9 warnings emitted

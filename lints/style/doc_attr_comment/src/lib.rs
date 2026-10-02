@@ -34,6 +34,9 @@ impl EarlyLintPass for DocAttrComment {
         let Some(replacement) = simple_doc_comment_replacement(cx, attr) else {
             return;
         };
+        // A line comment runs to the end of the line, so code after the attribute
+        // would become doc text. Those attributes get help without a rewrite.
+        let replacement = ends_its_line(cx, attr.span).then_some(replacement);
 
         emit_span_lint_with_suggestion(cx, DOC_ATTR_COMMENT, attr.span, attr.style, replacement);
     }
@@ -59,6 +62,18 @@ fn simple_doc_comment_replacement(cx: &EarlyContext<'_>, attr: &Attribute) -> Op
                 .map(|_| doc)
         })
         .map(|doc| doc_comment_replacement(attr.style, &doc))
+}
+
+/// Return whether only whitespace follows `span` on its line.
+fn ends_its_line(cx: &EarlyContext<'_>, span: Span) -> bool {
+    cx.sess()
+        .source_map()
+        .span_to_next_source(span)
+        .is_ok_and(|rest| {
+            rest.lines()
+                .next()
+                .is_none_or(|line| line.trim().is_empty())
+        })
 }
 
 /// Return whether simple line doc text.
@@ -126,7 +141,7 @@ fn emit_span_lint_with_suggestion(
     lint: &'static Lint,
     span: Span,
     style: AttrStyle,
-    replacement: String,
+    replacement: Option<String>,
 ) {
     let (message, help) = match style {
         AttrStyle::Outer => (
@@ -145,7 +160,12 @@ fn emit_span_lint_with_suggestion(
         span,
         DiagDecorator(move |diag| {
             let _ = diag.primary_message(message);
-            let _ = diag.span_suggestion(span, help, replacement, Applicability::MachineApplicable);
+            if let Some(replacement) = replacement {
+                let _ =
+                    diag.span_suggestion(span, help, replacement, Applicability::MachineApplicable);
+            } else {
+                let _ = diag.help(help);
+            }
         }),
     );
 }

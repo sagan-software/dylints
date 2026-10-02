@@ -4,7 +4,7 @@
 // normalize-stderr-test: "(\n)\n\z" -> "$1"
 
 #![allow(dead_code)]
-#![doc = "Crate docs written as an attribute."]
+//! Crate docs written as an attribute.
 #![doc(html_root_url = "https://example.com")]
 #![doc = "Crate docs with\nmultiple lines."]
 //! Existing crate docs already use the preferred inner comment form.
@@ -17,24 +17,24 @@ macro_rules! generated_doc_attr {
     };
 }
 
-#[doc = "Parses a port number."]
+/// Parses a port number.
 pub fn warn_outer_doc_attr(raw: &str) -> Option<u16> {
     raw.parse().ok()
 }
 
-#[doc = ""]
+///
 pub fn warn_empty_outer_doc_attr() {}
 
-#[doc = r"Raw one-line docs are still simple."]
+/// Raw one-line docs are still simple.
 pub fn warn_raw_outer_doc_attr() {}
 
-#[doc = "Module outer docs written as an attribute."]
+/// Module outer docs written as an attribute.
 mod warn_module_outer_doc_attr {
     //! Existing module inner docs already use comments.
 
-    #![doc = "Module inner docs written as an attribute."]
+    //! Module inner docs written as an attribute.
 
-    #[doc = "Nested item docs written as an attribute."]
+    /// Nested item docs written as an attribute.
     pub struct WarnNestedItemDocAttr;
 
     /// Existing nested outer docs already use comments.
