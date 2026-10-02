@@ -278,7 +278,8 @@ pub(crate) fn is_empty_constructor(cx: &LateContext<'_>, expr: &Expr<'_>) -> boo
         || (name.as_str() == "new" && owner_is_standard)
 }
 
-/// Returns whether an associated function owner is the standard `Default` trait or its impl.
+/// Returns whether an associated function owner is the standard `Default` trait
+/// or its implementation.
 fn is_default_owner(cx: &LateContext<'_>, owner_id: rustc_span::def_id::DefId) -> bool {
     match cx.tcx.def_kind(owner_id) {
         DefKind::Impl { .. } => {

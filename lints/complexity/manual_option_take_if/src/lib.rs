@@ -135,7 +135,7 @@ fn same_place(cx: &LateContext<'_>, left: &Expr<'_>, right: &Expr<'_>) -> bool {
     }
 }
 
-/// Returns whether explicit dereferencing of an expression uses the built-in reference operation.
+/// Returns whether explicit dereferencing uses the built-in reference operation.
 fn is_builtin_reference(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     matches!(cx.typeck_results().expr_ty(expr).kind(), ty::Ref(..))
 }
