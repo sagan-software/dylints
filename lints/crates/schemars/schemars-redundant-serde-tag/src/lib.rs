@@ -19,6 +19,6 @@ use serde as _;
 schemars_support::declare_redundant_serde_attribute_lint! {
     SCHEMARS_REDUNDANT_SERDE_TAG,
     SchemarsRedundantSerdeTag,
-    "tag",
+    ["tag"],
     "a Schemars tag attribute duplicates Serde"
 }

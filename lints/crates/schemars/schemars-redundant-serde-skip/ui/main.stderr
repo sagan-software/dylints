@@ -6,5 +6,11 @@ LL |     #[schemars(skip)]
    |
    = note: `#[warn(schemars_redundant_serde_skip)]` on by default
 
-warning: 1 warning emitted
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:12:5
+   |
+LL |     #[schemars(skip_serializing)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove the redundant Schemars attribute
+
+warning: 2 warnings emitted
 

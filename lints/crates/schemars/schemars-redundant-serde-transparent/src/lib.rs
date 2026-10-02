@@ -19,6 +19,6 @@ use serde as _;
 schemars_support::declare_redundant_serde_attribute_lint! {
     SCHEMARS_REDUNDANT_SERDE_TRANSPARENT,
     SchemarsRedundantSerdeTransparent,
-    "transparent",
+    ["transparent"],
     "a Schemars transparent attribute duplicates Serde"
 }

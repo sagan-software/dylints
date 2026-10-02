@@ -9,4 +9,11 @@ struct Example {
     good: String,
 }
 
+#[derive(JsonSchema, Serialize)]
+struct RenameOnly {
+    #[serde(rename = "id")]
+    #[schemars(rename = "id")]
+    request_id: String,
+}
+
 fn main() {}

@@ -27,27 +27,29 @@ use dylint_linting as _;
 
 /// Return Schemars attributes that exactly duplicate a sibling Serde attribute.
 ///
-/// The returned spans identify only the redundant Schemars attributes, preserving
-/// the original item order so diagnostics and machine fixes remain predictable.
+/// An attribute matches when its single key equals one of `keys` exactly, so
+/// `rename` does not match `rename_all`. The returned spans identify only the
+/// redundant Schemars attributes, preserving the original item order so
+/// diagnostics and machine fixes remain predictable.
 #[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
 /// # #![feature(rustc_private)]
-/// let _call = |cx, krate, key| {
-///     let _ = schemars_support::redundant_serde_attribute_spans(cx, krate, key);
+/// let _call = |cx, krate| {
+///     let _ = schemars_support::redundant_serde_attribute_spans(cx, krate, &["rename"]);
 /// };
 /// ```
 pub fn redundant_serde_attribute_spans(
     cx: &EarlyContext<'_>,
     krate: &Crate,
-    key: &str,
+    keys: &[&str],
 ) -> Vec<rustc_span::Span> {
     // Preserve crate item order so diagnostics follow source order.
     let mut spans = Vec::new();
     for item in &krate.items {
-        collect_redundant_attrs(cx, item, key, &mut spans);
+        collect_redundant_attrs(cx, item, keys, &mut spans);
     }
     spans
 }
@@ -56,30 +58,30 @@ pub fn redundant_serde_attribute_spans(
 fn collect_redundant_attrs(
     cx: &EarlyContext<'_>,
     item: &ast::Item,
-    key: &str,
+    keys: &[&str],
     spans: &mut Vec<rustc_span::Span>,
 ) {
     // Check attributes attached directly to the item before its children.
-    collect_attr_pair(cx, &item.attrs, key, spans);
+    collect_attr_pair(cx, &item.attrs, keys, spans);
     // Traverse only item kinds that can carry the compared attributes.
     if let ast::ItemKind::Struct(_, _, data) | ast::ItemKind::Union(_, _, data) = &item.kind {
         for field in data.fields() {
-            collect_attr_pair(cx, &field.attrs, key, spans);
+            collect_attr_pair(cx, &field.attrs, keys, spans);
         }
     }
     // Visit variant and field attributes in their declaration order.
     if let ast::ItemKind::Enum(_, _, definition) = &item.kind {
         for variant in &definition.variants {
-            collect_attr_pair(cx, &variant.attrs, key, spans);
+            collect_attr_pair(cx, &variant.attrs, keys, spans);
             for field in variant.data.fields() {
-                collect_attr_pair(cx, &field.attrs, key, spans);
+                collect_attr_pair(cx, &field.attrs, keys, spans);
             }
         }
     }
     if let ast::ItemKind::Mod(_, _, ModKind::Loaded(items, ..)) = &item.kind {
         // Recurse only into modules whose contents are available in this AST.
         for child in items {
-            collect_redundant_attrs(cx, child, key, spans);
+            collect_redundant_attrs(cx, child, keys, spans);
         }
     }
 }
@@ -88,7 +90,7 @@ fn collect_redundant_attrs(
 fn collect_attr_pair(
     cx: &EarlyContext<'_>,
     attrs: &[Attribute],
-    key: &str,
+    keys: &[&str],
     spans: &mut Vec<rustc_span::Span>,
 ) {
     // Retain only outer attributes with recoverable source text.
@@ -105,8 +107,15 @@ fn collect_attr_pair(
         .collect();
     // Compare each Schemars spelling with its exact Serde namespace substitution.
     for (attr, snippet) in &snippets {
-        let prefix = format!("#[schemars({key}");
-        let Some(suffix) = snippet.strip_prefix(&prefix) else {
+        // Require an exact key so `rename` cannot match `rename_all`.
+        let Some(suffix) = keys.iter().find_map(|key| {
+            snippet
+                .strip_prefix("#[schemars(")
+                .and_then(|rest| rest.strip_prefix(key))
+                .filter(|rest| {
+                    !rest.starts_with(|next: char| next == '_' || next.is_alphanumeric())
+                })
+        }) else {
             continue;
         };
         if suffix.contains(',') {
@@ -124,7 +133,7 @@ fn collect_attr_pair(
 /// Declare one redundant Schemars-over-Serde attribute lint.
 #[macro_export]
 macro_rules! declare_redundant_serde_attribute_lint {
-    ($lint:ident, $pass:ident, $key:literal, $description:literal) => {
+    ($lint:ident, $pass:ident, [$($key:literal),+ $(,)?], $description:literal) => {
         dylint_support::documented_early_lint! {
             #[doc = include_str!("../README.md")]
             pub $lint,
@@ -136,7 +145,7 @@ macro_rules! declare_redundant_serde_attribute_lint {
         impl rustc_lint::EarlyLintPass for $pass {
             /// Check item, variant, and field attributes in the crate AST.
             fn check_crate(&mut self, cx: &rustc_lint::EarlyContext<'_>, krate: &rustc_ast::Crate) {
-                for span in $crate::redundant_serde_attribute_spans(cx, krate, $key) {
+                for span in $crate::redundant_serde_attribute_spans(cx, krate, &[$($key),+]) {
                     cx.emit_span_lint(
                         $lint,
                         span,
