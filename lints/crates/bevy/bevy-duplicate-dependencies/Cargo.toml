@@ -14,8 +14,8 @@ dylint-support = { path = "../../../../support/dylint" }
 dylint_linting.workspace = true
 
 [dev-dependencies]
-bevy_018 = { package = "bevy", version = "0.18.0", default-features = false }
-bevy_019 = { package = "bevy", version = "0.19.0", default-features = false }
+bevy_018.workspace = true
+bevy_019.workspace = true
 dylint_testing.workspace = true
 
 [[example]]

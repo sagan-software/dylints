@@ -15,7 +15,7 @@ thiserror_support = { package = "thiserror-support", path = "../support" }
 
 [dev-dependencies]
 dylint_testing.workspace = true
-thiserror = "1.0.69"
+thiserror_v1.workspace = true
 
 [[example]]
 name = "main"

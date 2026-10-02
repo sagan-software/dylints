@@ -1,5 +1,5 @@
 warning: `thiserror` 2 expects unraw field names in format strings
-  --> $DIR/main.rs:8:1
+  --> $DIR/main.rs:9:1
    |
 LL | #[error("keyword {r#type}")]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("keyword {type}")]`
@@ -7,19 +7,19 @@ LL | #[error("keyword {r#type}")]
    = note: `#[warn(thiserror_raw_field_format)]` on by default
 
 warning: `thiserror` 2 expects unraw field names in format strings
-  --> $DIR/main.rs:14:1
+  --> $DIR/main.rs:15:1
    |
 LL | #[error("renamed {r#kind}")]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("renamed {kind}")]`
 
 warning: `thiserror` 2 expects unraw field names in format strings
-  --> $DIR/main.rs:24:9
+  --> $DIR/main.rs:25:9
    |
 LL |         #[error("variant {r#value:?} and {r#value}")]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("variant {value:?} and {value}")]`
 
 warning: `thiserror` 2 expects unraw field names in format strings
-  --> $DIR/main.rs:30:1
+  --> $DIR/main.rs:31:1
    |
 LL | #[error("escaped /"{r#kind}/"")]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

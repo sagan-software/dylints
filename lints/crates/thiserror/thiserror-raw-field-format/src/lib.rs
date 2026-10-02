@@ -16,7 +16,7 @@ extern crate rustc_hir;
 extern crate rustc_span;
 
 #[cfg(test)]
-use thiserror as _;
+use thiserror_v1 as _;
 
 use rustc_errors::Applicability;
 use rustc_hir::{Item, ItemKind};

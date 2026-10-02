@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 use thiserror::Error as ThisError;
+use thiserror_v1 as thiserror;
 
 #[derive(thiserror::Error, Debug)]
 #[error("keyword {r#type}")]
@@ -17,7 +18,7 @@ pub struct RenamedRawFieldFormat {
 }
 
 mod glob {
-    use thiserror::*;
+    use super::thiserror::*;
 
     #[derive(Error, Debug)]
     pub enum GlobRawFieldFormat {

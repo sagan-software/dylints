@@ -166,15 +166,15 @@ mod queries;
 mod systems;
 mod traits;
 
-pub use bundles::{
+pub use self::bundles::{
     DuplicatePluginAddition, ElapsedSecsWidening, UnitBundleValue, duplicate_plugin_addition,
     elapsed_secs_widening, unit_bundle_values,
 };
-pub use helpers::{parameter_spans, parameter_types};
-pub use methods::{
+pub use self::helpers::{parameter_spans, parameter_types};
+pub use self::methods::{
     bevy_method_call, expression_has_type, trait_is_named, type_is_named, world_method_call,
 };
-pub use queries::{
+pub use self::queries::{
     borrowed_reborrowable_parameters, children_mutation_query_parameters,
     large_component_change_filter_parameters, local_large_components,
     mutable_component_field_access, mutable_query_component_parameters,
@@ -182,12 +182,12 @@ pub use queries::{
     presence_only_query_parameters, readonly_mut_query_parameters, shared_query_data_replacements,
     unfiltered_entity_access_query_parameters, wide_query_parameters, zst_query_parameters,
 };
-pub use systems::{
+pub use self::systems::{
     camera_fixed_update_system_spans, directly_registered_systems, disallowed_schedule_span,
     discarded_app_run_spans, inserted_message_resource_span, is_system_mutably_querying_camera,
     iter_current_update_messages_span,
 };
-pub use traits::{
+pub use self::traits::{
     direct_bevy_facades, local_bevy_types_missing_reflect, local_unit_components_missing_trait,
     missing_trait_derive, unconventional_bevy_type_names,
 };
