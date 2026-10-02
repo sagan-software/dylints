@@ -15,7 +15,9 @@ The loop grows the collection one item at a time. `Extend::extend` adds the
 items in one call and can reserve capacity from the iterator size hint. When
 code transforms the pushed value, `extend` with `map` states the transformation
 in one place. A source with a side-effecting `size_hint` can observe a
-different evaluation order after the rewrite.
+different evaluation order after the rewrite. The lint limits
+machine-applicable fixes to standard source types whose `size_hint` has no
+side effects.
 
 ## Known problems
 
