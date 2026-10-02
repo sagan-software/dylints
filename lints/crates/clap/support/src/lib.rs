@@ -464,10 +464,7 @@ pub fn ast_clap_attr_single_entry<'attr>(
     let attr = attrs
         .iter()
         .find(|attr| attr.has_name(Symbol::intern(attribute_name)))?;
-    if let Some(arguments) = attr.meta_item_list()
-        && let [argument] = arguments.as_slice()
-        && meta_inner_key(argument) == Some(key)
-    {
+    if has_single_structured_entry(attr, key) {
         return Some(attr);
     }
     let source = cx.sess().source_map().span_to_snippet(attr.span).ok()?;
@@ -725,11 +722,7 @@ fn exact_type_name(ty: &Ty) -> Option<&str> {
 /// Return true when an AST attribute contains a word-like key.
 fn ast_attr_has_word(cx: &EarlyContext<'_>, attr: &Attribute, key: &str) -> bool {
     // Prefer structured metadata when rustc preserved the helper arguments.
-    if let Some(arguments) = attr.meta_item_list()
-        && arguments
-            .iter()
-            .any(|argument| meta_inner_key(argument) == Some(key))
-    {
+    if has_structured_entry(attr, key) {
         return true;
     }
 
@@ -737,6 +730,27 @@ fn ast_attr_has_word(cx: &EarlyContext<'_>, attr: &Attribute, key: &str) -> bool
         return false;
     };
     attr_entry_source(&source, key).is_some()
+}
+
+/// Return whether rustc's structured metadata holds exactly one entry named `key`.
+fn has_single_structured_entry(attr: &Attribute, key: &str) -> bool {
+    // Rustc omits the list when the attribute arguments are not plain meta items.
+    let Some(arguments) = attr.meta_item_list() else {
+        return false;
+    };
+    let [argument] = arguments.as_slice() else {
+        return false;
+    };
+    meta_inner_key(argument) == Some(key)
+}
+
+/// Return whether rustc's structured metadata holds any entry named `key`.
+fn has_structured_entry(attr: &Attribute, key: &str) -> bool {
+    attr.meta_item_list().is_some_and(|arguments| {
+        arguments
+            .iter()
+            .any(|argument| meta_inner_key(argument) == Some(key))
+    })
 }
 
 /// Return a meta-list entry's final path segment.
@@ -1047,17 +1061,23 @@ pub fn builder_call_without_requirement<'tcx>(
         return None;
     }
     let calls = builder_calls(cx, expr, builder_type);
-    let trigger_call = calls.iter().copied().find(|call| {
-        call.method.as_str() == trigger
-            && (!is_trigger_true_required || bool_argument(*call) == Some(true))
-    })?;
+    let trigger_call = calls
+        .iter()
+        .copied()
+        .find(|call| is_configured_call(*call, trigger, is_trigger_true_required))?;
     // A requirement satisfies the contract only with its requested boolean value.
-    let has_requirement = calls.iter().copied().any(|call| {
-        call.method.as_str() == required
-            && (!is_requirement_true_required || bool_argument(call) == Some(true))
-    });
+    let has_requirement = calls
+        .iter()
+        .any(|call| is_configured_call(*call, required, is_requirement_true_required));
 
     (!has_requirement).then_some(trigger_call.span)
+}
+
+/// Return whether a builder call names `builder_method` with the requested `bool`.
+fn is_configured_call(call: BuilderCall<'_>, builder_method: &str, is_true_required: bool) -> bool {
+    // A call that requires `true` accepts only a literal `true` argument.
+    let has_accepted_value = !is_true_required || bool_argument(call) == Some(true);
+    call.method.as_str() == builder_method && has_accepted_value
 }
 
 /// Return an `index` span when a clap argument chain also configures an option name.

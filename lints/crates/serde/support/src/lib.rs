@@ -703,10 +703,7 @@ pub fn ast_serde_attr<'attr>(
 /// };
 /// ```
 pub fn ast_attr_is_single_entry(cx: &EarlyContext<'_>, attr: &Attribute, key: &str) -> bool {
-    if let Some(arguments) = attr.meta_item_list()
-        && let [argument] = arguments.as_slice()
-        && meta_inner_key(argument) == Some(key)
-    {
+    if has_single_structured_entry(attr, key) {
         return true;
     }
 
@@ -775,13 +772,29 @@ pub fn ast_serde_directional_value(
 /// };
 /// ```
 pub fn ast_attr_has_word(cx: &EarlyContext<'_>, attr: &Attribute, key: &str) -> bool {
-    if let Some(args) = attr.meta_item_list()
-        && args.iter().any(|inner| meta_inner_key(inner) == Some(key))
-    {
+    if has_structured_entry(attr, key) {
         return true;
     }
 
     attr_source_has_word(cx, attr, key)
+}
+
+/// Return whether rustc's structured metadata holds exactly one entry named `key`.
+fn has_single_structured_entry(attr: &Attribute, key: &str) -> bool {
+    // Rustc omits the list when the attribute arguments are not plain meta items.
+    let Some(arguments) = attr.meta_item_list() else {
+        return false;
+    };
+    let [argument] = arguments.as_slice() else {
+        return false;
+    };
+    meta_inner_key(argument) == Some(key)
+}
+
+/// Return whether rustc's structured metadata holds any entry named `key`.
+fn has_structured_entry(attr: &Attribute, key: &str) -> bool {
+    attr.meta_item_list()
+        .is_some_and(|args| args.iter().any(|inner| meta_inner_key(inner) == Some(key)))
 }
 
 /// Search one attribute's source arguments for a key without accepting substrings.
@@ -1391,7 +1404,7 @@ fn find_keyword(source: &str, cursor: usize, keyword: &str) -> Option<usize> {
         let index = search + relative;
         let before = source.get(..index)?.chars().next_back();
         let after = source.get(index + keyword.len()..)?.chars().next();
-        if before.is_none_or(|ch| !ident_char(ch)) && after.is_none_or(|ch| !ident_char(ch)) {
+        if is_word_boundary(before) && is_word_boundary(after) {
             return Some(index);
         }
         // Resume after the rejected spelling to guarantee forward progress.
@@ -1628,10 +1641,7 @@ fn split_top_level_segments(source: &str, start: usize, end: usize) -> Vec<(usiz
             &mut angle_depth,
         ) {
             // Exclude empty comma-separated segments from the result.
-            if source
-                .get(segment_start..cursor)
-                .is_some_and(|segment| !segment.trim().is_empty())
-            {
+            if has_nonblank_text(source, segment_start, cursor) {
                 segments.push((segment_start, cursor));
             }
             // Begin the next segment immediately after the top-level comma.
@@ -1655,13 +1665,16 @@ fn push_tail_segment(
     end: usize,
     segments: &mut Vec<(usize, usize)>,
 ) {
-    if segment_start < end
-        && source
-            .get(segment_start..end)
-            .is_some_and(|segment| !segment.trim().is_empty())
-    {
+    if segment_start < end && has_nonblank_text(source, segment_start, end) {
         segments.push((segment_start, end));
     }
+}
+
+/// Return whether a source byte range is valid and contains non-whitespace text.
+fn has_nonblank_text(source: &str, start: usize, end: usize) -> bool {
+    source
+        .get(start..end)
+        .is_some_and(|segment| !segment.trim().is_empty())
 }
 
 /// Update delimiter depths and report whether a character is a top-level comma.
@@ -1938,7 +1951,7 @@ fn find_word(source: &str, word: &str) -> Option<usize> {
         let index = cursor + relative;
         let before = source.get(..index)?.chars().next_back();
         let after = source.get(index + word.len()..)?.chars().next();
-        if before.is_none_or(|ch| !ident_char(ch)) && after.is_none_or(|ch| !ident_char(ch)) {
+        if is_word_boundary(before) && is_word_boundary(after) {
             return Some(index);
         }
         // Resume after the rejected spelling to guarantee progress.
@@ -2083,6 +2096,11 @@ fn skip_whitespace(source: &str, mut cursor: usize) -> usize {
 /// Return true for characters accepted in the source parser's identifier fragments.
 const fn ident_char(ch: char) -> bool {
     ch.is_ascii_alphanumeric() || ch == '_'
+}
+
+/// Return whether a neighboring character, or the source edge, ends an identifier.
+fn is_word_boundary(neighbor: Option<char>) -> bool {
+    neighbor.is_none_or(|ch| !ident_char(ch))
 }
 
 /// Return every source-level field from a struct or enum item.

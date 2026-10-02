@@ -19,7 +19,7 @@ use rustc_ast::LitKind;
 use rustc_hir::{Expr, ExprKind, def::Res};
 use rustc_lint::{LateContext, LintContext};
 use rustc_middle::ty;
-use rustc_span::Span;
+use rustc_span::{Span, def_id::DefId};
 
 use dylint_linting as _;
 
@@ -100,10 +100,7 @@ pub fn router_method_call<'hir>(
     };
     // Require both the resolved Axum method and its Router receiver.
     let def_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
-    if cx.tcx.crate_name(def_id.krate).as_str() != "axum"
-        || cx.tcx.item_name(def_id).as_str() != expected_method
-        || !is_router_type(cx, receiver)
-    {
+    if !is_axum_method(cx, def_id, expected_method) || !is_router_type(cx, receiver) {
         return None;
     }
 
@@ -112,6 +109,13 @@ pub fn router_method_call<'hir>(
         arguments,
         method_span: segment.ident.span,
     })
+}
+
+/// Return whether a resolved definition is the named method from the `axum` crate.
+fn is_axum_method(cx: &LateContext<'_>, def_id: DefId, expected_method: &str) -> bool {
+    // Check the defining crate before comparing the item name.
+    let is_axum_item = cx.tcx.crate_name(def_id.krate).as_str() == "axum";
+    is_axum_item && cx.tcx.item_name(def_id).as_str() == expected_method
 }
 
 /// Return whether an expression has Axum's resolved `Router` type.
@@ -195,23 +199,7 @@ pub fn router_path_violation(
     // Borrow the interned text before applying the selected path contract.
     let value = value.as_str();
 
-    // Each variant is disjoint where rules overlap, so one literal has one diagnostic.
-    let is_invalid = match violation {
-        RouterPathViolation::Empty => value.is_empty(),
-        RouterPathViolation::MissingLeadingSlash => !value.is_empty() && !value.starts_with('/'),
-        RouterPathViolation::LegacyColonCapture => {
-            value.split('/').any(|segment| segment.starts_with(':'))
-        }
-        RouterPathViolation::LegacyWildcardCapture => {
-            value.split('/').any(|segment| segment.starts_with('*'))
-        }
-        RouterPathViolation::Root => {
-            value.is_empty() || (value.len() == 1 && value.as_bytes() == *b"/")
-        }
-        RouterPathViolation::NestedWildcard => value.contains("{*"),
-    };
-
-    if !is_invalid {
+    if !is_path_violation(value, violation) {
         return None;
     }
 
@@ -245,6 +233,25 @@ fn router_literal_path<'hir>(
         return None;
     };
     Some((path, value))
+}
+
+/// Return whether a router path literal value breaks the selected path contract.
+fn is_path_violation(value: &str, violation: RouterPathViolation) -> bool {
+    // Each variant is disjoint where rules overlap, so one literal has one diagnostic.
+    match violation {
+        RouterPathViolation::Empty => value.is_empty(),
+        RouterPathViolation::MissingLeadingSlash => !value.is_empty() && !value.starts_with('/'),
+        RouterPathViolation::LegacyColonCapture => {
+            value.split('/').any(|segment| segment.starts_with(':'))
+        }
+        RouterPathViolation::LegacyWildcardCapture => {
+            value.split('/').any(|segment| segment.starts_with('*'))
+        }
+        RouterPathViolation::Root => {
+            value.is_empty() || (value.len() == 1 && value.as_bytes() == *b"/")
+        }
+        RouterPathViolation::NestedWildcard => value.contains("{*"),
+    }
 }
 
 /// Build a machine-applicable replacement for one simple path literal.
@@ -389,65 +396,55 @@ mod tests {
 
     #[test]
     fn path_replacement_handles_exact_literal_rewrites() {
-        assert_eq!(
-            path_replacement("\"\"", "", RouterPathViolation::Empty),
-            Some("\"/\"".to_owned())
-        );
-        assert_eq!(
-            path_replacement(
-                "\"users/:id\"",
-                "users/:id",
-                RouterPathViolation::MissingLeadingSlash,
-            ),
-            Some("\"/users/:id\"".to_owned())
-        );
-        assert_eq!(
-            path_replacement(
-                "\"/users/:id\"",
-                "/users/:id",
-                RouterPathViolation::LegacyColonCapture,
-            ),
-            Some("\"/users/{id}\"".to_owned())
-        );
-        assert_eq!(
-            path_replacement(
+        let cases = [
+            ("\"\"", RouterPathViolation::Empty),
+            ("\"users/:id\"", RouterPathViolation::MissingLeadingSlash),
+            ("\"/users/:id\"", RouterPathViolation::LegacyColonCapture),
+            (
                 "\"/assets/*path/:name\"",
-                "/assets/*path/:name",
                 RouterPathViolation::LegacyWildcardCapture,
             ),
-            Some("\"/assets/{*path}/:name\"".to_owned())
+        ];
+
+        assert_eq!(
+            replacements(&cases),
+            [
+                Some("\"/\"".to_owned()),
+                Some("\"/users/:id\"".to_owned()),
+                Some("\"/users/{id}\"".to_owned()),
+                Some("\"/assets/{*path}/:name\"".to_owned()),
+            ]
         );
     }
 
     #[test]
     fn path_replacement_rejects_ambiguous_source_shapes() {
-        assert_eq!(
-            path_replacement(
-                "r#\"/users/:id\"#",
-                "/users/:id",
-                RouterPathViolation::LegacyColonCapture,
-            ),
-            None
-        );
-        assert_eq!(
-            path_replacement(
+        let cases = [
+            ("r#\"/users/:id\"#", RouterPathViolation::LegacyColonCapture),
+            (
                 "\"/users/:id-name\"",
-                "/users/:id-name",
                 RouterPathViolation::LegacyColonCapture,
             ),
-            None
-        );
-        assert_eq!(
-            path_replacement("\"/users/:id\"", "/users/:id", RouterPathViolation::Root,),
-            None
-        );
-        assert_eq!(
-            path_replacement(
-                "\"/users/{*path}\"",
-                "/users/{*path}",
-                RouterPathViolation::NestedWildcard,
-            ),
-            None
-        );
+            ("\"/users/:id\"", RouterPathViolation::Root),
+            ("\"/users/{*path}\"", RouterPathViolation::NestedWildcard),
+        ];
+
+        assert_eq!(replacements(&cases), [None, None, None, None]);
+    }
+
+    /// Apply `path_replacement` to each source literal with the value it spells.
+    fn replacements(cases: &[(&str, RouterPathViolation)]) -> Vec<Option<String>> {
+        cases
+            .iter()
+            .map(|&(source, violation)| path_replacement(source, literal_value(source), violation))
+            .collect()
+    }
+
+    /// Return the value spelled by a cooked or raw string literal without escapes.
+    fn literal_value(source: &str) -> &str {
+        source
+            .trim_start_matches('r')
+            .trim_matches('#')
+            .trim_matches('"')
     }
 }
