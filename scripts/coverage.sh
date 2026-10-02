@@ -2,8 +2,9 @@
 # Measure line and region coverage for the whole workspace.
 #
 # Dylint UI tests load each lint as a dynamic library inside a separate driver
-# process, so `cargo llvm-cov`'s own report misses most lint code. This script
-# uses `cargo llvm-cov show-env` to instrument every build, including the lint
+# process, so `cargo llvm-cov`'s own report misses most lint code, and its rustc
+# wrapper hides the `rustc` invocations that example-based UI tests parse. This
+# script instead instruments every build through `RUSTFLAGS`, including the lint
 # libraries that `dylint_testing` builds, then merges every profile and reports
 # against every instrumented test binary and shared library.
 #
@@ -41,17 +42,20 @@ mkdir -p "$target_dir" "$report_dir"
 
 # Build every crate, including the libraries dylint_testing builds, into one target directory.
 export CARGO_TARGET_DIR="$target_dir"
-export CARGO_LLVM_COV_TARGET_DIR="$target_dir"
 export CARGO_INCREMENTAL=0
-eval "$(cargo llvm-cov show-env --sh)"
-find "$target_dir" -maxdepth 1 -name '*.profraw' -delete
+export RUSTFLAGS="${RUSTFLAGS:-} -C instrument-coverage"
+export LLVM_PROFILE_FILE="$target_dir/profiles/%p-%m.profraw"
+rm -rf "$target_dir/profiles"
+mkdir -p "$target_dir/profiles"
 
-# Run the selected tests; failing tests fail the coverage run.
-cargo test "${test_args[@]}"
+# Run every selected test even after a failure, then report and fail at the end.
+test_status=0
+cargo test --no-fail-fast "${test_args[@]}" || test_status=$?
 
 # Merge the profiles written by test binaries, the runner, and Dylint driver processes.
 llvm_bin="$(rustc --print sysroot)/lib/rustlib/$(rustc -vV | sed -n 's/^host: //p')/bin"
-"$llvm_bin/llvm-profdata" merge -sparse "$target_dir"/*.profraw -o "$target_dir/coverage.profdata"
+find "$target_dir/profiles" -name '*.profraw' >"$target_dir/profiles.txt"
+"$llvm_bin/llvm-profdata" merge -sparse --input-files="$target_dir/profiles.txt" -o "$target_dir/coverage.profdata"
 
 # Report against every instrumented executable and shared library.
 objects=()
@@ -74,6 +78,10 @@ lines="$(jq -r '.data[0].totals.lines.percent' "$report_dir/summary.json")"
 regions="$(jq -r '.data[0].totals.regions.percent' "$report_dir/summary.json")"
 printf 'total line coverage: %.2f%%\ntotal region coverage: %.2f%%\n' "$lines" "$regions"
 printf 'reports: %s\n' "$report_dir"
+if ((test_status != 0)); then
+    echo "tests failed during the coverage run" >&2
+    exit "$test_status"
+fi
 if awk -v actual="$lines" -v minimum="$min_lines" 'BEGIN { exit !(actual < minimum) }'; then
     printf 'line coverage %.2f%% is below the %s%% minimum\n' "$lines" "$min_lines" >&2
     exit 1

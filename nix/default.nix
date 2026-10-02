@@ -523,7 +523,6 @@ let
   runCoverage = pkgs.writeShellApplication {
     name = "run-coverage";
     runtimeInputs = dylintRuntimeInputs ++ [
-      pkgs.cargo-llvm-cov
       pkgs.findutils
       pkgs.git
       pkgs.gnused
