@@ -20,9 +20,10 @@ file becomes a frequent merge-conflict site.
 
 ## Known problems
 
-The lint reads files from disk under the compiler's current directory. It skips
-files outside that directory, files from inactive `cfg` modules, and files whose
-path contains a directory named `support`, `toolchains`, or `rustlib`.
+The lint reads the crate's own source files from disk under the compiler's
+current directory. It skips files outside that directory, files from inactive
+`cfg` modules, and files that other crates contribute, such as macro
+definitions and the standard library.
 
 If `syn` cannot parse a file, every line counts as non-test. Test helpers
 without a test attribute or `cfg(test)`, such as a `tests.rs` module loaded with

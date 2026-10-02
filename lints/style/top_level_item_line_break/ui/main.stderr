@@ -1,19 +1,63 @@
 warning: top-level items should have a line break between them
-  --> $DIR/main.rs:5:36
+  --> $DIR/main.rs:7:36
    |
 LL |     fn same_line_nested_first() {} fn same_line_nested_second() {}
    |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: put this item on a new line
    = note: `#[warn(top_level_item_line_break)]` on by default
+help: put this item on a new line
+   |
+LL ~     fn same_line_nested_first() {}
+LL ~     fn same_line_nested_second() {}
+   |
 
 warning: top-level items should have a line break between them
-  --> $DIR/main.rs:6:33
+  --> $DIR/main.rs:8:33
    |
 LL |     struct SameLineStructFirst; struct SameLineStructSecond;
    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: put this item on a new line
+help: put this item on a new line
+   |
+LL ~     struct SameLineStructFirst;
+LL ~     struct SameLineStructSecond;
+   |
 
-warning: 2 warnings emitted
+warning: top-level items should have a line break between them
+  --> $DIR/main.rs:16:29
+   |
+LL |     fn first() {} #[inline] fn second() {}
+   |                             ^^^^^^^^^^^^^^
+   |
+help: put this item on a new line
+   |
+LL ~     fn first() {}
+LL ~     #[inline] fn second() {}
+   |
+
+warning: top-level items should have a line break between them
+  --> $DIR/main.rs:19:5
+   |
+LL |     fn fourth() {}
+   |     ^^^^^^^^^^^^^^
+   |
+help: put this item on a new line
+   |
+LL ~     fn third() {}
+LL ~     /// Documented fourth.
+   |
+
+warning: top-level items should have a line break between them
+  --> $DIR/main.rs:20:71
+   |
+LL |     fn fifth() {} /* A block comment stays with the previous item. */ fn sixth() {}
+   |                                                                       ^^^^^^^^^^^^^
+   |
+help: put this item on a new line
+   |
+LL ~     fn fifth() {} /* A block comment stays with the previous item. */ 
+LL ~     fn sixth() {}
+   |
+
+warning: 5 warnings emitted
 

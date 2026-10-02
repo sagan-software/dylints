@@ -4,7 +4,7 @@
 
 Checks inherent associated functions named `new`, `empty`, `blank`, or
 `default_config` that take no arguments and return the type of the `impl`
-block.
+block, when that type does not implement `Default`.
 
 ## Why is this bad?
 
@@ -16,9 +16,8 @@ types, `..Default::default()`, or `unwrap_or_default()`.
 
 The lint does not read the function body. It warns on constructors that
 allocate resources, have side effects, or set up an invariant that a `Default`
-value should not have. It also warns when the type already implements
-`Default`, which conflicts with Clippy's `new_without_default` lint, which asks
-for both `new` and `Default`.
+value should not have. For a public `new`, Clippy's `new_without_default` lint
+reports the same missing implementation.
 
 ## Example
 

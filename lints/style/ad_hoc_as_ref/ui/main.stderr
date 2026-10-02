@@ -1,33 +1,43 @@
 warning: method `as_path` looks like an `AsRef` accessor
-  --> $DIR/main.rs:10:5
+  --> $DIR/main.rs:12:5
    |
 LL | /     fn as_path(&self) -> &Path {
 LL | |         &self.path
 LL | |     }
    | |_____^
    |
-   = help: implement `AsRef<T>` when this exposes the canonical borrowed view
+   = help: implement `AsRef<Path>` when this exposes the canonical borrowed view
    = note: `#[warn(ad_hoc_as_ref)]` on by default
 
 warning: method `get_path` looks like an `AsRef` accessor
-  --> $DIR/main.rs:14:5
+  --> $DIR/main.rs:16:5
    |
 LL | /     fn get_path(&self) -> &Path {
 LL | |         &self.path
 LL | |     }
    | |_____^
    |
-   = help: implement `AsRef<T>` when this exposes the canonical borrowed view
+   = help: implement `AsRef<Path>` when this exposes the canonical borrowed view
 
 warning: method `as_alias_path` looks like an `AsRef` accessor
-  --> $DIR/main.rs:18:5
+  --> $DIR/main.rs:20:5
    |
 LL | /     fn as_alias_path(&self) -> PathRef<'_> {
 LL | |         &self.path
 LL | |     }
    | |_____^
    |
-   = help: implement `AsRef<T>` when this exposes the canonical borrowed view
+   = help: implement `AsRef<Path>` when this exposes the canonical borrowed view
 
-warning: 3 warnings emitted
+warning: method `as_mut_path` looks like an `AsMut` accessor
+  --> $DIR/main.rs:24:5
+   |
+LL | /     fn as_mut_path(&mut self) -> &mut Path {
+LL | |         &mut self.path
+LL | |     }
+   | |_____^
+   |
+   = help: implement `AsMut<Path>` when this exposes the canonical borrowed view
+
+warning: 4 warnings emitted
 

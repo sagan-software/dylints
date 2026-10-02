@@ -77,9 +77,7 @@ impl<'tcx> LateLintPass<'tcx> for TypeMethodComplexity {
         {
             return;
         }
-        let Some(impl_def_id) = cx.tcx.opt_local_parent(local_def_id) else {
-            return;
-        };
+        let impl_def_id = cx.tcx.local_parent(local_def_id);
         if !matches!(
             cx.tcx.def_kind(impl_def_id),
             rustc_hir::def::DefKind::Impl { .. }

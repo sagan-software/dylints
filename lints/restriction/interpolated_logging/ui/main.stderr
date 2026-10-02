@@ -15,13 +15,5 @@ LL |     warn!("request failed for {user_id}");
    |
    = help: put runtime values in structured key/value fields and keep the message static
 
-warning: logging message uses string interpolation
-  --> $DIR/main.rs:31:9
-   |
-LL |         "stage={} step={} living={}/{} food={} well={:.2} observations={} global_state={}",
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: put runtime values in structured key/value fields and keep the message static
-
-warning: 3 warnings emitted
+warning: 2 warnings emitted
 

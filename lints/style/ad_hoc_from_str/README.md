@@ -2,11 +2,12 @@
 
 ## What it does
 
-Checks functions and associated functions named `parse_*` or `from_str*` that
-take one `&str` argument, have no `self` receiver, and return `Result<T, E>`,
-where `T` is not `()`, `!`, or a reference. Names that contain `_and_`,
-`_lenient`, `_lossy`, `_or_`, `_strict`, `_unchecked`, or `_with_` are skipped.
-The `from_str` method of a `FromStr` implementation is skipped.
+Checks free functions and inherent associated functions named `parse_*` or
+`from_str*` that take one `&str` argument, have no `self` receiver, and return
+`Result<T, E>`, where `T` is a struct, enum, or union defined in the current
+crate without lifetime arguments. Types that already implement `FromStr` are
+skipped. Names that contain `_and_`, `_lenient`, `_lossy`, `_or_`, `_strict`,
+`_unchecked`, or `_with_` are skipped.
 
 ## Why is this bad?
 
@@ -17,11 +18,7 @@ function name instead of writing `"42".parse::<UserId>()`.
 ## Known problems
 
 The lint does not read the function body, so it warns on parsers that are one
-of several valid formats for the type. It also warns on associated functions
-in trait implementations whose names the trait fixes. `FromStr` cannot borrow
-from the input, so a parser that returns data borrowed from the `&str` cannot
-follow the suggestion; the lint skips only reference return types, not types
-with a lifetime parameter.
+of several valid formats for the type.
 
 ## Example
 

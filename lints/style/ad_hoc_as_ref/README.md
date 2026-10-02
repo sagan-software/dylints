@@ -2,9 +2,11 @@
 
 ## What it does
 
-Checks methods named `as_*` or `get_*` that take only a `&self` or `&mut self`
-receiver and return a reference. Names that start with `get_or_` and the
-`as_ref` method of an `AsRef` implementation are skipped.
+Checks inherent methods named `as_*` or `get_*` that take only a `&self` or
+`&mut self` receiver and return a reference. A shared reference suggests
+`AsRef`, and a mutable reference suggests `AsMut`. Names that start with
+`get_or_` are skipped, and so are types that already implement the matching
+trait for the returned type.
 
 ## Why is this bad?
 
@@ -15,9 +17,8 @@ Callers must learn the local method name instead of using the standard trait.
 
 The lint checks only the name and signature. It warns on any `as_*` or `get_*`
 accessor, even when the returned value is one field among several rather than
-the type's main borrowed view. It also warns on `as_mut_*` methods that return
-`&mut T`, where `AsMut` fits better than `AsRef`, and on methods in trait
-implementations whose names the trait fixes.
+the type's main borrowed view. A type can implement `AsRef<T>` only once for
+each `T`, so two accessors that return the same type both warn.
 
 ## Example
 

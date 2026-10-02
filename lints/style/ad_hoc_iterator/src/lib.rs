@@ -8,19 +8,24 @@
 //!
 //! It identifies source-authored inherent methods that expose sequential access
 //! through a custom `next`-shaped API without implementing the standard
-//! `Iterator` contract. Resolved receiver, return, and mutation behavior keep
-//! unrelated accessors and stateful methods outside the recommendation.
+//! `Iterator` contract. Resolved receiver and return types keep unrelated
+//! accessors out of scope, and the trait solver skips types that already
+//! implement `Iterator`.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_infer;
 extern crate rustc_middle;
 extern crate rustc_span;
+extern crate rustc_trait_selection;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{ImplItem, ImplItemImplKind, ImplItemKind, Mutability};
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
-use rustc_middle::ty::{self, Ty};
-use rustc_span::{Span, def_id::DefId, sym};
+use rustc_infer::infer::TyCtxtInferExt;
+use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_middle::ty;
+use rustc_span::sym;
+use rustc_trait_selection::infer::InferCtxtExt;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -31,75 +36,89 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for AdHocIterator {
-    /// Check impl item for this lint.
+    /// Check one inherent method for the iterator-step shape.
     fn check_impl_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx ImplItem<'tcx>) {
-        // Restrict the analysis to functions declared inside an implementation.
-        let ImplItemKind::Fn(_, _) = item.kind else {
-            return;
-        };
-
-        // Exclude the canonical trait method and methods supplied by another trait.
-        let name = item.ident.name.to_ident_string();
-        if standard_iterator_method(cx, item, &name)
-            || !matches!(item.impl_kind, ImplItemImplKind::Inherent { .. })
-        {
+        if iterator_candidate(cx, item).is_none() {
             return;
         }
 
-        // Resolve the method signature so aliases do not affect the shape check.
-        let sig = cx
-            .tcx
-            .fn_sig(item.owner_id.def_id)
-            .instantiate_identity()
-            .skip_binder();
-
-        if next_name(&name)
-            && mutable_receiver_only(sig.inputs())
-            && iterator_item_return(cx, item, sig.output())
-        {
-            emit_span_lint_with_help(
-                cx,
-                AD_HOC_ITERATOR,
-                item.span,
-                format!("method `{name}` looks like an iterator step"),
-                "implement `Iterator` when this is the canonical next item for the type",
-            );
-        }
+        let name = item.ident.name;
+        cx.emit_span_lint(
+            AD_HOC_ITERATOR,
+            item.span,
+            DiagDecorator(move |diag| {
+                let _ =
+                    diag.primary_message(format!("method `{name}` looks like an iterator step"));
+                let _ = diag
+                    .help("implement `Iterator` when this is the canonical next item for the type");
+            }),
+        );
     }
 }
 
-/// Return whether this is the standard iterator method shape.
-fn standard_iterator_method(cx: &LateContext<'_>, item: &ImplItem<'_>, name: &str) -> bool {
-    if name != "next" || !matches!(item.impl_kind, ImplItemImplKind::Trait { .. }) {
-        return false;
+/// Return the receiver type when an inherent method has the iterator-step shape.
+fn iterator_candidate<'tcx>(
+    cx: &LateContext<'tcx>,
+    item: &'tcx ImplItem<'tcx>,
+) -> Option<ty::Ty<'tcx>> {
+    // Trait methods have names fixed by their trait, so only inherent methods are candidates.
+    if !matches!(item.kind, ImplItemKind::Fn(..))
+        || !matches!(item.impl_kind, ImplItemImplKind::Inherent { .. })
+        || !next_name(item.ident.name.as_str())
+    {
+        return None;
     }
 
-    // Query the parent impl so qualified paths and imports resolve by trait identity rather than
-    // by the spelling used in the impl header.
-    let impl_def_id = cx.tcx.parent(item.owner_id.def_id.to_def_id());
-    let trait_def_id = cx.tcx.impl_trait_ref(impl_def_id).skip_binder().def_id;
-
-    iterator_trait(cx, trait_def_id)
-}
-
-/// Helper for iterator trait analysis.
-fn iterator_trait(cx: &LateContext<'_>, trait_def_id: DefId) -> bool {
-    if cx.tcx.is_diagnostic_item(sym::Iterator, trait_def_id) {
-        return true;
+    // Resolve the signature so aliases of `Option` count.
+    let def_id = item.owner_id.def_id;
+    let sig = cx
+        .tcx
+        .fn_sig(def_id)
+        .instantiate_identity()
+        .skip_norm_wip()
+        .skip_binder();
+    let self_ty = cx
+        .tcx
+        .type_of(cx.tcx.local_parent(def_id))
+        .instantiate_identity()
+        .skip_norm_wip();
+    // Require `&mut self` and an `Option<T>` whose item is not the type's own next state.
+    let ty::Adt(option, args) = sig.output().kind() else {
+        return None;
+    };
+    let item_ty = args.types().next()?;
+    if !cx.tcx.is_diagnostic_item(sym::Option, option.did())
+        || item_ty == self_ty
+        || !cx.tcx.associated_item(def_id).is_method()
+        || !matches!(sig.inputs(), [receiver] if matches!(receiver.kind(), ty::Ref(_, _, Mutability::Mut)))
+    {
+        return None;
     }
 
-    matches!(
-        cx.tcx.def_path_str(trait_def_id).as_str(),
-        "core::iter::traits::iterator::Iterator" | "std::iter::Iterator"
-    )
+    // A type that already implements `Iterator` offers the standard step.
+    let has_iterator_impl = has_iterator_impl(cx, self_ty);
+    (!has_iterator_impl).then_some(self_ty)
 }
 
-/// Return the next name around a source position.
+/// Return whether the receiver already implements the standard iterator contract.
+fn has_iterator_impl<'tcx>(cx: &LateContext<'tcx>, self_ty: ty::Ty<'tcx>) -> bool {
+    cx.tcx
+        .get_diagnostic_item(sym::Iterator)
+        .is_none_or(|iterator| {
+            cx.tcx
+                .infer_ctxt()
+                .build(cx.typing_mode())
+                .type_implements_trait(iterator, [self_ty], cx.param_env)
+                .may_apply()
+        })
+}
+
+/// Return whether the name reads as a `next` step without a domain-policy word.
 fn next_name(name: &str) -> bool {
     (name == "next" || name.starts_with("next_")) && !domain_policy_name(name)
 }
 
-/// Return the domain policy name.
+/// Return whether the name contains a word that marks a domain step rather than iteration.
 fn domain_policy_name(name: &str) -> bool {
     [
         "advance",
@@ -116,77 +135,6 @@ fn domain_policy_name(name: &str) -> bool {
     ]
     .iter()
     .any(|word| name.contains(word))
-}
-
-/// Helper for mutable receiver only analysis.
-fn mutable_receiver_only(inputs: &[Ty<'_>]) -> bool {
-    matches!(inputs, [receiver] if mutable_ref(*receiver))
-}
-
-/// Helper for mutable ref analysis.
-fn mutable_ref(ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut))
-}
-
-/// Helper for iterator item return analysis.
-fn iterator_item_return<'tcx>(cx: &LateContext<'tcx>, item: &ImplItem<'tcx>, ty: Ty<'tcx>) -> bool {
-    let Some(item_ty) = option_item_ty(cx, ty) else {
-        return false;
-    };
-
-    !returns_self_state(cx, item, item_ty)
-}
-
-/// Return type information for option item.
-fn option_item_ty<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    let ty::Adt(adt, args) = ty.kind() else {
-        return None;
-    };
-
-    // Compare the resolved ADT against rustc's `Option` diagnostic item so aliases,
-    // `std::option::Option`, and imported spellings are recognized while local lookalikes are not.
-    if !cx.tcx.is_diagnostic_item(sym::Option, adt.did()) || args.len() != 1 {
-        return None;
-    }
-
-    Some(args.type_at(0))
-}
-
-/// Return whether the item returns self state.
-fn returns_self_state<'tcx>(
-    cx: &LateContext<'tcx>,
-    item: &ImplItem<'tcx>,
-    item_ty: Ty<'tcx>,
-) -> bool {
-    let impl_def_id = cx.tcx.parent(item.owner_id.def_id.to_def_id());
-    let self_ty = cx
-        .tcx
-        .type_of(impl_def_id)
-        .instantiate_identity()
-        .skip_norm_wip();
-
-    item_ty == self_ty
-}
-
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: impl Into<String>,
-    help: &'static str,
-) {
-    let message = message.into();
-
-    // Use rustc's native diagnostic decorator to keep diagnostics consistent.
-    cx.emit_span_lint(
-        lint,
-        span,
-        DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ = diag.help(help);
-        }),
-    );
 }
 
 /// Helper for ui analysis.

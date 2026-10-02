@@ -80,7 +80,8 @@ fn emit_span_lint_with_help(
 /// Helper for duration unit token analysis.
 fn duration_unit_token(name: &str) -> Option<&str> {
     // Match snake_case tokens so both prefix and suffix forms are covered without flagging
-    // unrelated substrings such as `weekday` or `timestamp`.
+    // unrelated substrings such as `weekday` or `timestamp`. Singular `second`, `minute`,
+    // `hour`, `day`, and `week` usually name a calendar component, and `min` a minimum.
     name.split('_').find(|token| {
         matches!(
             *token,
@@ -100,19 +101,13 @@ fn duration_unit_token(name: &str) -> Option<&str> {
                 | "milliseconds"
                 | "sec"
                 | "secs"
-                | "second"
                 | "seconds"
-                | "min"
                 | "mins"
-                | "minute"
                 | "minutes"
                 | "hr"
                 | "hrs"
-                | "hour"
                 | "hours"
-                | "day"
                 | "days"
-                | "week"
                 | "weeks"
         )
     })

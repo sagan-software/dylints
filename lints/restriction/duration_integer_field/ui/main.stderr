@@ -24,7 +24,7 @@ LL |     hours_until_expiry: i32,
    = help: use `std::time::Duration` and convert units at the input boundary
 
 warning: duration-like field `seconds_between_checks` uses integer `u16`
-  --> $DIR/main.rs:10:29
+  --> $DIR/main.rs:19:29
    |
 LL |     seconds_between_checks: u16,
    |                             ^^^

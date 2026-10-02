@@ -23,4 +23,23 @@ fn tiny(value: u64) -> u64 {
     value + 1
 }
 
+// A `//` inside a string is not a comment.
+fn url_without_comment() -> usize {
+    let first = "https://example.com";
+    let second = "text // not a comment";
+    let third = first.len();
+    let fourth = second.len();
+    third + fourth
+}
+
+fn closure_body() {
+    let _ = |value: u64| {
+        let a = value;
+        let b = a;
+        let c = b;
+        let d = c;
+        d
+    };
+}
+
 fn main() {}

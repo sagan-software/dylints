@@ -73,4 +73,150 @@ impl BuilderLike {
     }
 }
 
+struct BridgedByMacroArgument {
+    left_a: usize,
+    left_b: usize,
+    right_a: usize,
+    right_b: usize,
+}
+
+impl BridgedByMacroArgument {
+    fn read_left(&self) -> usize {
+        self.left_a + self.left_b
+    }
+
+    fn write_left(&mut self, value: usize) {
+        self.left_a = value;
+        self.left_b = value;
+    }
+
+    fn read_right(&self) -> usize {
+        self.right_a + self.right_b
+    }
+
+    fn write_right(&mut self, value: usize) {
+        self.right_a = value;
+        self.right_b = value;
+    }
+
+    fn reset_right(&mut self) {
+        self.right_a = 0;
+        self.right_b = 0;
+    }
+
+    fn report(&self) {
+        println!("{} {}", self.left_a, self.right_a);
+    }
+}
+
+struct BridgedByClosure {
+    left_a: usize,
+    left_b: usize,
+    right_a: usize,
+    right_b: usize,
+}
+
+impl BridgedByClosure {
+    fn read_left(&self) -> usize {
+        self.left_a + self.left_b
+    }
+
+    fn write_left(&mut self, value: usize) {
+        self.left_a = value;
+        self.left_b = value;
+    }
+
+    fn read_right(&self) -> usize {
+        self.right_a + self.right_b
+    }
+
+    fn write_right(&mut self, value: usize) {
+        self.right_a = value;
+        self.right_b = value;
+    }
+
+    fn reset_right(&mut self) {
+        self.right_a = 0;
+        self.right_b = 0;
+    }
+
+    fn total(&self) -> usize {
+        let sum = || self.left_a + self.right_a;
+        sum()
+    }
+}
+
+struct BridgedByMethodCall {
+    left_a: usize,
+    left_b: usize,
+    right_a: usize,
+    right_b: usize,
+}
+
+impl BridgedByMethodCall {
+    fn read_left(&self) -> usize {
+        self.left_a + self.left_b
+    }
+
+    fn write_left(&mut self, value: usize) {
+        self.left_a = value;
+        self.left_b = value;
+    }
+
+    fn read_right(&self) -> usize {
+        self.right_a + self.right_b
+    }
+
+    fn write_right(&mut self, value: usize) {
+        self.right_a = value;
+        self.right_b = value;
+    }
+
+    fn reset_right(&mut self) {
+        self.right_a = 0;
+        self.right_b = 0;
+    }
+
+    fn summary(&self) -> usize {
+        self.left_a.max(1) + self.read_right() + self.helper()
+    }
+
+    fn helper(&self) -> usize {
+        self.left_b.min(1)
+    }
+}
+
+struct TooSmall {
+    a: usize,
+    b: usize,
+}
+
+impl TooSmall {
+    fn a(&self) -> usize {
+        self.a
+    }
+
+    fn b(&self) -> usize {
+        self.b
+    }
+
+    fn delegates(&self) -> usize {
+        self.a() + self.b()
+    }
+}
+
+trait DefaultReceiver {
+    fn provided(&self) -> usize {
+        0
+    }
+}
+
+trait Marker {}
+
+impl dyn Marker {
+    fn describe(&self) -> usize {
+        0
+    }
+}
+
 fn main() {}

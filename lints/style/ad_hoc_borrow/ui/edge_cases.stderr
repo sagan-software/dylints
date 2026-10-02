@@ -6,7 +6,7 @@ LL | |         &self.0
 LL | |     }
    | |_____^
    |
-   = help: implement `std::borrow::Borrow<T>` only when equality and hashing match the borrowed view
+   = help: implement `std::borrow::Borrow<std::string::String>` only when equality and hashing match the borrowed view
    = note: `#[warn(ad_hoc_borrow)]` on by default
 
 warning: 1 warning emitted

@@ -32,11 +32,39 @@ impl Rows {
     }
 }
 
-impl std::iter::Iterator for Rows {
+struct IteratedRows {
+    rows: Vec<Row>,
+}
+
+impl IteratedRows {
+    const LIMIT: usize = 10;
+
+    fn next_row(&mut self) -> Option<Row> {
+        self.rows.pop()
+    }
+}
+
+impl std::iter::Iterator for IteratedRows {
     type Item = Row;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.rows.pop()
+    }
+}
+
+trait Stepper {
+    fn next_step(&mut self) -> Option<Row>;
+}
+
+impl Stepper for Rows {
+    fn next_step(&mut self) -> Option<Row> {
+        self.rows.pop()
+    }
+}
+
+impl Rows {
+    fn next_from(other: &mut Self) -> Option<Row> {
+        other.rows.pop()
     }
 }
 

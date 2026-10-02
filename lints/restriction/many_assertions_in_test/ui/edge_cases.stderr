@@ -24,5 +24,18 @@ LL | | }
    |
    = help: use `insta` when many assertions describe one structured output contract
 
-warning: 2 warnings emitted
+warning: test has 4 assertions
+  --> $DIR/edge_cases.rs:74:5
+   |
+LL | /     fn nested_test_with_attributes() {
+LL | |         assert!(true);
+LL | |         assert!(true);
+LL | |         assert!(true);
+LL | |         debug_assert!(false);
+LL | |     }
+   | |_____^
+   |
+   = help: use `insta` when many assertions describe one structured output contract
+
+warning: 3 warnings emitted
 

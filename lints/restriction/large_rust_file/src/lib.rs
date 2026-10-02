@@ -19,14 +19,14 @@ use std::{
     collections::BTreeSet,
     fs::File,
     io::Read,
-    path::{Component, Path, PathBuf},
+    path::{Path, PathBuf},
 };
 
 use dylint_support::{RustFileSizeViolation, rust_file_size_violation};
 use rustc_ast::Crate;
 use rustc_errors::DiagDecorator;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
-use rustc_span::{BytePos, SourceFile, Span, SyntaxContext};
+use rustc_span::{BytePos, SourceFile, Span, SyntaxContext, def_id::LOCAL_CRATE};
 
 dylint_support::documented_early_lint! {
     #[doc = include_str!("../README.md")]
@@ -89,16 +89,17 @@ fn loaded_rust_source_files(cx: &EarlyContext<'_>) -> Vec<SourceCandidate> {
     let mut candidates = Vec::new();
 
     for source_file in files.iter() {
-        // Retain unique local Rust files outside support and toolchain trees.
+        // Files imported from dependency metadata, such as macro definitions and the standard
+        // library, belong to other crates even when their path is under this directory.
+        if source_file.cnum != LOCAL_CRATE {
+            continue;
+        }
+
+        // Retain unique local Rust files under the compiler's current directory.
         let Some(path) = local_source_file_path(source_file, &crate_root) else {
             continue;
         };
-
-        if !seen.insert(path.clone())
-            || !is_rust_file(&path)
-            || is_support_crate_root(&path)
-            || is_toolchain_source(&path)
-        {
+        if !seen.insert(path.clone()) || !is_rust_file(&path) {
             continue;
         }
 
@@ -166,37 +167,6 @@ fn is_rust_file(path: &Path) -> bool {
     path.extension().is_some_and(|extension| extension == "rs")
 }
 
-/// Return whether the path is a shared support crate root module.
-fn is_support_crate_root(path: &Path) -> bool {
-    path.components()
-        .collect::<Vec<_>>()
-        .windows(3)
-        .any(|components| {
-            matches!(
-                components,
-                [
-                    Component::Normal(support),
-                    Component::Normal(src),
-                    Component::Normal(lib),
-            ] if *support == "support" && *src == "src" && *lib == "lib.rs"
-            )
-        })
-        || path
-            .components()
-            .any(|component| matches!(component, Component::Normal(name) if name == "support"))
-}
-
-/// Return whether the path belongs to the workspace-local Dylint toolchain.
-fn is_toolchain_source(path: &Path) -> bool {
-    path.components().any(|component| {
-        matches!(
-            component,
-            Component::Normal(name)
-                if name == ".rustup-dylint" || name == "toolchains" || name == "rustlib"
-        )
-    })
-}
-
 /// Emit the large file lint diagnostic.
 fn emit_large_file_lint(cx: &EarlyContext<'_>, span: Span, violation: RustFileSizeViolation) {
     // Render the selected total-line or non-test-line threshold violation.
@@ -227,22 +197,81 @@ fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");
 }
 
-/// External toolchain source must not count toward the target crate's file limit.
-#[test]
-fn excludes_external_source_files() {
-    let crate_root = Path::new("/work/target-crate");
-    let sysroot = PathBuf::from("/cache/rustup/toolchains/sagan-lints/lib/rustlib/src/lib.rs");
-    let local_toolchain =
-        crate_root.join(".rustup-dylint/toolchains/nightly/lib/rustlib/src/lib.rs");
-    let cached_toolchain =
-        crate_root.join(".cache/nix-ui/rustup/toolchains/nightly/lib/rustlib/src/lib.rs");
-    let packaged_toolchain = PathBuf::from("/nix/store/toolchain/lib/rustlib/src/lib.rs");
+#[cfg(test)]
+mod tests {
+    #![expect(
+        clippy::disallowed_methods,
+        reason = "synchronous filesystem fixtures exercise this early lint's file parser"
+    )]
 
-    // Cover absolute external paths, nested toolchains, and one accepted relative source path.
+    use super::{
+        RustFileSizeViolation, file_violation, first_line_len, first_line_span, is_rust_file,
+    };
+    use rustc_span::BytePos;
+    use std::path::Path;
+
+    /// First-line measurement uses one byte for empty and blank input.
+    #[test]
+    fn measures_first_line_length() {
+        assert_eq!(first_line_len(""), 1);
+    }
+
+    /// First-line measurement counts source bytes before the first newline.
+    #[test]
+    fn measures_nonempty_first_line() {
+        assert_eq!(first_line_len("é\nrest"), 2);
+    }
+
+    /// Span construction saturates at the representable byte position.
+    #[test]
+    fn builds_first_line_span() {
+        let span = first_line_span(BytePos(u32::MAX), 10);
+
+        assert_eq!(span.lo(), BytePos(u32::MAX));
+    }
+
+    /// File suffix filtering accepts only Rust source files.
+    #[test]
+    fn identifies_rust_sources() {
+        assert!(is_rust_file(Path::new("module.rs")) && !is_rust_file(Path::new("module.txt")));
+    }
+
+    /// Missing files are skipped without producing a size violation.
+    #[test]
+    fn skips_missing_files() {
+        assert!(file_violation(Path::new("/missing/large-rust-file.rs")).is_none());
+    }
+
+    /// Files over the production threshold report non-test line violations.
+    #[test]
+    fn reports_non_test_file_violation() {
+        // Generate a source file that exceeds the production line threshold.
+        let directory =
+            std::env::temp_dir().join(format!("large-rust-file-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let path = directory.join("large.rs");
+        let source = std::iter::repeat_n("fn value() {}\n", 1501).collect::<String>();
+        std::fs::write(&path, source).unwrap();
+
+        // Remove the fixture after classification so the test leaves no files behind.
+        let violation = file_violation(&path);
+        std::fs::remove_dir_all(directory).unwrap();
+
+        assert!(matches!(
+            violation,
+            Some((_, RustFileSizeViolation::NonTestLines(1501)))
+        ));
+    }
+}
+
+/// Paths outside the compiler's current directory do not count toward the limit.
+#[test]
+fn keeps_only_paths_under_current_directory() {
+    let crate_root = Path::new("/work/target-crate");
+    let sysroot = PathBuf::from("/cache/rustup/toolchains/nightly/lib/rustlib/src/lib.rs");
+
+    // Cover an absolute external path and one accepted relative source path.
     assert!(crate_local_path(sysroot, crate_root).is_none());
-    assert!(is_toolchain_source(&local_toolchain));
-    assert!(is_toolchain_source(&cached_toolchain));
-    assert!(is_toolchain_source(&packaged_toolchain));
     assert_eq!(
         crate_local_path(PathBuf::from("src/lib.rs"), crate_root),
         Some(crate_root.join("src/lib.rs"))

@@ -31,13 +31,5 @@ LL |     link_url: StdString,
    |
    = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
 
-warning: URL-like field `url_label` uses `String`
-  --> $DIR/edge_cases.rs:15:16
-   |
-LL |     url_label: String,
-   |                ^^^^^^
-   |
-   = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
-
-warning: 5 warnings emitted
+warning: 4 warnings emitted
 

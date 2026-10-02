@@ -72,6 +72,17 @@ impl PublicTrait for Service {
     fn trait_method(&self) {}
 }
 
+/// Hidden from rustdoc, so it needs no example.
+#[doc(hidden)]
+pub fn hidden_helper() {}
+
+/// Hidden module.
+#[doc(hidden)]
+pub mod hidden_module {
+    /// Inside a hidden module.
+    pub fn inside_hidden() {}
+}
+
 fn main() {
     let private_service = PrivateService;
     private_service.unreachable_method();

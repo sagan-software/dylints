@@ -75,4 +75,23 @@ fn while_desugaring_is_not_nested_control_flow(a: bool, b: bool, c: bool, d: boo
     }
 }
 
+async fn awaits_add_no_structure() {
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+}
+
 fn main() {}

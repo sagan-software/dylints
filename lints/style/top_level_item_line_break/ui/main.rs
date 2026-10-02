@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(dead_code)]
 
 #[rustfmt::skip]
@@ -8,6 +10,23 @@ mod nested {
     fn separated_nested_first() {}
     fn separated_nested_second() {}
 }
+
+#[rustfmt::skip]
+mod attributes {
+    fn first() {} #[inline] fn second() {}
+    /// Documented first.
+    fn third() {} /// Documented fourth.
+    fn fourth() {}
+    fn fifth() {} /* A block comment stays with the previous item. */ fn sixth() {}
+}
+
+macro_rules! generated_module {
+    () => {
+        mod generated { fn first() {} fn second() {} }
+    };
+}
+
+generated_module!();
 
 fn comment_gap() {} // The following item starts on a new line.
 fn after_comment_gap() {}

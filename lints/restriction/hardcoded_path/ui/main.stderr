@@ -31,5 +31,45 @@ LL |     consume(r"/server/share/example");
    |
    = help: use a repository-relative path or derive the path from configuration or the runtime environment
 
-warning: 4 warnings emitted
+warning: hardcoded absolute filesystem path
+  --> $DIR/main.rs:10:13
+   |
+LL |     consume("/Users/alice/Library/Caches");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a repository-relative path or derive the path from configuration or the runtime environment
+
+warning: hardcoded absolute filesystem path
+  --> $DIR/main.rs:11:13
+   |
+LL |     consume("/opt");
+   |             ^^^^^^
+   |
+   = help: use a repository-relative path or derive the path from configuration or the runtime environment
+
+warning: hardcoded home-relative filesystem path
+  --> $DIR/main.rs:12:13
+   |
+LL |     consume("~");
+   |             ^^^
+   |
+   = help: use a repository-relative path or derive the path from configuration or the runtime environment
+
+warning: hardcoded home-relative filesystem path
+  --> $DIR/main.rs:13:13
+   |
+LL |     consume("~alice/cache");
+   |             ^^^^^^^^^^^^^^
+   |
+   = help: use a repository-relative path or derive the path from configuration or the runtime environment
+
+warning: hardcoded home-relative filesystem path
+  --> $DIR/main.rs:14:13
+   |
+LL |     consume(r"~/AppData");
+   |             ^^^^^^^^^^^^
+   |
+   = help: use a repository-relative path or derive the path from configuration or the runtime environment
+
+warning: 9 warnings emitted
 

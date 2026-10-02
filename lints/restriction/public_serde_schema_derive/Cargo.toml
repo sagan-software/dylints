@@ -25,6 +25,10 @@ path = "ui/main.rs"
 name = "schema_dtos_edge_cases"
 path = "ui/edge_cases.rs"
 
+[[example]]
+name = "schema_dtos_no_schema_impl"
+path = "ui/no_schema_impl.rs"
+
 [features]
 rlib = ["dylint_linting/constituent"]
 

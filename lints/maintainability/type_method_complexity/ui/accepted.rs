@@ -139,4 +139,12 @@ fn free_functions_do_not_count(v: [bool; 20]) {
     }
 }
 
+trait WithDefault {
+    fn provided(&self, v: [bool; 9]) {
+        for flag in v {
+            if flag {}
+        }
+    }
+}
+
 fn main() {}

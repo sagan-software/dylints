@@ -2,8 +2,9 @@
 
 ## What it does
 
-Checks methods named `borrow_*` that take only a `&self` receiver and return a
-shared reference. Methods of a `Borrow` implementation are skipped.
+Checks inherent methods named `borrow_*` that take only a `&self` receiver and
+return a shared reference. Types that already implement `Borrow` for the
+returned type are skipped.
 
 ## Why is this bad?
 
@@ -15,8 +16,7 @@ name instead of using the standard trait.
 
 `Borrow` is correct only when `Eq`, `Ord`, and `Hash` give the same results for
 the owned and the borrowed value. The lint cannot check this, so it can warn on
-a method that must not become `Borrow`. It also warns on methods in trait
-implementations whose names the trait fixes.
+a method that must not become `Borrow`.
 
 ## Example
 

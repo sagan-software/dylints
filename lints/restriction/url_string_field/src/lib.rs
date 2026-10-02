@@ -18,10 +18,10 @@ extern crate rustc_middle;
 extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
-use rustc_hir::FieldDef;
+use rustc_hir::{FieldDef, LangItem};
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty;
-use rustc_span::{Span, def_id::DefId};
+use rustc_span::Span;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -82,29 +82,39 @@ fn emit_span_lint_with_help(
 /// Return the url field name.
 fn url_field_name(name: &str) -> bool {
     // Match common snake_case URL field tokens without requiring project-specific naming rules.
-    name.split('_').any(|token| {
+    let has_url_token = name.split('_').any(|token| {
         matches!(
             token,
             "url" | "uri" | "endpoint" | "endpoints" | "webhook" | "link"
         )
-    })
+    });
+
+    // A final word such as `label` or `template` names text about a URL, not the URL itself.
+    let is_url_description = name.rsplit('_').next().is_some_and(|token| {
+        matches!(
+            token,
+            "description"
+                | "format"
+                | "label"
+                | "name"
+                | "pattern"
+                | "prefix"
+                | "suffix"
+                | "template"
+                | "text"
+                | "title"
+        )
+    });
+    has_url_token && !is_url_description
 }
 
 /// Return type information for string.
 fn string_ty(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> Option<&'static str> {
     match ty.kind() {
-        ty::Adt(adt, _) if string_def_id(cx, adt.did()) => Some("String"),
+        ty::Adt(adt, _) if cx.tcx.is_lang_item(adt.did(), LangItem::String) => Some("String"),
         ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Str) => Some("&str"),
         _ => None,
     }
-}
-
-/// Helper for string def id analysis.
-fn string_def_id(cx: &LateContext<'_>, def_id: DefId) -> bool {
-    matches!(
-        cx.tcx.def_path_str(def_id).as_str(),
-        "alloc::string::String" | "std::string::String"
-    )
 }
 
 /// Helper for ui analysis.

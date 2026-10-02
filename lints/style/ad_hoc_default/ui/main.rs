@@ -6,13 +6,9 @@ struct Config {
 
 type ConfigAlias = Config;
 
-impl Default for Config {
-    fn default() -> Self {
-        Self { retries: 3 }
-    }
-}
-
 impl Config {
+    const DEFAULT_RETRIES: u8 = 3;
+
     fn new() -> Self {
         Self { retries: 3 }
     }
@@ -30,6 +26,36 @@ impl Config {
     }
 }
 
+struct WithDefault {
+    retries: u8,
+}
+
+impl Default for WithDefault {
+    fn default() -> Self {
+        Self { retries: 3 }
+    }
+}
+
+impl WithDefault {
+    fn new() -> Self {
+        Self::default()
+    }
+}
+
+struct Wrapper<T>(Vec<T>);
+
+impl<T> Default for Wrapper<T> {
+    fn default() -> Self {
+        Self(Vec::new())
+    }
+}
+
+impl<T> Wrapper<T> {
+    fn new() -> Self {
+        Self(Vec::new())
+    }
+}
+
 struct Factory;
 
 impl Factory {
@@ -38,6 +64,16 @@ impl Factory {
     }
 
     fn empty(_name: &str) -> Self {
+        Self
+    }
+}
+
+trait Builder {
+    fn new() -> Self;
+}
+
+impl Builder for Factory {
+    fn new() -> Self {
         Self
     }
 }

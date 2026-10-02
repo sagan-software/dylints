@@ -18,10 +18,10 @@ extern crate rustc_middle;
 extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
-use rustc_hir::FieldDef;
+use rustc_hir::{FieldDef, LangItem};
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty;
-use rustc_span::{Span, def_id::DefId};
+use rustc_span::Span;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -99,18 +99,10 @@ fn country_field_name(name: &str) -> bool {
 /// Return type information for string.
 fn string_ty(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> Option<&'static str> {
     match ty.kind() {
-        ty::Adt(adt, _) if string_def_id(cx, adt.did()) => Some("String"),
+        ty::Adt(adt, _) if cx.tcx.is_lang_item(adt.did(), LangItem::String) => Some("String"),
         ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Str) => Some("&str"),
         _ => None,
     }
-}
-
-/// Helper for string def id analysis.
-fn string_def_id(cx: &LateContext<'_>, def_id: DefId) -> bool {
-    matches!(
-        cx.tcx.def_path_str(def_id).as_str(),
-        "alloc::string::String" | "std::string::String"
-    )
 }
 
 /// Helper for ui analysis.

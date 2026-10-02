@@ -1,0 +1,13 @@
+warning: crate documentation has 3 prose words; minimum is 40
+  --> $DIR/short_crate.rs:1:1
+   |
+LL | / //! Short crate docs.
+LL | |
+LL | | fn main() {}
+   | |____________^
+   |
+   = help: describe responsibilities, key types, invariants, and how callers should navigate the API; add concrete information instead of filler
+   = note: `#[warn(insufficient_public_documentation)]` on by default
+
+warning: 1 warning emitted
+

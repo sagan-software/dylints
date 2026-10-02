@@ -26,10 +26,8 @@ start with words such as `default_`, `from_`, `in_`, or `path_`, names that end
 with `_name`, `_type`, `_value`, or `_path`, and a few exact names such as
 `value`, `seen`, and `escaped` pass without a predicate word.
 
-Method return types, associated constants, and parameters of trait methods
-without a body are checked by their written type, so a type alias for `bool`
-is not detected there. The names of methods and associated constants in trait
-implementations, closure parameters, destructuring patterns, and names created
+The names of methods and associated constants in trait implementations,
+closure parameters, destructuring patterns, `_` placeholders, and names created
 by macros are not checked.
 
 ## Example

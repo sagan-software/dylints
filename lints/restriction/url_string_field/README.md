@@ -18,9 +18,11 @@ The lint checks only the exact types `String` and `&str`, after resolving type
 aliases and `use` renames. It does not flag `Option<String>`, `Vec<String>`,
 `Box<str>`, or `Cow<'_, str>`.
 
-It warns on any field that contains one of the words, including text that is
-not a URL, such as `url_label`, `link_text`, or `endpoint_name`. It does not
-flag other URL names, such as `href` or `base`.
+It skips a field whose last word is `description`, `format`, `label`, `name`,
+`pattern`, `prefix`, `suffix`, `template`, `text`, or `title`, such as
+`url_label` or `link_text`. It still warns on other text that is not a URL,
+such as `endpoint_kind`. It does not flag other URL names, such as `href` or
+`base`.
 
 ## Example
 

@@ -1,0 +1,27 @@
+warning: `cfg(unix)` is repeated 5 times across this crate
+  --> $DIR/positions.rs:8:5
+   |
+LL |     #[cfg(unix)]
+   |     ^^^^^^^^^^^^
+   |
+   = help: move the gated items into a dedicated module
+   = note: `#[warn(repeated_cfg_gate)]` on by default
+
+warning: `cfg(all(unix, not(windows)))` is repeated 4 times across this crate
+  --> $DIR/positions.rs:50:1
+   |
+LL | #[cfg(all(unix, not(windows)))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: move the gated items into a dedicated module
+
+warning: `cfg(any(test, unix))` is repeated 4 times across this crate
+  --> $DIR/positions.rs:65:1
+   |
+LL | #[cfg(any(test, unix))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: move the gated items into a dedicated module
+
+warning: 3 warnings emitted
+

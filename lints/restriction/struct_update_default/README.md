@@ -13,6 +13,12 @@ so no call site is reviewed for the new field.
 
 ## Known problems
 
+When the base is the built-in `#[derive(Default)]` of a struct in the same
+crate, and the remaining fields have no default field values, the lint suggests
+listing each remaining field as `field: Default::default()`. That derive calls
+`Default::default()` for each field, so the values do not change. Other cases,
+such as a handwritten `Default` impl, get help text only.
+
 It warns on types from other crates that have many fields, where listing every
 field is long and the crate documents `..Default::default()` as the intended
 style. It does not flag other update bases, such as `..base` or

@@ -14,14 +14,12 @@ message on the type and generates both implementations.
 
 ## Known problems
 
-The suggestion adds a dependency on the `thiserror` crate. The lint reads
-source text, not types, and matches the two implementations by the type's
-last path segment, so two types with the same name in different modules are
-treated as one. A local trait named `Display` or `Error` also counts. The lint
-skips generic types, `Error` implementations with methods such as `source`,
-and `Display` bodies that contain `if `, `match `, `redact`, `secret`, `***`,
-or `<redacted>`. It misses `Display` bodies that use `f.write_str` or more
-than one statement.
+The suggestion adds a dependency on the `thiserror` crate. The lint resolves
+the standard `Display`, `Error`, and `write!` APIs, pairs implementations by
+the local type definition, and skips generic types. It also skips `Error`
+implementations with methods such as `source`, `Display` bodies that use more
+than one statement, and display implementations expanded from another macro.
+It does not recognize equivalent formatting written with `f.write_str`.
 
 ## Example
 

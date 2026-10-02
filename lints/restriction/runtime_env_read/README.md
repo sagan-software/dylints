@@ -17,19 +17,19 @@ process. Parsing and default rules for the variable spread to every read site.
 A function is allowed when any of these hold:
 
 - It is named `main`.
-- Its name or any module in its path contains the word `cli`, `config`,
-  `configuration`, `bootstrap`, `settings`, `setting`, `env`, or `environment`.
-  Words are split on non-alphanumeric characters and matched with case, so
-  `load_config` is allowed but `AppConfig::load` is not.
+- Its name or the name of any enclosing module, type, or impl contains the word
+  `cli`, `config`, `configuration`, `bootstrap`, `settings`, `setting`, `env`, or
+  `environment`. Words are split on non-alphanumeric characters and matched with
+  case, so `load_config` is allowed but `AppConfig::load` is not.
 - Its path contains the word `test`, `tests`, or `testing`.
-- It has `#[test]`, or a `cfg` or `cfg_attr` attribute whose text contains
-  `test`.
+- It is a `#[test]` function, or it or an enclosing item has a `cfg` that
+  requires `test`, such as `#[cfg(test)]` or `#[cfg(all(test, unix))]`.
 - It is in `build.rs`, or the file name or its parent directory contains one of
   the allowed words, such as `config.rs` or `settings/mod.rs`.
 
-It does not check reads inside closures, so a read in a `LazyLock` initializer
-is not reported. It does not check `std::env::vars` or reads through wrapper
-functions.
+A read inside a closure, such as a `LazyLock` initializer, is judged by the
+item that owns the closure. The lint does not check `std::env::vars` or reads
+through wrapper functions.
 
 ## Example
 

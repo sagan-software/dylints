@@ -84,4 +84,34 @@ pub trait Renderer {
     fn render(&self) -> Self::Document;
 }
 
+/// A struct whose impl, variants, and foreign items carry docs.
+pub struct Holder;
+
+impl Holder {
+    /// An impl item with *spaced* emphasis.
+    pub fn method(&self) {}
+}
+
+/// An enum with documented variants.
+pub enum Choice {
+    /// A variant with *spaced* emphasis.
+    First,
+}
+
+unsafe extern "C" {
+    /// A foreign item with *spaced* emphasis.
+    pub safe fn abs(value: i32) -> i32;
+}
+
+#[doc = "An attribute with * spaced * emphasis."]
+pub fn attribute_docs() {}
+
+/// Mixed line comments and attributes use the normalized source.
+#[doc = "Second line with * spaced * emphasis."]
+pub fn mixed_docs() {}
+
+pub mod inner_docs {
+    //! Inner docs with *spaced* emphasis.
+}
+
 fn main() {}

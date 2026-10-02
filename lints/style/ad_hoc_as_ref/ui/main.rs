@@ -7,6 +7,8 @@ struct ConfigPath {
 type PathRef<'a> = &'a Path;
 
 impl ConfigPath {
+    const LABEL: &'static str = "config";
+
     fn as_path(&self) -> &Path {
         &self.path
     }
@@ -17,6 +19,10 @@ impl ConfigPath {
 
     fn as_alias_path(&self) -> PathRef<'_> {
         &self.path
+    }
+
+    fn as_mut_path(&mut self) -> &mut Path {
+        &mut self.path
     }
 
     fn as_path_box(&self) -> Box<Path> {
@@ -32,10 +38,48 @@ impl ConfigPath {
         let _ = profile;
         &self.path
     }
+
+    fn get_shared(other: &Self) -> &Path {
+        &other.path
+    }
+
+    fn as_owned_path(self) -> Path {
+        self.path
+    }
 }
 
-impl AsRef<Path> for ConfigPath {
+struct ImplementedPath {
+    path: Path,
+}
+
+impl ImplementedPath {
+    fn as_path(&self) -> &Path {
+        &self.path
+    }
+
+    fn as_mut_path(&mut self) -> &mut Path {
+        &mut self.path
+    }
+}
+
+impl AsRef<Path> for ImplementedPath {
     fn as_ref(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl AsMut<Path> for ImplementedPath {
+    fn as_mut(&mut self) -> &mut Path {
+        &mut self.path
+    }
+}
+
+trait PathView {
+    fn as_view(&self) -> &Path;
+}
+
+impl PathView for ConfigPath {
+    fn as_view(&self) -> &Path {
         &self.path
     }
 }

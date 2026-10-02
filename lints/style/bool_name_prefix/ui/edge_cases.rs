@@ -26,4 +26,36 @@ fn accepts_flag(visible: bool, is_visible: bool) {
     let _ = is_ready;
 }
 
+trait AliasChecks {
+    const ALIAS_READY: Flag;
+
+    fn alias_ready(&self, alias_visible: Flag, _: bool) -> Flag;
+
+    fn provided_alias(&self) -> Flag {
+        true
+    }
+}
+
+struct Aliased;
+
+impl Aliased {
+    const ALIAS_DONE: Flag = true;
+
+    fn alias_done(&self) -> Flag {
+        true
+    }
+
+    fn ignored_parameter(&self, _: bool) {}
+}
+
+macro_rules! generated_flag {
+    () => {
+        fn generated() -> bool {
+            true
+        }
+    };
+}
+
+generated_flag!();
+
 fn main() {}

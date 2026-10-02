@@ -3,7 +3,8 @@
 ## What it does
 
 Checks inherent methods named `to_string`, `display`, `format`, or `render`
-that take only a `&self` receiver and return `String`.
+that take only a `&self` receiver and return `String`. Types that already
+implement `Display` are skipped.
 
 ## Why is this bad?
 
@@ -15,7 +16,7 @@ allocates a `String` even when the caller only writes the text to a stream.
 
 The lint checks only the name and signature. It warns on a `render` or `format`
 method that produces a document or report rather than the type's one textual
-form. It also warns when the type already implements `Display`.
+form.
 
 ## Example
 

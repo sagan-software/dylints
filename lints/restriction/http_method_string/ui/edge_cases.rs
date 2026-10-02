@@ -1,4 +1,7 @@
+// aux-build:http.rs
 #![allow(dead_code)]
+
+extern crate http;
 
 use std::string::String as StdString;
 

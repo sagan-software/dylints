@@ -1,19 +1,19 @@
-warning: `path` attribute outside a conventional crate root file
-  --> $DIR/module.rs:3:1
+warning: `path` attribute outside the crate root file
+  --> $DIR/auxiliary/nested/outer.rs:1:1
    |
-LL | #[path = "auxiliary/support.rs"]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL | #[path = "../support.rs"]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: use Rust's standard module file layout, or declare this override from an allowed root file
+   = help: use Rust's standard module file layout, or declare this override in the crate root file
    = note: `#[warn(path_attribute_outside_root)]` on by default
 
-warning: `path` attribute outside a conventional crate root file
-  --> $DIR/module.rs:6:19
+warning: `path` attribute outside the crate root file
+  --> $DIR/auxiliary/nested/lib.rs:1:19
    |
-LL | #[cfg_attr(all(), path = "auxiliary/support.rs")]
-   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL | #[cfg_attr(all(), path = "../support.rs")]
+   |                   ^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: use Rust's standard module file layout, or declare this override from an allowed root file
+   = help: use Rust's standard module file layout, or declare this override in the crate root file
 
 warning: 2 warnings emitted
 

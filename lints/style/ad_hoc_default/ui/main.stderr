@@ -1,43 +1,43 @@
 warning: constructor `new` looks like a default value
-  --> $DIR/main.rs:16:5
+  --> $DIR/main.rs:12:5
    |
 LL | /     fn new() -> Self {
 LL | |         Self { retries: 3 }
 LL | |     }
    | |_____^
    |
-   = help: implement `Default` when this is the canonical zero-argument value
+   = help: implement `Default` with this value; `new` can stay and return `Self::default()`
    = note: `#[warn(ad_hoc_default)]` on by default
 
 warning: constructor `empty` looks like a default value
-  --> $DIR/main.rs:20:5
+  --> $DIR/main.rs:16:5
    |
 LL | /     fn empty() -> Config {
 LL | |         Config { retries: 3 }
 LL | |     }
    | |_____^
    |
-   = help: implement `Default` when this is the canonical zero-argument value
+   = help: implement `Default` with this value; `empty` can stay and return `Self::default()`
 
 warning: constructor `blank` looks like a default value
-  --> $DIR/main.rs:24:5
+  --> $DIR/main.rs:20:5
    |
 LL | /     fn blank() -> ConfigAlias {
 LL | |         Config { retries: 3 }
 LL | |     }
    | |_____^
    |
-   = help: implement `Default` when this is the canonical zero-argument value
+   = help: implement `Default` with this value; `blank` can stay and return `Self::default()`
 
 warning: constructor `default_config` looks like a default value
-  --> $DIR/main.rs:49:9
+  --> $DIR/main.rs:85:9
    |
 LL | /         pub fn default_config() -> crate::qualified::Qualified {
 LL | |             Self
 LL | |         }
    | |_________^
    |
-   = help: implement `Default` when this is the canonical zero-argument value
+   = help: implement `Default` with this value; `default_config` can stay and return `Self::default()`
 
 warning: 4 warnings emitted
 

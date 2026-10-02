@@ -1,8 +1,7 @@
 #![feature(rustc_private)]
 #![expect(
     clippy::let_underscore_must_use,
-    clippy::string_slice,
-    reason = "the lint intentionally ignores diagnostic builders and uses rustc-provided UTF-8 byte boundaries"
+    reason = "the lint intentionally ignores diagnostic builders"
 )]
 
 //! A lint to check for tests with many assertions.
@@ -20,24 +19,24 @@ extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Attribute, Body, Expr,
+    Attribute, Body, Expr, ItemKind,
     attrs::AttributeKind,
     intravisit::{self, FnKind, Visitor},
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
-use rustc_span::{ExpnKind, MacroKind, Span, SyntaxContext, def_id::LocalDefId, sym};
+use rustc_span::{ExpnKind, MacroKind, Span, SyntaxContext, def_id::LocalDefId};
 
 /// `ASSERTION_THRESHOLD` configuration used by this lint.
 const ASSERTION_THRESHOLD: usize = 4;
 
-/// Standard assertion macros that contribute to the snapshot-test threshold.
+/// Diagnostic items of the standard assertion macros counted toward the threshold.
 const ASSERTION_MACROS: &[&str] = &[
-    "assert",
-    "assert_eq",
-    "assert_ne",
-    "debug_assert",
-    "debug_assert_eq",
-    "debug_assert_ne",
+    "assert_macro",
+    "assert_eq_macro",
+    "assert_ne_macro",
+    "debug_assert_macro",
+    "debug_assert_eq_macro",
+    "debug_assert_ne_macro",
 ];
 
 dylint_support::documented_late_lint! {
@@ -60,7 +59,7 @@ impl<'tcx> LateLintPass<'tcx> for ManyAssertionsInTest {
         local_def_id: LocalDefId,
     ) {
         // Ignore closures and functions without built-in test semantics.
-        if matches!(kind, FnKind::Closure) || !test_function(cx, local_def_id, span) {
+        if matches!(kind, FnKind::Closure) || !is_test_function(cx, local_def_id) {
             return;
         }
 
@@ -134,67 +133,20 @@ fn emit_span_lint_with_help(
     );
 }
 
-/// Helper for test function analysis.
-fn test_function(cx: &LateContext<'_>, local_def_id: LocalDefId, span: Span) -> bool {
-    let hir_id = cx.tcx.local_def_id_to_hir_id(local_def_id);
-    let attrs: &[Attribute] = cx.tcx.hir_attrs(hir_id);
-
-    // Rustc strips built-in test attributes before late linting, so retain a narrow source fallback.
-    attrs.iter().any(|attr| {
-        attr.has_name(sym::test)
-            || matches!(attr, Attribute::Parsed(AttributeKind::RustcTestMarker(_)))
-    }) || source_has_builtin_test_attr(cx, span)
-}
-
-/// Return whether adjacent source attributes include the built-in `#[test]` marker.
-fn source_has_builtin_test_attr(cx: &LateContext<'_>, span: Span) -> bool {
-    // Read the source file because late HIR no longer retains the built-in marker.
-    let source_file = cx.sess().source_map().lookup_source_file(span.lo());
-    let Some(source) = source_file.src.as_deref() else {
-        return false;
-    };
-    let Ok(item_start) = usize::try_from((span.lo() - source_file.start_pos).0) else {
-        return false;
-    };
-    if item_start > source.len() {
-        return false;
-    }
-
-    // Start immediately before the item and ignore intervening whitespace.
-    let mut cursor = skip_whitespace_backward(source, item_start);
-
-    // Walk only adjacent outer attributes so comments and earlier items cannot create a match.
-    while cursor > 0 && source.as_bytes().get(cursor - 1) == Some(&b']') {
-        let end = cursor - 1;
-        let Some(start) = source[..end].rfind("#[") else {
-            break;
-        };
-        // Accept only the exact built-in test attribute body.
-        if source
-            .get(start + 2..end)
-            .is_some_and(|body| body.trim() == "test")
-        {
-            return true;
-        }
-        cursor = skip_whitespace_backward(source, start);
-    }
-
-    false
-}
-
-/// Move a source cursor backward over ASCII whitespace.
-fn skip_whitespace_backward(source: &str, mut cursor: usize) -> usize {
-    // Attribute discovery starts at the previous non-whitespace byte.
-    while cursor > 0
-        && source
-            .as_bytes()
-            .get(cursor - 1)
-            .is_some_and(u8::is_ascii_whitespace)
-    {
-        cursor -= 1;
-    }
-
-    cursor
+/// Return whether a function is a `#[test]` function in a `--test` build.
+fn is_test_function(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+    // The test harness replaces `#[test]` with a same-named marker constant in the same module.
+    let name = cx.tcx.item_name(local_def_id.to_def_id());
+    let module = cx.tcx.parent_module_from_def_id(local_def_id);
+    cx.tcx.hir_module_free_items(module).any(|item_id| {
+        let item = cx.tcx.hir_item(item_id);
+        matches!(item.kind, ItemKind::Const(ident, ..) if ident.name == name)
+            && cx
+                .tcx
+                .hir_attrs(item.hir_id())
+                .iter()
+                .any(|attr| matches!(attr, Attribute::Parsed(AttributeKind::RustcTestMarker(_))))
+    })
 }
 
 /// Resolve one expression to its standard assertion macro call site.
@@ -207,8 +159,10 @@ fn assertion_macro_invocation(cx: &LateContext<'_>, span: Span) -> Option<Span> 
         // Require a bang macro resolved to a standard-library assertion definition.
         if matches!(expansion.kind, ExpnKind::Macro(MacroKind::Bang, _))
             && let Some(def_id) = expansion.macro_def_id
-            && matches!(cx.tcx.crate_name(def_id.krate).as_str(), "core" | "std")
-            && ASSERTION_MACROS.contains(&cx.tcx.item_name(def_id).as_str())
+            && cx
+                .tcx
+                .get_diagnostic_name(def_id)
+                .is_some_and(|name| ASSERTION_MACROS.contains(&name.as_str()))
         {
             return Some(expansion.call_site.source_callsite());
         }

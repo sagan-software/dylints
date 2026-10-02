@@ -24,6 +24,14 @@ LL |     for (raw, expected) in cases {
    = help: use `#[test_case(...)]` so each case has its own named test result
 
 warning: test manually iterates over cases
+  --> $DIR/main.rs:48:5
+   |
+LL |     for case in cases {
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = help: use `#[test_case(...)]` so each case has its own named test result
+
+warning: test manually iterates over cases
   --> $DIR/main.rs:56:5
    |
 LL |     for (raw, expected) in CASES.iter() {
@@ -63,5 +71,5 @@ LL |         .for_each(|(raw, expected)| assert_eq!(parse(raw), expected));
    |
    = help: use `#[test_case(...)]` so each case has its own named test result
 
-warning: 8 warnings emitted
+warning: 9 warnings emitted
 

@@ -1,5 +1,5 @@
 warning: HTTP method field `method` uses `String`
-  --> $DIR/edge_cases.rs:11:13
+  --> $DIR/edge_cases.rs:14:13
    |
 LL |     method: MethodText,
    |             ^^^^^^^^^^
@@ -8,7 +8,7 @@ LL |     method: MethodText,
    = note: `#[warn(http_method_string)]` on by default
 
 warning: HTTP method field `request_method` uses `String`
-  --> $DIR/edge_cases.rs:13:21
+  --> $DIR/edge_cases.rs:16:21
    |
 LL |     request_method: std::string::String,
    |                     ^^^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL |     request_method: std::string::String,
    = help: use `http::Method` or `reqwest::Method`
 
 warning: HTTP method field `http_method` uses `&str`
-  --> $DIR/edge_cases.rs:14:18
+  --> $DIR/edge_cases.rs:17:18
    |
 LL |     http_method: &'a MethodStr,
    |                  ^^^^^^^^^^^^^
@@ -24,7 +24,7 @@ LL |     http_method: &'a MethodStr,
    = help: use `http::Method` or `reqwest::Method`
 
 warning: HTTP method field `verb` uses `String`
-  --> $DIR/edge_cases.rs:15:11
+  --> $DIR/edge_cases.rs:18:11
    |
 LL |     verb: StdString,
    |           ^^^^^^^^^
@@ -32,7 +32,7 @@ LL |     verb: StdString,
    = help: use `http::Method` or `reqwest::Method`
 
 warning: HTTP method parameter `method` uses `String`
-  --> $DIR/edge_cases.rs:22:28
+  --> $DIR/edge_cases.rs:25:28
    |
 LL |     fn send(&self, method: MethodText) -> MethodText;
    |                            ^^^^^^^^^^
@@ -40,7 +40,7 @@ LL |     fn send(&self, method: MethodText) -> MethodText;
    = help: use `http::Method` or `reqwest::Method`
 
 warning: HTTP method parameter `method` uses `String`
-  --> $DIR/edge_cases.rs:25:24
+  --> $DIR/edge_cases.rs:28:24
    |
 LL | fn method_name(method: MethodText) -> MethodText {
    |                        ^^^^^^^^^^
@@ -48,7 +48,7 @@ LL | fn method_name(method: MethodText) -> MethodText {
    = help: use `http::Method` or `reqwest::Method`
 
 warning: HTTP method parameter `method` uses `String`
-  --> $DIR/edge_cases.rs:29:24
+  --> $DIR/edge_cases.rs:32:24
    |
 LL | fn http_method(method: std::string::String) -> std::string::String {
    |                        ^^^^^^^^^^^^^^^^^^^
@@ -56,7 +56,7 @@ LL | fn http_method(method: std::string::String) -> std::string::String {
    = help: use `http::Method` or `reqwest::Method`
 
 warning: HTTP method return value `http_method` uses `String`
-  --> $DIR/edge_cases.rs:29:48
+  --> $DIR/edge_cases.rs:32:48
    |
 LL | fn http_method(method: std::string::String) -> std::string::String {
    |                                                ^^^^^^^^^^^^^^^^^^^
@@ -64,7 +64,7 @@ LL | fn http_method(method: std::string::String) -> std::string::String {
    = help: use `http::Method` or `reqwest::Method`
 
 warning: HTTP method parameter `verb` uses `&str`
-  --> $DIR/edge_cases.rs:33:25
+  --> $DIR/edge_cases.rs:36:25
    |
 LL | fn request_method(verb: &'static MethodStr) -> &'static MethodStr {
    |                         ^^^^^^^^^^^^^^^^^^
@@ -72,7 +72,7 @@ LL | fn request_method(verb: &'static MethodStr) -> &'static MethodStr {
    = help: use `http::Method` or `reqwest::Method`
 
 warning: HTTP method return value `request_method` uses `&str`
-  --> $DIR/edge_cases.rs:33:48
+  --> $DIR/edge_cases.rs:36:48
    |
 LL | fn request_method(verb: &'static MethodStr) -> &'static MethodStr {
    |                                                ^^^^^^^^^^^^^^^^^^

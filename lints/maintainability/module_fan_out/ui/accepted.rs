@@ -86,4 +86,26 @@ fn external_crates_are_excluded() {
     std::mem::drop(String::new());
 }
 
+mod method_target {
+    pub struct Target;
+
+    impl Target {
+        pub fn act(&self) {}
+    }
+}
+
+mod method_edges {
+    macro_rules! generated_method_call {
+        ($target:expr) => {
+            $target.act()
+        };
+    }
+
+    pub fn run(target: &crate::method_target::Target) {
+        target.act();
+        generated_method_call!(target);
+        let _length = String::new().len();
+    }
+}
+
 fn main() {}

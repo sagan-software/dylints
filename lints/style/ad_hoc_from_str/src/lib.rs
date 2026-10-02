@@ -6,29 +6,28 @@
 
 //! A lint to check for ad hoc string parser functions.
 //!
-//! It finds source-authored functions and inherent methods that parse strings
-//! through a repeated conversion-shaped API instead of implementing `FromStr`.
-//! The check relies on resolved signatures and body structure, reports a
-//! focused migration hint, and leaves functions with unrelated side effects
-//! or incompatible return types untouched.
+//! It finds free functions and inherent associated functions that parse a
+//! `&str` into a `Result` through a parser-shaped name instead of implementing
+//! `FromStr`. Resolved types decide whether a `FromStr` implementation is legal
+//! and new: the target must be a local type that does not borrow from the input
+//! and does not already implement `FromStr`.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_infer;
 extern crate rustc_middle;
 extern crate rustc_span;
+extern crate rustc_trait_selection;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Body, FnDecl, ImplItem, ImplItemImplKind, ImplItemKind, ImplicitSelfKind, Mutability,
-    intravisit::FnKind,
+    Body, FnDecl, ImplItem, ImplItemImplKind, ImplItemKind, Mutability, intravisit::FnKind,
 };
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
+use rustc_infer::infer::TyCtxtInferExt;
+use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::{
-    Span,
-    def_id::{DefId, LocalDefId},
-    sym,
-};
+use rustc_span::{Span, Symbol, def_id::LocalDefId, sym};
+use rustc_trait_selection::infer::InferCtxtExt;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -39,7 +38,7 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for AdHocFromStr {
-    /// Check fn for this lint.
+    /// Check one free function.
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
@@ -49,168 +48,118 @@ impl<'tcx> LateLintPass<'tcx> for AdHocFromStr {
         span: Span,
         local_def_id: LocalDefId,
     ) {
-        let FnKind::ItemFn(ident, ..) = kind else {
-            return;
-        };
-
-        let name = ident.name.to_ident_string();
-        check_candidate(cx, &name, None, span, local_def_id);
+        if let FnKind::ItemFn(ident, ..) = kind {
+            check_candidate(cx, ident.name, span, local_def_id);
+        }
     }
 
-    /// Check impl item for this lint.
+    /// Check one inherent associated function; trait items have names fixed by their trait.
     fn check_impl_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx ImplItem<'tcx>) {
-        // Restrict the analysis to functions declared inside an implementation.
-        let ImplItemKind::Fn(sig, _) = item.kind else {
-            return;
-        };
-        let name = item.ident.name.to_ident_string();
-
-        // Leave canonical `FromStr::from_str` implementations to the trait contract.
-        if standard_from_str_impl(cx, item, &name) {
-            return;
+        let def_id = item.owner_id.def_id;
+        if matches!(item.kind, ImplItemKind::Fn(..))
+            && matches!(item.impl_kind, ImplItemImplKind::Inherent { .. })
+            && !cx.tcx.associated_item(def_id).is_method()
+        {
+            check_candidate(cx, item.ident.name, item.span, def_id);
         }
-
-        check_candidate(cx, &name, Some(sig.decl), item.span, item.owner_id.def_id);
     }
 }
 
-/// Check candidate for this lint.
-fn check_candidate(
-    cx: &LateContext<'_>,
-    name: &str,
-    decl: Option<&FnDecl<'_>>,
-    span: Span,
-    local_def_id: LocalDefId,
-) {
-    // Require parser vocabulary and a string-to-result signature together.
-    if !parser_name(name) || !one_string_input_result(cx, decl, local_def_id) {
+/// Report one function whose name and signature fit a new `FromStr` implementation.
+fn check_candidate(cx: &LateContext<'_>, name: Symbol, span: Span, local_def_id: LocalDefId) {
+    // Resolve parser vocabulary and the target type before applying ownership rules.
+    let Some((_input, target)) = parser_signature(cx, name, local_def_id) else {
+        return;
+    };
+    // `FromStr` needs a local target that cannot borrow from the input and lacks an impl.
+    if !is_valid_from_str_conversion(cx, target) {
         return;
     }
 
-    // Recommend the standard parsing trait for the detected canonical shape.
-    emit_span_lint_with_help(
-        cx,
+    cx.emit_span_lint(
         AD_HOC_FROM_STR,
         span,
-        format!("function `{name}` looks like a string parser"),
-        "implement `std::str::FromStr` when the parser has one canonical meaning",
-    );
-}
-
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: impl Into<String>,
-    help: &'static str,
-) {
-    let message = message.into();
-
-    // Use rustc's native diagnostic decorator to keep the lint dependency-free.
-    cx.emit_span_lint(
-        lint,
-        span,
-        DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ = diag.help(help);
+        DiagDecorator(move |diag| {
+            let _ = diag.primary_message(format!("function `{name}` looks like a string parser"));
+            let _ = diag.help(format!(
+                "implement `std::str::FromStr for {target}` when the parser has one canonical meaning"
+            ));
         }),
     );
 }
 
-/// Return the parser name.
+/// Return the input and target types of a named string parser.
+fn parser_signature<'tcx>(
+    cx: &LateContext<'tcx>,
+    name: Symbol,
+    local_def_id: LocalDefId,
+) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    // Reject names outside parser vocabulary before resolving the signature.
+    if !parser_name(name.as_str()) {
+        return None;
+    }
+    let fn_sig = cx.tcx.instantiate_bound_regions_with_erased(
+        cx.tcx
+            .fn_sig(local_def_id)
+            .instantiate_identity()
+            .skip_norm_wip(),
+    );
+    let ([input], ty::Adt(result, args)) = (fn_sig.inputs(), fn_sig.output().kind()) else {
+        return None;
+    };
+    // Keep only `&str -> Result<T, E>` signatures with an available target type.
+    if !matches!(input.kind(), ty::Ref(_, inner, Mutability::Not) if inner.is_str())
+        || !cx.tcx.is_diagnostic_item(sym::Result, result.did())
+    {
+        return None;
+    }
+    Some((*input, args.types().next()?))
+}
+
+/// Return whether a parser target is local, owned, and not already `FromStr`.
+fn is_valid_from_str_conversion<'tcx>(cx: &LateContext<'tcx>, target: Ty<'tcx>) -> bool {
+    is_local_owned_adt(target) && !implements_from_str(cx, target)
+}
+
+/// Return whether the name reads as a canonical parser without a policy marker.
 fn parser_name(name: &str) -> bool {
     (name.starts_with("parse_") || name.starts_with("from_str"))
-        && !domain_or_side_effect_policy_name(name)
+        && ![
+            "_and_",
+            "_lenient",
+            "_lossy",
+            "_or_",
+            "_strict",
+            "_unchecked",
+            "_with_",
+        ]
+        .iter()
+        .any(|marker| name.contains(marker))
 }
 
-/// Return the domain or side effect policy name.
-fn domain_or_side_effect_policy_name(name: &str) -> bool {
-    [
-        "_and_",
-        "_lenient",
-        "_lossy",
-        "_or_",
-        "_strict",
-        "_unchecked",
-        "_with_",
-    ]
-    .iter()
-    .any(|marker| name.contains(marker))
+/// Return whether the type is a local struct, enum, or union without lifetime arguments.
+///
+/// `FromStr::from_str` cannot tie its output to the input string, so a target
+/// with a lifetime cannot follow the suggestion.
+fn is_local_owned_adt(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if adt.did().is_local())
+        && !ty.walk().any(|argument| argument.as_region().is_some())
 }
 
-/// Helper for one string input result analysis.
-fn one_string_input_result(
-    cx: &LateContext<'_>,
-    decl: Option<&FnDecl<'_>>,
-    local_def_id: LocalDefId,
-) -> bool {
-    if decl.is_some_and(|decl| decl.implicit_self() != ImplicitSelfKind::None) {
-        return false;
-    }
-
-    let fn_sig = cx
+/// Return whether the target may already implement `FromStr` in the item's environment.
+fn implements_from_str<'tcx>(cx: &LateContext<'tcx>, target: Ty<'tcx>) -> bool {
+    // `FromStr` itself has no diagnostic item, so resolve it through its `from_str` method.
+    let from_str = cx
         .tcx
-        .fn_sig(local_def_id)
-        .instantiate_identity()
-        .skip_binder();
-    let [input] = fn_sig.inputs() else {
-        return false;
-    };
-
-    // Use lowered rustc types so aliases like `type Raw<'a> = &'a str` and qualified
-    // `std::result::Result` paths are handled the same as their canonical spelling.
-    str_ref_ty(*input) && result_return(cx, fn_sig.output())
-}
-
-/// Return type information for str ref.
-fn str_ref_ty(ty: Ty<'_>) -> bool {
-    let ty::Ref(_, inner, Mutability::Not) = ty.kind() else {
-        return false;
-    };
-
-    matches!(inner.kind(), ty::Str)
-}
-
-/// Helper for result return analysis.
-fn result_return(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    let ty::Adt(adt, args) = ty.kind() else {
-        return false;
-    };
-
-    // Require a meaningful parse target so result-shaped status helpers like `Result<(), E>` stay
-    // out of the trait-convention lint.
-    cx.tcx.is_diagnostic_item(sym::Result, adt.did())
-        && args.len() == 2
-        && parse_target_ty(args.type_at(0))
-}
-
-/// Parse target ty from source text.
-fn parse_target_ty(ty: Ty<'_>) -> bool {
-    !matches!(ty.kind(), ty::Tuple(fields) if fields.is_empty())
-        && !matches!(ty.kind(), ty::Never | ty::Ref(..))
-}
-
-/// Return whether this is the standard from str impl shape.
-fn standard_from_str_impl(cx: &LateContext<'_>, item: &ImplItem<'_>, name: &str) -> bool {
-    if name != "from_str" || !matches!(item.impl_kind, ImplItemImplKind::Trait { .. }) {
-        return false;
-    }
-
-    // Resolve the parent impl's trait so `use std::str::FromStr as Parse` and qualified paths
-    // are skipped without relying on source spelling.
-    let impl_def_id = cx.tcx.parent(item.owner_id.def_id.to_def_id());
-    let trait_def_id = cx.tcx.impl_trait_ref(impl_def_id).skip_binder().def_id;
-
-    from_str_trait(cx, trait_def_id)
-}
-
-/// Helper for from str trait analysis.
-fn from_str_trait(cx: &LateContext<'_>, trait_def_id: DefId) -> bool {
-    matches!(
-        cx.tcx.def_path_str(trait_def_id).as_str(),
-        "core::str::traits::FromStr" | "std::str::FromStr"
-    )
+        .get_diagnostic_item(Symbol::intern("from_str_method"))
+        .map(|method| cx.tcx.parent(method));
+    from_str.is_none_or(|from_str| {
+        cx.tcx
+            .infer_ctxt()
+            .build(cx.typing_mode())
+            .type_implements_trait(from_str, [target], cx.param_env)
+            .may_apply()
+    })
 }
 
 /// Helper for ui analysis.

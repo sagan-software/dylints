@@ -13,5 +13,32 @@ LL | | }
    = help: split independent branching stages into separate functions
    = note: `#[warn(npath_complexity)]` on by default
 
-warning: 1 warning emitted
+warning: function has NPath complexity 256, which exceeds 200
+  --> $DIR/main.rs:15:1
+   |
+LL | / fn paths_in_macro_arguments(f: [bool; 8]) {
+LL | |     println!(
+LL | |         "{}{}{}{}{}{}{}{}",
+LL | |         if f[0] { 1 } else { 0 }, if f[1] { 1 } else { 0 }, if f[2] { 1 } else { 0 }, if f[3] { 1 } else { 0 }, if f[4] { 1 } else...
+LL | |     );
+LL | | }
+   | |_^
+   |
+   = help: split independent branching stages into separate functions
+
+warning: function has NPath complexity 256, which exceeds 200
+  --> $DIR/main.rs:22:1
+   |
+LL | / fn try_operators_double(values: [Option<u8>; 8]) -> Option<u8> {
+LL | |     let _v0 = values[0]?;
+LL | |     let _v1 = values[1]?;
+LL | |     let _v2 = values[2]?;
+...  |
+LL | |     None
+LL | | }
+   | |_^
+   |
+   = help: split independent branching stages into separate functions
+
+warning: 3 warnings emitted
 

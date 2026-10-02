@@ -1,5 +1,5 @@
 warning: manual `Default` implementation looks derivable
-  --> $DIR/main.rs:6:1
+  --> $DIR/main.rs:10:1
    |
 LL | / impl Default for Config {
 LL | |     fn default() -> Self {
@@ -9,11 +9,15 @@ LL | |             retries: Default::default(),
 LL | | }
    | |_^
    |
-   = help: use `#[derive(Default)]` when all fields use their own default values
    = note: `#[warn(manual_default_impl)]` on by default
+help: derive `Default` instead; every field uses its type's default value
+   |
+LL + #[derive(Default)]
+LL | struct Config {
+   |
 
 warning: manual `Default` implementation looks derivable
-  --> $DIR/main.rs:19:1
+  --> $DIR/main.rs:23:1
    |
 LL | / impl std::default::Default for Qualified {
 LL | |     fn default() -> Self {
@@ -23,7 +27,73 @@ LL | |             enabled: std::default::Default::default(),
 LL | | }
    | |_^
    |
-   = help: use `#[derive(Default)]` when all fields use their own default values
+help: derive `Default` instead; every field uses its type's default value
+   |
+LL + #[derive(Default)]
+LL | struct Qualified {
+   |
 
-warning: 2 warnings emitted
+warning: manual `Default` implementation looks derivable
+  --> $DIR/main.rs:100:1
+   |
+LL | / impl Default for Literals {
+LL | |     fn default() -> Self {
+LL | |         Literals {
+LL | |             count: 0,
+...  |
+LL | | }
+   | |_^
+   |
+help: derive `Default` instead; every field uses its type's default value
+   |
+LL + #[derive(Default)]
+LL | pub struct Literals {
+   |
+
+warning: manual `Default` implementation looks derivable
+  --> $DIR/main.rs:112:1
+   |
+LL | / impl Default for Pair {
+LL | |     fn default() -> Self {
+LL | |         Self(u8::default(), Vec::default())
+LL | |     }
+LL | | }
+   | |_^
+   |
+help: derive `Default` instead; every field uses its type's default value
+   |
+LL + #[derive(Default)]
+LL | struct Pair(u8, Vec<u8>);
+   |
+
+warning: manual `Default` implementation looks derivable
+  --> $DIR/main.rs:120:1
+   |
+LL | / impl Default for Unit {
+LL | |     fn default() -> Self {
+LL | |         Self
+LL | |     }
+LL | | }
+   | |_^
+   |
+help: derive `Default` instead; every field uses its type's default value
+   |
+LL + #[derive(Default)]
+LL | struct Unit;
+   |
+
+warning: manual `Default` implementation looks derivable
+  --> $DIR/main.rs:131:1
+   |
+LL | / impl Default for Documented {
+LL | |     fn default() -> Self {
+LL | |         Self {
+LL | |             retries: Default::default(),
+...  |
+LL | | }
+   | |_^
+   |
+   = help: derive `Default` instead; every field uses its type's default value
+
+warning: 6 warnings emitted
 

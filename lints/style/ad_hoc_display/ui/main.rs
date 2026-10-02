@@ -8,6 +8,8 @@ type QualifiedDisplayText = std::string::String;
 struct UserId(String);
 
 impl UserId {
+    const PREFIX: &'static str = "user";
+
     fn to_string(&self) -> String {
         self.0.clone()
     }
@@ -27,11 +29,33 @@ impl UserId {
     fn format_with_prefix(&self, prefix: &str) -> String {
         format!("{prefix}{}", self.0)
     }
+
+    fn display_static() -> String {
+        String::new()
+    }
 }
 
-impl StdDisplay for UserId {
+struct ShownId(String);
+
+impl ShownId {
+    fn render(&self) -> String {
+        self.0.clone()
+    }
+}
+
+impl StdDisplay for ShownId {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.write_str(&self.0)
+    }
+}
+
+trait Renderer {
+    fn render(&self) -> String;
+}
+
+impl Renderer for UserId {
+    fn render(&self) -> String {
+        self.0.clone()
     }
 }
 

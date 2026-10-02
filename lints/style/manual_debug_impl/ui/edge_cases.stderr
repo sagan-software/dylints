@@ -1,5 +1,5 @@
 warning: manual `Debug` implementation looks derivable
-  --> $DIR/edge_cases.rs:7:1
+  --> $DIR/edge_cases.rs:9:1
    |
 LL | / impl Debug for Point {
 LL | |     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
@@ -9,8 +9,12 @@ LL | |             .field(&self.0)
 LL | | }
    | |_^
    |
-   = help: use `#[derive(Debug)]` unless the implementation intentionally redacts or customizes output
    = note: `#[warn(manual_debug_impl)]` on by default
+help: derive `Debug` instead; it prints the same output
+   |
+LL + #[derive(Debug)]
+LL | struct Point(u64, u64);
+   |
 
 warning: 1 warning emitted
 

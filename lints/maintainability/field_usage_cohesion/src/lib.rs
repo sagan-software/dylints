@@ -23,7 +23,8 @@ use rustc_hir::{
     intravisit::{self, FnKind, Visitor},
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
-use rustc_middle::ty;
+use rustc_middle::hir::nested_filter::OnlyBodies;
+use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::{
     Span, Symbol,
     def_id::{DefId, LocalDefId},
@@ -140,7 +141,7 @@ fn method_usage<'tcx>(
         && declaration.implicit_self().has_implicit_self()
         && !is_macro_expansion(span))
     .then_some(())
-    .and_then(|()| cx.tcx.opt_local_parent(local_def_id))
+    .map(|()| cx.tcx.local_parent(local_def_id))
     .filter(|impl_id| {
         matches!(
             cx.tcx.def_kind(*impl_id),
@@ -174,37 +175,44 @@ struct MethodUsageVisitor<'a, 'tcx> {
 }
 
 impl<'tcx> Visitor<'tcx> for MethodUsageVisitor<'_, 'tcx> {
+    /// Enter closure bodies, which share the method's type-checking results and receiver.
+    type NestedFilter = OnlyBodies;
+
+    /// Provide the compiler context needed to enter closure bodies.
+    fn maybe_tcx(&mut self) -> TyCtxt<'tcx> {
+        self.cx.tcx
+    }
+
     /// Record direct receiver relationships, excluding macro-generated implementation details.
     fn visit_expr(&mut self, expression: &'tcx Expr<'tcx>) {
-        // Generated accesses should not create or join source-level state clusters.
-        if is_macro_expansion(expression.span) {
-            return;
-        }
-        if let ExprKind::Field(receiver, field) = expression.kind
-            && self.is_self(receiver)
-        {
-            // Record direct field use as graph state for the current receiver method.
-            let is_new_field = self.usage.fields.insert(field.name);
-            debug_assert!(is_new_field || self.usage.fields.contains(&field.name));
-        } else if let ExprKind::MethodCall(_, receiver, _, _) = expression.kind
-            && self.is_self(receiver)
-        {
-            // Resolve calls while this method's typeck results remain available.
-            if let Some(target) = self
-                .cx
-                .typeck_results()
-                .type_dependent_def_id(expression.hir_id)
-                .and_then(DefId::as_local)
-            {
-                let is_new_call = self.usage.calls.insert(target);
-                debug_assert!(is_new_call || self.usage.calls.contains(&target));
-            }
+        // Generated accesses should not create or join source-level state clusters, but
+        // source-authored macro arguments such as `format!("{}", self.name)` still do.
+        if !is_macro_expansion(expression.span) {
+            self.record_relationship(expression);
         }
         intravisit::walk_expr(self, expression);
     }
 }
 
 impl MethodUsageVisitor<'_, '_> {
+    /// Record one `self.field` use or one resolved local `self.method()` call.
+    fn record_relationship(&mut self, expression: &Expr<'_>) {
+        if let ExprKind::Field(receiver, field) = expression.kind
+            && self.is_self(receiver)
+        {
+            let _is_new_field = self.usage.fields.insert(field.name);
+        } else if let ExprKind::MethodCall(_, receiver, _, _) = expression.kind
+            && self.is_self(receiver)
+            && let Some(target) = self
+                .cx
+                .typeck_results()
+                .type_dependent_def_id(expression.hir_id)
+                .and_then(DefId::as_local)
+        {
+            let _is_new_call = self.usage.calls.insert(target);
+        }
+    }
+
     /// Return whether an expression resolves to the current method's receiver binding.
     fn is_self(&self, expression: &Expr<'_>) -> bool {
         // Syntactic names are insufficient because a nested binding may shadow `self`-like paths.
@@ -235,6 +243,7 @@ fn inherent_impl_type(cx: &LateContext<'_>, impl_id: LocalDefId) -> Option<Local
 
 /// Return the receiver binding from a body whose signature has implicit self.
 fn self_binding(body: &Body<'_>) -> Option<HirId> {
+    // An implicit `self` parameter always lowers to a plain binding pattern.
     let receiver = body.params.first()?;
     let PatKind::Binding(_, binding, _, _) = receiver.pat.kind else {
         return None;
@@ -269,7 +278,7 @@ fn cohesion_summary(methods: &HashMap<LocalDefId, MethodUsage>) -> Option<Cohesi
 
     // Build the graph before applying component-size thresholds.
     let adjacency = method_adjacency(&measured);
-    let components = connected_components(&adjacency);
+    let components = connected_components(measured.len(), &adjacency);
     // Require two substantial components before producing a type-level finding.
     let substantial_components = substantial_component_count(&components, &measured);
     if substantial_components < 2 {
@@ -302,9 +311,9 @@ fn measured_methods(
 }
 
 /// Build an undirected method graph from shared fields and direct receiver calls.
-fn method_adjacency(measured: &[(&LocalDefId, &MethodUsage)]) -> Vec<HashSet<usize>> {
-    // Start with one empty neighbor set for each measured method.
-    let mut adjacency = vec![HashSet::new(); measured.len()];
+fn method_adjacency(measured: &[(&LocalDefId, &MethodUsage)]) -> HashMap<usize, HashSet<usize>> {
+    // Methods without an edge have no entry; component discovery treats them as isolated.
+    let mut adjacency: HashMap<usize, HashSet<usize>> = HashMap::new();
     for (left, &(left_id, left_usage)) in measured.iter().enumerate() {
         // Compare each unordered method pair once and add a symmetric edge.
         for (right, &(right_id, right_usage)) in measured.iter().enumerate().skip(left + 1) {
@@ -313,18 +322,9 @@ fn method_adjacency(measured: &[(&LocalDefId, &MethodUsage)]) -> Vec<HashSet<usi
             let left_calls_right = left_usage.calls.contains(right_id);
             let right_calls_left = right_usage.calls.contains(left_id);
             if shares_field || left_calls_right || right_calls_left {
-                // Split the adjacency list so both endpoints receive the same edge.
-                let (before_right, right_and_after) = adjacency.split_at_mut(right);
-                let Some(left_neighbors) = before_right.get_mut(left) else {
-                    continue;
-                };
-                let Some(right_neighbors) = right_and_after.first_mut() else {
-                    continue;
-                };
-                let is_left_new = left_neighbors.insert(right);
-                let is_right_new = right_neighbors.insert(left);
-                // Symmetric insertion should change both adjacency sets together.
-                debug_assert_eq!(is_left_new, is_right_new);
+                // Each unordered pair is visited once, so both insertions add a new edge.
+                let _is_left_new = adjacency.entry(left).or_default().insert(right);
+                let _is_right_new = adjacency.entry(right).or_default().insert(left);
             }
         }
     }
@@ -350,11 +350,14 @@ fn substantial_component_count(
 }
 
 /// Return connected components from an undirected adjacency list.
-fn connected_components(adjacency: &[HashSet<usize>]) -> Vec<Vec<usize>> {
+fn connected_components(
+    method_count: usize,
+    adjacency: &HashMap<usize, HashSet<usize>>,
+) -> Vec<Vec<usize>> {
     let mut components = Vec::new();
     let mut visited = HashSet::new();
     // Start one depth-first traversal for every method not assigned to an earlier component.
-    for start in 0..adjacency.len() {
+    for start in 0..method_count {
         if !visited.insert(start) {
             continue;
         }
@@ -364,7 +367,7 @@ fn connected_components(adjacency: &[HashSet<usize>]) -> Vec<Vec<usize>> {
         while let Some(current) = pending.pop() {
             // Record the current method before expanding its unvisited neighbors.
             component.push(current);
-            let Some(neighbors) = adjacency.get(current) else {
+            let Some(neighbors) = adjacency.get(&current) else {
                 continue;
             };
             // Keep the pending stack bounded to neighbors discovered in this component.

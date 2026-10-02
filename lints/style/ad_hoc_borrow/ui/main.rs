@@ -5,10 +5,13 @@ use std::borrow::Borrow as StdBorrow;
 type NameRef<'a> = &'a str;
 
 struct UserName(String);
+struct ImplementedName(String);
 struct BorrowedName<'a>(&'a str);
 struct BorrowPolicy;
 
 impl UserName {
+    const KIND: &'static str = "user";
+
     fn borrow_str(&self) -> &str {
         &self.0
     }
@@ -36,10 +39,34 @@ impl UserName {
     fn borrow_mut_str(&mut self) -> &mut str {
         self.0.as_mut_str()
     }
+
+    fn borrow_from_mut(&mut self) -> &str {
+        &self.0
+    }
+
+    fn borrow_other(other: &Self) -> &str {
+        &other.0
+    }
 }
 
-impl StdBorrow<str> for UserName {
+impl ImplementedName {
+    fn borrow_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl StdBorrow<str> for ImplementedName {
     fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+trait BorrowView {
+    fn borrow_view(&self) -> &str;
+}
+
+impl BorrowView for UserName {
+    fn borrow_view(&self) -> &str {
         &self.0
     }
 }

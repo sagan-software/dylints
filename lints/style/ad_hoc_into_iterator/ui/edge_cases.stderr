@@ -1,12 +1,12 @@
-warning: method `into_events` looks like ad hoc iteration
-  --> $DIR/edge_cases.rs:8:5
+warning: method `iter_events` looks like ad hoc iteration
+  --> $DIR/edge_cases.rs:12:5
    |
-LL | /     fn into_events(self) -> Vec<Event> {
-LL | |         self.0
+LL | /     fn iter_events(&self) -> std::slice::Iter<'_, Event> {
+LL | |         self.0.iter()
 LL | |     }
    | |_____^
    |
-   = help: implement `IntoIterator` when this is the canonical iteration view
+   = help: implement `IntoIterator for &Events` when this is the canonical iteration view
    = note: `#[warn(ad_hoc_into_iterator)]` on by default
 
 warning: 1 warning emitted

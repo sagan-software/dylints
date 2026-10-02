@@ -17,3 +17,34 @@ fn send(api_key: String, session_secret: &[u8], retry_count: usize) {
 }
 
 fn main() {}
+
+type SecretAlias = String;
+
+trait Login {
+    fn login(&self, password: SecretAlias, _: (u8, u8));
+    fn rotate(&self, api_key: &[u8]) {}
+}
+
+struct Service;
+
+// The trait fixes these parameter types, so only the trait declaration is reported.
+impl Login for Service {
+    fn login(&self, password: SecretAlias, _: (u8, u8)) {}
+}
+
+struct UnsizedSecret {
+    secret: [u8],
+}
+
+struct PositionalToken(String);
+
+struct BoxedSecrets {
+    secret_bytes: Box<[u8]>,
+    secret_text: Box<str>,
+}
+
+fn closures_and_patterns() {
+    let _ = |password: String| password;
+    let (token, _) = (String::new(), 1_u8);
+    for secret in [String::new()] {}
+}

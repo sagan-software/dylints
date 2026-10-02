@@ -35,4 +35,10 @@ impl ExtraBehavior for FocusedType {
     fn extra(&self) {}
 }
 
+trait Marker {}
+
+impl dyn Marker {
+    fn describe(&self) {}
+}
+
 fn main() {}

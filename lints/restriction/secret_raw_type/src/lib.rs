@@ -19,12 +19,12 @@ extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Body, FieldDef, FnDecl, LetStmt, LocalSource, Param, Pat, PatKind, TraitFn, TraitItem,
-    TraitItemKind, intravisit::FnKind,
+    Body, FieldDef, FnDecl, LangItem, LetStmt, LocalSource, Param, Pat, PatKind, TraitFn,
+    TraitItem, TraitItemKind, intravisit::FnKind,
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::{Ident, Span, def_id::LocalDefId};
+use rustc_span::{Ident, Span, def_id::LocalDefId, sym};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -62,9 +62,10 @@ impl<'tcx> LateLintPass<'tcx> for SecretRawType {
         _decl: &'tcx FnDecl<'tcx>,
         body: &'tcx Body<'tcx>,
         _span: Span,
-        _local_def_id: LocalDefId,
+        local_def_id: LocalDefId,
     ) {
-        if matches!(kind, FnKind::Closure) {
+        // Closures have no named boundary, and trait impls inherit their signature from the trait.
+        if matches!(kind, FnKind::Closure) || implements_trait_item(cx, local_def_id) {
             return;
         }
 
@@ -97,11 +98,11 @@ impl<'tcx> LateLintPass<'tcx> for SecretRawType {
 
     /// Check trait item for this lint.
     fn check_trait_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx TraitItem<'tcx>) {
-        let TraitItemKind::Fn(sig, TraitFn::Required(arg_names)) = item.kind else {
+        let TraitItemKind::Fn(_sig, TraitFn::Required(arg_names)) = item.kind else {
             return;
         };
 
-        check_trait_required_params(cx, sig.decl.inputs, arg_names);
+        check_trait_required_params(cx, arg_names, item.owner_id.def_id);
     }
 }
 
@@ -127,26 +128,36 @@ fn check_body_params(cx: &LateContext<'_>, params: &[Param<'_>]) {
     }
 }
 
-/// Check trait required params for this lint.
+/// Check the named parameters of a required trait method against its resolved signature.
 fn check_trait_required_params(
     cx: &LateContext<'_>,
-    inputs: &[rustc_hir::Ty<'_>],
     arg_names: &[Option<Ident>],
+    local_def_id: LocalDefId,
 ) {
-    // Align required-trait parameter types with their optional source names.
-    for (ty, maybe_ident) in inputs.iter().zip(arg_names) {
+    // Required methods have no body type table, so read the resolved signature instead.
+    let sig_inputs = cx
+        .tcx
+        .fn_sig(local_def_id)
+        .instantiate_identity()
+        .skip_binder()
+        .inputs();
+    // Pair source names with resolved types before checking secret vocabulary.
+    for (maybe_ident, param_ty) in arg_names.iter().zip(sig_inputs) {
         let Some(ident) = maybe_ident else {
             continue;
         };
-
-        // Emit only when both the name and HIR type prove a raw secret boundary.
         let name = ident.name.to_ident_string();
-        if secret_name(&name)
-            && let Some(raw_ty) = raw_hir_secret_ty(ty)
-        {
-            emit_secret_lint(cx, ident.span, "parameter", &name, raw_ty);
+        if secret_name(&name) {
+            check_named_ty(cx, "parameter", ident.span, &name, *param_ty);
         }
     }
+}
+
+/// Return whether a function implements an item of a trait impl.
+fn implements_trait_item(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+    cx.tcx
+        .impl_of_assoc(local_def_id.to_def_id())
+        .is_some_and(|impl_def_id| cx.tcx.impl_opt_trait_id(impl_def_id).is_some())
 }
 
 /// Check named ty for this lint.
@@ -240,24 +251,17 @@ fn raw_adt_secret_ty(
     args: &ty::List<ty::GenericArg<'_>>,
 ) -> Option<&'static str> {
     // Match the resolved ADT and its first type argument before naming a raw secret shape.
-    let item_name = cx.tcx.item_name(adt.did());
-    let name = item_name.as_str();
-    let is_vec_u8 = name == "Vec"
-        && args
-            .iter()
-            .next()
-            .and_then(ty::GenericArg::as_type)
-            .is_some_and(u8_ty);
-    let is_box_u8_slice = name == "Box"
-        && args
-            .iter()
-            .next()
-            .and_then(ty::GenericArg::as_type)
-            .is_some_and(slice_u8_ty);
-    (name == "String")
-        .then_some("String")
-        .or_else(|| is_vec_u8.then_some("Vec<u8>"))
-        .or_else(|| is_box_u8_slice.then_some("Box<[u8]>"))
+    // Missing generic arguments stay outside the supported raw representations.
+    let first_arg = args.iter().next().and_then(ty::GenericArg::as_type);
+    if cx.tcx.is_lang_item(adt.did(), LangItem::String) {
+        Some("String")
+    } else if cx.tcx.is_diagnostic_item(sym::Vec, adt.did()) && first_arg.is_some_and(u8_ty) {
+        Some("Vec<u8>")
+    } else if adt.is_box() && first_arg.is_some_and(slice_u8_ty) {
+        Some("Box<[u8]>")
+    } else {
+        None
+    }
 }
 
 /// Return type information for raw ref secret.
@@ -265,43 +269,6 @@ fn raw_ref_secret_ty(ty: Ty<'_>) -> Option<&'static str> {
     match ty.kind() {
         ty::Str => Some("&str"),
         ty::Slice(element) if u8_ty(*element) => Some("&[u8]"),
-        _ => None,
-    }
-}
-
-/// Return type information for raw hir secret.
-fn raw_hir_secret_ty(ty: &rustc_hir::Ty<'_>) -> Option<&'static str> {
-    match ty.kind {
-        rustc_hir::TyKind::Path(rustc_hir::QPath::Resolved(_, path)) => {
-            raw_hir_path_secret_ty(path)
-        }
-        rustc_hir::TyKind::Ref(_, mut_ty) => raw_hir_ref_secret_ty(mut_ty.ty),
-        rustc_hir::TyKind::Slice(element) if hir_u8_ty(element) => Some("[u8]"),
-        rustc_hir::TyKind::Array(element, _) if hir_u8_ty(element) => Some("[u8; N]"),
-        _ => None,
-    }
-}
-
-/// Return the supported raw representation for a resolved HIR path.
-fn raw_hir_path_secret_ty(path: &rustc_hir::Path<'_>) -> Option<&'static str> {
-    path.segments
-        .last()
-        .filter(|segment| segment.ident.name.as_str() == "String")
-        .map(|_| "String")
-}
-
-/// Return the supported raw representation for a referenced HIR type.
-fn raw_hir_ref_secret_ty(ty: &rustc_hir::Ty<'_>) -> Option<&'static str> {
-    match ty.kind {
-        rustc_hir::TyKind::Path(rustc_hir::QPath::Resolved(_, path))
-            if path
-                .segments
-                .last()
-                .is_some_and(|segment| segment.ident.name.as_str() == "str") =>
-        {
-            Some("&str")
-        }
-        rustc_hir::TyKind::Slice(element) if hir_u8_ty(element) => Some("&[u8]"),
         _ => None,
     }
 }
@@ -314,17 +281,6 @@ fn slice_u8_ty(ty: Ty<'_>) -> bool {
 /// Return type information for u8.
 fn u8_ty(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Uint(ty::UintTy::U8))
-}
-
-/// Return type information for hir u8.
-fn hir_u8_ty(ty: &rustc_hir::Ty<'_>) -> bool {
-    let rustc_hir::TyKind::Path(rustc_hir::QPath::Resolved(_, path)) = ty.kind else {
-        return false;
-    };
-
-    path.segments
-        .last()
-        .is_some_and(|segment| segment.ident.name.to_ident_string() == "u8")
 }
 
 /// Helper for ui analysis.

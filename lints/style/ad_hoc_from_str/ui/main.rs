@@ -26,16 +26,45 @@ fn from_str_token(raw: RawText<'_>) -> ParseResult<Token> {
     Ok(Token)
 }
 
-impl FromStr for UserId {
+struct ParsedId;
+
+impl FromStr for ParsedId {
     type Err = Error;
 
     fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        let _ = raw;
+        Ok(ParsedId)
+    }
+}
+
+fn parse_parsed_id(raw: &str) -> Result<ParsedId, Error> {
+    raw.parse()
+}
+
+struct Borrowed<'a>(&'a str);
+
+fn parse_borrowed(raw: &str) -> Result<Borrowed<'_>, Error> {
+    Ok(Borrowed(raw))
+}
+
+fn parse_foreign(raw: &str) -> Result<String, Error> {
+    Ok(raw.to_owned())
+}
+
+trait Parser {
+    fn parse_value(raw: &str) -> Result<UserId, Error>;
+}
+
+impl Parser for Token {
+    fn parse_value(raw: &str) -> Result<UserId, Error> {
         let _ = raw;
         Ok(UserId)
     }
 }
 
 impl Token {
+    const KIND: &'static str = "token";
+
     fn parse_token(raw: RawText<'_>) -> ParseResult<Self> {
         let _ = raw;
         Ok(Token)

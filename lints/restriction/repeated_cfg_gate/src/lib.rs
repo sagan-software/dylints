@@ -29,7 +29,7 @@ use proc_macro2::Span as ProcMacroSpan;
 use rustc_ast::Crate;
 use rustc_errors::DiagDecorator;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
-use rustc_span::{BytePos, SourceFile, Span, SyntaxContext};
+use rustc_span::{BytePos, SourceFile, Span, SyntaxContext, def_id::LOCAL_CRATE};
 use syn::{
     Attribute, Expr, ExprLit, ForeignItem, ImplItem, Item, ItemConst, ItemEnum, ItemExternCrate,
     ItemFn, ItemForeignMod, ItemImpl, ItemMacro, ItemMod, ItemStatic, ItemStruct, ItemTrait,
@@ -316,11 +316,16 @@ fn loaded_rust_source_files(cx: &EarlyContext<'_>) -> Vec<SourceCandidate> {
     let mut candidates = Vec::new();
 
     for source_file in files.iter() {
-        // De-duplicate source-map entries and exclude Dylint's local toolchain files.
+        // Files imported from dependency metadata belong to other crates.
+        if source_file.cnum != LOCAL_CRATE {
+            continue;
+        }
+
+        // De-duplicate source-map entries under the package root.
         let Some(path) = local_source_file_path(source_file, &crate_root) else {
             continue;
         };
-        if !seen.insert(path.clone()) || !is_rust_source_path(&path) || is_toolchain_source(&path) {
+        if !seen.insert(path.clone()) || !is_rust_source_path(&path) {
             continue;
         }
 
@@ -408,12 +413,6 @@ fn normalize_path(path: &Path) -> PathBuf {
 fn is_rust_source_path(path: &Path) -> bool {
     path.extension()
         .is_some_and(|extension| matches!(extension.to_str(), Some("rs" | "in")))
-}
-
-/// Return whether the path belongs to the workspace-local Dylint toolchain.
-fn is_toolchain_source(path: &Path) -> bool {
-    path.components()
-        .any(|component| component.as_os_str() == ".rustup-dylint")
 }
 
 /// Return the attributes attached to a parsed Rust item.
@@ -673,8 +672,13 @@ fn ui() {
 
 #[cfg(test)]
 mod tests {
-    use super::{CfgPredicate, cfg_predicate, is_item_test_only};
+    use super::{
+        CfgGateCollector, CfgPredicate, SourceLocation, cfg_predicate, crate_local_path,
+        is_item_test_only, is_rust_source_path, line_column_offset, source_span,
+    };
+    use std::path::{Path, PathBuf};
     use syn::Attribute;
+    use syn::visit::Visit;
 
     /// Parse the first attribute in a source snippet.
     fn attribute(source: &str) -> Attribute {
@@ -709,5 +713,155 @@ mod tests {
 
         assert!(matches!(feature, CfgPredicate::NameValue { .. }));
         assert!(matches!(bare, CfgPredicate::Word(_)));
+    }
+
+    /// Non-string name-value predicates are ignored conservatively.
+    #[test]
+    fn rejects_non_string_predicates() {
+        assert_eq!(cfg_predicate(&attribute("#[cfg(feature = 1)]")), None);
+    }
+
+    /// Nested item visitors record gates while excluding test-only descendants.
+    #[test]
+    fn visits_nested_item_shapes() {
+        let file = syn::parse_file(
+            "#[cfg(unix)] struct Value { #[cfg(windows)] field: u8 }\
+             #[cfg(feature = \"x\")] enum State { #[cfg(unix)] Ready }\
+             #[cfg(target_os = \"linux\")] impl Value { #[cfg(unix)] fn value(&self) {} }\
+             #[cfg(any(unix, windows))] trait Contract { #[cfg(unix)] type Value; }\
+             #[allow(dead_code)] const COUNT: usize = 1;\
+             #[cfg(test)] mod tests { #[cfg(unix)] fn ignored() {} }\
+             unsafe extern \"C\" { #[cfg(unix)] fn foreign(); }",
+        )
+        .unwrap();
+        let mut collector = CfgGateCollector::default();
+        collector.visit_file(&file);
+
+        assert_eq!(collector.gates.len(), 5);
+    }
+
+    /// Associated and foreign item visitors retain direct cfg attributes.
+    #[test]
+    fn visits_associated_item_shapes() {
+        let file = syn::parse_file(
+            "struct Value;\
+             impl Value { #[cfg(unix)] const COUNT: usize = 1;\
+                 #[cfg(unix)] fn value(&self) {}\
+                 #[cfg(unix)] type Alias = usize;\
+                 #[cfg(unix)] make_item!(); }\
+             trait Contract { #[cfg(unix)] const COUNT: usize;\
+                 #[cfg(unix)] fn value(&self);\
+                 #[cfg(unix)] type Alias;\
+                 #[cfg(unix)] make_item!(); }\
+             unsafe extern \"C\" { #[cfg(unix)] static COUNT: usize;\
+                 #[cfg(unix)] type Foreign; #[cfg(unix)] fn foreign(); }",
+        )
+        .unwrap();
+        let mut collector = CfgGateCollector::default();
+        collector.visit_file(&file);
+
+        assert_eq!(collector.gates.len(), 1);
+    }
+
+    /// Test-only logical predicates cover the nested `all` form.
+    #[test]
+    fn recognizes_nested_test_predicates() {
+        assert!(is_item_test_only(&[attribute("#[cfg(all(test, unix))]")]));
+    }
+
+    /// Invalid cfg attributes do not establish test-only regions.
+    #[test]
+    fn rejects_invalid_test_predicates() {
+        assert!(!is_item_test_only(&[attribute("#[cfg]")]));
+    }
+
+    /// An `any` predicate is test-only only when every branch requires test mode.
+    #[test]
+    fn rejects_mixed_any_test_predicates() {
+        assert!(!is_item_test_only(&[attribute("#[cfg(any(test, unix))]")]));
+    }
+
+    /// Invalid nested cfg syntax is ignored conservatively.
+    #[test]
+    fn rejects_malformed_cfg_predicates() {
+        assert_eq!(cfg_predicate(&attribute("#[cfg(all(,))]")), None);
+        assert!(!is_item_test_only(&[attribute("#[cfg(all(,))]")]));
+    }
+
+    /// Non-cfg attributes are ignored by predicate extraction.
+    #[test]
+    fn ignores_non_cfg_attributes() {
+        assert_eq!(cfg_predicate(&attribute("#[allow(dead_code)]")), None);
+    }
+
+    /// Source offsets accept valid UTF-8 boundaries.
+    #[test]
+    fn validates_source_offsets() {
+        assert_eq!(line_column_offset("é\nvalue", 1, 2), Some(2));
+    }
+
+    /// Source offsets reject a byte column in the middle of a UTF-8 code point.
+    #[test]
+    fn rejects_non_boundary_offsets() {
+        assert_eq!(line_column_offset("é", 1, 1), None);
+    }
+
+    /// Line offsets handle an empty trailing line and invalid line numbers.
+    #[test]
+    fn handles_empty_trailing_lines() {
+        assert_eq!(line_column_offset("value\n", 2, 0), Some(6));
+    }
+
+    /// Line offsets reject a zero or missing line.
+    #[test]
+    fn rejects_missing_lines() {
+        assert_eq!(line_column_offset("value", 0, 0), None);
+    }
+
+    /// Valid source locations are converted into rustc spans.
+    #[test]
+    fn builds_source_spans() {
+        let location = SourceLocation {
+            start_line: 1,
+            start_column: 0,
+            end_line: 1,
+            end_column: 5,
+        };
+        assert!(source_span(super::BytePos(10), "value", location).is_some());
+    }
+
+    /// Source spans reject reversed source locations.
+    #[test]
+    fn rejects_reversed_source_spans() {
+        let location = SourceLocation {
+            start_line: 1,
+            start_column: 2,
+            end_line: 1,
+            end_column: 1,
+        };
+        assert!(source_span(super::BytePos(0), "value", location).is_none());
+    }
+
+    /// Rust source extensions include `.rs` and `.in` but exclude other files.
+    #[test]
+    fn identifies_rust_source_extensions() {
+        assert!(is_rust_source_path(Path::new("module.rs")));
+        assert!(is_rust_source_path(Path::new("module.in")));
+        assert!(!is_rust_source_path(Path::new("module.txt")));
+    }
+
+    /// Path normalization folds lexical current and parent components.
+    #[test]
+    fn normalizes_source_paths() {
+        let path = super::normalize_path(Path::new("/crate/./src/../lib.rs"));
+        assert_eq!(path, PathBuf::from("/crate/lib.rs"));
+    }
+
+    /// Relative source paths resolve under the crate root and escapes are rejected.
+    #[test]
+    fn checks_crate_path_containment() {
+        let root = Path::new("/crate");
+        assert!(crate_local_path(PathBuf::from("src/lib.rs"), root).is_some());
+        assert!(crate_local_path(PathBuf::from("../other/lib.rs"), root).is_none());
     }
 }

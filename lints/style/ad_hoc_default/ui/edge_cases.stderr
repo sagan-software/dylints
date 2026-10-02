@@ -6,7 +6,7 @@ LL | |         Self { bytes: Vec::new() }
 LL | |     }
    | |_____^
    |
-   = help: implement `Default` when this is the canonical zero-argument value
+   = help: implement `Default` with this value; `empty` can stay and return `Self::default()`
    = note: `#[warn(ad_hoc_default)]` on by default
 
 warning: constructor `blank` looks like a default value
@@ -17,7 +17,7 @@ LL | |         Self { bytes: Vec::new() }
 LL | |     }
    | |_____^
    |
-   = help: implement `Default` when this is the canonical zero-argument value
+   = help: implement `Default` with this value; `blank` can stay and return `Self::default()`
 
 warning: 2 warnings emitted
 

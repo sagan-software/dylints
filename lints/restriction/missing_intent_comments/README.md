@@ -18,10 +18,11 @@ never written down.
 
 ## Known problems
 
-The lint counts comment lines in the body's source text. A line counts when it
-starts with `//`, which includes doc comments and commented-out code, or when it
-contains ` //` after code. Block comments do not count. The lint does not judge
-comment quality or check that comments are spread across the body.
+The lint lexes the body's source text and counts the lines that hold a `//` line
+comment, including doc comments, commented-out code, and comments after code.
+A `//` inside a string literal does not count, and block comments do not count.
+The lint does not judge comment quality or check that comments are spread
+across the body.
 
 Statements inside closures are not counted toward the enclosing function, and
 closures are not checked on their own.

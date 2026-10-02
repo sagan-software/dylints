@@ -1,0 +1,11 @@
+warning: HTTP method field `http_method` uses `String`
+  --> $DIR/no_http_crate.rs:10:18
+   |
+LL |     http_method: String,
+   |                  ^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+   = note: `#[warn(http_method_string)]` on by default
+
+warning: 1 warning emitted
+

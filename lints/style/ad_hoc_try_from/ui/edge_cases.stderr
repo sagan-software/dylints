@@ -7,7 +7,7 @@ LL | |     Ok(Token)
 LL | | }
    | |_^
    |
-   = help: implement `TryFrom` when the conversion has one canonical meaning
+   = help: implement `TryFrom<RawToken> for Token` when the conversion has one canonical meaning
    = note: `#[warn(ad_hoc_try_from)]` on by default
 
 warning: function `validate_token` looks like a fallible conversion
@@ -19,7 +19,7 @@ LL | |     Ok(Token)
 LL | | }
    | |_^
    |
-   = help: implement `TryFrom` when the conversion has one canonical meaning
+   = help: implement `TryFrom<RawToken> for Token` when the conversion has one canonical meaning
 
 warning: function `convert_qualified` looks like a fallible conversion
   --> $DIR/edge_cases.rs:27:1
@@ -30,7 +30,7 @@ LL | |     Ok(Token)
 LL | | }
    | |_^
    |
-   = help: implement `TryFrom` when the conversion has one canonical meaning
+   = help: implement `TryFrom<RawToken> for Token` when the conversion has one canonical meaning
 
 warning: function `make_token` looks like a fallible conversion
   --> $DIR/edge_cases.rs:48:5
@@ -41,7 +41,7 @@ LL | |         Ok(Self)
 LL | |     }
    | |_____^
    |
-   = help: implement `TryFrom` when the conversion has one canonical meaning
+   = help: implement `TryFrom<RawToken> for Token` when the conversion has one canonical meaning
 
 warning: 4 warnings emitted
 

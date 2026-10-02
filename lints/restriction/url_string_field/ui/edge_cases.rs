@@ -13,6 +13,8 @@ struct Endpoints<'a> {
     base_endpoint: std::string::String,
     link_url: StdString,
     url_label: String,
+    link_text: String,
+    endpoint_template: String,
     typed_url: Url,
     typed_endpoint: UrlTextWrapper,
 }

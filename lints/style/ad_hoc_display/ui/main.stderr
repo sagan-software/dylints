@@ -1,5 +1,5 @@
 warning: method `to_string` looks like ad hoc display formatting
-  --> $DIR/main.rs:11:5
+  --> $DIR/main.rs:13:5
    |
 LL | /     fn to_string(&self) -> String {
 LL | |         self.0.clone()
@@ -10,7 +10,7 @@ LL | |     }
    = note: `#[warn(ad_hoc_display)]` on by default
 
 warning: method `display` looks like ad hoc display formatting
-  --> $DIR/main.rs:15:5
+  --> $DIR/main.rs:17:5
    |
 LL | /     fn display(&self) -> DisplayText {
 LL | |         self.0.clone()
@@ -20,7 +20,7 @@ LL | |     }
    = help: implement `std::fmt::Display` when this is the canonical textual representation
 
 warning: method `render` looks like ad hoc display formatting
-  --> $DIR/main.rs:19:5
+  --> $DIR/main.rs:21:5
    |
 LL | /     fn render(&self) -> QualifiedDisplayText {
 LL | |         self.0.clone()

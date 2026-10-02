@@ -2,10 +2,9 @@
 
 ## What it does
 
-Checks for logging and output macro calls with a string literal argument that
-contains a format placeholder such as `{}` or `{user_id}`. The macro names are
-`trace`, `debug`, `info`, `warn`, `error`, `event`, `print`, `println`,
-`eprint`, `eprintln`, `write`, and `writeln`.
+Checks for logging macro calls with a string literal argument that contains a
+format placeholder such as `{}` or `{user_id}`. The macro names are `trace`,
+`debug`, `info`, `warn`, `error`, and `event`.
 
 ## Why is this bad?
 
@@ -20,9 +19,9 @@ The lint matches macros by the last segment of their name before expansion, so
 `log::info!`, `tracing::info!`, and a local `info!` macro all warn. A wrapper
 macro with another name does not warn.
 
-It warns on output that is not logging, such as `println!` in a command-line
-tool and `write!(f, "{}", self.0)` in a `Display` impl. It also warns when any
-string argument contains an unescaped `{`, such as a JSON field value.
+It does not check formatted output such as `println!` or
+`write!(f, "{}", self.0)` in a `Display` impl. It warns when any string argument
+of a logging macro contains an unescaped `{`, such as a JSON field value.
 
 ## Example
 

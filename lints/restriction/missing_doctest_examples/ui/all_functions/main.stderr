@@ -15,18 +15,5 @@ LL |     fn private_method(&self) {}
    |
    = help: add `# Examples` with a non-empty Rust code block to this item's docs
 
-warning: function or method documentation has no doctest example
-  --> $DIR/main.rs:18:1
-   |
-LL | / fn main() {
-LL | |     let service = PrivateService;
-LL | |     service.private_method();
-LL | |     private_without_example();
-LL | |     private_with_example();
-LL | | }
-   | |_^
-   |
-   = help: add `# Examples` with a non-empty Rust code block to this item's docs
-
-warning: 3 warnings emitted
+warning: 2 warnings emitted
 

@@ -71,21 +71,54 @@ impl HardcodedPathKind {
 
 /// Classify a string literal when its lexical form identifies a machine-specific path.
 fn hardcoded_path_kind(value: &str) -> Option<HardcodedPathKind> {
-    // Check Windows drive and UNC forms before URI filtering because `C:/...` has a colon.
+    // Absolute forms start with a drive, a UNC prefix, or a root slash, so URLs never match.
     if windows_absolute_path(value) || unix_absolute_path(value) {
-        return (!is_web_url(value)).then_some(HardcodedPathKind::Absolute);
+        return Some(HardcodedPathKind::Absolute);
     }
 
     // A tilde path resolves through the process user's home directory and is not repo-relative.
     home_relative_path(value).then_some(HardcodedPathKind::HomeRelative)
 }
 
-/// Return whether a string is a Unix absolute path rather than a slash marker.
+/// Top-level Unix directories that hold host filesystem state rather than URL routes.
+const UNIX_FILESYSTEM_ROOTS: &[&str] = &[
+    "Applications",
+    "Library",
+    "System",
+    "Users",
+    "Volumes",
+    "bin",
+    "boot",
+    "dev",
+    "etc",
+    "home",
+    "lib",
+    "lib64",
+    "media",
+    "mnt",
+    "nix",
+    "opt",
+    "private",
+    "proc",
+    "root",
+    "run",
+    "sbin",
+    "snap",
+    "srv",
+    "sys",
+    "tmp",
+    "usr",
+    "var",
+];
+
+/// Return whether a string is a Unix absolute path under a host filesystem root directory.
 fn unix_absolute_path(value: &str) -> bool {
-    let bytes = value.as_bytes();
-    let is_doc_marker =
-        bytes.len() == 3 && bytes.starts_with(b"//") && matches!(bytes.get(2), Some(b'!' | b'/'));
-    !is_doc_marker && value.starts_with('/') && value.bytes().any(|byte| byte != b'/')
+    // A route such as `/api/users` or comment text such as `// note` has no filesystem root.
+    let Some(rest) = value.strip_prefix('/') else {
+        return false;
+    };
+    let first_component = rest.split('/').next().unwrap_or_default();
+    UNIX_FILESYSTEM_ROOTS.contains(&first_component)
 }
 
 /// Return whether a value is an absolute Windows drive or UNC path.
@@ -103,24 +136,11 @@ fn windows_absolute_path(value: &str) -> bool {
 
 /// Return whether a value uses shell-style home-directory expansion.
 fn home_relative_path(value: &str) -> bool {
-    // Match the shell forms that expand directly to the current user's home directory.
-    let bytes = value.as_bytes();
-    if matches!(bytes, [b'~']) || bytes.starts_with(b"~/") || bytes.starts_with(b"~\\") {
-        return true;
-    }
-
-    // Also accept a named home expansion such as `~sagan/projects`.
-    let Some((first, rest)) = bytes.split_first() else {
+    // `~`, `~/cache`, and `~alice/cache` all expand through a user's home directory.
+    let Some(rest) = value.strip_prefix('~') else {
         return false;
     };
-    *first == b'~' && rest.iter().any(|byte| matches!(*byte, b'/' | b'\\'))
-}
-
-/// Return whether a string is a web URL rather than a local absolute path.
-fn is_web_url(value: &str) -> bool {
-    ["http://", "https://", "ftp://", "ws://", "wss://"]
-        .iter()
-        .any(|scheme| value.starts_with(scheme))
+    rest.is_empty() || rest.contains(['/', '\\'])
 }
 
 /// Emit the diagnostic at the complete literal span with a portable-path suggestion.

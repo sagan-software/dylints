@@ -88,3 +88,36 @@ pub fn missing_documentation_is_owned_by_rustc() {}
 fn main() {
     private_parent::unreachable();
 }
+
+/// Hidden helper.
+#[doc(hidden)]
+pub fn hidden_helper() {}
+
+/// Hidden module.
+#[doc(hidden)]
+pub mod hidden_module {
+    /// Hidden item.
+    pub struct InsideHidden;
+}
+
+/// Short constant.
+pub const LIMIT: u32 = 1;
+
+/// Short trait.
+pub trait Measure {
+    /// Short associated constant.
+    const UNIT: u32;
+
+    /// Short associated type.
+    type Output;
+}
+
+impl Brief {
+    /// Short associated constant.
+    pub const ZERO: u32 = 0;
+}
+
+unsafe extern "C" {
+    /// Short foreign function.
+    pub fn foreign_value() -> u32;
+}

@@ -1,0 +1,20 @@
+warning: hardcoded absolute filesystem path
+  --> $DIR/main.rs:7:13
+   |
+LL |     let _ = "/home/alice/cache";
+   |             ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a repository-relative path or derive the path from configuration or the runtime environment
+   = note: `#[warn(hardcoded_path)]` on by default
+
+warning: URL-like field `callback_url` uses `String`
+  --> $DIR/main.rs:3:19
+   |
+LL |     callback_url: String,
+   |                   ^^^^^^
+   |
+   = help: use `url::Url`, `reqwest::Url`, or a validated URL newtype
+   = note: `#[warn(url_string_field)]` on by default
+
+warning: 2 warnings emitted
+

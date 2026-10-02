@@ -3,9 +3,11 @@
 ## What it does
 
 Checks for fields, function parameters, and function return types whose type is
-`String` or `&str` when the field or parameter is named `method`, `http_method`,
-`request_method`, or `verb`. A return type is checked when the function has one
-of those names.
+`String` or `&str` when the field or parameter is named `http_method` or
+`request_method`. A return type is checked when the function has one of those
+names. The generic names `method` and `verb` are also checked when the crate
+depends on an HTTP library: `actix_web`, `axum`, `http`, `hyper`, `isahc`,
+`poem`, `reqwest`, `rocket`, `surf`, `tide`, `ureq`, or `warp`.
 
 ## Why is this bad?
 
@@ -19,9 +21,11 @@ The lint checks only the exact types `String` and `&str`, after resolving type
 aliases and `use` renames. It does not flag `Option<String>`, `Box<str>`, or
 closure parameters.
 
-It matches only the four exact names, so it does not flag `http_verb` or
-`method_str`. It skips destructured parameters and functions with other names
-that return a method string.
+It matches only exact names, so it does not flag `http_verb` or `method_str`.
+In a crate with an HTTP library, it still warns on a `method` that names
+something else, such as a builder method. It skips destructured parameters,
+functions with other names that return a method string, and methods of trait
+impls, whose signature comes from the trait.
 
 ## Example
 

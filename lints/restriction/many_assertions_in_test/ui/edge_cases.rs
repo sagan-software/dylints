@@ -66,3 +66,23 @@ mod local_macro {
 }
 
 fn main() {}
+
+mod nested {
+    // A test inside a module is found through that module's harness marker.
+    #[test]
+    #[should_panic]
+    fn nested_test_with_attributes() {
+        assert!(true);
+        assert!(true);
+        assert!(true);
+        debug_assert!(false);
+    }
+}
+
+// A helper with the same assertions is not a test.
+fn helper_with_many_assertions() {
+    assert!(true);
+    assert!(true);
+    assert!(true);
+    assert!(true);
+}

@@ -1,0 +1,23 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#![allow(dead_code)]
+
+use std::fmt::{Debug, Formatter, Result};
+
+#[derive(Debug)]
+struct Point(u64, u64);
+
+
+struct Redacted {
+    secret: String,
+}
+
+impl Debug for Redacted {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        f.debug_struct("Redacted")
+            .field("secret", &"<redacted>")
+            .finish()
+    }
+}
+
+fn main() {}

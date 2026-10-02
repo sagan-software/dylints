@@ -16,12 +16,13 @@ crate uses it.
 
 ## Known problems
 
-The lint counts names in the text of the crate's source files under the crate
-root's directory. A mention in a comment, a string, or an unrelated item with
-the same name counts as a use, so the lint stays silent.
+The lint counts names in the text of Rust files: the crate's own files under the
+crate root's directory, and every `.rs` file under the nearest workspace root,
+or under the package directory when there is no workspace. It skips `target`
+directories and hidden entries. A mention in a comment, a string, an unrelated
+item with the same name, or another workspace crate counts as a use, so the lint
+stays silent. A crate outside the workspace that uses the type is not seen.
 
-It does not see other crates. It warns on a type that another crate in the
-workspace uses, or that a binary in the same package uses through the library.
 It skips types that have a doc comment or an `allow`, `expect`, `cfg`,
 `cfg_attr`, `test`, `repr`, `no_mangle`, `export_name`, `used`, `link_name`, or
 `wasm_bindgen` attribute. It does not check `pub(crate)` types, and it does not

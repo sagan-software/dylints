@@ -29,7 +29,7 @@ use std::{
 use rustc_ast::Crate;
 use rustc_errors::DiagDecorator;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
-use rustc_span::{BytePos, SourceFile, Span, SyntaxContext};
+use rustc_span::{BytePos, SourceFile, Span, SyntaxContext, def_id::LOCAL_CRATE};
 use serde::Deserialize;
 use syn::{
     Attribute, ForeignItem, ImplItem, Item, Meta, Token, TraitItem,
@@ -223,12 +223,17 @@ fn loaded_rust_source_files(cx: &EarlyContext<'_>, krate: &Crate) -> Vec<SourceC
     let mut candidates = Vec::new();
 
     for source_file in files.iter() {
-        // Retain unique local Rust files outside toolchain trees.
+        // Files imported from dependency metadata belong to other crates.
+        if source_file.cnum != LOCAL_CRATE {
+            continue;
+        }
+
+        // Retain unique local Rust files under the package root.
         let Some(path) = local_source_file_path(source_file, &crate_root) else {
             continue;
         };
 
-        if !seen.insert(path.clone()) || !is_rust_file(&path) || is_toolchain_source(&path) {
+        if !seen.insert(path.clone()) || !is_rust_file(&path) {
             continue;
         }
 
@@ -479,13 +484,15 @@ fn foreign_item_attributes(item: &ForeignItem) -> &[Attribute] {
 
 /// Return whether one attribute makes its item test-only.
 fn test_only_attribute(attr: &Attribute) -> bool {
-    let is_test_attribute = attr
-        .path()
+    is_test_attribute(attr) || cfg_attribute_requires_test(attr)
+}
+
+/// Return whether an attribute path ends in the test marker.
+fn is_test_attribute(attr: &Attribute) -> bool {
+    attr.path()
         .segments
         .last()
-        .is_some_and(|segment| segment.ident == "test");
-
-    is_test_attribute || cfg_attribute_requires_test(attr)
+        .is_some_and(|segment| segment.ident == "test")
 }
 
 /// Return whether a `cfg` predicate can only be true when `test` is true.
@@ -562,12 +569,6 @@ fn is_rust_file(path: &Path) -> bool {
     path.extension().is_some_and(|extension| extension == "rs")
 }
 
-/// Return whether the path belongs to the workspace-local Dylint toolchain.
-fn is_toolchain_source(path: &Path) -> bool {
-    path.components()
-        .any(|component| component.as_os_str() == ".rustup-dylint")
-}
-
 /// Emit the selected crate-size diagnostic.
 fn emit_crate_lint(cx: &EarlyContext<'_>, span: Span, violation: CrateSizeViolation) {
     // Keep total size as the primary diagnostic when both configured limits fail.
@@ -605,9 +606,75 @@ fn ui() {
 mod tests {
     use super::{
         Config, CrateSizeViolation, CrateStats, DEFAULT_NON_TEST_LINE_LIMIT,
-        DEFAULT_TOTAL_LINE_LIMIT, crate_local_path, file_stats_from_source, test_line_count,
+        DEFAULT_TOTAL_LINE_LIMIT, crate_local_path, default_non_test_line_limit,
+        default_total_line_limit, file_stats_from_source, first_line_len, first_line_span,
+        normalize_path, test_line_count,
     };
+    use rustc_span::{BytePos, Span};
     use std::path::{Path, PathBuf};
+
+    /// The serde default helpers return the documented limits.
+    #[test]
+    fn serde_defaults_match_documented_limits() {
+        assert_eq!(default_non_test_line_limit(), DEFAULT_NON_TEST_LINE_LIMIT);
+        assert_eq!(default_total_line_limit(), DEFAULT_TOTAL_LINE_LIMIT);
+    }
+
+    /// Test-only items and their attribute lines are excluded from counts.
+    #[test]
+    fn excludes_test_only_associated_and_foreign_items() {
+        let source = "\
+struct Value;
+impl Value {
+    #[cfg(test)]
+    fn helper(&self) {}
+    fn kept(&self) {}
+}
+trait Contract {
+    #[test]
+    fn check();
+    fn kept();
+}
+unsafe extern \"C\" {
+    #[cfg(all(test, unix))]
+    fn foreign();
+    fn kept_foreign();
+}
+";
+        assert_eq!(test_line_count(source, 16), 6);
+    }
+
+    /// Only `cfg` predicates that require `test` mark an item as test-only.
+    #[test]
+    fn evaluates_cfg_predicates() {
+        // `any` requires `test` only when every non-empty branch does.
+        let cases = [
+            ("#[cfg(any(test, test))]\nfn a() {}\n", 2),
+            ("#[cfg(any(test, unix))]\nfn a() {}\n", 0),
+            ("#[cfg(any())]\nfn a() {}\n", 0),
+            ("#[cfg(all(unix, test))]\nfn a() {}\n", 2),
+            ("#[cfg(all(unix))]\nfn a() {}\n", 0),
+            ("#[cfg(not(test))]\nfn a() {}\n", 0),
+            ("#[cfg(feature = \"test\")]\nfn a() {}\n", 0),
+            ("#[cfg]\nfn a() {}\n", 0),
+            ("#[cfg(all(,,))]\nfn a() {}\n", 0),
+            ("#[cfg(test, unix)]\nfn a() {}\n", 0),
+        ];
+        assert!(
+            cases
+                .iter()
+                .all(|(source, expected)| test_line_count(source, 2) == *expected)
+        );
+    }
+
+    /// Lexical parent and current-directory components are folded.
+    #[test]
+    fn normalizes_lexical_components() {
+        assert_eq!(
+            normalize_path(Path::new("/work/./crate/../crate/src")),
+            PathBuf::from("/work/crate/src")
+        );
+    }
 
     /// The documented defaults are used when configuration is absent.
     #[test]
@@ -621,6 +688,7 @@ mod tests {
     /// Limits are strict maxima, and total size takes precedence over non-test size.
     #[test]
     fn applies_limits_after_aggregation() {
+        // Keep the exact boundary values so strict maxima remain covered.
         let config = Config {
             non_test_line_limit: 4,
             total_line_limit: 8,
@@ -638,6 +706,7 @@ mod tests {
             non_test_line_count: 5,
         };
 
+        // Verify the exact boundary and each independent violation category.
         assert_eq!(at_limits.violation(&config), None);
         assert_eq!(
             over_non_test.violation(&config),
@@ -652,6 +721,7 @@ mod tests {
     /// Test-only item ranges are excluded from the non-test count.
     #[test]
     fn classifies_test_only_source() {
+        // Count total and non-test lines separately around a test module.
         let source = "fn main() {}\n#[cfg(test)]\nmod tests {\n    // test\n}\n";
         let stats = file_stats_from_source(source);
 
@@ -679,5 +749,56 @@ mod tests {
             Some(crate_root.join("src/lib.rs"))
         );
         assert!(crate_local_path(PathBuf::from("../other-crate/src/lib.rs"), crate_root).is_none());
+    }
+
+    /// The first source line always yields a positive diagnostic span length.
+    #[test]
+    fn measures_first_source_line() {
+        assert_eq!(first_line_len(""), 1);
+    }
+
+    /// The first source line length counts bytes before the first newline.
+    #[test]
+    fn measures_nonempty_source_line() {
+        assert_eq!(first_line_len("é\nrest"), 2);
+    }
+
+    /// First-line spans preserve their start and saturate their end position.
+    #[test]
+    fn builds_first_source_span() {
+        let span = first_line_span(BytePos(u32::MAX), 10);
+
+        assert_eq!(
+            span,
+            Span::new(
+                BytePos(u32::MAX),
+                BytePos(u32::MAX),
+                rustc_span::SyntaxContext::root(),
+                None
+            )
+        );
+    }
+
+    /// Every parsed item family reaches its attribute accessor.
+    #[test]
+    fn visits_remaining_item_families() {
+        let source = "\
+const VALUE: usize = 0;\
+enum State { Ready }\
+extern crate self as alias;\
+fn function() {}\
+macro_rules! generated { () => {} }\
+static STATIC: usize = 0;\
+struct Struct;\
+trait Contract {}\
+type Alias = usize;\
+union Union { value: u8 }\
+use std::fmt;\
+impl Struct { const VALUE: usize = 0; type Alias = usize; fn method(&self) {} }\
+trait Extended { const VALUE: usize; fn method(&self); type Alias; }\
+unsafe extern \"C\" { static FOREIGN: usize; type Foreign; fn foreign(); }\
+";
+
+        assert_eq!(test_line_count(source, source.lines().count()), 0);
     }
 }

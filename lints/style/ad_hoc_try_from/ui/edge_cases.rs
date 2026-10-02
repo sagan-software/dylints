@@ -56,13 +56,19 @@ impl Token {
     }
 }
 
-impl TryFrom<RawToken> for Token {
+struct ConvertedToken;
+
+impl TryFrom<RawToken> for ConvertedToken {
     type Error = Error;
 
     fn try_from(raw: RawToken) -> Result<Self, Self::Error> {
         let _ = raw;
         Ok(Self)
     }
+}
+
+fn try_converted_token(raw: RawToken) -> Result<ConvertedToken, Error> {
+    ConvertedToken::try_from(raw)
 }
 
 fn main() {}

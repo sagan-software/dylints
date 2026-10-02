@@ -7,7 +7,6 @@
 //! documentation roots and internal support or fixture crates are excluded so
 //! implementation scaffolding does not distort the public API measurement.
 
-extern crate rustc_ast;
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_span;
@@ -16,7 +15,6 @@ use rustc_errors::DiagDecorator;
 use rustc_hir::{HirId, ItemKind, Mod};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_span::def_id::CRATE_DEF_ID;
-use std::{ffi::OsStr, path::Component};
 
 /// Largest accepted number of reachable public names exported by one module.
 const PUBLIC_NAME_LIMIT: usize = 25;
@@ -33,7 +31,10 @@ impl<'tcx> LateLintPass<'tcx> for PublicSurfaceSize {
     /// Check one reachable module's direct namespace surface.
     fn check_mod(&mut self, cx: &LateContext<'tcx>, module: &'tcx Mod<'tcx>, hir_id: HirId) {
         let module_id = hir_id.owner.def_id;
-        if crate_is_internal_support(cx) || crate_is_doc_hidden(cx) {
+        if dylint_support::is_internal_support_crate(
+            cx.tcx.crate_name(rustc_hir::def_id::LOCAL_CRATE),
+        ) || crate_is_doc_hidden(cx)
+        {
             return;
         }
         if module_id != CRATE_DEF_ID && !cx.effective_visibilities.is_reachable(module_id) {
@@ -69,52 +70,9 @@ impl<'tcx> LateLintPass<'tcx> for PublicSurfaceSize {
     }
 }
 
-/// Return whether the crate is an internal cross-crate helper or UI fixture.
-fn crate_is_internal_support(cx: &LateContext<'_>) -> bool {
-    // Exclude support and fixture crate names before inspecting their source path.
-    let crate_symbol = cx.tcx.crate_name(rustc_hir::def_id::LOCAL_CRATE);
-    let crate_name = crate_symbol.as_str();
-    if crate_name.ends_with("_support") || crate_name.ends_with("_fixture") {
-        return true;
-    }
-
-    let Some(path) = cx
-        .sess()
-        .local_crate_source_file()
-        .and_then(rustc_span::RealFileName::into_local_path)
-    else {
-        return false;
-    };
-    // Treat nested support and fixture directories as implementation-only crates.
-    path.components().any(|component| {
-        matches!(
-            component,
-            Component::Normal(name)
-                if name == OsStr::new("support") || name == OsStr::new("fixture")
-        )
-    })
-}
-
 /// Return whether the crate explicitly hides its support-only API from documentation.
 fn crate_is_doc_hidden(cx: &LateContext<'_>) -> bool {
-    cx.tcx
-        .hir_attrs(cx.tcx.local_def_id_to_hir_id(CRATE_DEF_ID))
-        .iter()
-        .any(|attr| {
-            attr.has_name(rustc_span::symbol::sym::doc)
-                && attr.meta_item_list().is_some_and(|items| {
-                    items.iter().any(|item| match item {
-                        rustc_ast::MetaItemInner::MetaItem(meta) => {
-                            meta.path.segments.len() == 1
-                                && meta.path.segments.first().is_some_and(|segment| {
-                                    segment.ident.name == rustc_span::symbol::sym::hidden
-                                })
-                                && matches!(meta.kind, rustc_ast::MetaItemKind::Word)
-                        }
-                        rustc_ast::MetaItemInner::Lit(_) => false,
-                    })
-                })
-        })
+    cx.tcx.is_doc_hidden(CRATE_DEF_ID)
 }
 
 #[test]

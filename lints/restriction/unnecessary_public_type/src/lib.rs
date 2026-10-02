@@ -56,10 +56,10 @@ impl EarlyLintPass for UnnecessaryPublicType {
             return;
         }
 
-        // Count identifiers across every readable Rust file in the local crate.
-        let Some(identifier_counts) = identifier_counts(cx, &crate_root) else {
-            return;
-        };
+        // Count identifiers across the crate and every Rust file in its workspace, because a
+        // sibling crate or another target of this package can use a `pub` type.
+        let search_root = workspace_root(&manifest_path);
+        let identifier_counts = identifier_counts(cx, &crate_root, &search_root);
 
         // Report public type names whose declaration is their only local occurrence.
         for candidate in public_type_candidates(krate) {
@@ -167,50 +167,105 @@ fn marker_attr(attr: &Attribute) -> bool {
         .any(|name| attr.has_name(*name))
 }
 
-/// Helper for identifier counts analysis.
-fn identifier_counts(cx: &EarlyContext<'_>, crate_root: &Path) -> Option<BTreeMap<String, usize>> {
-    // Aggregate lexical identifier counts across all local source files.
+/// Count identifiers in the crate's loaded files and in every Rust file under `search_root`.
+fn identifier_counts(
+    cx: &EarlyContext<'_>,
+    crate_root: &Path,
+    search_root: &Path,
+) -> BTreeMap<String, usize> {
+    // Deduplicate files that the crate loads from inside the search root.
+    let mut files = local_crate_rust_files(cx, crate_root);
+    files.extend(workspace_rust_files(search_root));
+
+    // Aggregate lexical identifier counts, skipping files that cannot be read as UTF-8 text.
     let mut counts = BTreeMap::new();
-
-    for source_file in local_crate_rust_files(cx, crate_root) {
-        let mut source = String::new();
-
-        // Skip unreadable generated or remapped paths instead of guessing about their contents.
-        // Count identifiers only after the complete file has been read.
-        let mut file = File::open(source_file).ok()?;
-        let _ = file.read_to_string(&mut source).ok()?;
+    for source in files.iter().filter_map(|path| read_file(path)) {
         count_identifiers(&source, &mut counts);
     }
-
-    Some(counts)
+    counts
 }
 
-/// Helper for local crate rust files analysis.
-fn local_crate_rust_files(cx: &EarlyContext<'_>, crate_root: &Path) -> Vec<PathBuf> {
+/// Return the crate's loaded Rust files under its crate-root directory.
+fn local_crate_rust_files(cx: &EarlyContext<'_>, crate_root: &Path) -> BTreeSet<PathBuf> {
     // Resolve the crate directory and deduplicate source-map file paths.
     let crate_dir = crate_root.parent().unwrap_or_else(|| Path::new("."));
     let source_map = cx.sess().source_map();
     let files = source_map.files();
-    let mut seen = BTreeSet::new();
-    let mut candidates = Vec::new();
-
-    for source_file in files.iter() {
-        // Retain readable-looking Rust paths inside this crate directory.
-        let Some(path) = source_file_path(source_file) else {
-            continue;
-        };
-
-        if !path.starts_with(crate_dir) || !is_rust_file(&path) || !seen.insert(path.clone()) {
-            continue;
-        }
-
-        candidates.push(path);
-    }
+    let candidates = files
+        .iter()
+        .filter_map(|source_file| source_file_path(source_file))
+        .filter(|path| path.starts_with(crate_dir) && is_rust_file(path))
+        .collect();
 
     // Release the source-map guard before callers perform file I/O.
     drop(files);
-
     candidates
+}
+
+/// Return Rust files under a workspace directory, skipping hidden entries
+/// and build output.
+#[expect(
+    clippy::disallowed_methods,
+    reason = "early lint execution is synchronous and has no async runtime"
+)]
+fn workspace_rust_files(search_root: &Path) -> BTreeSet<PathBuf> {
+    // Keep discovered files and pending directories in deterministic traversal state.
+    let mut files = BTreeSet::new();
+    let mut directories = vec![search_root.to_path_buf()];
+
+    // Walk iteratively without following symbolic links, so link cycles cannot recurse.
+    while let Some(directory) = directories.pop() {
+        // Ignore directories that disappear or cannot be read during the walk.
+        let Ok(entries) = std::fs::read_dir(&directory) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            // Skip hidden entries and Cargo build output before inspecting their type.
+            let is_skipped = is_hidden_or_target(&entry);
+            let Ok(file_type) = entry.file_type() else {
+                continue;
+            };
+            // Queue directories and record only Rust source files.
+            if is_skipped {
+                continue;
+            }
+            if file_type.is_dir() {
+                directories.push(path);
+            } else if file_type.is_file() && is_rust_file(&path) {
+                let _ = files.insert(path);
+            }
+        }
+    }
+    files
+}
+
+/// Return whether an entry is hidden or is Cargo's build-output directory.
+fn is_hidden_or_target(entry: &std::fs::DirEntry) -> bool {
+    entry
+        .file_name()
+        .to_str()
+        .is_none_or(|name| name.starts_with('.') || name == "target")
+}
+
+/// Return the nearest directory, from the package upward, whose manifest declares `[workspace]`.
+fn workspace_root(manifest_path: &Path) -> PathBuf {
+    let package_dir = manifest_path
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .to_path_buf();
+
+    // Cargo uses the nearest enclosing workspace; a package without one is its own root.
+    package_dir
+        .ancestors()
+        .find(|directory| {
+            read_file(&directory.join("Cargo.toml")).is_some_and(|manifest| {
+                manifest
+                    .lines()
+                    .any(|line| table_header(line) == Some("workspace"))
+            })
+        })
+        .map_or_else(|| package_dir.clone(), Path::to_path_buf)
 }
 
 /// Count identifiers used by the lint.
@@ -355,10 +410,7 @@ fn ancestor_workspace_publish_false(manifest_path: &Path) -> bool {
     while let Some(path) = directory {
         // Stop at the first ancestor workspace that sets publish=false.
         let candidate = path.join("Cargo.toml");
-        if candidate.is_file()
-            && read_file(&candidate)
-                .is_some_and(|manifest| manifest_publish_info(&manifest).workspace.publish_is_false)
-        {
+        if is_workspace_publish_false(&candidate) {
             return true;
         }
 
@@ -366,6 +418,14 @@ fn ancestor_workspace_publish_false(manifest_path: &Path) -> bool {
     }
 
     false
+}
+
+/// Return whether one manifest is a workspace publication boundary with
+/// `publish = false`.
+fn is_workspace_publish_false(candidate: &Path) -> bool {
+    candidate.is_file()
+        && read_file(candidate)
+            .is_some_and(|manifest| manifest_publish_info(&manifest).workspace.publish_is_false)
 }
 
 /// Read file for source-based analysis.
@@ -482,4 +542,250 @@ fn emit_unused_public_type_lint(cx: &EarlyContext<'_>, candidate: &PublicTypeCan
 #[test]
 fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");
+}
+
+#[cfg(test)]
+mod tests {
+    #![expect(
+        clippy::disallowed_methods,
+        reason = "synchronous filesystem fixtures exercise this early lint's file parser"
+    )]
+
+    use super::{
+        count_identifiers, is_identifier_continue, is_identifier_start, is_rust_file, key_value,
+        manifest_publish_info, nearest_manifest, private_package_manifest, read_file,
+        record_identifier, table_header, value_is_false, value_is_true, workspace_root,
+        workspace_rust_files,
+    };
+    use std::{
+        collections::BTreeMap,
+        path::{Path, PathBuf},
+    };
+
+    /// Create an isolated temporary directory for manifest parser tests.
+    fn temporary_directory(name: &str) -> PathBuf {
+        let directory = std::env::temp_dir().join(format!(
+            "unnecessary-public-type-{name}-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&directory).unwrap();
+        directory
+    }
+
+    /// Identifier scanning counts ASCII tokens and flushes at end of input.
+    #[test]
+    fn counts_identifiers() {
+        let mut counts = BTreeMap::new();
+        count_identifiers("alpha _beta 123gamma alpha", &mut counts);
+
+        assert_eq!(counts.get("alpha"), Some(&2));
+    }
+
+    /// Identifier recording ignores empty and invalid-start tokens.
+    #[test]
+    fn records_only_valid_identifier_starts() {
+        let mut counts = BTreeMap::new();
+        record_identifier(&mut String::new(), &mut counts);
+        record_identifier(&mut "123".to_owned(), &mut counts);
+
+        assert!(counts.is_empty());
+    }
+
+    /// Identifier character predicates accept the documented ASCII forms.
+    #[test]
+    fn classifies_identifier_characters() {
+        assert!(is_identifier_start('_') && is_identifier_continue('9'));
+    }
+
+    /// Manifest parsing tracks package and workspace publication policy.
+    #[test]
+    fn parses_publication_policy() {
+        let info = manifest_publish_info(
+            "[package]\npublish.workspace = true\n[workspace.package]\npublish = false\n",
+        );
+
+        assert!(info.package.seen && info.package.publish_inherits_workspace);
+    }
+
+    /// Direct false publication values are recognized in both supported forms.
+    #[test]
+    fn recognizes_false_publication_values() {
+        assert!(value_is_false(" [] ") && value_is_false("false"));
+    }
+
+    /// The inherited publication flag accepts only the literal true value.
+    #[test]
+    fn recognizes_true_publication_values() {
+        assert!(value_is_true(" true ") && !value_is_true("1"));
+    }
+
+    /// Manifest table and assignment parsing ignores comments and malformed lines.
+    #[test]
+    fn parses_manifest_lines() {
+        assert!(table_header("  [package] # comment").is_some());
+        assert!(key_value("publish = false # comment").is_some());
+    }
+
+    /// A missing package manifest is not treated as private.
+    #[test]
+    fn rejects_missing_private_manifest() {
+        assert!(!private_package_manifest(Path::new("/missing/Cargo.toml")));
+    }
+
+    /// A manifest without a package table is not treated as private.
+    #[test]
+    fn rejects_manifest_without_package_table() {
+        // Write a workspace-only manifest to exercise the missing package branch.
+        let directory = temporary_directory("no-package");
+        let manifest = directory.join("Cargo.toml");
+        std::fs::write(&manifest, "[workspace]\n").unwrap();
+
+        // Remove the fixture after parsing so parallel test runs do not retain files.
+        let is_private = private_package_manifest(&manifest);
+        std::fs::remove_dir_all(directory).unwrap();
+
+        assert!(!is_private);
+    }
+
+    /// A package manifest with publish false is treated as private.
+    #[test]
+    fn accepts_private_manifest() {
+        // Create a direct package publication policy for the positive branch.
+        let directory = temporary_directory("package");
+        let manifest = directory.join("Cargo.toml");
+        std::fs::write(&manifest, "[package]\npublish = false\n").unwrap();
+
+        // Remove the fixture after parsing to keep the temporary tree isolated.
+        let is_private = private_package_manifest(&manifest);
+        std::fs::remove_dir_all(directory).unwrap();
+
+        assert!(is_private);
+    }
+
+    /// A workspace package table with publish false is treated as private.
+    #[test]
+    fn accepts_workspace_package_policy() {
+        // Set publication policy in the workspace package table.
+        let directory = temporary_directory("workspace-package");
+        let manifest = directory.join("Cargo.toml");
+        std::fs::write(
+            &manifest,
+            "[package]\n[workspace.package]\npublish = false\n",
+        )
+        .unwrap();
+
+        // Remove the fixture after parsing to keep the temporary tree isolated.
+        let is_private = private_package_manifest(&manifest);
+        std::fs::remove_dir_all(directory).unwrap();
+
+        assert!(is_private);
+    }
+
+    /// An inherited workspace publish policy is resolved from the ancestor manifest.
+    #[test]
+    fn accepts_inherited_workspace_policy() {
+        // Place the package below a workspace that disables publication.
+        let root = temporary_directory("inherited");
+        let package = root.join("package");
+        std::fs::create_dir_all(&package).unwrap();
+        std::fs::write(
+            root.join("Cargo.toml"),
+            "[workspace]\n[workspace.package]\npublish = false\n",
+        )
+        .unwrap();
+        let manifest = package.join("Cargo.toml");
+        std::fs::write(&manifest, "[package]\npublish.workspace = true\n").unwrap();
+
+        // Remove the fixture after parsing to keep the temporary tree isolated.
+        let is_private = private_package_manifest(&manifest);
+        std::fs::remove_dir_all(root).unwrap();
+
+        assert!(is_private);
+    }
+
+    /// Inherited publication falls back to public when no ancestor disables publishing.
+    #[test]
+    fn rejects_unrestricted_inherited_policy() {
+        // Enable workspace inheritance without providing a private ancestor.
+        let directory = temporary_directory("inherited-public");
+        let manifest = directory.join("Cargo.toml");
+        std::fs::write(&manifest, "[package]\npublish.workspace = true\n").unwrap();
+
+        // Remove the fixture after parsing to keep the temporary tree isolated.
+        let is_private = private_package_manifest(&manifest);
+        std::fs::remove_dir_all(directory).unwrap();
+
+        assert!(!is_private);
+    }
+
+    /// Workspace discovery falls back to the package directory without a workspace table.
+    #[test]
+    fn uses_package_directory_without_workspace() {
+        assert_eq!(
+            workspace_root(Path::new("/missing/package/Cargo.toml")),
+            Path::new("/missing/package")
+        );
+    }
+
+    /// Workspace discovery returns the nearest manifest containing a workspace table.
+    #[test]
+    fn finds_workspace_directory() {
+        // Create a package nested beneath a manifest with a workspace table.
+        let root = temporary_directory("workspace-root");
+        let package = root.join("package");
+        std::fs::create_dir_all(&package).unwrap();
+        std::fs::write(root.join("Cargo.toml"), "[workspace]\n").unwrap();
+        let manifest = package.join("Cargo.toml");
+        std::fs::write(&manifest, "[package]\n").unwrap();
+
+        // Remove the fixture only after workspace discovery reads both manifests.
+        let workspace_root_path = workspace_root(&manifest);
+        std::fs::remove_dir_all(root.clone()).unwrap();
+
+        assert_eq!(workspace_root_path, root);
+    }
+
+    /// File helpers distinguish Rust sources from other paths and unreadable files.
+    #[test]
+    fn classifies_source_files() {
+        assert!(is_rust_file(Path::new("src/lib.rs")));
+        assert!(!is_rust_file(Path::new("README.md")));
+        assert!(read_file(Path::new("/missing/source.rs")).is_none());
+    }
+
+    /// Missing directories are skipped during workspace traversal.
+    #[test]
+    fn skips_missing_workspace_directory() {
+        assert!(workspace_rust_files(Path::new("/missing/source-tree")).is_empty());
+    }
+
+    /// The nearest manifest search stops when no ancestor exists.
+    #[test]
+    fn finds_no_manifest_for_missing_tree() {
+        assert!(nearest_manifest(Path::new("/missing/src/lib.rs")).is_none());
+    }
+
+    /// Workspace traversal returns Rust files under the selected source tree.
+    #[test]
+    fn discovers_workspace_rust_files() {
+        assert!(!workspace_rust_files(Path::new(env!("CARGO_MANIFEST_DIR"))).is_empty());
+    }
+
+    /// Hidden and Cargo target directories are excluded before file classification.
+    #[test]
+    fn skips_hidden_and_target_directories() {
+        // Populate ignored directories and one source file under the traversal root.
+        let root = temporary_directory("skipped");
+        std::fs::create_dir_all(root.join(".hidden")).unwrap();
+        std::fs::create_dir_all(root.join("target")).unwrap();
+        std::fs::write(root.join(".hidden/ignored.rs"), "").unwrap();
+        std::fs::write(root.join("target/ignored.rs"), "").unwrap();
+        std::fs::write(root.join("kept.rs"), "").unwrap();
+
+        // Remove the fixture after traversal so only the visible file can be returned.
+        let files = workspace_rust_files(&root);
+        std::fs::remove_dir_all(root.clone()).unwrap();
+
+        assert_eq!(files, std::iter::once(root.join("kept.rs")).collect());
+    }
 }

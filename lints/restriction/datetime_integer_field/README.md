@@ -3,8 +3,10 @@
 ## What it does
 
 Checks for named fields whose type is a primitive integer and whose name contains
-a timestamp word. The words are `timestamp`, `timestamps`, `epoch`, `unix`,
-`ts`, `date`, and `datetime`, matched between underscores and with case.
+a timestamp word. The words are `timestamp`, `timestamps`, `epoch`, `ts`,
+`date`, and `datetime`, matched between underscores and with case. The word
+`unix` counts only after `at`, as in `created_at_unix`, or before `time`,
+`secs`, `seconds`, `ms`, `millis`, or `nanos`, so `unix_mode` does not warn.
 
 ## Why is this bad?
 

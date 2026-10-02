@@ -6,21 +6,26 @@
 
 //! A lint to check for ad hoc IntoIterator-style methods.
 //!
-//! It inspects source-authored implementation methods whose signatures and
-//! bodies expose iteration through a custom method rather than the standard
-//! `IntoIterator` contract. Resolved return types and receiver behavior keep
-//! unrelated builder, conversion, and side-effect methods out of scope.
+//! It inspects source-authored inherent methods whose names and signatures
+//! expose iteration through a custom method rather than the standard
+//! `IntoIterator` contract. The trait solver decides whether the returned type
+//! is an iterator and whether the receiver type already implements
+//! `IntoIterator`, so conversions such as `into_bytes` stay out of scope.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_infer;
 extern crate rustc_middle;
 extern crate rustc_span;
+extern crate rustc_trait_selection;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{ImplItem, ImplItemImplKind, ImplItemKind};
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
-use rustc_middle::ty::{self, Ty, Unnormalized};
-use rustc_span::{Span, def_id::DefId, sym};
+use rustc_infer::infer::TyCtxtInferExt;
+use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_middle::ty::Ty;
+use rustc_span::{Symbol, sym};
+use rustc_trait_selection::infer::InferCtxtExt;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -31,69 +36,68 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for AdHocIntoIterator {
-    /// Check impl item for this lint.
+    /// Check one inherent receiver method for the iteration-view shape.
     fn check_impl_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx ImplItem<'tcx>) {
-        // Restrict the analysis to functions declared inside an implementation.
-        let ImplItemKind::Fn(_, _) = item.kind else {
+        // Trait methods have names fixed by their trait, so only inherent methods are candidates.
+        let def_id = item.owner_id.def_id;
+        if !matches!(item.kind, ImplItemKind::Fn(..))
+            || !matches!(item.impl_kind, ImplItemImplKind::Inherent { .. })
+            || !iteration_name(item.ident.name.as_str())
+            || !cx.tcx.associated_item(def_id).is_method()
+        {
+            return;
+        }
+
+        // Erase late-bound lifetimes so the trait solver sees closed types.
+        let sig = cx.tcx.instantiate_bound_regions_with_erased(
+            cx.tcx.fn_sig(def_id).instantiate_identity().skip_norm_wip(),
+        );
+        let [receiver] = sig.inputs() else {
             return;
         };
 
-        // Leave canonical `IntoIterator` implementations to the trait contract.
-        let name = item.ident.name.to_ident_string();
-        if standard_into_iterator_method(cx, item, &name) {
+        // Require an iterator result and a receiver type that lacks `IntoIterator`.
+        if !has_trait_impl(cx, sig.output(), sym::Iterator)
+            || has_trait_impl(cx, *receiver, sym::IntoIterator)
+        {
             return;
         }
 
-        // Resolve the method signature so aliases do not affect its iteration shape.
-        let sig = cx
-            .tcx
-            .fn_sig(item.owner_id.def_id)
-            .instantiate_identity()
-            .skip_binder();
-
-        if iteration_name(&name)
-            && receiver_only_method(sig.inputs())
-            && iterable_return(cx, sig.output())
-        {
-            emit_span_lint_with_help(
-                cx,
-                AD_HOC_INTO_ITERATOR,
-                item.span,
-                format!("method `{name}` looks like ad hoc iteration"),
-                "implement `IntoIterator` when this is the canonical iteration view",
-            );
-        }
+        let name = item.ident.name;
+        let receiver = *receiver;
+        cx.emit_span_lint(
+            AD_HOC_INTO_ITERATOR,
+            item.span,
+            DiagDecorator(move |diag| {
+                let _ = diag.primary_message(format!("method `{name}` looks like ad hoc iteration"));
+                let _ = diag.help(format!(
+                    "implement `IntoIterator for {receiver}` when this is the canonical iteration view"
+                ));
+            }),
+        );
     }
 }
 
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: impl Into<String>,
-    help: &'static str,
-) {
-    let message = message.into();
-
-    // Use rustc's native diagnostic decorator to keep the lint dependency-free.
-    cx.emit_span_lint(
-        lint,
-        span,
-        DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ = diag.help(help);
-        }),
-    );
+/// Return whether `ty` may implement the diagnostic-item trait in the item's environment.
+fn has_trait_impl<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>, trait_item: Symbol) -> bool {
+    cx.tcx
+        .get_diagnostic_item(trait_item)
+        .is_some_and(|trait_def_id| {
+            cx.tcx
+                .infer_ctxt()
+                .build(cx.typing_mode())
+                .type_implements_trait(trait_def_id, [ty], cx.param_env)
+                .may_apply()
+        })
 }
 
-/// Return the iteration name.
+/// Return whether the name reads as an iteration view without a domain-policy word.
 fn iteration_name(name: &str) -> bool {
     (name.starts_with("into_") || name.starts_with("iter_") || name == "items")
         && !domain_policy_name(name)
 }
 
-/// Return the domain policy name.
+/// Return whether the name contains a word that marks a filtered or reshaped view.
 fn domain_policy_name(name: &str) -> bool {
     [
         "active",
@@ -119,98 +123,6 @@ fn domain_policy_name(name: &str) -> bool {
     ]
     .iter()
     .any(|word| name.contains(word))
-}
-
-/// Helper for receiver only method analysis.
-const fn receiver_only_method(inputs: &[Ty<'_>]) -> bool {
-    inputs.len() == 1
-}
-
-/// Helper for iterable return analysis.
-fn iterable_return(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    std_vec_ty(cx, ty) || std_iterator_ty(cx, ty) || opaque_iterator_ty(cx, ty)
-}
-
-/// Return type information for std vec.
-fn std_vec_ty(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    let ty::Adt(adt, _) = ty.kind() else {
-        return false;
-    };
-
-    cx.tcx.item_name(adt.did()).as_str() == "Vec"
-        && matches!(cx.tcx.crate_name(adt.did().krate).as_str(), "alloc" | "std")
-}
-
-/// Return type information for std iterator.
-fn std_iterator_ty(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    let ty::Adt(adt, _) = ty.kind() else {
-        return false;
-    };
-
-    matches!(
-        cx.tcx.def_path_str(adt.did()).as_str(),
-        "alloc::vec::into_iter::IntoIter" | "std::vec::IntoIter"
-    )
-}
-
-/// Return type information for opaque iterator.
-fn opaque_iterator_ty(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    let ty::Alias(_, alias) = ty.kind() else {
-        return false;
-    };
-    let ty::AliasTyKind::Opaque { def_id } = alias.kind else {
-        return false;
-    };
-
-    // Read rustc's lowered opaque bounds so `impl std::iter::Iterator` and imported
-    // `Iterator` spellings share the same trait identity check.
-    cx.tcx
-        .explicit_item_bounds(def_id)
-        .iter_identity_copied()
-        .map(Unnormalized::skip_norm_wip)
-        .any(|(predicate, _)| {
-            predicate.as_trait_clause().is_some_and(|clause| {
-                let trait_def_id = clause.skip_binder().trait_ref.def_id;
-                iterator_trait(cx, trait_def_id)
-            })
-        })
-}
-
-/// Return whether this is the standard into iterator method shape.
-fn standard_into_iterator_method(cx: &LateContext<'_>, item: &ImplItem<'_>, name: &str) -> bool {
-    if name != "into_iter" || !matches!(item.impl_kind, ImplItemImplKind::Trait { .. }) {
-        return false;
-    }
-
-    // Query the parent impl so aliases and fully-qualified trait paths are resolved by rustc
-    // instead of by the spelling used in the impl header.
-    let impl_def_id = cx.tcx.parent(item.owner_id.def_id.to_def_id());
-    let trait_def_id = cx.tcx.impl_trait_ref(impl_def_id).skip_binder().def_id;
-
-    into_iterator_trait(cx, trait_def_id)
-}
-
-/// Helper for into iterator trait analysis.
-fn into_iterator_trait(cx: &LateContext<'_>, trait_def_id: DefId) -> bool {
-    let trait_path = cx.tcx.def_path_str(trait_def_id);
-
-    cx.tcx.is_diagnostic_item(sym::IntoIterator, trait_def_id)
-        || matches!(
-            trait_path.as_str(),
-            "core::iter::traits::collect::IntoIterator" | "std::iter::IntoIterator"
-        )
-}
-
-/// Helper for iterator trait analysis.
-fn iterator_trait(cx: &LateContext<'_>, trait_def_id: DefId) -> bool {
-    if cx.tcx.is_diagnostic_item(sym::Iterator, trait_def_id) {
-        return true;
-    }
-
-    matches!(
-        cx.tcx.def_path_str(trait_def_id).as_str(),
-        "core::iter::traits::iterator::Iterator" | "std::iter::Iterator"
-    )
 }
 
 /// Helper for ui analysis.

@@ -5,6 +5,10 @@ struct CacheConfig<'a> {
     manifest_path: &'a str,
     display_name: String,
     output_path: PathBuf,
+    public_path: String,
+    module_path: &'a str,
+    url_path: String,
+    route_path: String,
 }
 
 fn main() {}

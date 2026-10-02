@@ -35,3 +35,6 @@ fn main() {
     });
     let _ = PrivateType;
 }
+
+// A sibling crate in the workspace uses this type.
+pub struct SharedWithSibling;

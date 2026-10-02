@@ -8,6 +8,8 @@ type RowVec = Vec<Row>;
 type RowIntoIter = std::vec::IntoIter<Row>;
 
 impl Rows {
+    const LIMIT: usize = 10;
+
     fn into_rows(self) -> Vec<Row> {
         self.rows
     }
@@ -24,8 +26,16 @@ impl Rows {
         self.rows.iter()
     }
 
+    fn iter_slice(&self) -> std::slice::Iter<'_, Row> {
+        self.rows.iter()
+    }
+
     fn items(self) -> std::vec::IntoIter<Row> {
         self.rows.into_iter()
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        Vec::new()
     }
 
     fn sorted_rows(self) -> Vec<Row> {
@@ -39,9 +49,27 @@ impl Rows {
     fn iter_rows_with_limit(&self, limit: usize) -> impl Iterator<Item = &Row> {
         self.rows.iter().take(limit)
     }
+
+    fn iter_from(rows: Vec<Row>) -> std::vec::IntoIter<Row> {
+        rows.into_iter()
+    }
 }
 
-impl IntoIterator for Rows {
+struct ImplementedRows {
+    rows: Vec<Row>,
+}
+
+impl ImplementedRows {
+    fn into_rows(self) -> std::vec::IntoIter<Row> {
+        self.rows.into_iter()
+    }
+
+    fn iter_rows(&self) -> std::slice::Iter<'_, Row> {
+        self.rows.iter()
+    }
+}
+
+impl IntoIterator for ImplementedRows {
     type Item = Row;
     type IntoIter = std::vec::IntoIter<Row>;
 
@@ -50,25 +78,30 @@ impl IntoIterator for Rows {
     }
 }
 
-struct CustomVec<T>(T);
+impl<'a> IntoIterator for &'a ImplementedRows {
+    type Item = &'a Row;
+    type IntoIter = std::slice::Iter<'a, Row>;
 
-struct CustomRows {
-    row: Row,
-}
-
-impl CustomRows {
-    fn into_rows(self) -> CustomVec<Row> {
-        CustomVec(self.row)
+    fn into_iter(self) -> Self::IntoIter {
+        self.rows.iter()
     }
 }
 
-struct LookalikeIterator;
+trait RowSource {
+    fn iter_source(&self) -> std::slice::Iter<'_, Row>;
+}
 
-struct LookalikeRows;
+impl RowSource for Rows {
+    fn iter_source(&self) -> std::slice::Iter<'_, Row> {
+        self.rows.iter()
+    }
+}
 
-impl LookalikeRows {
-    fn iter_rows(&self) -> LookalikeIterator {
-        LookalikeIterator
+struct GenericRows<T>(Vec<T>);
+
+impl<T> GenericRows<T> {
+    fn into_values(self) -> std::vec::IntoIter<T> {
+        self.0.into_iter()
     }
 }
 

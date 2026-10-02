@@ -21,7 +21,7 @@ use rustc_errors::DiagDecorator;
 use rustc_hir::{Item, ItemKind};
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty;
-use rustc_span::{Span, def_id::DefId};
+use rustc_span::{Span, Symbol, def_id::DefId};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -68,7 +68,7 @@ impl<'tcx> LateLintPass<'tcx> for CustomWellKnownType {
 struct WellKnownType {
     /// replacement stored for this lint's analysis.
     replacement: &'static str,
-    /// canonical paths stored for this lint's analysis.
+    /// Definition paths, starting with the defining crate, of the established types.
     canonical_paths: &'static [&'static str],
 }
 
@@ -187,11 +187,15 @@ fn def_id_matches_known_paths(
     def_id: DefId,
     canonical_paths: &'static [&'static str],
 ) -> bool {
-    let def_path = cx.tcx.def_path_str(def_id);
-
-    // Compare resolved definition paths instead of source spelling so aliases through imports,
-    // re-exports, or fully qualified paths are all recognized by identity.
-    canonical_paths.iter().any(|path| def_path == *path)
+    // The definition path starts with the defining crate, so imports and re-exports such as
+    // `reqwest::Url` or `std::time::Duration` resolve to `url::Url` and `core::time::Duration`.
+    let def_path = cx
+        .get_def_path(def_id)
+        .iter()
+        .map(Symbol::as_str)
+        .collect::<Vec<_>>()
+        .join("::");
+    canonical_paths.contains(&def_path.as_str())
 }
 
 /// Return type information for well known.
@@ -210,21 +214,21 @@ const WELL_KNOWN_TYPES: &[(WellKnownKind, WellKnownType)] = &[
         WellKnownKind::StatusCode,
         WellKnownType {
             replacement: "use `http::StatusCode` or `reqwest::StatusCode`",
-            canonical_paths: &["http::status::StatusCode", "reqwest::StatusCode"],
+            canonical_paths: &["http::status::StatusCode"],
         },
     ),
     (
         WellKnownKind::Method,
         WellKnownType {
             replacement: "use `http::Method` or `reqwest::Method`",
-            canonical_paths: &["http::method::Method", "reqwest::Method"],
+            canonical_paths: &["http::method::Method"],
         },
     ),
     (
         WellKnownKind::Url,
         WellKnownType {
             replacement: "use `url::Url`, `reqwest::Url`, or another established URL type",
-            canonical_paths: &["url::Url", "reqwest::Url"],
+            canonical_paths: &["url::Url"],
         },
     ),
     (
@@ -266,7 +270,7 @@ const WELL_KNOWN_TYPES: &[(WellKnownKind, WellKnownType)] = &[
         WellKnownKind::Duration,
         WellKnownType {
             replacement: "use `std::time::Duration`",
-            canonical_paths: &["core::time::Duration", "std::time::Duration"],
+            canonical_paths: &["core::time::Duration"],
         },
     ),
     (

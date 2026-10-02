@@ -1,0 +1,43 @@
+warning: `std::env::var` reads runtime environment outside config/bootstrap code
+  --> $DIR/closures.rs:8:22
+   |
+LL |     LazyLock::new(|| std::env::var("API_ENDPOINT").ok());
+   |                      ^^^^^^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+   = note: `#[warn(runtime_env_read)]` on by default
+
+warning: `std::env::var` reads runtime environment outside config/bootstrap code
+  --> $DIR/closures.rs:11:19
+   |
+LL |     let read = || std::env::var("HANDLER_TOKEN").ok();
+   |                   ^^^^^^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+
+warning: `std::env::var` reads runtime environment outside config/bootstrap code
+  --> $DIR/closures.rs:39:5
+   |
+LL |     std::env::var("DOC_OR_TEST").ok()
+   |     ^^^^^^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+
+warning: `std::env::var` reads runtime environment outside config/bootstrap code
+  --> $DIR/closures.rs:44:5
+   |
+LL |     std::env::var("NOT_TEST").ok()
+   |     ^^^^^^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+
+warning: `std::env::var` reads runtime environment outside config/bootstrap code
+  --> $DIR/closures.rs:52:17
+   |
+LL |         let _ = std::env::var("METHOD_READ");
+   |                 ^^^^^^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+
+warning: 5 warnings emitted
+

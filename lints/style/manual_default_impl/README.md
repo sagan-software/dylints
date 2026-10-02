@@ -2,9 +2,16 @@
 
 ## What it does
 
-Checks hand-written `Default` implementations whose `default` method returns
-`Self { ... }` with every field set to `Default::default()` or
-`<Type>::default()`.
+Checks hand-written `Default` implementations for local structs without type or
+const parameters whose `default` method returns one struct expression, such as
+`Self { ... }`, `Self(...)`, or `Self`, with every field set to its type's
+default value. A default value is a call that resolves to `Default::default`,
+such as `Default::default()`, `u8::default()`, or `<Vec<T>>::default()`, or
+`false`, the integer `0`, or `None`.
+
+The machine-applicable fix adds `#[derive(Default)]` to the struct and removes
+the implementation. It is offered only when neither item comes from a macro
+and the implementation has no attributes or doc comments.
 
 ## Why is this bad?
 
@@ -14,11 +21,11 @@ definition and produces the same value.
 
 ## Known problems
 
-The lint reads source text, not types. It misses fields written as
-`Type::default()` without angle brackets, `Vec::new()`, `0`, `false`, or
-`None`, and it misses tuple structs and enums. It skips any implementation
-whose source contains a string literal, `if `, `match `, `todo`, or `panic`,
-or a comment that mentions `custom` or `invariant`.
+The lint misses fields set with constructors such as `Vec::new()` or
+`String::new()`, bodies with statements, and enums, where a derive needs a
+`#[default]` variant. Generic structs are skipped because the derive adds a
+`Default` bound to every type parameter. Clippy's `derivable_impls` lint
+reports many of the same implementations.
 
 ## Example
 

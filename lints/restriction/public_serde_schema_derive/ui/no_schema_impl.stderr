@@ -1,0 +1,11 @@
+warning: public serde struct `NoSchemaImplementation` is missing a schema derive
+  --> $DIR/no_schema_impl.rs:6:12
+   |
+LL | pub struct NoSchemaImplementation {
+   |            ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: derive `schemars::JsonSchema` so Rust, JSON Schema, and docs stay aligned
+   = note: `#[warn(public_serde_schema_derive)]` on by default
+
+warning: 1 warning emitted
+

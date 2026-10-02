@@ -70,4 +70,81 @@ impl Display for DisplayOnly {
     }
 }
 
+mod first {
+    #[derive(Debug)]
+    pub struct Duplicate;
+
+    impl std::fmt::Display for Duplicate {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "first duplicate")
+        }
+    }
+}
+
+mod second {
+    #[derive(Debug)]
+    pub struct Duplicate;
+
+    impl std::error::Error for Duplicate {}
+
+    impl std::fmt::Display for Duplicate {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("second duplicate")
+        }
+    }
+}
+
+mod local_traits {
+    pub trait Display {
+        fn show(&self) -> String;
+    }
+
+    pub trait Error {}
+
+    #[derive(Debug)]
+    pub struct LocalTraits;
+
+    impl Display for LocalTraits {
+        fn show(&self) -> String {
+            String::new()
+        }
+    }
+
+    impl Error for LocalTraits {}
+}
+
+#[derive(Debug)]
+struct ErrorFirst;
+
+impl Error for ErrorFirst {}
+
+impl Display for ErrorFirst {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "error first")
+    }
+}
+
+#[derive(Debug)]
+struct GenericError<T>(T);
+
+impl<T> Display for GenericError<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "generic")
+    }
+}
+
+impl<T: std::fmt::Debug> Error for GenericError<T> {}
+
+#[derive(Debug)]
+struct TwoStatements;
+
+impl Display for TwoStatements {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "two ")?;
+        write!(f, "statements")
+    }
+}
+
+impl Error for TwoStatements {}
+
 fn main() {}

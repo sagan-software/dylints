@@ -19,7 +19,8 @@ extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Attribute, Body, Expr, ExprKind, HirId, LetStmt, MatchSource, Pat, PatKind, Stmt, StmtKind,
+    Attribute, Body, Expr, ExprKind, HirId, ItemKind, LangItem, LetStmt, MatchSource, Pat, PatKind,
+    Stmt, StmtKind,
     attrs::AttributeKind,
     def::{DefKind, Res},
     intravisit::{self, FnKind, Visitor},
@@ -177,7 +178,7 @@ fn test_function_without_test_case(
 
     // `#[test_case]` already gives each case its own result, so skip those tests entirely.
     !has_test_case_attr(attrs)
-        && (has_builtin_test_attr(attrs)
+        && (is_test_function(cx, local_def_id)
             || fn_name(kind).is_some_and(|name| name.starts_with("test_")))
 }
 
@@ -198,11 +199,19 @@ fn has_test_case_attr(attrs: &[Attribute]) -> bool {
     })
 }
 
-/// Return whether builtin test attr is present.
-fn has_builtin_test_attr(attrs: &[Attribute]) -> bool {
-    attrs.iter().any(|attr| {
-        attr.has_name(sym::test)
-            || matches!(attr, Attribute::Parsed(AttributeKind::RustcTestMarker(_)))
+/// Return whether a function is a `#[test]` function in a `--test` build.
+fn is_test_function(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+    // The test harness replaces `#[test]` with a same-named marker constant in the same module.
+    let name = cx.tcx.item_name(local_def_id.to_def_id());
+    let module = cx.tcx.parent_module_from_def_id(local_def_id);
+    cx.tcx.hir_module_free_items(module).any(|item_id| {
+        let item = cx.tcx.hir_item(item_id);
+        matches!(item.kind, ItemKind::Const(ident, ..) if ident.name == name)
+            && cx
+                .tcx
+                .hir_attrs(item.hir_id())
+                .iter()
+                .any(|attr| matches!(attr, Attribute::Parsed(AttributeKind::RustcTestMarker(_))))
     })
 }
 
@@ -260,10 +269,7 @@ fn for_loop_source<'tcx>(
             _ => None,
         },
     )
-    .filter(|(def_id, _, _)| {
-        let path = cx.tcx.def_path_str(*def_id);
-        path.ends_with("::into_iter") && path.contains("IntoIterator")
-    })
+    .filter(|(def_id, _, _)| cx.tcx.is_lang_item(*def_id, LangItem::IntoIterIntoIter))
     // Recover the user-written loop header span from the generated loop.
     .and_then(|(_, source, iter_arm)| match iter_arm.body.kind {
         ExprKind::Loop(_block, _label, rustc_hir::LoopSource::ForLoop, header_span) => {
@@ -343,19 +349,14 @@ fn literal_case_source(
     }
 }
 
-/// Return whether this expression originated from a literal `vec!` invocation.
+/// Return whether this expression is the expansion of the standard `vec!` macro.
 fn vec_macro_literal(cx: &LateContext<'_>, span: Span) -> bool {
-    // Macro-expanded HIR hides `vec!`, so inspect only its original call-site text.
-    let Ok(source) = cx
-        .sess()
-        .source_map()
-        .span_to_snippet(span.source_callsite())
-    else {
-        return false;
-    };
-    let compact = source.split_whitespace().collect::<String>();
-
-    compact.starts_with("vec![")
+    // `vec![a, b]` lowers to a call whose span records the resolved macro definition.
+    span.ctxt()
+        .outer_expn_data()
+        .macro_def_id
+        .and_then(|def_id| cx.tcx.get_diagnostic_name(def_id))
+        .is_some_and(|name| name.as_str() == "vec_macro")
 }
 
 /// Remove compiler-generated temporary wrappers.

@@ -44,4 +44,14 @@ pub mod renamed_nested {
     }
 }
 
+mod private_module {
+    use serde::Serialize;
+
+    // Other crates cannot reach this type, so it is not part of the schema surface.
+    #[derive(Serialize)]
+    pub struct HiddenDto {
+        id: String,
+    }
+}
+
 fn main() {}

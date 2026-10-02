@@ -13,5 +13,19 @@ LL | | }
    = help: keep useful guard clauses and extract independent fallible stages
    = note: `#[warn(many_exit_points)]` on by default
 
-warning: 1 warning emitted
+warning: function has 5 explicit or desugared exit points, which exceeds 4
+  --> $DIR/main.rs:18:1
+   |
+LL | / fn exits_in_macro_arguments(values: [Option<u8>; 5]) -> Option<u8> {
+LL | |     println!(
+LL | |         "{}",
+LL | |         values[0]? + values[1]? + values[2]? + values[3]? + values[4]?
+LL | |     );
+LL | |     None
+LL | | }
+   | |_^
+   |
+   = help: keep useful guard clauses and extract independent fallible stages
+
+warning: 2 warnings emitted
 

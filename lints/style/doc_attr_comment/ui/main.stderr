@@ -43,7 +43,7 @@ LL |     #[doc = "Nested item docs written as an attribute."]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: write this as an outer line doc comment: `/// Nested item docs written as an attribute.`
 
 warning: outer `doc` attribute can be written as `///`
-  --> $DIR/main.rs:82:1
+  --> $DIR/main.rs:83:1
    |
 LL | #[doc = "Same-line docs need human review."] pub fn warn_same_line_doc_attr() {}
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -51,7 +51,7 @@ LL | #[doc = "Same-line docs need human review."] pub fn warn_same_line_doc_attr
    = help: write this as an outer line doc comment
 
 warning: outer `doc` attribute can be written as `///`
-  --> $DIR/main.rs:84:1
+  --> $DIR/main.rs:86:1
    |
 LL | #[doc = "Docs before another attribute."] #[inline]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

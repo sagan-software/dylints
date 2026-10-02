@@ -1,0 +1,20 @@
+warning: manual `Default` implementation looks derivable
+  --> $DIR/edge_cases.rs:10:1
+   |
+LL | / impl Default for Defaults {
+LL | |     fn default() -> Self {
+LL | |         Self {
+LL | |             names: Default::default(),
+...  |
+LL | | }
+   | |_^
+   |
+   = note: `#[warn(manual_default_impl)]` on by default
+help: derive `Default` instead; every field uses its type's default value
+   |
+LL + #[derive(Default)]
+LL | struct Defaults {
+   |
+
+warning: 1 warning emitted
+

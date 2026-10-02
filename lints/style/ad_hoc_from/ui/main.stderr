@@ -1,5 +1,5 @@
 warning: function `make_associated_user_id` looks like an infallible conversion
-  --> $DIR/main.rs:17:9
+  --> $DIR/main.rs:12:9
    |
 LL | /         fn make_associated_user_id(raw: RawUserId) -> Self {
 LL | |             let _ = raw;
@@ -7,11 +7,11 @@ LL | |             Self
 LL | |         }
    | |_________^
    |
-   = help: implement `From` when the conversion has one canonical meaning
+   = help: implement `From<ids::RawUserId> for ids::UserId` when the conversion has one canonical meaning
    = note: `#[warn(ad_hoc_from)]` on by default
 
 warning: function `make_user_id` looks like an infallible conversion
-  --> $DIR/main.rs:26:1
+  --> $DIR/main.rs:25:1
    |
 LL | / fn make_user_id(raw: ids::RawUserId) -> ids::UserId {
 LL | |     let _ = raw;
@@ -19,10 +19,10 @@ LL | |     ids::UserId
 LL | | }
    | |_^
    |
-   = help: implement `From` when the conversion has one canonical meaning
+   = help: implement `From<ids::RawUserId> for ids::UserId` when the conversion has one canonical meaning
 
 warning: function `convert_user_id_alias` looks like an infallible conversion
-  --> $DIR/main.rs:31:1
+  --> $DIR/main.rs:30:1
    |
 LL | / fn convert_user_id_alias(raw: ids::RawUserId) -> UserIdAlias {
 LL | |     let _ = raw;
@@ -30,10 +30,10 @@ LL | |     ids::UserId
 LL | | }
    | |_^
    |
-   = help: implement `From` when the conversion has one canonical meaning
+   = help: implement `From<ids::RawUserId> for ids::UserId` when the conversion has one canonical meaning
 
 warning: function `from_qualified_user_id` looks like an infallible conversion
-  --> $DIR/main.rs:36:1
+  --> $DIR/main.rs:35:1
    |
 LL | / fn from_qualified_user_id(raw: ids::RawUserId) -> crate::ids::UserIdAlias {
 LL | |     let _ = raw;
@@ -41,10 +41,10 @@ LL | |     ids::UserId
 LL | | }
    | |_^
    |
-   = help: implement `From` when the conversion has one canonical meaning
+   = help: implement `From<ids::RawUserId> for ids::UserId` when the conversion has one canonical meaning
 
 warning: function `extract_user_id` looks like an infallible conversion
-  --> $DIR/main.rs:41:1
+  --> $DIR/main.rs:40:1
    |
 LL | / fn extract_user_id(raw: ids::RawUserId) -> ids::UserId {
 LL | |     let _ = raw;
@@ -52,7 +52,38 @@ LL | |     ids::UserId
 LL | | }
    | |_^
    |
-   = help: implement `From` when the conversion has one canonical meaning
+   = help: implement `From<ids::RawUserId> for ids::UserId` when the conversion has one canonical meaning
 
-warning: 5 warnings emitted
+warning: function `make_port_lossy` looks like an infallible conversion
+  --> $DIR/main.rs:110:1
+   |
+LL | / fn make_port_lossy(raw: Option<u16>) -> Port {
+LL | |     Port(raw.unwrap_or_default())
+LL | | }
+   | |_^
+   |
+   = help: implement `From<std::option::Option<u16>> for Port` when the conversion has one canonical meaning
+
+warning: function `make_port_plain` looks like an infallible conversion
+  --> $DIR/main.rs:114:1
+   |
+LL | / fn make_port_plain(raw: u8) -> Port {
+LL | |     Port(u16::from(raw))
+LL | | }
+   | |_^
+   |
+   = help: implement `From<u8> for Port` when the conversion has one canonical meaning
+
+warning: function `make_port_option` looks like an infallible conversion
+  --> $DIR/main.rs:118:1
+   |
+LL | / fn make_port_option(raw: Option<u16>) -> Port {
+LL | |     let _ = raw;
+LL | |     Port(0)
+LL | | }
+   | |_^
+   |
+   = help: implement `From<std::option::Option<u16>> for Port` when the conversion has one canonical meaning
+
+warning: 8 warnings emitted
 

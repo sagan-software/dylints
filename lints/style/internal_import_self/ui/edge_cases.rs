@@ -53,9 +53,9 @@ mod parent {
 #[cfg(any())]
 use local::DisabledItem;
 
-use self::local::QualifiedFromSelf;
 use crate::local::QualifiedFromCrate;
 use crate::sibling::SiblingItem as RootSiblingItem;
+use self::local::QualifiedFromSelf;
 use local::AliasItem as RenamedItem;
 use local::Item;
 use grouped::{Shallow, nested::Deep};

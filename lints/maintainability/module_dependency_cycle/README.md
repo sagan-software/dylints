@@ -7,7 +7,8 @@ emits one warning per cycle that names every module in it.
 
 A dependency is a resolved path or method call to a definition in another
 module of the same crate. Nested modules count as part of their top-level
-ancestor. Items defined directly in the crate root count as one more module.
+ancestor. The crate root is not part of the graph, because it declares and re-exports
+every module.
 The chain `input -> policy -> output` is accepted. Adding `output -> input`
 reports all three modules.
 
@@ -20,9 +21,8 @@ module is easiest to import, which adds more reverse edges over time.
 
 ## Known problems
 
-The crate root takes part in cycles. A crate root that re-exports
-`parser::parse` while `parser` uses a type defined in the crate root forms a
-cycle. Cycles between nested modules under one top-level module are not
+A cycle that passes through items defined in the crate root is not reported.
+Cycles between nested modules under one top-level module are not
 reported, so moving two cyclic modules under one parent silences the lint.
 References inside macro invocations and dependencies created at run time, such
 as trait objects or callbacks, are not counted.

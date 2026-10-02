@@ -1,0 +1,11 @@
+warning: function or method documentation has no doctest example
+  --> $DIR/tests.rs:13:5
+   |
+LL |     fn helper() {}
+   |     ^^^^^^^^^^^^^^
+   |
+   = help: add `# Examples` with a non-empty Rust code block to this item's docs
+   = note: `#[warn(missing_doctest_examples)]` on by default
+
+warning: 1 warning emitted
+

@@ -11,8 +11,13 @@ extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_span;
 
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
+
 use rumdl_lib::{
-    config::Config,
+    config::{Config, SourcedConfig},
     doc_comment_lint::{
         DocCommentBlock, SKIPPED_RULES, check_doc_comment_blocks, extract_doc_comment_blocks,
     },
@@ -27,71 +32,134 @@ use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_span::{
     Span, Symbol,
     def_id::{CRATE_DEF_ID, LocalDefId},
+    source_map::SourceMap,
     sym,
 };
 
-dylint_support::documented_late_lint! {
+dylint_support::documented_late_lint_with_pass! {
     #[doc = include_str!("../README.md")]
     pub RUMDL_DOC_COMMENTS,
     Warn,
     "Rust doc comments should satisfy rumdl Markdown rules",
-    RumdlDocComments
+    RumdlDocComments,
+    RumdlDocComments::default()
+}
+
+/// Stateful pass that caches the rumdl settings for each source directory.
+#[derive(Default)]
+struct RumdlDocComments {
+    /// Settings keyed by the directory of a documented source file, or `None` for
+    /// generated sources without a local path.
+    settings: HashMap<Option<PathBuf>, RumdlSettings>,
+}
+
+/// One loaded rumdl configuration and the doc-comment rules it enables.
+struct RumdlSettings {
+    /// Project configuration, or rumdl's defaults when the project has none.
+    config: Config,
+    /// Enabled rules that apply to Rust doc comments.
+    rules: Vec<Box<dyn Rule>>,
 }
 
 impl<'tcx> LateLintPass<'tcx> for RumdlDocComments {
-    /// Check crate for this lint.
+    /// Check the crate-level docs.
     fn check_crate(&mut self, cx: &LateContext<'tcx>) {
-        check_def_docs(cx, CRATE_DEF_ID, cx.tcx.def_span(CRATE_DEF_ID));
+        self.check_def_docs(cx, CRATE_DEF_ID, cx.tcx.def_span(CRATE_DEF_ID));
     }
 
-    /// Check item for this lint.
+    /// Check the docs of one item.
     fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
-        check_def_docs(cx, item.owner_id.def_id, item.span);
+        self.check_def_docs(cx, item.owner_id.def_id, item.span);
     }
 
-    /// Check trait item for this lint.
+    /// Check the docs of one trait item.
     fn check_trait_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx TraitItem<'tcx>) {
-        check_def_docs(cx, item.owner_id.def_id, item.span);
+        self.check_def_docs(cx, item.owner_id.def_id, item.span);
     }
 
-    /// Check impl item for this lint.
+    /// Check the docs of one impl item.
     fn check_impl_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx ImplItem<'tcx>) {
-        check_def_docs(cx, item.owner_id.def_id, item.span);
+        self.check_def_docs(cx, item.owner_id.def_id, item.span);
     }
 
-    /// Check foreign item for this lint.
+    /// Check the docs of one foreign item.
     fn check_foreign_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx ForeignItem<'tcx>) {
-        check_def_docs(cx, item.owner_id.def_id, item.span);
+        self.check_def_docs(cx, item.owner_id.def_id, item.span);
     }
 
-    /// Check field def for this lint.
+    /// Check the docs of one field.
     fn check_field_def(&mut self, cx: &LateContext<'tcx>, field: &'tcx FieldDef<'tcx>) {
-        check_def_docs(cx, field.def_id, field.span);
+        self.check_def_docs(cx, field.def_id, field.span);
     }
 
-    /// Check variant for this lint.
+    /// Check the docs of one enum variant.
     fn check_variant(&mut self, cx: &LateContext<'tcx>, variant: &'tcx Variant<'tcx>) {
-        check_def_docs(cx, variant.def_id, variant.span);
+        self.check_def_docs(cx, variant.def_id, variant.span);
     }
 }
 
-/// Check def docs for this lint.
-fn check_def_docs(cx: &LateContext<'_>, def_id: LocalDefId, span: Span) {
-    // Recover exact source when possible so rumdl fixes can become suggestions.
-    let attrs = cx.tcx.hir_attrs(cx.tcx.local_def_id_to_hir_id(def_id));
-    let Some(source) = doc_comment_source(cx, attrs, span) else {
-        return;
-    };
+impl RumdlDocComments {
+    /// Check the docs of one definition with the settings for its source directory.
+    fn check_def_docs(&mut self, cx: &LateContext<'_>, def_id: LocalDefId, span: Span) {
+        // Recover exact source when possible so rumdl fixes can become suggestions.
+        let attrs = cx.tcx.hir_attrs(cx.tcx.local_def_id_to_hir_id(def_id));
+        let Some(source) = doc_comment_source(cx, attrs, span) else {
+            return;
+        };
 
-    let config = Config::default();
-    let rules = doc_comment_rules(&config);
-    let warnings = check_doc_comment_blocks(&source.text, &rules, &config);
+        // Load the project configuration once per directory, as `rumdl check` would see it.
+        let directory = cx
+            .sess()
+            .source_map()
+            .span_to_filename(span)
+            .into_local_path()
+            .and_then(|path| path.parent().and_then(|parent| parent.canonicalize().ok()));
+        let settings = self
+            .settings
+            .entry(directory)
+            .or_insert_with_key(|directory| RumdlSettings::load(directory.as_deref()));
+        check_doc_source(cx, &source, settings);
+    }
+}
+
+impl RumdlSettings {
+    /// Load the project configuration that applies to one directory.
+    fn load(directory: Option<&Path>) -> Self {
+        let config = directory.and_then(project_config).unwrap_or_default();
+        let rules = doc_comment_rules(&config);
+        Self { config, rules }
+    }
+}
+
+/// Load the nearest rumdl or markdownlint project configuration for one directory.
+///
+/// The search walks upward to the repository root, marked by `.git`, as rumdl's
+/// own discovery does. A user-level configuration is not read, so results do not
+/// depend on the machine. A configuration that fails to load falls back to
+/// rumdl's defaults.
+fn project_config(directory: &Path) -> Option<Config> {
+    let project_root = directory
+        .ancestors()
+        .find(|ancestor| ancestor.join(".git").exists())
+        .unwrap_or(directory);
+    let config_path = SourcedConfig::discover_config_for_dir(directory, project_root)?;
+    SourcedConfig::load_config_for_path(&config_path, project_root).ok()
+}
+
+/// Report the first rumdl warning in one doc-comment source block.
+fn check_doc_source(cx: &LateContext<'_>, source: &DocCommentSource, settings: &RumdlSettings) {
+    // Reuse the cached rules and configuration for this source directory.
+    let RumdlSettings { config, rules } = settings;
+    let rules = rules.as_slice();
+    // Ask rumdl for all warnings before selecting the first stable diagnostic.
+    let warnings = check_doc_comment_blocks(&source.text, rules, config);
 
     // Report one warning per docs block to avoid noisy duplicate diagnostics on the same comment.
     if let Some(warning) = warnings.first() {
+        // Offer a fix only when the rewritten block clears the emitted warning.
         let suggestion = source
             .is_exact
-            .then(|| suggested_doc_comment_source(&source.text, warning, &rules, &config))
+            .then(|| suggested_doc_comment_source(&source.text, warning, rules, config))
             .flatten()
             .filter(|suggested| suggested != &source.text);
 
@@ -151,11 +219,7 @@ fn exact_doc_comment_source(cx: &LateContext<'_>, attrs: &[Attribute]) -> Option
 
     // Only exact line-doc-comment source is safe to replace. Attribute and block forms still lint
     // through the normalized fallback because rumdl cannot restore those Rust syntaxes here.
-    if doc_spans.iter().any(|span| {
-        source_map.span_to_snippet(*span).map_or(true, |source| {
-            !matches!(source.trim_start().get(..3), Some("///" | "//!"))
-        })
-    }) {
+    if contains_non_line_doc_span(source_map, &doc_spans) {
         return None;
     }
 
@@ -169,6 +233,15 @@ fn exact_doc_comment_source(cx: &LateContext<'_>, attrs: &[Attribute]) -> Option
     }
 
     Some((span, source))
+}
+
+/// Return whether any documentation span is not a direct line-doc comment.
+fn contains_non_line_doc_span(source_map: &SourceMap, spans: &[Span]) -> bool {
+    spans.iter().any(|span| {
+        source_map.span_to_snippet(*span).map_or(true, |source| {
+            !matches!(source.trim_start().get(..3), Some("///" | "//!"))
+        })
+    })
 }
 
 /// Return the normalized doc comment source.
@@ -365,4 +438,49 @@ fn emit_span_lint_with_suggestion(
 #[test]
 fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{fs, process};
+
+    use super::RumdlSettings;
+
+    /// Return whether the loaded settings enable one rule.
+    fn has_rule(settings: &RumdlSettings, rule: &str) -> bool {
+        settings
+            .rules
+            .iter()
+            .any(|candidate| candidate.name() == rule)
+    }
+
+    /// A project `.rumdl.toml` above the source directory controls the enabled rules.
+    #[test]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "this synchronous test creates a temporary project for config discovery"
+    )]
+    fn project_config_disables_rules() {
+        // Build `<root>/.git`, `<root>/.rumdl.toml`, and a nested source directory.
+        let root = std::env::temp_dir().join(format!("rumdl-doc-comments-{}", process::id()));
+        let source = root.join("crate").join("src");
+        fs::create_dir_all(root.join(".git")).expect("create the repository marker");
+        fs::create_dir_all(&source).expect("create the source directory");
+        fs::write(
+            root.join(".rumdl.toml"),
+            "[global]\ndisable = [\"MD037\"]\n",
+        )
+        .expect("write the project configuration");
+
+        let configured = RumdlSettings::load(Some(&source));
+        let unconfigured = RumdlSettings::load(Some(&root.join("crate")));
+        // Remove the temporary project before checking default discovery.
+        fs::remove_dir_all(&root).expect("remove the temporary project");
+        let defaults = RumdlSettings::load(None);
+
+        // The project file disables MD037 in every directory below it.
+        assert!(!has_rule(&configured, "MD037"));
+        assert!(!has_rule(&unconfigured, "MD037"));
+        assert!(has_rule(&defaults, "MD037"));
+    }
 }

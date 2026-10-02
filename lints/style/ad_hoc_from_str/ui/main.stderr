@@ -7,7 +7,7 @@ LL | |     Ok(UserId)
 LL | | }
    | |_^
    |
-   = help: implement `std::str::FromStr` when the parser has one canonical meaning
+   = help: implement `std::str::FromStr for UserId` when the parser has one canonical meaning
    = note: `#[warn(ad_hoc_from_str)]` on by default
 
 warning: function `parse_project_id` looks like a string parser
@@ -19,7 +19,7 @@ LL | |     Ok(ProjectId)
 LL | | }
    | |_^
    |
-   = help: implement `std::str::FromStr` when the parser has one canonical meaning
+   = help: implement `std::str::FromStr for ProjectId` when the parser has one canonical meaning
 
 warning: function `from_str_token` looks like a string parser
   --> $DIR/main.rs:24:1
@@ -30,10 +30,10 @@ LL | |     Ok(Token)
 LL | | }
    | |_^
    |
-   = help: implement `std::str::FromStr` when the parser has one canonical meaning
+   = help: implement `std::str::FromStr for Token` when the parser has one canonical meaning
 
 warning: function `parse_token` looks like a string parser
-  --> $DIR/main.rs:39:5
+  --> $DIR/main.rs:68:5
    |
 LL | /     fn parse_token(raw: RawText<'_>) -> ParseResult<Self> {
 LL | |         let _ = raw;
@@ -41,7 +41,7 @@ LL | |         Ok(Token)
 LL | |     }
    | |_____^
    |
-   = help: implement `std::str::FromStr` when the parser has one canonical meaning
+   = help: implement `std::str::FromStr for Token` when the parser has one canonical meaning
 
 warning: 4 warnings emitted
 

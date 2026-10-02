@@ -13,18 +13,25 @@
 //! The diagnostic keeps parsing and serialization at the boundary while asking
 //! callers to retain a validated type for internal operations and invariants.
 
+extern crate rustc_ast;
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_middle;
 extern crate rustc_span;
 
+use rustc_ast::LitKind;
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Body, Expr, ExprKind, FieldDef, FnDecl, FnRetTy, Param, PatKind, intravisit::FnKind,
+    Arm, Body, Expr, ExprKind, FieldDef, FnDecl, FnRetTy, LangItem, Param, Pat, PatExprKind,
+    PatKind, TraitFn, TraitItem, TraitItemKind, intravisit::FnKind,
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::{Span, def_id::LocalDefId, sym};
+use rustc_span::{
+    Span,
+    def_id::{DefId, LocalDefId},
+    sym,
+};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -59,8 +66,11 @@ impl<'tcx> LateLintPass<'tcx> for SemanticPrimitiveType {
         _span: Span,
         local_def_id: LocalDefId,
     ) {
-        // Ignore closures because their inferred boundary is not a named API.
-        if matches!(kind, FnKind::Closure) {
+        // Closures have no named boundary, and trait impls inherit their signature from the trait.
+        let (FnKind::ItemFn(ident, ..) | FnKind::Method(ident, ..)) = kind else {
+            return;
+        };
+        if implements_trait_item(cx, local_def_id.to_def_id()) {
             return;
         }
 
@@ -78,56 +88,131 @@ impl<'tcx> LateLintPass<'tcx> for SemanticPrimitiveType {
             );
         }
 
-        // Check an explicit return type against the enclosing function name.
-        let FnRetTy::Return(output) = decl.output else {
+        check_return(cx, decl, local_def_id, ident.name.as_str());
+    }
+
+    /// Check the parameters and return value of a required trait method.
+    fn check_trait_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx TraitItem<'tcx>) {
+        let TraitItemKind::Fn(sig, TraitFn::Required(arg_names)) = item.kind else {
             return;
         };
-        let Some(name) = function_name(kind) else {
-            return;
-        };
-        let output_ty = cx
+        let local_def_id = item.owner_id.def_id;
+
+        // Required methods have no body type table, so read the resolved signature instead.
+        // Pair source names with resolved types before checking the return value.
+        let sig_inputs = cx
             .tcx
             .fn_sig(local_def_id)
             .instantiate_identity()
-            .skip_norm_wip()
-            .output()
-            .skip_binder();
-        check_named_type(cx, "return value", &name, output.span, output_ty);
+            .skip_binder()
+            .inputs();
+        // Check named parameters before the return value so diagnostics follow source order.
+        sig.decl
+            .inputs
+            .iter()
+            .zip(arg_names)
+            .zip(sig_inputs)
+            .filter_map(|((source_ty, maybe_ident), param_ty)| {
+                maybe_ident.map(|ident| (ident, source_ty.span, *param_ty))
+            })
+            .for_each(|(ident, span, param_ty)| {
+                check_named_type(cx, "parameter", ident.name.as_str(), span, param_ty);
+            });
+        check_return(cx, sig.decl, local_def_id, item.ident.name.as_str());
     }
 
     /// Check semantic string matches that encode a closed vocabulary.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        // Restrict source analysis to matches over resolved string values.
-        let ExprKind::Match(scrutinee, _, _) = expr.kind else {
+        // Restrict analysis to source-written matches over resolved string values.
+        let ExprKind::Match(scrutinee, arms, _) = expr.kind else {
             return;
         };
-        if !is_string(
-            cx,
-            peel_wrappers(cx, cx.typeck_results().expr_ty(scrutinee)),
-        ) {
+        if expr.span.from_expansion()
+            || !is_string(
+                cx,
+                peel_wrappers(cx, cx.typeck_results().expr_ty(scrutinee)),
+            )
+        {
             return;
         }
 
-        // Count literal arms and require an explicit catch-all fallback.
-        let Ok(source) = cx.sess().source_map().span_to_snippet(expr.span) else {
-            return;
-        };
-        let literal_arms = source
-            .lines()
-            .filter(|line| line.trim_start().starts_with('"') && line.contains("=>"))
+        // Count string-literal arms and require an unguarded catch-all fallback.
+        let literal_arms = arms
+            .iter()
+            .filter(|arm| arm.guard.is_none() && is_string_literal_pattern(arm.pat))
             .count();
-        let has_catch_all = source
-            .lines()
-            .any(|line| line.trim_start().starts_with("_ =>"));
-        if literal_arms >= 3 && has_catch_all {
-            emit_lint(
-                cx,
-                expr.span,
-                "string match encodes a closed vocabulary with primitive strings",
-                "parse the input into a closed enum and match on its variants",
-            );
+        if literal_arms < 3 || !arms.iter().any(is_catch_all_arm) {
+            return;
         }
+
+        // Parsing strings inside `FromStr` or `TryFrom` is the boundary this lint recommends.
+        if in_parsing_impl(cx, expr) {
+            return;
+        }
+        emit_lint(
+            cx,
+            expr.span,
+            "string match encodes a closed vocabulary with primitive strings",
+            "parse the input into a closed enum and match on its variants",
+        );
     }
+}
+
+/// Return whether a pattern matches only string literals, including `"a" | "b"`.
+fn is_string_literal_pattern(pat: &Pat<'_>) -> bool {
+    match pat.kind {
+        PatKind::Expr(pat_expr) => matches!(
+            pat_expr.kind,
+            PatExprKind::Lit { lit, .. } if matches!(lit.node, LitKind::Str(..))
+        ),
+        PatKind::Or(alternatives) => alternatives.iter().all(is_string_literal_pattern),
+        _ => false,
+    }
+}
+
+/// Return whether an arm accepts every remaining value with `_` or a plain binding.
+const fn is_catch_all_arm(arm: &Arm<'_>) -> bool {
+    arm.guard.is_none() && matches!(arm.pat.kind, PatKind::Wild | PatKind::Binding(.., None))
+}
+
+/// Return whether an expression is inside `FromStr::from_str` or `TryFrom::try_from`.
+fn in_parsing_impl(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    // Closures inside the parser share its typeck root, so resolve the outermost body owner.
+    let owner = cx.tcx.hir_enclosing_body_owner(expr.hir_id);
+    let root = cx.tcx.typeck_root_def_id(owner.to_def_id());
+    let Some(trait_item) = cx.tcx.trait_item_of(root) else {
+        return false;
+    };
+    // `FromStr` has no diagnostic item, but its `from_str` method does.
+    cx.tcx
+        .get_diagnostic_name(trait_item)
+        .is_some_and(|name| name.as_str() == "from_str_method")
+        || cx
+            .tcx
+            .trait_of_assoc(trait_item)
+            .is_some_and(|trait_def_id| cx.tcx.is_diagnostic_item(sym::TryFrom, trait_def_id))
+}
+
+/// Return whether a function implements an item of a trait impl.
+fn implements_trait_item(cx: &LateContext<'_>, def_id: DefId) -> bool {
+    cx.tcx
+        .impl_of_assoc(def_id)
+        .is_some_and(|impl_def_id| cx.tcx.impl_opt_trait_id(impl_def_id).is_some())
+}
+
+/// Check an explicit return type against the function name.
+fn check_return(cx: &LateContext<'_>, decl: &FnDecl<'_>, local_def_id: LocalDefId, name: &str) {
+    let FnRetTy::Return(output) = decl.output else {
+        return;
+    };
+    let output_ty = cx
+        .tcx
+        .fn_sig(local_def_id)
+        .instantiate_identity()
+        .skip_norm_wip()
+        .output()
+        .skip_binder();
+    check_named_type(cx, "return value", name, output.span, output_ty);
 }
 
 /// Check one named semantic boundary.
@@ -166,13 +251,17 @@ fn check_named_type<'tcx>(
 /// Peel transparent containers before classifying the stored domain value.
 fn peel_wrappers<'tcx>(cx: &LateContext<'tcx>, mut ty: Ty<'tcx>) -> Ty<'tcx> {
     loop {
+        // Remove transparent wrappers until the stored semantic primitive is visible.
         ty = match ty.kind() {
             ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => *inner,
             ty::Adt(adt, args)
                 if cx.tcx.is_diagnostic_item(sym::Option, adt.did())
-                    || cx.tcx.item_name(adt.did()).as_str() == "Vec" =>
+                    || cx.tcx.is_diagnostic_item(sym::Vec, adt.did()) =>
             {
-                args.type_at(0)
+                let Some(inner) = args.types().next() else {
+                    return ty;
+                };
+                inner
             }
             _ => return ty,
         };
@@ -187,7 +276,7 @@ fn is_integer(ty: Ty<'_>) -> bool {
 /// Return whether the primitive is `str` or `String`.
 fn is_string(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Str)
-        || matches!(ty.kind(), ty::Adt(adt, _) if cx.tcx.item_name(adt.did()) == sym::String)
+        || matches!(ty.kind(), ty::Adt(adt, _) if cx.tcx.is_lang_item(adt.did(), LangItem::String))
 }
 
 /// Render the semantic primitive for the diagnostic.
@@ -220,14 +309,6 @@ fn binding_name(param: &Param<'_>) -> Option<String> {
         return None;
     };
     Some(ident.name.to_ident_string())
-}
-
-/// Return a free-function or method name.
-fn function_name(kind: FnKind<'_>) -> Option<String> {
-    match kind {
-        FnKind::ItemFn(ident, ..) | FnKind::Method(ident, ..) => Some(ident.name.to_ident_string()),
-        FnKind::Closure => None,
-    }
 }
 
 /// Emit one semantic primitive diagnostic.

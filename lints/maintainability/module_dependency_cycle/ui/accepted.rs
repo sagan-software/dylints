@@ -45,4 +45,32 @@ fn external_crates_are_excluded() {
     std::mem::drop(String::new());
 }
 
+struct RootContract;
+
+mod root_consumer {
+    pub struct Worker;
+
+    impl Worker {
+        pub fn work(&self, _contract: &crate::RootContract) {}
+    }
+}
+
+mod method_caller {
+    macro_rules! generated_method_call {
+        ($worker:expr) => {
+            $worker.work(&crate::RootContract)
+        };
+    }
+
+    pub fn run(worker: &crate::root_consumer::Worker) {
+        worker.work(&crate::RootContract);
+        generated_method_call!(worker);
+        let _length = String::new().len();
+    }
+}
+
+fn root_calls_children() {
+    method_caller::run(&root_consumer::Worker);
+}
+
 fn main() {}

@@ -47,5 +47,37 @@ LL |     let password = "raw password".to_owned();
    |
    = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
 
-warning: 6 warnings emitted
+warning: secret-bearing parameter `password` uses raw `String`
+  --> $DIR/edge_cases.rs:24:21
+   |
+LL |     fn login(&self, password: SecretAlias, _: (u8, u8));
+   |                     ^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing parameter `api_key` uses raw `&[u8]`
+  --> $DIR/edge_cases.rs:25:22
+   |
+LL |     fn rotate(&self, api_key: &[u8]) {}
+   |                      ^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing field `secret` uses raw `[u8]`
+  --> $DIR/edge_cases.rs:36:5
+   |
+LL |     secret: [u8],
+   |     ^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: secret-bearing field `secret_bytes` uses raw `Box<[u8]>`
+  --> $DIR/edge_cases.rs:42:5
+   |
+LL |     secret_bytes: Box<[u8]>,
+   |     ^^^^^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: 10 warnings emitted
 

@@ -83,3 +83,9 @@ fn register_restriction_source_lints(
     unnecessary_public_type::register_lints(sess, lint_store);
     url_string_field::register_lints(sess, lint_store);
 }
+
+/// Run every restriction lint together on one fixture to check group registration.
+#[test]
+fn ui() {
+    dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");
+}

@@ -57,6 +57,9 @@ url_string_field = { path = "url_string_field", features = ["rlib"] }
 
 dylint_linting.workspace = true
 
+[dev-dependencies]
+dylint_testing.workspace = true
+
 [features]
 rlib = ["dylint_linting/constituent"]
 

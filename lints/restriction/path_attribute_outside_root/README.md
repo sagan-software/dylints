@@ -3,7 +3,8 @@
 ## What it does
 
 Checks for `#[path = "..."]` attributes, including those produced by
-`cfg_attr`, in any file not named `main.rs`, `lib.rs`, or `build.rs`.
+`cfg_attr`, in any file other than the crate root file that rustc compiles,
+such as `src/lib.rs`, `src/main.rs`, `build.rs`, or `src/bin/tool.rs`.
 
 ## Why is this bad?
 
@@ -13,10 +14,10 @@ find the module. Outside a crate root, the override is hard to spot.
 
 ## Known problems
 
-The lint checks only the file name. It allows a nested file named `main.rs` or
-`lib.rs` that is not a crate root. It warns in crate roots with other names,
-such as `src/bin/tool.rs`, `examples/demo.rs`, and `tests/api.rs`. It skips
-files that the compiler cannot map to a local path.
+The lint compares the attribute's file with the crate root file. It allows every
+crate root, including `examples/demo.rs` and `tests/api.rs`, and it warns in a
+nested module file even when that file is named `lib.rs` or `main.rs`. It skips
+files that the compiler cannot map to a real path.
 
 ## Example
 

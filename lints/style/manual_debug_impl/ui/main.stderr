@@ -1,5 +1,5 @@
 warning: manual `Debug` implementation looks derivable
-  --> $DIR/main.rs:8:1
+  --> $DIR/main.rs:12:1
    |
 LL | / impl Debug for User {
 LL | |     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
@@ -9,11 +9,15 @@ LL | |             .field("id", &self.id)
 LL | | }
    | |_^
    |
-   = help: use `#[derive(Debug)]` unless the implementation intentionally redacts or customizes output
    = note: `#[warn(manual_debug_impl)]` on by default
+help: derive `Debug` instead; it prints the same output
+   |
+LL + #[derive(Debug)]
+LL | struct User {
+   |
 
 warning: manual `Debug` implementation looks derivable
-  --> $DIR/main.rs:19:1
+  --> $DIR/main.rs:23:1
    |
 LL | / impl std::fmt::Debug for Point {
 LL | |     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -23,7 +27,39 @@ LL | |             .field(&self.0)
 LL | | }
    | |_^
    |
-   = help: use `#[derive(Debug)]` unless the implementation intentionally redacts or customizes output
+help: derive `Debug` instead; it prints the same output
+   |
+LL + #[derive(Debug)]
+LL | struct Point(i32, i32);
+   |
 
-warning: 2 warnings emitted
+warning: manual `Debug` implementation looks derivable
+  --> $DIR/main.rs:62:1
+   |
+LL | / impl Debug for Empty {
+LL | |     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+LL | |         f.debug_struct("Empty").finish()
+LL | |     }
+LL | | }
+   | |_^
+   |
+help: derive `Debug` instead; it prints the same output
+   |
+LL + #[derive(Debug)]
+LL | struct Empty {}
+   |
+
+warning: manual `Debug` implementation looks derivable
+  --> $DIR/main.rs:110:1
+   |
+LL | / impl Debug for Documented {
+LL | |     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+LL | |         f.debug_struct("Documented").field("value", &self.value).finish()
+LL | |     }
+LL | | }
+   | |_^
+   |
+   = help: derive `Debug` instead; it prints the same output
+
+warning: 4 warnings emitted
 

@@ -20,8 +20,12 @@ aliases and `use` renames. It does not flag `Option<String>`, `Vec<String>`,
 `Box<str>`, or `Cow<'_, str>`.
 
 It warns on any field that contains one of the words, including display text
-such as `display_path_label` or `file_label`. It does not flag other path names,
-such as `location` or `cachedir`.
+such as `display_path_label` or `file_label`. It skips a field whose name also
+contains a word for a non-filesystem path: `api`, `crate`, `def`, `endpoint`,
+`http`, `import`, `item`, `json`, `key`, `mod`, `module`, `public`, `query`,
+`route`, `symbol`, `type`, `uri`, `url`, `web`, or `xpath`. So `module_path`
+and `url_path` do not warn, and neither does a `public_file` that is a real
+file. It does not flag other path names, such as `location` or `cachedir`.
 
 ## Example
 

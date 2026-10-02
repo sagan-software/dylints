@@ -1,11 +1,95 @@
 warning: struct update syntax hides fields behind `Default::default()`
-  --> $DIR/main.rs:12:11
+  --> $DIR/main.rs:54:11
+   |
+LL |         ..Default::default()
+   |           ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(struct_update_default)]` on by default
+help: set the remaining fields explicitly
+   |
+LL ~         retries: Default::default(),
+LL +         name: Default::default()
+   |
+
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:58:11
+   |
+LL |         ..Request::default()
+   |           ^^^^^^^^^^^^^^^^^^
+   |
+help: set the remaining fields explicitly
+   |
+LL ~         timeout: Default::default(),
+LL +         name: Default::default()
+   |
+
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:64:11
+   |
+LL |         ..Default::default()
+   |         --^^^^^^^^^^^^^^^^^^
+   |         |
+   |         help: set the remaining fields explicitly
+
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:66:45
+   |
+LL |     let _one_line = Request { timeout: 1, ..Default::default() };
+   |                                           --^^^^^^^^^^^^^^^^^^
+   |                                           |
+   |                                           help: set the remaining fields explicitly: `retries: Default::default(), name: Default::default()`
+
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:67:33
+   |
+LL |     let _tuple = Pair { 0: 1, ..Default::default() };
+   |                               --^^^^^^^^^^^^^^^^^^
+   |                               |
+   |                               help: set the remaining fields explicitly: `1: Default::default()`
+
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:70:11
+   |
+LL |         ..Default::default()
+   |         --^^^^^^^^^^^^^^^^^^
+   |         |
+   |         help: set the remaining fields explicitly: `value: Default::default()`
+
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:76:11
    |
 LL |         ..Default::default()
    |           ^^^^^^^^^^^^^^^^^^
    |
    = help: set every field explicitly at the construction boundary
-   = note: `#[warn(struct_update_default)]` on by default
 
-warning: 1 warning emitted
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:80:11
+   |
+LL |         ..Default::default()
+   |           ^^^^^^^^^^^^^^^^^^
+   |
+   = help: set every field explicitly at the construction boundary
+
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:85:9
+   |
+LL |         Default::default()
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = help: set every field explicitly at the construction boundary
+
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:46:15
+   |
+LL |             ..Default::default()
+   |               ^^^^^^^^^^^^^^^^^^
+...
+LL |     let _macro = request!(5);
+   |                  ----------- in this macro invocation
+   |
+   = help: set every field explicitly at the construction boundary
+   = note: this warning originates in the macro `request` (in Nightly b$DIRlds, run with -Z macro-backtrace for more info)
+
+warning: 10 warnings emitted
 

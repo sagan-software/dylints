@@ -67,5 +67,58 @@ LL |     fn describe(&self) -> String;
    |
    = help: describe purpose, caller expectations, return meaning, side effects, and errors or panics when applicable; add concrete information instead of filler
 
-warning: 8 warnings emitted
+warning: public item documentation has 2 prose words; minimum is 20
+  --> $DIR/main.rs:104:1
+   |
+LL | pub const LIMIT: u32 = 1;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe the API role, invariants, valid states, and how callers construct or use it; add concrete information instead of filler
+
+warning: public item documentation has 2 prose words; minimum is 20
+  --> $DIR/main.rs:107:1
+   |
+LL | / pub trait Measure {
+LL | |     /// Short associated constant.
+LL | |     const UNIT: u32;
+...  |
+LL | |     type Output;
+LL | | }
+   | |_^
+   |
+   = help: describe the API role, invariants, valid states, and how callers construct or use it; add concrete information instead of filler
+
+warning: trait item documentation has 3 prose words; minimum is 20
+  --> $DIR/main.rs:109:5
+   |
+LL |     const UNIT: u32;
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = help: describe the semantic meaning, units or constraints, and when this value occurs; add concrete information instead of filler
+
+warning: trait item documentation has 3 prose words; minimum is 20
+  --> $DIR/main.rs:112:5
+   |
+LL |     type Output;
+   |     ^^^^^^^^^^^^
+   |
+   = help: describe the semantic meaning, units or constraints, and when this value occurs; add concrete information instead of filler
+
+warning: associated item documentation has 3 prose words; minimum is 20
+  --> $DIR/main.rs:117:5
+   |
+LL |     pub const ZERO: u32 = 0;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe the semantic meaning, units or constraints, and when this value occurs; add concrete information instead of filler
+
+warning: public item documentation has 3 prose words; minimum is 20
+  --> $DIR/main.rs:122:5
+   |
+LL |     pub fn foreign_value() -> u32;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe the API role, invariants, valid states, and how callers construct or use it; add concrete information instead of filler
+
+warning: 14 warnings emitted
 

@@ -41,3 +41,16 @@ fn writes_snapshot() -> std::io::Result<()> {
 
     Ok(())
 }
+
+struct UserId(u64);
+
+impl std::fmt::Display for UserId {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "user-{}", self.0)
+    }
+}
+
+fn prints_report(user_id: u64) {
+    println!("user {user_id}");
+    eprintln!("user {}", user_id);
+}

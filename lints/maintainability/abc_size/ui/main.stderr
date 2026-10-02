@@ -41,5 +41,15 @@ LL | | }
    |
    = help: split repeated state changes, calls, or conditions into a focused operation
 
-warning: 3 warnings emitted
+warning: function has ABC size <0, 26, 0> with magnitude 26.00, which exceeds 25.00
+  --> $DIR/main.rs:94:1
+   |
+LL | / fn calls_in_macro_arguments() {
+LL | |     println!("{:?}", [call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call...
+LL | | }
+   | |_^
+   |
+   = help: split repeated state changes, calls, or conditions into a focused operation
+
+warning: 4 warnings emitted
 

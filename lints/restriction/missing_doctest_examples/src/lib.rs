@@ -15,6 +15,7 @@ use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Parser, Tag, TagEnd};
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
     Attribute, ImplItem, ImplItemImplKind, ImplItemKind, Item, ItemKind, TraitItem, TraitItemKind,
+    attrs::AttributeKind,
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_span::{Span, Symbol, def_id::LocalDefId, sym};
@@ -105,12 +106,60 @@ fn check_definition(cx: &LateContext<'_>, scope: Scope, local_def_id: LocalDefId
         return;
     }
 
+    // Rustdoc omits hidden items, and nobody calls `main` or a test function from a doctest.
+    if is_doc_hidden(cx, local_def_id) {
+        return;
+    }
+    if is_entry_function(cx, local_def_id) {
+        return;
+    }
+    if is_test_function(cx, local_def_id) {
+        return;
+    }
+
     // Parse normalized attributes so all supported doc-comment forms behave alike.
     let hir_id = cx.tcx.local_def_id_to_hir_id(local_def_id);
     let docs = normalized_docs(cx.tcx.hir_attrs(hir_id));
     if !has_doctest_example(&docs) {
         emit_missing_example(cx, span);
     }
+}
+
+/// Return whether a definition or one of its ancestors is `#[doc(hidden)]`.
+fn is_doc_hidden(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+    // Rustdoc omits hidden items and everything inside them, including a hidden crate root.
+    let mut current = Some(local_def_id.to_def_id());
+    while let Some(ancestor) = current {
+        // Check every ancestor because a hidden module hides all descendants.
+        if cx.tcx.is_doc_hidden(ancestor) {
+            return true;
+        }
+        current = cx.tcx.opt_parent(ancestor);
+    }
+    false
+}
+
+/// Return whether a definition is the crate entry function.
+fn is_entry_function(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+    cx.tcx
+        .entry_fn(())
+        .is_some_and(|(entry, _)| entry == local_def_id.to_def_id())
+}
+
+/// Return whether a function is a `#[test]` function in a `--test` build.
+fn is_test_function(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+    // The test harness replaces `#[test]` with a same-named marker constant in the same module.
+    let name = cx.tcx.item_name(local_def_id.to_def_id());
+    let module = cx.tcx.parent_module_from_def_id(local_def_id);
+    cx.tcx.hir_module_free_items(module).any(|item_id| {
+        let item = cx.tcx.hir_item(item_id);
+        matches!(item.kind, ItemKind::Const(ident, ..) if ident.name == name)
+            && cx
+                .tcx
+                .hir_attrs(item.hir_id())
+                .iter()
+                .any(|attr| matches!(attr, Attribute::Parsed(AttributeKind::RustcTestMarker(_))))
+    })
 }
 
 /// Join rustc's normalized doc attributes into Markdown source.

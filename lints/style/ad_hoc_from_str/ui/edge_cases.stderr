@@ -7,7 +7,7 @@ LL | |     Ok(Token)
 LL | | }
    | |_^
    |
-   = help: implement `std::str::FromStr` when the parser has one canonical meaning
+   = help: implement `std::str::FromStr for Token` when the parser has one canonical meaning
    = note: `#[warn(ad_hoc_from_str)]` on by default
 
 warning: 1 warning emitted

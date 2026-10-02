@@ -2,11 +2,13 @@
 
 ## What it does
 
-Checks functions and associated functions named `make_*`, `build_*`,
-`convert_*`, `map_*`, `try_*`, or `validate_*` that take one argument, have no
-`self` receiver, and return `Result<T, E>`. The argument or `T` must be defined
-in the current crate, so that a `TryFrom` implementation is allowed. The
-`try_from` method of a `TryFrom` implementation is skipped.
+Checks free functions and inherent associated functions named `make_*`,
+`build_*`, `convert_*`, `map_*`, `try_*`, or `validate_*` that take one
+argument, have no `self` receiver, and return `Result<T, E>`. The argument or
+`T` must be defined in the current crate, so that a `TryFrom` implementation is
+allowed. The lint skips a `T` that is `()`, `!`, or the argument type itself,
+an argument that is a bare type parameter, and conversions for which a
+`TryFrom` implementation already applies, including through `From`.
 
 ## Why is this bad?
 
@@ -18,9 +20,7 @@ using the standard trait.
 
 The lint does not read the function body. The `try_*` and `map_*` prefixes
 also match operations that are not conversions, such as
-`fn try_connect(address: Address) -> Result<Connection, Error>`. The lint also
-warns on associated functions in trait implementations whose names the trait
-fixes.
+`fn try_connect(address: Address) -> Result<Connection, Error>`.
 
 ## Example
 

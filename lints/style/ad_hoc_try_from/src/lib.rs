@@ -7,27 +7,26 @@
 
 //! A lint to check for ad hoc fallible conversion functions.
 //!
-//! It inspects source structure and resolved rustc information to identify the
-//! pattern described by the lint documentation. The implementation keeps
-//! generated code and unsupported syntax conservative, then reports a focused
-//! diagnostic so callers can choose the documented replacement with confidence.
+//! It checks free functions and inherent associated functions whose name and
+//! resolved one-argument signature describe a conversion that a `TryFrom`
+//! implementation could express. Resolved types decide whether that
+//! implementation is legal and new: one side must be local, the target must be
+//! a real value, and no `TryFrom` implementation may already apply.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_infer;
 extern crate rustc_middle;
 extern crate rustc_span;
+extern crate rustc_trait_selection;
 
 use rustc_errors::DiagDecorator;
-use rustc_hir::{
-    Body, FnDecl, ImplItem, ImplItemImplKind, ImplItemKind, ImplicitSelfKind, intravisit::FnKind,
-};
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
+use rustc_hir::{Body, FnDecl, ImplItem, ImplItemImplKind, ImplItemKind, intravisit::FnKind};
+use rustc_infer::infer::TyCtxtInferExt;
+use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::{
-    Span,
-    def_id::{DefId, LocalDefId},
-    sym,
-};
+use rustc_span::{Span, Symbol, def_id::LocalDefId, sym};
+use rustc_trait_selection::infer::InferCtxtExt;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -38,171 +37,137 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for AdHocTryFrom {
-    /// Check fn for this lint.
+    /// Check one free function.
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
         kind: FnKind<'tcx>,
-        decl: &'tcx FnDecl<'tcx>,
+        _decl: &'tcx FnDecl<'tcx>,
         _body: &'tcx Body<'tcx>,
         span: Span,
         local_def_id: LocalDefId,
     ) {
-        let FnKind::ItemFn(ident, ..) = kind else {
-            return;
-        };
-
-        let name = ident.name.to_ident_string();
-        check_candidate(cx, &name, decl, local_def_id, span);
+        if let FnKind::ItemFn(ident, ..) = kind {
+            check_candidate(cx, ident.name, local_def_id, span);
+        }
     }
 
-    /// Check impl item for this lint.
+    /// Check one inherent associated function; trait items have names fixed by their trait.
     fn check_impl_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx ImplItem<'tcx>) {
-        // Restrict the analysis to functions declared inside an implementation.
-        let ImplItemKind::Fn(sig, _) = item.kind else {
-            return;
-        };
-        let name = item.ident.name.to_ident_string();
-
-        // Leave canonical `TryFrom::try_from` implementations to the trait contract.
-        if name == "try_from" && standard_try_from_impl(cx, item) {
-            return;
+        // `TryFrom::try_from` is an associated conversion, so receiver methods stay out of scope.
+        let def_id = item.owner_id.def_id;
+        if matches!(item.kind, ImplItemKind::Fn(..))
+            && matches!(item.impl_kind, ImplItemImplKind::Inherent { .. })
+            && !cx.tcx.associated_item(def_id).is_method()
+        {
+            check_candidate(cx, item.ident.name, def_id, item.span);
         }
-
-        check_candidate(cx, &name, sig.decl, item.owner_id.def_id, item.span);
     }
 }
 
-/// Check candidate for this lint.
-fn check_candidate(
-    cx: &LateContext<'_>,
-    name: &str,
-    decl: &FnDecl<'_>,
-    local_def_id: LocalDefId,
-    span: Span,
-) {
-    // Resolve the signature so aliases do not affect conversion shape checks.
-    let fn_sig = cx
-        .tcx
-        .fn_sig(local_def_id)
-        .instantiate_identity()
-        .skip_norm_wip();
-    let inputs = fn_sig.inputs().skip_binder();
-    let [input] = inputs else {
+/// Report one function whose name and signature fit a new `TryFrom` implementation.
+fn check_candidate(cx: &LateContext<'_>, name: Symbol, local_def_id: LocalDefId, span: Span) {
+    // Resolve the named signature before applying conversion coherence rules.
+    let Some((input, target)) = conversion_signature(cx, name, local_def_id) else {
         return;
     };
 
-    // Combine API vocabulary, return shape, and orphan-rule legality.
-    if !single_conversion_input(decl)
-        || !conversion_name(name)
-        || !result_return(cx, fn_sig.output().skip_binder())
-        || !is_legal_try_from_shape(cx, *input, fn_sig.output().skip_binder())
-    {
+    // Keep only conversions with a local endpoint and no existing standard implementation.
+    if !is_valid_try_from_conversion(cx, input, target) {
         return;
     }
 
-    // Recommend the standard fallible conversion trait for the canonical shape.
-    emit_span_lint_with_help(
-        cx,
+    // Emit the conversion guidance after all semantic restrictions pass.
+    cx.emit_span_lint(
         AD_HOC_TRY_FROM,
         span,
-        format!("function `{name}` looks like a fallible conversion"),
-        "implement `TryFrom` when the conversion has one canonical meaning",
-    );
-}
-
-/// Helper for single conversion input analysis.
-fn single_conversion_input(decl: &FnDecl<'_>) -> bool {
-    // `TryFrom::try_from` is an associated conversion, so receiver methods stay out of scope even
-    // when they take one explicit argument and return a `Result`.
-    decl.implicit_self() == ImplicitSelfKind::None
-}
-
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: impl Into<String>,
-    help: &'static str,
-) {
-    let message = message.into();
-
-    // Use rustc's native diagnostic decorator to keep diagnostics consistent.
-    cx.emit_span_lint(
-        lint,
-        span,
-        DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ = diag.help(help);
+        DiagDecorator(move |diag| {
+            let _ = diag.primary_message(format!(
+                "function `{name}` looks like a fallible conversion"
+            ));
+            let _ = diag.help(format!(
+                "implement `TryFrom<{input}> for {target}` when the conversion has one canonical meaning"
+            ));
         }),
     );
 }
 
-/// Return whether this is the standard try from impl shape.
-fn standard_try_from_impl(cx: &LateContext<'_>, item: &ImplItem<'_>) -> bool {
-    if !matches!(item.impl_kind, ImplItemImplKind::Trait { .. }) {
-        return false;
+/// Return the input and target types of a fallible conversion signature.
+fn conversion_signature<'tcx>(
+    cx: &LateContext<'tcx>,
+    name: Symbol,
+    local_def_id: LocalDefId,
+) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    // Reject names outside the fallible-conversion vocabulary before resolving types.
+    if !conversion_name(name.as_str()) {
+        return None;
     }
-
-    // Query the parent impl so aliases and fully-qualified trait paths are
-    // resolved by rustc instead of guessed from source spelling.
-    let impl_def_id = cx.tcx.parent(item.owner_id.def_id.to_def_id());
-    let trait_def_id = cx.tcx.impl_trait_ref(impl_def_id).skip_binder().def_id;
-
-    try_from_trait(cx, trait_def_id)
+    // Erase late-bound lifetimes so the trait solver sees closed types.
+    let fn_sig = cx.tcx.instantiate_bound_regions_with_erased(
+        cx.tcx
+            .fn_sig(local_def_id)
+            .instantiate_identity()
+            .skip_norm_wip(),
+    );
+    let ([input], ty::Adt(result, args)) = (fn_sig.inputs(), fn_sig.output().kind()) else {
+        return None;
+    };
+    // Resolve only standard `Result` outputs with one target type.
+    if !cx.tcx.is_diagnostic_item(sym::Result, result.did()) {
+        return None;
+    }
+    Some((*input, args.types().next()?))
 }
 
-/// Helper for try from trait analysis.
-fn try_from_trait(cx: &LateContext<'_>, trait_def_id: DefId) -> bool {
-    let trait_path = cx.tcx.def_path_str(trait_def_id);
-
-    cx.tcx.is_diagnostic_item(sym::TryFrom, trait_def_id)
-        || matches!(
-            trait_path.as_str(),
-            "core::convert::TryFrom" | "std::convert::TryFrom"
-        )
+/// Return whether a fallible conversion satisfies shape, locality, and coherence rules.
+fn is_valid_try_from_conversion<'tcx>(
+    cx: &LateContext<'tcx>,
+    input: Ty<'tcx>,
+    target: Ty<'tcx>,
+) -> bool {
+    !matches!(input.kind(), ty::Param(_))
+        && !matches!(target.kind(), ty::Never)
+        && !matches!(target.kind(), ty::Tuple(fields) if fields.is_empty())
+        && input != target
+        && has_local_endpoint(input, target)
+        && !has_try_from_impl(cx, target, input)
 }
 
-/// Return the conversion name.
+/// Return whether either conversion endpoint is a local algebraic data type.
+fn has_local_endpoint(input: Ty<'_>, target: Ty<'_>) -> bool {
+    is_local_outer_adt(input) || is_local_outer_adt(target)
+}
+
+/// Return whether the name uses fallible-conversion vocabulary.
 fn conversion_name(name: &str) -> bool {
     ["make_", "build_", "convert_", "map_", "try_", "validate_"]
         .iter()
         .any(|prefix| name.starts_with(prefix))
 }
 
-/// Helper for result return analysis.
-fn result_return(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    let ty::Adt(adt, args) = ty.kind() else {
-        return false;
-    };
-
-    // Compare the resolved ADT against rustc's `Result` diagnostic item so local `Result`
-    // lookalikes and path aliases do not matter.
-    cx.tcx.is_diagnostic_item(sym::Result, adt.did()) && args.len() == 2
-}
-
-/// Return whether Rust's coherence rules permit the suggested `TryFrom` impl.
-fn is_legal_try_from_shape(cx: &LateContext<'_>, input: Ty<'_>, output: Ty<'_>) -> bool {
-    let ty::Adt(result, args) = output.kind() else {
-        return false;
-    };
-    if !cx.tcx.is_diagnostic_item(sym::Result, result.did()) {
-        return false;
-    }
-
-    // A foreign trait impl needs a local input or a local outer target type.
-    is_local_outer_adt(input) || is_local_outer_adt(args.type_at(0))
-}
-
 /// Return whether the outer semantic type is an ADT defined in this crate.
 fn is_local_outer_adt(mut ty: Ty<'_>) -> bool {
-    // Peel references because the orphan-rule decision belongs to the referenced type.
+    // Peel references because `&T` is fundamental for the orphan rule.
     while let ty::Ref(_, inner, _) = ty.kind() {
         ty = *inner;
     }
 
     matches!(ty.kind(), ty::Adt(adt, _) if adt.did().is_local())
+}
+
+/// Return whether `target: TryFrom<source>` may already hold in the item's environment.
+///
+/// This includes the standard blanket implementation for every `Into` conversion.
+fn has_try_from_impl<'tcx>(cx: &LateContext<'tcx>, target: Ty<'tcx>, source: Ty<'tcx>) -> bool {
+    cx.tcx
+        .get_diagnostic_item(sym::TryFrom)
+        .is_none_or(|try_from| {
+            cx.tcx
+                .infer_ctxt()
+                .build(cx.typing_mode())
+                .type_implements_trait(try_from, [target, source], cx.param_env)
+                .may_apply()
+        })
 }
 
 /// Helper for ui analysis.

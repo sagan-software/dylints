@@ -33,5 +33,45 @@ LL + /// The follow-up paragraph keeps *another* emphasis issue.
 LL + /// It lets one suggestion demonstrate several coordinated edits.
    |
 
-warning: 3 warnings emitted
+warning: MD037 in Rust doc comment at line 1, column 23: Spaces inside emphasis markers: "* spaced *"
+  --> $DIR/edge_cases.rs:89:5
+   |
+LL |     /// An impl item with * spaced * emphasis.
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `/// An impl item with *spaced* emphasis.`
+
+warning: MD037 in Rust doc comment at line 1, column 20: Spaces inside emphasis markers: "* spaced *"
+  --> $DIR/edge_cases.rs:95:5
+   |
+LL |     /// A variant with * spaced * emphasis.
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `/// A variant with *spaced* emphasis.`
+
+warning: MD037 in Rust doc comment at line 1, column 25: Spaces inside emphasis markers: "* spaced *"
+  --> $DIR/edge_cases.rs:100:5
+   |
+LL |     /// A foreign item with * spaced * emphasis.
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `/// A foreign item with *spaced* emphasis.`
+
+warning: MD037 in Rust doc comment at line 1, column 22: Spaces inside emphasis markers: "* spaced *"
+  --> $DIR/edge_cases.rs:105:1
+   |
+LL | pub fn attribute_docs() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: fix the Markdown in this Rust doc comment
+
+warning: MD037 in Rust doc comment at line 2, column 21: Spaces inside emphasis markers: "* spaced *"
+  --> $DIR/edge_cases.rs:109:1
+   |
+LL | pub fn mixed_docs() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: fix the Markdown in this Rust doc comment
+
+warning: MD037 in Rust doc comment at line 1, column 21: Spaces inside emphasis markers: "* spaced *"
+  --> $DIR/edge_cases.rs:112:5
+   |
+LL |     //! Inner docs with * spaced * emphasis.
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `//! Inner docs with *spaced* emphasis.`
+
+warning: 9 warnings emitted
 

@@ -13,5 +13,15 @@ LL | | }
    = help: split independent decisions into smaller functions or typed state transitions
    = note: `#[warn(cyclomatic_complexity)]` on by default
 
-warning: 1 warning emitted
+warning: function has Cyclomatic Complexity 10, which exceeds 9
+  --> $DIR/main.rs:31:1
+   |
+LL | / fn decisions_in_macro_arguments(flags: [bool; 10]) {
+LL | |     println!("{}", flags[0] && flags[1] && flags[2] && flags[3] && flags[4] && flags[5] && flags[6] && flags[7] && flags[8] && fla...
+LL | | }
+   | |_^
+   |
+   = help: split independent decisions into smaller functions or typed state transitions
+
+warning: 2 warnings emitted
 

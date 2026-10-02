@@ -1,0 +1,33 @@
+warning: parameter `account_id` uses primitive type `u64` for identity data
+  --> $DIR/edge_cases.rs:41:32
+   |
+LL |     fn load(&self, account_id: u64) -> Option<u64>;
+   |                                ^^^
+   |
+   = help: introduce a validated semantic type and convert at the system boundary
+   = note: `#[warn(semantic_primitive_type)]` on by default
+
+warning: string match encodes a closed vocabulary with primitive strings
+  --> $DIR/edge_cases.rs:54:5
+   |
+LL |     match state.as_str() { "queued" => 0, "running" | "paused" => 1, "complete" => 2, other => other.len() as u8 }
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: parse the input into a closed enum and match on its variants
+
+warning: string match encodes a closed vocabulary with primitive strings
+  --> $DIR/edge_cases.rs:58:5
+   |
+LL | /     match state {
+LL | |         "queued" => 0,
+LL | |         "running" => 1,
+LL | |         "complete" => 2,
+LL | |         other if other.is_empty() => 3,
+LL | |         _ => 4,
+LL | |     }
+   | |_____^
+   |
+   = help: parse the input into a closed enum and match on its variants
+
+warning: 3 warnings emitted
+

@@ -79,8 +79,10 @@ pub fn keep_trailing_space_doc_attr() {}
 #[doc = "Outer docs with\nmultiple lines."]
 pub fn keep_multiline_doc_attr() {}
 
+#[rustfmt::skip]
 #[doc = "Same-line docs need human review."] pub fn warn_same_line_doc_attr() {}
 
+#[rustfmt::skip]
 #[doc = "Docs before another attribute."] #[inline]
 pub fn warn_doc_attr_before_attr() {}
 

@@ -6,7 +6,7 @@ LL | |         &self.0
 LL | |     }
    | |_____^
    |
-   = help: implement `AsRef<T>` when this exposes the canonical borrowed view
+   = help: implement `AsRef<std::string::String>` when this exposes the canonical borrowed view
    = note: `#[warn(ad_hoc_as_ref)]` on by default
 
 warning: method `as_header` looks like an `AsRef` accessor
@@ -17,7 +17,7 @@ LL | |         &self.0
 LL | |     }
    | |_____^
    |
-   = help: implement `AsRef<T>` when this exposes the canonical borrowed view
+   = help: implement `AsRef<str>` when this exposes the canonical borrowed view
 
 warning: 2 warnings emitted
 

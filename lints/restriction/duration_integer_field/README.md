@@ -4,8 +4,10 @@
 
 Checks for named fields whose type is a primitive integer and whose name contains
 a time-unit word. The words cover nanoseconds through weeks, such as `ns`, `ms`,
-`millis`, `sec`, `seconds`, `min`, `hr`, `hours`, `days`, and `weeks`, matched
-between underscores and with case.
+`millis`, `sec`, `seconds`, `mins`, `hr`, `hours`, `days`, and `weeks`, matched
+between underscores and with case. The singular words `second`, `minute`,
+`hour`, `day`, and `week`, which usually name a calendar component, and `min`,
+which usually means minimum, do not count.
 
 ## Why is this bad?
 

@@ -39,21 +39,37 @@ LL |     aliased_expires_epoch: UnixSeconds,
    |
    = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
 
-warning: timestamp-like field `imported_unix` uses integer `i128`
-  --> $DIR/main.rs:23:20
+warning: timestamp-like field `imported_unix_time` uses integer `i128`
+  --> $DIR/main.rs:23:25
    |
-LL |     imported_unix: ImportedEpoch,
-   |                    ^^^^^^^^^^^^^
+LL |     imported_unix_time: ImportedEpoch,
+   |                         ^^^^^^^^^^^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: timestamp-like field `small_date` uses integer `u8`
+  --> $DIR/main.rs:25:17
+   |
+LL |     small_date: u8,
+   |                 ^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: timestamp-like field `tiny_ts` uses integer `i16`
+  --> $DIR/main.rs:26:14
+   |
+LL |     tiny_ts: i16,
+   |              ^^^
    |
    = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
 
 warning: timestamp-like field `machine_timestamp` uses integer `usize`
-  --> $DIR/main.rs:24:24
+  --> $DIR/main.rs:27:24
    |
 LL |     machine_timestamp: MachineTimestamp,
    |                        ^^^^^^^^^^^^^^^^
    |
    = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
 
-warning: 7 warnings emitted
+warning: 9 warnings emitted
 

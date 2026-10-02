@@ -3,8 +3,10 @@
 ## What it does
 
 Checks items in the crate root and in modules, and warns when an item starts on
-the same line where the previous item ends. One line break is enough; a blank
-line is not required.
+the same line where the previous item ends. An item starts at its first outer
+attribute or doc comment. One line break is enough; a blank line is not
+required. The machine-applicable fix moves the item to a new line with the same
+indentation.
 
 ## Why is this bad?
 

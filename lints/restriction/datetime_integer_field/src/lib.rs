@@ -78,52 +78,36 @@ fn emit_span_lint_with_help(
     );
 }
 
-/// Return the datetime field name.
+/// Return whether a field name denotes a timestamp or calendar date.
 fn datetime_field_name(name: &str) -> bool {
     let tokens = name.split('_').collect::<Vec<_>>();
 
     // Match direct timestamp tokens and common `created_at_ts` style spellings.
+    // A bare `unix` also names permissions or modes, so it needs a time word beside it.
     tokens.iter().any(|token| {
         matches!(
             *token,
-            "timestamp" | "timestamps" | "epoch" | "unix" | "ts" | "date" | "datetime"
+            "timestamp" | "timestamps" | "epoch" | "ts" | "date" | "datetime"
         )
-    }) || tokens
-        .windows(2)
-        .any(|window| matches!(window, ["at", "ts" | "epoch" | "unix"]))
+    }) || tokens.windows(2).any(|window| {
+        matches!(
+            window,
+            ["at", "ts" | "epoch" | "unix"]
+                | [
+                    "unix",
+                    "time" | "secs" | "seconds" | "ms" | "millis" | "nanos"
+                ]
+        )
+    })
 }
 
-/// Return type information for integer.
+/// Return the written name of a resolved primitive integer type.
 fn integer_ty(ty: ty::Ty<'_>) -> Option<&'static str> {
     // Resolve aliases before matching so only raw integer storage warns.
     match ty.kind() {
-        ty::Uint(uint_ty) => Some(uint_ty_name(*uint_ty)),
-        ty::Int(int_ty) => Some(int_ty_name(*int_ty)),
+        ty::Uint(uint_ty) => Some(uint_ty.name_str()),
+        ty::Int(int_ty) => Some(int_ty.name_str()),
         _ => None,
-    }
-}
-
-/// Return the uint ty name.
-const fn uint_ty_name(ty: ty::UintTy) -> &'static str {
-    match ty {
-        ty::UintTy::U8 => "u8",
-        ty::UintTy::U16 => "u16",
-        ty::UintTy::U32 => "u32",
-        ty::UintTy::U64 => "u64",
-        ty::UintTy::U128 => "u128",
-        ty::UintTy::Usize => "usize",
-    }
-}
-
-/// Return the int ty name.
-const fn int_ty_name(ty: ty::IntTy) -> &'static str {
-    match ty {
-        ty::IntTy::I8 => "i8",
-        ty::IntTy::I16 => "i16",
-        ty::IntTy::I32 => "i32",
-        ty::IntTy::I64 => "i64",
-        ty::IntTy::I128 => "i128",
-        ty::IntTy::Isize => "isize",
     }
 }
 

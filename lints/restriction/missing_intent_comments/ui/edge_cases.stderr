@@ -1,0 +1,17 @@
+warning: function body has 0 intent comments but needs at least 1 for 5 statements
+  --> $DIR/edge_cases.rs:27:1
+   |
+LL | / fn url_without_comment() -> usize {
+LL | |     let first = "https://example.com";
+LL | |     let second = "text // not a comment";
+LL | |     let third = first.len();
+LL | |     let fourth = second.len();
+LL | |     third + fourth
+LL | | }
+   | |_^
+   |
+   = help: add a short `//` comment explaining ordering, invariants, or side effects
+   = note: `#[warn(missing_intent_comments)]` on by default
+
+warning: 1 warning emitted
+

@@ -47,5 +47,53 @@ LL |     let ready = visible && is_visible;
    |
    = help: rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`
 
-warning: 6 warnings emitted
+warning: boolean associated constant `ALIAS_READY` does not read as a predicate
+  --> $DIR/edge_cases.rs:30:11
+   |
+LL |     const ALIAS_READY: Flag;
+   |           ^^^^^^^^^^^
+   |
+   = help: rename it to start with `IS_` or `HAS_`, such as `IS_READY` or `HAS_ITEMS`
+
+warning: boolean parameter `alias_visible` does not read as a predicate
+  --> $DIR/edge_cases.rs:32:27
+   |
+LL |     fn alias_ready(&self, alias_visible: Flag, _: bool) -> Flag;
+   |                           ^^^^^^^^^^^^^
+   |
+   = help: rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`
+
+warning: boolean method `alias_ready` does not read as a predicate
+  --> $DIR/edge_cases.rs:32:8
+   |
+LL |     fn alias_ready(&self, alias_visible: Flag, _: bool) -> Flag;
+   |        ^^^^^^^^^^^
+   |
+   = help: rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`
+
+warning: boolean method `provided_alias` does not read as a predicate
+  --> $DIR/edge_cases.rs:34:8
+   |
+LL |     fn provided_alias(&self) -> Flag {
+   |        ^^^^^^^^^^^^^^
+   |
+   = help: rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`
+
+warning: boolean associated constant `ALIAS_DONE` does not read as a predicate
+  --> $DIR/edge_cases.rs:42:11
+   |
+LL |     const ALIAS_DONE: Flag = true;
+   |           ^^^^^^^^^^
+   |
+   = help: rename it to start with `IS_` or `HAS_`, such as `IS_READY` or `HAS_ITEMS`
+
+warning: boolean method `alias_done` does not read as a predicate
+  --> $DIR/edge_cases.rs:44:8
+   |
+LL |     fn alias_done(&self) -> Flag {
+   |        ^^^^^^^^^^
+   |
+   = help: rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`
+
+warning: 12 warnings emitted
 

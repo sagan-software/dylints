@@ -95,4 +95,19 @@ async fn await_is_not_a_path_branch() {
     async {}.await;
 }
 
+async fn awaits_do_not_double_paths() {
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+    async {}.await;
+}
+
+fn macro_conditions_are_one_branch(value: Option<u8>) {
+    if matches!(value, Some(0)) {}
+}
+
 fn main() {}

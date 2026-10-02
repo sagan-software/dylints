@@ -8,13 +8,11 @@
 //! generated code and unsupported syntax conservative, then reports a focused
 //! diagnostic so callers can choose the documented replacement with confidence.
 
-extern crate rustc_ast;
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_span;
 
 use pulldown_cmark::{Event, Parser, Tag, TagEnd};
-use rustc_ast::{MetaItemInner, MetaItemKind};
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
     Attribute, FieldDef, ForeignItem, ImplItem, ImplItemImplKind, ImplItemKind, Item, ItemKind,
@@ -22,7 +20,6 @@ use rustc_hir::{
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_span::{Span, Symbol, def_id::CRATE_DEF_ID, def_id::LocalDefId, sym};
-use std::{ffi::OsStr, path::Component};
 
 /// Minimum prose words required for an ordinary public API item.
 const ITEM_MINIMUM_WORDS: usize = 20;
@@ -171,8 +168,10 @@ impl<'tcx> LateLintPass<'tcx> for InsufficientPublicDocumentation {
 fn check_definition(cx: &LateContext<'_>, def_id: LocalDefId, span: Span, kind: ApiKind) {
     // Generated definitions have no editable source, while effective visibility excludes public
     // syntax hidden behind private ancestry.
-    let is_skipped_source =
-        crate_is_internal_support(cx) || crate_is_doc_hidden(cx) || span.from_expansion();
+    let is_skipped_source = dylint_support::is_internal_support_crate(
+        cx.tcx.crate_name(rustc_hir::def_id::LOCAL_CRATE),
+    ) || span.from_expansion()
+        || is_doc_hidden(cx, def_id);
     let is_unexported_item =
         def_id != CRATE_DEF_ID && !cx.effective_visibilities.is_exported(def_id);
     if is_skipped_source || is_unexported_item {
@@ -195,57 +194,18 @@ fn check_definition(cx: &LateContext<'_>, def_id: LocalDefId, span: Span, kind: 
     emit_short_documentation(cx, span, kind, word_count, minimum_words);
 }
 
-/// Return whether the crate is an internal cross-crate helper or UI fixture.
-fn crate_is_internal_support(cx: &LateContext<'_>) -> bool {
-    // Names identify support and fixture crates even when rustc cannot expose a local path.
-    let crate_symbol = cx.tcx.crate_name(rustc_hir::def_id::LOCAL_CRATE);
-    let crate_name = crate_symbol.as_str();
-    if crate_name.ends_with("_support") || crate_name.ends_with("_fixture") {
-        return true;
+/// Return whether a definition or one of its ancestors is `#[doc(hidden)]`.
+fn is_doc_hidden(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
+    // Rustdoc omits hidden items and everything inside them, including a hidden crate root.
+    let mut current = Some(def_id.to_def_id());
+    while let Some(ancestor) = current {
+        // Stop once the first hidden ancestor makes this definition invisible to rustdoc.
+        if cx.tcx.is_doc_hidden(ancestor) {
+            return true;
+        }
+        current = cx.tcx.opt_parent(ancestor);
     }
-
-    // A path component check avoids hard-coded host separators and nested directory false matches.
-    let Some(path) = cx
-        .sess()
-        .local_crate_source_file()
-        .and_then(rustc_span::RealFileName::into_local_path)
-    else {
-        return false;
-    };
-    path.components().any(|component| {
-        matches!(
-            component,
-            Component::Normal(name)
-                if name == OsStr::new("support") || name == OsStr::new("fixture")
-        )
-    })
-}
-
-/// Return whether the crate explicitly hides its support-only API from documentation.
-fn crate_is_doc_hidden(cx: &LateContext<'_>) -> bool {
-    cx.tcx
-        .hir_attrs(cx.tcx.local_def_id_to_hir_id(CRATE_DEF_ID))
-        .iter()
-        .any(is_hidden_doc_attribute)
-}
-
-/// Return whether an attribute is the exact `#[doc(hidden)]` opt-out marker.
-fn is_hidden_doc_attribute(attr: &Attribute) -> bool {
-    attr.has_name(sym::doc)
-        && attr.meta_item_list().is_some_and(|items| {
-            items.iter().any(|item| match item {
-                MetaItemInner::MetaItem(meta) => {
-                    meta.path.segments.len() == 1
-                        && meta
-                            .path
-                            .segments
-                            .first()
-                            .is_some_and(|segment| segment.ident.name == sym::hidden)
-                        && matches!(meta.kind, MetaItemKind::Word)
-                }
-                MetaItemInner::Lit(_) => false,
-            })
-        })
+    false
 }
 
 /// Join rustc's normalized documentation attributes into Markdown source.

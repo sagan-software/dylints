@@ -19,25 +19,25 @@ extern crate rustc_span;
 use rustc_ast::Attribute;
 use rustc_errors::DiagDecorator;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
-use rustc_span::{Span, sym};
+use rustc_span::{FileName, Span, sym};
 
 dylint_support::documented_early_lint! {
     #[doc = include_str!("../README.md")]
     pub PATH_ATTRIBUTE_OUTSIDE_ROOT,
     Warn,
-    "`path` attribute outside a conventional crate root file",
+    "`path` attribute outside the crate root file",
     PathAttributeOutsideRoot
 }
 
 impl EarlyLintPass for PathAttributeOutsideRoot {
-    /// Check one source attribute against the allowed root filenames.
+    /// Check one source attribute against the crate root file.
     fn check_attribute(&mut self, cx: &EarlyContext<'_>, attr: &Attribute) {
         // Require the built-in string-valued form so unrelated attributes cannot match by name.
         if !attr.has_name(sym::path) || attr.value_str().is_none() {
             return;
         }
 
-        if is_allowed_source_file(cx, attr.span) {
+        if in_crate_root_file(cx, attr.span) {
             return;
         }
 
@@ -45,21 +45,18 @@ impl EarlyLintPass for PathAttributeOutsideRoot {
     }
 }
 
-/// Return whether an attribute belongs to an allowed source filename.
-fn is_allowed_source_file(cx: &EarlyContext<'_>, span: Span) -> bool {
-    let Some(path) = cx
-        .sess()
-        .source_map()
-        .span_to_filename(span)
-        .into_local_path()
-    else {
-        // Virtual or remapped sources have no stable filename for this local policy.
+/// Return whether an attribute is written in rustc's compiled crate-root file.
+fn in_crate_root_file(cx: &EarlyContext<'_>, span: Span) -> bool {
+    let FileName::Real(attr_file) = cx.sess().source_map().span_to_filename(span) else {
+        // Virtual or generated sources have no file for this layout policy.
         return true;
     };
 
-    path.file_name()
-        .and_then(|name| name.to_str())
-        .is_some_and(|name| matches!(name, "main.rs" | "lib.rs" | "build.rs"))
+    // `src/main.rs`, `src/lib.rs`, `build.rs`, `src/bin/tool.rs`, and `tests/api.rs` are all
+    // crate roots; a nested `lib.rs` module file is not.
+    cx.sess()
+        .local_crate_source_file()
+        .is_some_and(|root| root == attr_file)
 }
 
 /// Emit the path-attribute policy diagnostic.
@@ -69,9 +66,9 @@ fn emit_path_attribute_lint(cx: &EarlyContext<'_>, span: Span) {
         PATH_ATTRIBUTE_OUTSIDE_ROOT,
         span,
         DiagDecorator(|diag| {
-            let _ = diag.primary_message("`path` attribute outside a conventional crate root file");
+            let _ = diag.primary_message("`path` attribute outside the crate root file");
             let _ = diag.help(
-                "use Rust's standard module file layout, or declare this override from an allowed root file",
+                "use Rust's standard module file layout, or declare this override in the crate root file",
             );
         }),
     );

@@ -98,7 +98,7 @@ impl<'tcx> LateLintPass<'tcx> for ImplMethodCount {
 /// Resolve an inherent impl item to its local algebraic data type.
 fn inherent_impl_type(cx: &LateContext<'_>, item: &ImplItem<'_>) -> Option<LocalDefId> {
     // Resolve through the parent impl because the method's owner is not the ADT.
-    let impl_id = cx.tcx.opt_local_parent(item.owner_id.def_id)?;
+    let impl_id = cx.tcx.local_parent(item.owner_id.def_id);
     let self_type = cx
         .tcx
         .type_of(impl_id)

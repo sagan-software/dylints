@@ -22,8 +22,8 @@ It warns on values that only mention a secret word, such as a hashed
 secret names, such as `private_key` or `credentials`.
 
 It does not flag `Option<String>`, `Box<str>`, closure parameters, or
-destructured bindings. In required trait methods, which have no body, it reads
-the written type, so a type alias for `String` hides the raw type there.
+destructured bindings. It skips the parameters of trait impl methods, whose
+types come from the trait; the trait declaration is checked instead.
 
 ## Example
 

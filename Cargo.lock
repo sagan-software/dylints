@@ -5722,6 +5722,7 @@ dependencies = [
  "datetime_integer_field",
  "duration_integer_field",
  "dylint_linting",
+ "dylint_testing",
  "hardcoded_path",
  "http_method_string",
  "insufficient_public_documentation",

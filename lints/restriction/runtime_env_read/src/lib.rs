@@ -8,22 +8,30 @@
 //!
 //! It resolves calls that read process environment state, walks their enclosing
 //! function context, and reports reads that bypass an explicit configuration
-//! boundary. Generated code and recognized boundary functions remain quiet so
-//! the diagnostic points at application behavior that can be moved or wrapped.
+//! boundary. Reads inside closures, including `LazyLock` initializers, use the
+//! context of the item that owns the closure.
 
+extern crate rustc_ast;
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_span;
 
+use std::path::Path;
+
+use rustc_ast::attr::data_structures::CfgEntry;
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Attribute, Body, Expr, ExprKind,
+    Attribute, Body, Expr, ExprKind, ItemKind,
     attrs::AttributeKind,
     def::{DefKind, Res},
     intravisit::{self, FnKind, Visitor},
 };
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
-use rustc_span::{Span, def_id::LocalDefId, sym};
+use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_span::{
+    Span,
+    def_id::{DefId, LocalDefId},
+    sym,
+};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -34,18 +42,19 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for RuntimeEnvRead {
-    /// Check fn for this lint.
+    /// Check the reads written directly in one function or closure body.
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
-        kind: FnKind<'tcx>,
+        _kind: FnKind<'tcx>,
         _decl: &'tcx rustc_hir::FnDecl<'tcx>,
         body: &'tcx Body<'tcx>,
-        span: Span,
+        _span: Span,
         local_def_id: LocalDefId,
     ) {
-        if matches!(kind, FnKind::Closure) || allowed_function_context(cx, kind, span, local_def_id)
-        {
+        // A closure body is visited on its own, so judge it by the item that owns it.
+        let owner = cx.tcx.typeck_root_def_id_local(local_def_id);
+        if allowed_context(cx, owner) {
             return;
         }
 
@@ -53,27 +62,19 @@ impl<'tcx> LateLintPass<'tcx> for RuntimeEnvRead {
     }
 }
 
-/// State used by the env read finder analysis.
+/// Visitor that reports environment reads in one body without entering nested closures.
 struct EnvReadFinder<'cx, 'tcx> {
-    /// cx stored for this lint's analysis.
+    /// Lint context used to resolve calls and emit diagnostics.
     cx: &'cx LateContext<'tcx>,
 }
 
 impl<'tcx> Visitor<'tcx> for EnvReadFinder<'_, 'tcx> {
-    /// Helper for visit expr analysis.
+    /// Report a resolved environment read, then continue into child expressions.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        // Report a resolved environment read before descending into child expressions.
-        if let Some(call) = env_read_call(self.cx, expr) {
-            emit_span_lint_with_help(
-                self.cx,
-                RUNTIME_ENV_READ,
-                call.span,
-                format!(
-                    "`std::env::{}` reads runtime environment outside config/bootstrap code",
-                    call.name
-                ),
-                "read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward",
-            );
+        if let ExprKind::Call(callee, _) = expr.kind
+            && let Some(name) = env_read_name(self.cx, callee)
+        {
+            emit_env_read_lint(self.cx, callee.span, name);
         }
 
         // Continue traversal so nested environment reads also receive diagnostics.
@@ -81,29 +82,8 @@ impl<'tcx> Visitor<'tcx> for EnvReadFinder<'_, 'tcx> {
     }
 }
 
-/// State used by the env read call analysis.
-struct EnvReadCall {
-    /// name stored for this lint's analysis.
-    name: &'static str,
-    /// span stored for this lint's analysis.
-    span: Span,
-}
-
-/// Helper for env read call analysis.
-fn env_read_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<EnvReadCall> {
-    let ExprKind::Call(callee, _) = expr.kind else {
-        return None;
-    };
-
-    // Match the resolved std function so aliases warn and local helpers named `var` do not.
-    resolved_env_read_call(cx, callee).map(|name| EnvReadCall {
-        name,
-        span: callee.span,
-    })
-}
-
-/// Return whether resolution found env read call.
-fn resolved_env_read_call(cx: &LateContext<'_>, callee: &Expr<'_>) -> Option<&'static str> {
+/// Return the function name when a callee resolves to `std::env::var` or `std::env::var_os`.
+fn env_read_name(cx: &LateContext<'_>, callee: &Expr<'_>) -> Option<&'static str> {
     let ExprKind::Path(qpath) = callee.kind else {
         return None;
     };
@@ -111,79 +91,110 @@ fn resolved_env_read_call(cx: &LateContext<'_>, callee: &Expr<'_>) -> Option<&'s
         return None;
     };
 
-    // `def_path_str` covers fully-qualified calls, imported functions, and module aliases.
-    match cx.tcx.def_path_str(def_id).as_str() {
-        "std::env::var" => Some("var"),
-        "std::env::var_os" => Some("var_os"),
+    // The definition path names the defining crate and module, so renames and aliases match.
+    match cx.get_def_path(def_id).as_slice() {
+        [krate, module, name] if *krate == sym::std && *module == sym::env => match name.as_str() {
+            "var" => Some("var"),
+            "var_os" => Some("var_os"),
+            _ => None,
+        },
         _ => None,
     }
 }
 
-/// Helper for allowed function context analysis.
-fn allowed_function_context(
-    cx: &LateContext<'_>,
-    kind: FnKind<'_>,
-    span: Span,
-    local_def_id: LocalDefId,
-) -> bool {
+/// Return whether an item is a configuration, entry point, build-script, or test context.
+fn allowed_context(cx: &LateContext<'_>, owner: LocalDefId) -> bool {
     // Allow entrypoints and named boundaries before scanning the body for environment reads.
-    cli_or_context_function(kind)
-        || test_function(cx, local_def_id)
-        || allowed_def_path(cx, local_def_id)
-        || allowed_source_path(cx, span)
+    cx.tcx.opt_item_name(owner.to_def_id()) == Some(sym::main)
+        || in_test_code(cx, owner)
+        || allowed_def_path(cx, owner)
+        || allowed_source_path(cx, cx.tcx.def_span(owner))
 }
 
-/// Helper for cli or context function analysis.
-fn cli_or_context_function(kind: FnKind<'_>) -> bool {
-    function_name(kind).is_some_and(|name| name == "main" || name_has_allowed_context(&name))
+/// Return whether an item or one of its ancestors is test-only code.
+fn in_test_code(cx: &LateContext<'_>, owner: LocalDefId) -> bool {
+    // Walk outward so helpers inside a `#[cfg(test)]` module are also test code.
+    let mut current = Some(owner.to_def_id());
+    while let Some(def_id) = current {
+        // Stop at an external ancestor because only local attributes define this policy.
+        let Some(local_def_id) = def_id.as_local() else {
+            return false;
+        };
+        let attrs = cx
+            .tcx
+            .hir_attrs(cx.tcx.local_def_id_to_hir_id(local_def_id));
+        if attrs.iter().any(cfg_requires_test_attr) || is_test_function(cx, local_def_id) {
+            return true;
+        }
+        current = cx.tcx.opt_parent(def_id);
+    }
+    false
 }
 
-/// Return the function name.
-fn function_name(kind: FnKind<'_>) -> Option<String> {
-    match kind {
-        FnKind::ItemFn(ident, ..) | FnKind::Method(ident, _) => Some(ident.name.to_ident_string()),
-        FnKind::Closure => None,
+/// Return whether a retained `cfg` trace can only be true in test builds.
+fn cfg_requires_test_attr(attr: &Attribute) -> bool {
+    let Attribute::Parsed(AttributeKind::CfgTrace(entries)) = attr else {
+        return false;
+    };
+    entries
+        .iter()
+        .any(|(entry, _span)| cfg_requires_test(entry))
+}
+
+/// Evaluate whether one `cfg` predicate logically requires `test`.
+fn cfg_requires_test(entry: &CfgEntry) -> bool {
+    match entry {
+        CfgEntry::NameValue { name, value, .. } => *name == sym::test && value.is_none(),
+        CfgEntry::All(children, _) => children.iter().any(cfg_requires_test),
+        CfgEntry::Any(children, _) => {
+            !children.is_empty() && children.iter().all(cfg_requires_test)
+        }
+        CfgEntry::Not(..) | CfgEntry::Bool(..) | CfgEntry::Version(..) => false,
     }
 }
 
-/// Helper for test function analysis.
-fn test_function(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
-    let hir_id = cx.tcx.local_def_id_to_hir_id(local_def_id);
-    let attrs: &[Attribute] = cx.tcx.hir_attrs(hir_id);
-
-    // Match both ordinary tests and cfg(test) helpers directly annotated on a function.
-    attrs.iter().any(|attr| {
-        attr.has_name(sym::test)
-            || matches!(attr, Attribute::Parsed(AttributeKind::RustcTestMarker(_)))
-            || cfg_test_attr(cx, attr)
-    })
-}
-
-/// Helper for cfg test attr analysis.
-fn cfg_test_attr(cx: &LateContext<'_>, attr: &Attribute) -> bool {
-    if !attr.has_name(sym::cfg) && !attr.has_name(sym::cfg_attr) {
+/// Return whether a function is a `#[test]` function in a `--test` build.
+fn is_test_function(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+    if !matches!(cx.tcx.def_kind(local_def_id), DefKind::Fn) {
         return false;
     }
 
-    // Attribute parsing APIs differ across nightlies; the source text is enough for this narrow
-    // exemption and keeps the lint conservative if the snippet is unavailable.
-    cx.sess()
-        .source_map()
-        .span_to_snippet(attr.span())
-        .is_ok_and(|source| source.contains("test"))
+    // The test harness replaces `#[test]` with a same-named marker constant in the same module.
+    let name = cx.tcx.item_name(local_def_id.to_def_id());
+    let module = cx.tcx.parent_module_from_def_id(local_def_id);
+    cx.tcx.hir_module_free_items(module).any(|item_id| {
+        let item = cx.tcx.hir_item(item_id);
+        matches!(item.kind, ItemKind::Const(ident, ..) if ident.name == name)
+            && cx
+                .tcx
+                .hir_attrs(item.hir_id())
+                .iter()
+                .any(|attr| matches!(attr, Attribute::Parsed(AttributeKind::RustcTestMarker(_))))
+    })
 }
 
-/// Helper for allowed def path analysis.
-fn allowed_def_path(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
-    let path = cx.tcx.def_path_str(local_def_id);
-
+/// Return whether the item path contains a configuration or test word.
+fn allowed_def_path(cx: &LateContext<'_>, owner: LocalDefId) -> bool {
     // Def paths include module names, so `config::load` and `tests::helper` are covered even when
     // the function name itself is generic.
-    path.split("::")
-        .any(|segment| name_has_allowed_context(segment) || test_context_name(segment))
+    let mut current = Some(owner.to_def_id());
+    while let Some(def_id) = current {
+        if has_allowed_def_name(cx, def_id) {
+            return true;
+        }
+        current = parent_def_id(cx, def_id);
+    }
+    false
 }
 
-/// Helper for allowed source path analysis.
+/// Return the parent of a definition, stopping at the crate root.
+fn parent_def_id(cx: &LateContext<'_>, def_id: DefId) -> Option<DefId> {
+    cx.tcx
+        .opt_parent(def_id)
+        .filter(|parent| !parent.is_crate_root())
+}
+
+/// Return whether the item's file is a build script or a configuration source file.
 fn allowed_source_path(cx: &LateContext<'_>, span: Span) -> bool {
     let Some(path) = cx
         .sess()
@@ -194,26 +205,37 @@ fn allowed_source_path(cx: &LateContext<'_>, span: Span) -> bool {
         return false;
     };
 
-    if path.file_name().is_some_and(|name| name == "build.rs") {
-        return true;
-    }
-
-    let file_stem_allowed = path
-        .file_stem()
-        .and_then(|name| name.to_str())
-        .is_some_and(name_has_allowed_context);
-    let parent_allowed = path
-        .parent()
-        .and_then(|parent| parent.file_name())
-        .and_then(|name| name.to_str())
-        .is_some_and(name_has_allowed_context);
-
     // Only inspect the file stem and immediate parent to avoid allowing every fixture in this lint
     // crate just because the checkout path contains `runtime_env_read`.
+    let file_stem_allowed = is_allowed_file_stem(&path);
+    let parent_allowed = is_allowed_parent_directory(&path);
     file_stem_allowed || parent_allowed
 }
 
-/// Helper for name has allowed context analysis.
+/// Return whether a definition name marks a configuration or test boundary.
+fn has_allowed_def_name(cx: &LateContext<'_>, def_id: DefId) -> bool {
+    cx.tcx.opt_item_name(def_id).is_some_and(|name| {
+        let name = name.as_str();
+        name_has_allowed_context(name) || test_context_name(name)
+    })
+}
+
+/// Return whether a source file stem marks a build or configuration boundary.
+fn is_allowed_file_stem(path: &Path) -> bool {
+    path.file_stem()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name == "build" || name_has_allowed_context(name))
+}
+
+/// Return whether a source file's parent directory marks a configuration boundary.
+fn is_allowed_parent_directory(path: &Path) -> bool {
+    path.parent()
+        .and_then(|parent| parent.file_name())
+        .and_then(|name| name.to_str())
+        .is_some_and(name_has_allowed_context)
+}
+
+/// Return whether a name contains a configuration or entry-point word.
 fn name_has_allowed_context(name: &str) -> bool {
     tokens(name).any(|token| {
         matches!(
@@ -230,39 +252,34 @@ fn name_has_allowed_context(name: &str) -> bool {
     })
 }
 
-/// Return the test context name.
+/// Return whether a name contains a test word.
 fn test_context_name(name: &str) -> bool {
     tokens(name).any(|token| matches!(token, "test" | "tests" | "testing"))
 }
 
-/// Helper for tokens analysis.
+/// Split a name into its alphanumeric words.
 fn tokens(name: &str) -> impl Iterator<Item = &str> {
     name.split(|ch: char| !ch.is_ascii_alphanumeric())
         .filter(|token| !token.is_empty())
 }
 
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: impl Into<String>,
-    help: &'static str,
-) {
-    let message = message.into();
-
-    // Use rustc's native diagnostic decorator to keep diagnostics consistent.
+/// Emit the environment-read diagnostic at the callee.
+fn emit_env_read_lint(cx: &LateContext<'_>, span: Span, name: &'static str) {
     cx.emit_span_lint(
-        lint,
+        RUNTIME_ENV_READ,
         span,
         DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ = diag.help(help);
+            let _ = diag.primary_message(format!(
+                "`std::env::{name}` reads runtime environment outside config/bootstrap code"
+            ));
+            let _ = diag.help(
+                "read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward",
+            );
         }),
     );
 }
 
-/// Helper for ui analysis.
+/// Run the UI fixture suite.
 #[test]
 fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");

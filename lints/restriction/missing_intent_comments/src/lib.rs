@@ -14,6 +14,7 @@
 extern crate rustc_data_structures;
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_lexer;
 extern crate rustc_span;
 
 use rustc_data_structures::fx::FxHashSet;
@@ -22,6 +23,7 @@ use rustc_hir::{
     Block, Body, Stmt, StmtKind,
     intravisit::{FnKind, Visitor, walk_block, walk_stmt},
 };
+use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_span::{Span, def_id::LocalDefId};
 
@@ -149,19 +151,49 @@ impl<'hir> Visitor<'hir> for StatementCounter {
     }
 }
 
-/// Return whether line comment is present.
+/// Count the source lines that hold a `//` line comment.
+///
+/// Comments are not part of HIR, so the body text is lexed.
+///
+/// `//` inside a string literal, such as a URL, does not count, and each line
+/// counts once.
 fn line_comment_count(source: &str) -> usize {
-    source
-        .lines()
-        .filter(|line| {
-            let trimmed = line.trim_start();
-            trimmed.starts_with("//") || trimmed.contains(" //")
-        })
-        .count()
+    // Track the logical source line and the last line that produced a comment.
+    let mut line = 0_usize;
+    let mut last_comment_line = None;
+    let mut count = 0_usize;
+
+    // Walk tokens in order, advancing the line number by the newlines inside each token.
+    let mut offset = 0_usize;
+    for token in tokenize(source, FrontmatterAllowed::No) {
+        // Stop when token metadata cannot map back to a source slice.
+        let Some(text) = usize::try_from(token.len)
+            .ok()
+            .and_then(|len| source.get(offset..offset.saturating_add(len)))
+        else {
+            break;
+        };
+        // Count the first line-comment token on each logical line.
+        if matches!(token.kind, TokenKind::LineComment { .. }) && last_comment_line != Some(line) {
+            last_comment_line = Some(line);
+            count += 1;
+        }
+        line += text.matches('\n').count();
+        offset += text.len();
+    }
+    count
 }
 
 /// Helper for ui analysis.
 #[test]
 fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");
+}
+
+/// Count each commented line once and ignore `//` inside string literals.
+#[test]
+fn counts_lexed_line_comments() {
+    let source = "{\n    // one\n    let url = \"https://example.com\"; // two\n    /* block */\n}";
+    assert_eq!(line_comment_count(source), 2);
+    assert_eq!(line_comment_count("let text = \"a // b\";"), 0);
 }

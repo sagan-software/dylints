@@ -31,7 +31,7 @@ dylint_support::documented_pre_expansion_lint! {
 impl EarlyLintPass for InterpolatedLogging {
     /// Check mac for this lint.
     fn check_mac(&mut self, cx: &EarlyContext<'_>, mac: &MacCall) {
-        if !logging_or_output_macro(mac) {
+        if !logging_macro(mac) {
             return;
         }
 
@@ -67,23 +67,16 @@ fn emit_span_lint_with_help(
     );
 }
 
-/// Return whether a macro call has a conventional logging or formatted-output name.
-fn logging_or_output_macro(mac: &MacCall) -> bool {
+/// Return whether a macro call has a conventional logging macro name.
+///
+/// Formatted-output macros such as `println!` and `write!` are not logging.
+///
+/// Their text is program output, such as a `Display` impl or a command-line report.
+fn logging_macro(mac: &MacCall) -> bool {
     mac.path.segments.last().is_some_and(|segment| {
         matches!(
             segment.ident.name.as_str(),
-            "trace"
-                | "debug"
-                | "info"
-                | "warn"
-                | "error"
-                | "event"
-                | "print"
-                | "println"
-                | "eprint"
-                | "eprintln"
-                | "write"
-                | "writeln"
+            "trace" | "debug" | "info" | "warn" | "error" | "event"
         )
     })
 }

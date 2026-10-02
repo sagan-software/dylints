@@ -12,7 +12,7 @@ domain value as a primitive. It flags three cases by name:
 
 It looks through references, slices, arrays, `Option`, and `Vec`. A return type
 is checked against the function name. It also flags a `match` on a string that
-has three or more string-literal arms and a `_ =>` arm.
+has three or more string-literal arms and a catch-all arm.
 
 ## Why is this bad?
 
@@ -24,13 +24,13 @@ newtype or enum makes the compiler reject these mixups.
 ## Known problems
 
 It warns on a free-text field named `reason` that holds a human-readable message.
-It also warns on the string `match` inside a `FromStr` or `TryFrom` impl, where
-parsing strings into an enum is the intended fix.
+It skips the string `match` inside a `FromStr::from_str` or `TryFrom::try_from`
+impl, where parsing strings into an enum is the intended fix, and it skips the
+methods of trait impls, whose signature comes from the trait.
 
-The `match` check reads the source text. It counts only arms that start their
-own line with a string literal, and it needs a literal `_ =>` arm. It misses
-arms written on one line and catch-all arms that bind a name, such as
-`other =>`. It does not flag a bare `id`, a `status` field, or closure
+The `match` check counts arms whose pattern is only string literals, including
+`"a" | "b"`, and needs an unguarded `_` or binding arm such as `other =>`. It
+does not flag a bare `id`, a `status` field, closure parameters, or destructured
 parameters.
 
 ## Example

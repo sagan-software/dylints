@@ -23,14 +23,15 @@ use rustc_hir::{
 };
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{
-    ExpnKind, MacroKind, Span,
+    DesugaringKind, ExpnKind, MacroKind, Span,
     def_id::{CRATE_DEF_ID, DefId, LocalDefId},
 };
 
 /// Calculate Cyclomatic Complexity for one source-authored callable.
 ///
 /// The result counts independent source decisions and includes the callable's
-/// initial execution path, while excluding nested functions and macro expansions.
+/// initial execution path. Nested functions and macro-generated nodes add nothing,
+/// while expressions written as macro arguments count like other source code.
 ///
 /// # Examples
 ///
@@ -108,7 +109,7 @@ pub fn abc_size(body: &Body<'_>) -> AbcSize {
 /// Count explicit `return` expressions and desugared Rust `?` exits.
 ///
 /// Macro-generated exits are excluded because they do not provide an actionable
-/// source location in the inspected callable.
+/// source location in the inspected callable. Exits written as macro arguments count.
 ///
 /// # Examples
 ///
@@ -232,46 +233,6 @@ pub fn is_macro_expansion(span: Span) -> bool {
     }
 }
 
-/// Return the top-level local module that contains a HIR path use.
-///
-/// The result collapses nested definitions to the first local module below the
-/// crate root, which gives dependency metrics a stable graph vertex identity.
-///
-/// # Examples
-///
-/// ```rust
-/// # #![feature(rustc_private)]
-/// # use maintainability_support::source_module;
-/// # use rustc_hir::HirId;
-/// # use rustc_middle::ty::TyCtxt;
-/// # let (tcx, hir_id): (TyCtxt<'_>, HirId) = unimplemented!();
-/// let _module = source_module(tcx, hir_id);
-/// ```
-#[must_use]
-pub fn source_module(tcx: TyCtxt<'_>, hir_id: HirId) -> LocalDefId {
-    top_level_module(tcx, hir_id.owner.def_id)
-}
-
-/// Return the top-level local module that contains a local definition.
-///
-/// This mirrors [`source_module`] for an already resolved definition and keeps
-/// graph construction consistent across path and item references.
-///
-/// # Examples
-///
-/// ```rust
-/// # #![feature(rustc_private)]
-/// # use maintainability_support::target_module;
-/// # use rustc_hir::def_id::LocalDefId;
-/// # use rustc_middle::ty::TyCtxt;
-/// # let (tcx, def_id): (TyCtxt<'_>, LocalDefId) = unimplemented!();
-/// let _module = target_module(tcx, def_id);
-/// ```
-#[must_use]
-pub fn target_module(tcx: TyCtxt<'_>, def_id: LocalDefId) -> LocalDefId {
-    top_level_module(tcx, def_id)
-}
-
 /// Record one local cross-module path edge when the path is source-authored.
 ///
 /// Macro expansions, external definitions, and same-module references are ignored
@@ -302,9 +263,8 @@ pub fn record_path_edge<S: BuildHasher>(
         return;
     };
     record_edge(
-        tcx,
-        source_module(tcx, hir_id),
-        target_module(tcx, target),
+        top_level_module(tcx, hir_id.owner.def_id),
+        top_level_module(tcx, target),
         edges,
     );
 }
@@ -341,9 +301,8 @@ pub fn record_definition_edge<S: BuildHasher>(
         return;
     };
     record_edge(
-        tcx,
-        source_module(tcx, hir_id),
-        target_module(tcx, target),
+        top_level_module(tcx, hir_id.owner.def_id),
+        top_level_module(tcx, target),
         edges,
     );
 }
@@ -379,6 +338,8 @@ pub fn fan_out_by_module<S: BuildHasher>(
 ///
 /// Components are returned only when a cycle contains multiple module vertices;
 /// self references and disconnected modules do not produce cycle diagnostics.
+/// The crate root is not a vertex: it is the composition root that declares and
+/// re-exports every module, so edges to and from it cannot form an actionable cycle.
 ///
 /// # Examples
 ///
@@ -392,9 +353,15 @@ pub fn fan_out_by_module<S: BuildHasher>(
 pub fn dependency_cycles<S: BuildHasher>(
     edges: &HashSet<(LocalDefId, LocalDefId), S>,
 ) -> Vec<HashSet<LocalDefId>> {
-    let graph = fan_out_by_module(edges);
+    // Drop crate-root edges before building the graph so the root cannot join a component.
+    let module_edges: HashSet<_> = edges
+        .iter()
+        .copied()
+        .filter(|&(source, target)| source != CRATE_DEF_ID && target != CRATE_DEF_ID)
+        .collect();
+    let graph = fan_out_by_module(&module_edges);
     let mut vertices = HashSet::new();
-    for &(source, target) in edges {
+    for &(source, target) in &module_edges {
         let _ = vertices.insert(source);
         let _ = vertices.insert(target);
     }
@@ -461,14 +428,11 @@ impl<'tcx> Visitor<'tcx> for AbcCounter {
         intravisit::walk_stmt(self, statement);
     }
 
-    /// Classify source expressions, then continue through source-authored children.
+    /// Classify source expressions, then continue through every child.
     fn visit_expr(&mut self, expression: &'tcx Expr<'tcx>) {
-        if is_macro_expansion(expression.span) {
-            return;
-        }
-
-        // Desugared container nodes do not count, but their source-authored children still do.
-        if expression.span.desugaring_kind().is_none() {
+        // Generated and desugared nodes do not count, but source-authored children, such as
+        // macro arguments, still do.
+        if is_source_expression(expression) {
             if matches!(
                 expression.kind,
                 ExprKind::Assign(..) | ExprKind::AssignOp(..)
@@ -485,6 +449,11 @@ impl<'tcx> Visitor<'tcx> for AbcCounter {
         }
         intravisit::walk_expr(self, expression);
     }
+}
+
+/// Return whether an expression is source-authored and not compiler-desugared.
+fn is_source_expression(expression: &Expr<'_>) -> bool {
+    !is_macro_expansion(expression.span) && expression.span.desugaring_kind().is_none()
 }
 
 /// Count source control-flow tests under the Rust ABC profile.
@@ -518,17 +487,15 @@ struct ExitPointCounter {
 impl<'tcx> Visitor<'tcx> for ExitPointCounter {
     /// Count one source exit and continue through its operands.
     fn visit_expr(&mut self, expression: &'tcx Expr<'tcx>) {
-        // Macro exits have no actionable source site in the inspected callable.
-        if is_macro_expansion(expression.span) {
-            return;
-        }
+        // Macro exits have no actionable source site, but macro arguments are source code.
         // Count explicit returns and one outer match for each `?` desugaring.
-        if matches!(expression.kind, ExprKind::Ret(..))
-            && expression.span.desugaring_kind().is_none()
-            || matches!(
-                expression.kind,
-                ExprKind::Match(_, _, MatchSource::TryDesugar(_))
-            )
+        if !is_macro_expansion(expression.span)
+            && (matches!(expression.kind, ExprKind::Ret(..))
+                && expression.span.desugaring_kind().is_none()
+                || matches!(
+                    expression.kind,
+                    ExprKind::Match(_, _, MatchSource::TryDesugar(_))
+                ))
         {
             self.count = self.count.saturating_add(1);
         }
@@ -572,14 +539,12 @@ fn expression_decisions(expr: &Expr<'_>) -> u32 {
 }
 
 impl<'tcx> Visitor<'tcx> for DecisionCounter {
-    /// Count decision-bearing expressions, then continue through source-authored children.
+    /// Count decision-bearing expressions, then continue through every child.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        if is_macro_expansion(expr.span) {
-            return;
+        // Generated nodes add nothing, but source-authored macro arguments below them still count.
+        if !is_macro_expansion(expr.span) {
+            self.add(expression_decisions(expr));
         }
-
-        // Keep classification separate from traversal so this visitor remains auditable.
-        self.add(expression_decisions(expr));
         intravisit::walk_expr(self, expr);
     }
 }
@@ -639,11 +604,9 @@ impl CognitiveCounter {
 impl<'tcx> Visitor<'tcx> for CognitiveCounter {
     /// Count structural breaks while preserving the source nesting relationship.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        if is_macro_expansion(expr.span) {
-            return;
-        }
-
-        if matches!(expr.kind, ExprKind::If(..)) && expr.span.desugaring_kind().is_some() {
+        // Generated and desugared structures, including the loop behind each `.await`, add
+        // nothing; source-authored children such as macro arguments are still visited.
+        if is_macro_expansion(expr.span) || is_desugared_if_or_await(expr) {
             intravisit::walk_expr(self, expr);
         } else if let ExprKind::If(condition, then_expression, else_expression) = expr.kind {
             self.visit_if_expression(condition, then_expression, else_expression);
@@ -663,6 +626,19 @@ impl<'tcx> Visitor<'tcx> for CognitiveCounter {
     }
 }
 
+/// Return whether an expression is a desugared `if` or the generated loop of an `.await`.
+fn is_desugared_if_or_await(expr: &Expr<'_>) -> bool {
+    if let ExprKind::If(..) = expr.kind {
+        return expr.span.desugaring_kind().is_some();
+    }
+
+    if let ExprKind::Loop(..) = expr.kind {
+        return expr.span.desugaring_kind() == Some(DesugaringKind::Await);
+    }
+
+    false
+}
+
 /// Multiplies complete child-expression route counts for a containing expression.
 struct ChildPathProduct {
     /// Accumulated child path count, saturated to keep diagnostics deterministic.
@@ -678,13 +654,13 @@ impl<'tcx> Visitor<'tcx> for ChildPathProduct {
 
 /// Calculate one expression's acyclic route count.
 fn npath_expression(expr: &Expr<'_>) -> u128 {
-    if is_macro_expansion(expr.span) {
-        return 1;
+    // Generated structures, including the loop behind each `.await`, add no routes of their
+    // own, while source-authored children such as macro arguments still multiply.
+    if is_macro_expansion(expr.span) || is_desugared_if_or_await(expr) {
+        return child_path_product(expr);
     }
 
-    if let ExprKind::If(condition, then_expression, else_expression) = expr.kind
-        && expr.span.desugaring_kind().is_none()
-    {
+    if let ExprKind::If(condition, then_expression, else_expression) = expr.kind {
         let outcomes = condition_outcomes(condition);
         let then_paths = npath_expression(then_expression);
         let else_paths = else_expression.map_or(1, npath_expression);
@@ -798,25 +774,26 @@ fn condition_outcomes(expr: &Expr<'_>) -> ConditionOutcomes {
 }
 
 /// Collapse any local definition to its direct child module below the crate root.
+///
+/// Definitions directly in the crate root, other than modules, collapse to the root.
 fn top_level_module(tcx: TyCtxt<'_>, mut def_id: LocalDefId) -> LocalDefId {
-    let mut top_level = CRATE_DEF_ID;
+    // Climb until the parent is the crate root, then keep only module children.
     while def_id != CRATE_DEF_ID {
-        top_level = def_id;
-        let Some(parent) = tcx.opt_local_parent(def_id) else {
-            break;
-        };
+        let parent = tcx.local_parent(def_id);
+        if parent == CRATE_DEF_ID {
+            return if tcx.def_kind(def_id) == rustc_hir::def::DefKind::Mod {
+                def_id
+            } else {
+                CRATE_DEF_ID
+            };
+        }
         def_id = parent;
     }
-    if tcx.def_kind(top_level) == rustc_hir::def::DefKind::Mod {
-        top_level
-    } else {
-        CRATE_DEF_ID
-    }
+    CRATE_DEF_ID
 }
 
 /// Insert one edge when it crosses distinct top-level local modules.
 fn record_edge<S: BuildHasher>(
-    _tcx: TyCtxt<'_>,
     source: LocalDefId,
     target: LocalDefId,
     edges: &mut HashSet<(LocalDefId, LocalDefId), S>,

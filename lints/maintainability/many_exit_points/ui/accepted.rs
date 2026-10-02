@@ -14,4 +14,20 @@ fn exactly_at_limit(values: [Option<u8>; 2]) -> Option<u8> {
     Some(first + second)
 }
 
+macro_rules! generated_exits {
+    ($value:expr) => {
+        if $value.is_none() {
+            return None;
+        }
+        let _ = $value?;
+    };
+}
+
+fn macro_exits_are_opaque(value: Option<u8>) -> Option<u8> {
+    generated_exits!(value);
+    generated_exits!(value);
+    generated_exits!(value);
+    Some(0)
+}
+
 fn main() {}

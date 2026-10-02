@@ -1,23 +1,23 @@
 warning: method `borrow_str` looks like a `Borrow` accessor
-  --> $DIR/main.rs:12:5
+  --> $DIR/main.rs:15:5
    |
 LL | /     fn borrow_str(&self) -> &str {
 LL | |         &self.0
 LL | |     }
    | |_____^
    |
-   = help: implement `std::borrow::Borrow<T>` only when equality and hashing match the borrowed view
+   = help: implement `std::borrow::Borrow<str>` only when equality and hashing match the borrowed view
    = note: `#[warn(ad_hoc_borrow)]` on by default
 
 warning: method `borrow_name` looks like a `Borrow` accessor
-  --> $DIR/main.rs:16:5
+  --> $DIR/main.rs:19:5
    |
 LL | /     fn borrow_name(&self) -> NameRef<'_> {
 LL | |         &self.0
 LL | |     }
    | |_____^
    |
-   = help: implement `std::borrow::Borrow<T>` only when equality and hashing match the borrowed view
+   = help: implement `std::borrow::Borrow<str>` only when equality and hashing match the borrowed view
 
 warning: 2 warnings emitted
 

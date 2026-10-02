@@ -23,13 +23,12 @@ extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Body, FieldDef, FnDecl, FnRetTy, ImplItem, ImplItemImplKind, ImplItemKind, Item, ItemKind,
-    LetStmt, LocalSource, Param, Pat, PatKind, QPath, TraitFn, TraitItem, TraitItemKind, Ty,
-    TyKind, intravisit::FnKind,
+    Body, FieldDef, FnDecl, ImplItem, ImplItemImplKind, ImplItemKind, Item, ItemKind, LetStmt,
+    LocalSource, Param, Pat, PatKind, TraitFn, TraitItem, TraitItemKind, intravisit::FnKind,
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty;
-use rustc_span::{Ident, Span, def_id::LocalDefId};
+use rustc_span::{Ident, Span, def_id::LocalDefId, kw};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -115,24 +114,16 @@ impl<'tcx> LateLintPass<'tcx> for BoolNamePrefix {
     /// Check trait item for this lint.
     fn check_trait_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx TraitItem<'tcx>) {
         // Apply constant, parameter, and return-name rules by trait item kind.
-        // Required methods need their written parameter types because they have no body table.
+        // Required methods have no body, so their parameter names come from the signature.
+        let def_id = item.owner_id.def_id;
         match item.kind {
-            TraitItemKind::Const(ty, ..) => {
-                if is_bool_hir_ty(ty) {
-                    check_prefixed_ident(
-                        cx,
-                        "associated constant",
-                        item.ident,
-                        PrefixStyle::ScreamingConst,
-                    );
-                }
+            TraitItemKind::Const(..) => check_associated_const(cx, def_id, item.ident),
+            TraitItemKind::Fn(_, TraitFn::Required(arg_names)) => {
+                check_required_params(cx, def_id, arg_names);
+                check_return_name(cx, def_id, item.ident);
             }
-            TraitItemKind::Fn(sig, TraitFn::Required(arg_names)) => {
-                check_trait_required_params(cx, sig.decl.inputs, arg_names);
-                check_return_name(cx, sig.decl, "method", item.ident);
-            }
-            TraitItemKind::Fn(sig, TraitFn::Provided(_)) => {
-                check_return_name(cx, sig.decl, "method", item.ident);
+            TraitItemKind::Fn(_, TraitFn::Provided(_)) => {
+                check_return_name(cx, def_id, item.ident);
             }
             TraitItemKind::Type(..) => {}
         }
@@ -140,28 +131,35 @@ impl<'tcx> LateLintPass<'tcx> for BoolNamePrefix {
 
     /// Check impl item for this lint.
     fn check_impl_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx ImplItem<'tcx>) {
-        // Restrict the naming policy to inherent items owned by the type.
+        // Trait implementations repeat names that the trait fixes.
         let ImplItemImplKind::Inherent { .. } = item.impl_kind else {
             return;
         };
 
         // Apply the constant or return-name rule for the resolved item shape.
+        let def_id = item.owner_id.def_id;
         match item.kind {
-            ImplItemKind::Const(ty, _) => {
-                if is_bool_hir_ty(ty) {
-                    check_prefixed_ident(
-                        cx,
-                        "associated constant",
-                        item.ident,
-                        PrefixStyle::ScreamingConst,
-                    );
-                }
-            }
-            ImplItemKind::Fn(sig, _) => {
-                check_return_name(cx, sig.decl, "method", item.ident);
-            }
+            ImplItemKind::Const(..) => check_associated_const(cx, def_id, item.ident),
+            ImplItemKind::Fn(..) => check_return_name(cx, def_id, item.ident),
             ImplItemKind::Type(_) => {}
         }
+    }
+}
+
+/// Check one associated constant by its resolved type.
+fn check_associated_const(cx: &LateContext<'_>, def_id: LocalDefId, ident: Ident) {
+    if is_bool_ty(
+        cx.tcx
+            .type_of(def_id)
+            .instantiate_identity()
+            .skip_norm_wip(),
+    ) {
+        check_prefixed_ident(
+            cx,
+            "associated constant",
+            ident,
+            PrefixStyle::ScreamingConst,
+        );
     }
 }
 
@@ -189,33 +187,22 @@ fn check_body_params(cx: &LateContext<'_>, params: &[Param<'_>]) {
     }
 }
 
-/// Check trait required params for this lint.
-fn check_trait_required_params(
-    cx: &LateContext<'_>,
-    inputs: &[Ty<'_>],
-    arg_names: &[Option<Ident>],
-) {
-    // Pair each written trait parameter type with its optional binding name.
-    for (ty, maybe_ident) in inputs.iter().zip(arg_names) {
-        let Some(ident) = maybe_ident else {
-            continue;
-        };
-
-        // Enforce the predicate prefix only for explicitly boolean parameters.
-        if is_bool_hir_ty(ty) {
-            check_prefixed_ident(cx, "parameter", *ident, PrefixStyle::Snake);
-        }
-    }
+/// Check the named parameters of a required trait method by their resolved types.
+fn check_required_params(cx: &LateContext<'_>, def_id: LocalDefId, arg_names: &[Option<Ident>]) {
+    let sig = cx.tcx.fn_sig(def_id).instantiate_identity().skip_norm_wip();
+    // Pair each resolved parameter type with its optional binding name.
+    sig.inputs()
+        .skip_binder()
+        .iter()
+        .zip(arg_names)
+        .filter_map(|(ty, ident)| ident.filter(|_| is_bool_ty(*ty)).map(|ident| (*ty, ident)))
+        .for_each(|(_, ident)| check_prefixed_ident(cx, "parameter", ident, PrefixStyle::Snake));
 }
 
-/// Check return name for this lint.
-fn check_return_name(cx: &LateContext<'_>, decl: &FnDecl<'_>, kind: &'static str, ident: Ident) {
-    let FnRetTy::Return(output) = decl.output else {
-        return;
-    };
-
-    if is_bool_hir_ty(output) {
-        check_prefixed_ident(cx, kind, ident, PrefixStyle::Snake);
+/// Check the name of one associated function that returns `bool`.
+fn check_return_name(cx: &LateContext<'_>, def_id: LocalDefId, ident: Ident) {
+    if returns_bool(cx, def_id) {
+        check_prefixed_ident(cx, "method", ident, PrefixStyle::Snake);
     }
 }
 
@@ -240,18 +227,6 @@ const fn binding_ident(pat: &Pat<'_>) -> Option<Ident> {
     };
 
     Some(ident)
-}
-
-/// Return whether bool hir ty.
-fn is_bool_hir_ty(ty: &Ty<'_>) -> bool {
-    // Required trait items have no typeck body, so check the source spelling for those signatures.
-    let TyKind::Path(QPath::Resolved(_, path)) = ty.kind else {
-        return false;
-    };
-
-    path.segments
-        .last()
-        .is_some_and(|segment| segment.ident.name.to_ident_string() == "bool")
 }
 
 /// Return whether bool ty.
@@ -289,8 +264,8 @@ fn check_prefixed_ident(
     ident: Ident,
     prefix_style: PrefixStyle,
 ) {
-    // Ignore generated identifiers because users cannot rename their source.
-    if ident.span.from_expansion() {
+    // Ignore generated identifiers and `_` placeholders because they have no name to fix.
+    if ident.span.from_expansion() || ident.name == kw::Underscore {
         return;
     }
 
