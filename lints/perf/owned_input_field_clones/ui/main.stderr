@@ -15,5 +15,13 @@ LL | fn borrowed_input(input: InputRef<'_>) -> Output {
    |
    = help: take ownership when the output must own data copied from the input
 
-warning: 2 warnings emitted
+warning: borrowed parameter `other` is cloned into the returned struct
+  --> $DIR/main.rs:107:22
+   |
+LL |     fn merged(&self, other: &Input) -> Output {
+   |                      ^^^^^
+   |
+   = help: take ownership when the output must own data copied from the input
+
+warning: 3 warnings emitted
 
