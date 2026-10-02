@@ -13,7 +13,7 @@ that the work runs inside a span when it does not.
 ## Known problems
 
 The lint only checks a direct `Span::none().enter()` chain. It does not follow
-the span through a local binding, a field, or a helper function.
+the span through a local binding, a field, or another function.
 
 ## Example
 

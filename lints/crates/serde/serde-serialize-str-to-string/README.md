@@ -18,9 +18,9 @@ ways to build the string, such as `format!`. Serde's default `collect_str`
 still allocates, so the change only saves memory with serializers that
 override it.
 
-The lint skips a value whose own type does not implement `Display`, such as a
-type with a manual `ToString` impl or a type that only dereferences to a
-`Display` type, because `collect_str` would not accept it.
+The lint skips a value whose own type lacks a `Display` implementation. Examples
+include a type with a manual `ToString` implementation and a type that only
+dereferences to a `Display` type. `collect_str` would not accept either type.
 
 ## Example
 

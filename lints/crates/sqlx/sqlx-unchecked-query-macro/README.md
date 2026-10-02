@@ -8,9 +8,9 @@ Checks for the SQLx macros `query_unchecked!`, `query_as_unchecked!`,
 
 ## Why is this bad?
 
-The unchecked macros still parse the SQL and count its parameters and columns
-at compile time, but they skip the type checks on bind parameters and result
-columns. A type mismatch then fails at runtime instead of at compile time.
+The unchecked macros still parse the SQL and count its parameters and columns at
+compile time. They skip type checks on bind parameters and result columns, so a
+type mismatch fails at runtime instead of compile time.
 
 ## Known problems
 

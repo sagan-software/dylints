@@ -14,9 +14,9 @@ the cases that matter become hard to find.
 
 ## Known problems
 
-The limit of 64 is fixed. A suite where every combination covers different
-behavior still triggers the lint. The lint counts tests, not the time each
-test takes.
+The lint uses a fixed limit of 64. A suite whose combinations each cover
+different behavior still triggers the lint. The lint counts tests, not the time
+each test takes.
 
 ## Example
 
@@ -31,7 +31,7 @@ fn adds_commutatively(left: u8, right: u8) {
 
 ## Use instead
 
-Keep representative boundary values. For broad generated input, use a
+Keep boundary values that represent the input range. For broad generated input, use a
 property-testing crate.
 
 ```rust

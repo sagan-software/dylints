@@ -3,13 +3,13 @@
 ## What it does
 
 Checks for a variable or field path that appears in the message of a `tracing`
-event macro, such as `info!` or `event!`, but not in a structured field of the
-same event. It covers captured arguments such as `{request_id}` and positional
-arguments such as `"request {} failed", request_id`.
+event macro, such as `info!` or `event!`. It reports the path when the same
+event has no structured field for it. It covers captured arguments such as
+`{request_id}` and positional arguments such as `"request {} failed", request_id`.
 
 ## Why is this bad?
 
-A value that appears only in the message is stored as part of one text field.
+A value that appears only in the message becomes part of one text field.
 Subscribers cannot filter, group, or export it as a named field without parsing
 the message, and that parsing breaks when the wording changes.
 
@@ -31,8 +31,8 @@ fn complete(request_id: u64) {
 
 ## Use instead
 
-Record the value as a field. A message may still repeat a value that is also
-recorded as a field.
+Record the value as a field. A message can still repeat a value that the event
+also records as a field.
 
 ```rust
 fn complete(request_id: u64) {

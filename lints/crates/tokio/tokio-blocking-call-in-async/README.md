@@ -16,12 +16,12 @@ primitive with async code.
 ## Known problems
 
 The lint treats every async body as running inside a Tokio runtime. It warns
-on a future that is polled by another executor, where the call does not panic.
+on a future that another executor polls, where the call does not panic.
 
 The lint stops at the nearest closure. A call inside a synchronous closure
-that is defined and called in async code does not trigger the lint, even
-though the call still runs in the async context. Calls inside a synchronous
-helper function do not trigger the lint either.
+that async code defines and calls does not trigger the lint. The call still runs
+in the async context. Calls inside a synchronous function also do not trigger
+the lint.
 
 ## Example
 

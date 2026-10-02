@@ -30,7 +30,7 @@ fn build_client() -> Result<reqwest::Client, reqwest::Error> {
 ## Use instead
 
 Keep hostname verification enabled and use a certificate whose names match the
-requested host:
+URL host:
 
 ```rust
 fn build_client() -> Result<reqwest::Client, reqwest::Error> {

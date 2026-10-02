@@ -13,7 +13,7 @@ inspect the argument to learn that the future uses the current span.
 ## Known problems
 
 The lint only checks a direct `Span::current()` argument. It does not follow the
-span through a local binding, a field, or a helper function.
+span through a local binding, a field, or another function.
 
 ## Example
 

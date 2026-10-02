@@ -7,15 +7,15 @@ or `for` expression.
 
 ## Why is this bad?
 
-Each sleep measures its delay from the end of the previous work. The time the
-work takes is added to every cycle, so a periodic schedule drifts.
-`tokio::time::interval` tracks fixed deadlines and lets you choose how missed
-ticks are handled.
+Each sleep measures its delay from the end of the previous work. Each cycle
+adds the work time to the delay, so a periodic schedule drifts.
+`tokio::time::interval` tracks fixed deadlines and lets you choose what to do
+with missed ticks.
 
 ## Known problems
 
 Retry backoff, rate-limit recovery, and polling loops often need a delay
-measured from the previous attempt. The lint cannot tell those loops from
+measured from the previous try. The lint cannot tell those loops from
 periodic ones and warns on both.
 
 The lint warns on any `sleep` call that is lexically inside a loop, including

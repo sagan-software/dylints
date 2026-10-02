@@ -8,8 +8,8 @@ is below `0.0` or above `1000.0`.
 ## Why is this bad?
 
 `max_extra_load` panics when its argument is outside `0.0..=1000.0`. The
-program crashes when it builds the retry policy, even though the bad value is
-written in the source.
+program crashes when it builds the retry policy, even though the source contains
+the bad value.
 
 ## Known problems
 

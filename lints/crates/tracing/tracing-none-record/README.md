@@ -7,13 +7,14 @@ Checks for `record` called directly on `tracing::Span::none()`.
 ## Why is this bad?
 
 `Span::none()` returns a disabled span with no fields. Recording a value on it
-sends nothing to the subscriber, so the value is discarded. The call suggests
+sends nothing to the subscriber, so no subscriber receives the value. The call
+suggests
 that the value reaches the trace when it does not.
 
 ## Known problems
 
 The lint only checks a direct `Span::none().record(...)` chain. It does not
-follow the span through a local binding, a field, or a helper function.
+follow the span through a local binding, a field, or another function.
 
 ## Example
 

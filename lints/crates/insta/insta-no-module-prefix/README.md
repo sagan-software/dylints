@@ -6,9 +6,9 @@ Checks for `insta::Settings::set_prepend_module_to_snapshot(false)` calls.
 
 ## Why is this bad?
 
-By default, Insta names a snapshot file `<module>__<name>.snap`. With the
-prefix turned off, the file is `<name>.snap`, so tests with the same name in
-different modules of one directory write to the same snapshot file.
+By default, Insta names a snapshot file `<module>__<name>.snap`. Turning off the
+prefix changes the file name to `<name>.snap`. Tests with the same name in
+different modules of one directory then write to the same snapshot file.
 
 ## Known problems
 

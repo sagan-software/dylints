@@ -9,8 +9,8 @@ function, async block, or async closure.
 
 The blocking API runs its own runtime and waits for it on the current thread.
 Inside an async body, that wait stalls the executor thread, so other futures on
-it stop making progress. Reqwest can also panic when a blocking client is
-created or dropped inside a Tokio runtime.
+it stop making progress. Tokio can also panic when code creates or drops a
+blocking client inside a Tokio runtime.
 
 ## Known problems
 
@@ -19,8 +19,8 @@ blocking call inside a synchronous closure that runs in the async body, such as
 an iterator adapter. This same rule keeps calls inside a
 `tokio::task::spawn_blocking` closure from triggering the lint.
 
-The lint does not follow function calls. A synchronous helper that uses
-`reqwest::blocking` and is called from an async function does not trigger it.
+The lint does not follow function calls. A synchronous function that uses
+`reqwest::blocking` does not trigger the lint when async code calls it.
 
 ## Example
 

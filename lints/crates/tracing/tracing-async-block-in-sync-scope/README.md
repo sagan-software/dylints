@@ -9,9 +9,8 @@ directly to `Span::in_scope`, `tracing::subscriber::with_default`, or
 ## Why is this bad?
 
 These functions set the span or subscriber only while the closure runs. The
-closure only creates the future and returns it. The future runs later, when it
-is polled after the scope has ended, so its events miss the span or
-subscriber.
+closure only creates the future and returns it. Another executor polls the future
+after the scope ends, so its events miss the span or subscriber.
 
 ## Known problems
 

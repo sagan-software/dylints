@@ -12,7 +12,7 @@ runs out of memory. A bounded channel makes producers wait instead.
 
 ## Known problems
 
-Some channels carry a message count that is bounded by other code, or need a
+Other code bounds the message count for some channels, and some channels need a
 sender that can send from synchronous code without waiting. The lint cannot
 see those bounds and warns on every call.
 

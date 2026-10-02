@@ -14,7 +14,7 @@ count, and an extra pointer hop on every use, with no benefit.
 ## Known problems
 
 The lint only checks the `Arc::new` and `Rc::new` calls themselves. It misses a
-client wrapped through `Arc::from`, `Into`, or a helper function. It does not
+client wrapped through `Arc::from`, `Into`, or another function. It does not
 check `reqwest::blocking::Client`.
 
 ## Example

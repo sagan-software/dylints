@@ -7,17 +7,17 @@ schema built with `Schema::new_ref`.
 
 ## Why is this bad?
 
-Schemars documents that `json_schema` should not return a `$ref` schema. The
-generator decides when to emit a `$ref` and registers the target definition. A
-hand-written `$ref` can point to a definition that the generator never adds, so
-the output schema has a dangling reference.
+Schemars advises implementations against returning a `$ref` schema from
+`json_schema`. The generator decides when to emit a `$ref` and registers the
+target definition. A hand-written `$ref` can point to a definition that the
+generator never adds, so the output schema has a dangling reference.
 
 ## Known problems
 
 The lint only finds `Schema::new_ref` as the tail expression, as a `return`
-value, or as the result of an `if` or `match` branch. It misses a `$ref` stored
-in a variable before it is returned, a `$ref` converted with `.into()`, and a
-`$ref` written with `json_schema!`.
+value, or as the result of an `if` or `match` branch. The code can store a
+`$ref` in a variable before returning it, convert a `$ref` with `.into()`, or
+write a `$ref` with `json_schema!` without triggering it.
 
 ## Example
 

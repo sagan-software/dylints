@@ -1,9 +1,9 @@
 # test-case
 
 Lints for the `test_case` and `test_matrix` attributes of the `test-case`
-crate. They are written against test-case 3.3.1 and cover descriptions,
-`ignore` and `panics` modifiers, output matchers, matrix inputs, async tests,
-and leftovers from the test-case 2.0 migration.
+crate. These lints target test-case 3.3.1. They cover descriptions, `ignore` and
+`panics` modifiers, output matchers, matrix inputs, async tests, and leftovers
+from the test-case 2.0 migration.
 
 ## Lints
 

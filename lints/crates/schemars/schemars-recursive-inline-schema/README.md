@@ -9,8 +9,8 @@ implementation returns `true` from `inline_schema`, either through
 ## Why is this bad?
 
 Schemars documents that `inline_schema` must return `false` for recursive
-types. An inlined schema is expanded in place at every use, so a type that
-contains itself expands without end when the schema is generated.
+types. Schemars expands an inlined schema in place at every use, so a recursive
+type expands without end while Schemars generates the schema.
 
 ## Known problems
 

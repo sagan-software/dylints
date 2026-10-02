@@ -7,15 +7,15 @@ inside a `loop`, `while`, or `for` body.
 
 ## Why is this bad?
 
-Each shortcut call builds a new `Client` with its own connection pool. In a
-loop, no connection is reused, so every request pays for a new DNS lookup, TCP
+Each shortcut call builds a new `Client` with its own connection pool. The loop
+reuses no connection, so every network call pays for a new DNS lookup, TCP
 connection, and TLS handshake.
 
 ## Known problems
 
 The lint only finds direct calls inside a loop expression. It misses a shortcut
-inside a helper function called from the loop, and a shortcut inside an
-iterator closure such as `for_each`.
+inside a function that the loop calls, and a shortcut inside an iterator
+closure such as `for_each`.
 
 ## Example
 

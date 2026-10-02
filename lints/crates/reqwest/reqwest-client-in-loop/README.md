@@ -9,14 +9,14 @@ inside a `loop`, `while`, or `for` body. It covers both the async client and
 ## Why is this bad?
 
 Each Reqwest client owns its own connection pool. A new client on every
-iteration throws away the idle connections from the previous one. Each request
-then pays for a new DNS lookup, TCP connection, and TLS handshake.
+iteration throws away the idle connections from the previous one. Each network
+call then pays for a new DNS lookup, TCP connection, and TLS handshake.
 
 ## Known problems
 
 The lint only finds direct constructor calls inside a loop expression. It
-misses a constructor inside a helper function called from the loop, and a
-constructor inside an iterator closure such as `for_each`.
+misses a constructor inside a function that the loop calls, and a constructor
+inside an iterator closure such as `for_each`.
 
 A loop that needs a separate client per iteration, for example to isolate
 cookies or proxies, also triggers the lint.

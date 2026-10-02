@@ -13,11 +13,11 @@ asynchronous execution context. Async code can await the future directly.
 ## Known problems
 
 The lint treats every async body as running inside a Tokio runtime. It warns
-on a future that is polled by another executor.
+on a future that another executor polls.
 
 The lint stops at the nearest closure. A call inside a synchronous closure
-that is defined and called in async code does not trigger the lint. Calls
-inside a synchronous helper function do not trigger the lint either.
+that async code defines and calls does not trigger the lint. Calls inside a
+synchronous function do not trigger the lint either.
 
 ## Example
 

@@ -6,14 +6,14 @@ Checks for `or_current` called directly on `tracing::Span::none()`.
 
 ## Why is this bad?
 
-`Span::or_current` returns the current span when its receiver is disabled.
-`Span::none()` is always disabled, so the expression always returns
+`Span::or_current` returns the current span for a disabled receiver.
+`Span::none()` always returns a disabled span, so the expression always returns
 `Span::current()`. The extra call hides that fixed result.
 
 ## Known problems
 
 The lint only checks a direct `Span::none().or_current()` chain. It does not
-follow the span through a local binding, a field, or a helper function.
+follow the span through a local binding, a field, or another function.
 
 ## Example
 

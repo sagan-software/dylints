@@ -2,19 +2,19 @@
 
 ## What it does
 
-Checks for a `tracing::span::Entered` or `tracing::span::EnteredSpan` guard,
-returned by `Span::enter` or `Span::entered`, that is held across an `.await`
-in an async function or block.
+Checks for a `tracing::span::Entered` or `tracing::span::EnteredSpan` guard
+that `Span::enter` or `Span::entered` returns and that crosses an `.await` in
+an async function or block.
 
 ## Why is this bad?
 
-The span stays entered while the future is suspended at the `.await`. Other
-tasks then run on the same thread inside that span, and their events are
-recorded under it. Tracing documents this as producing incorrect traces.
+While the future waits at the `.await`, the span stays entered. Other tasks then
+run on the same thread inside that span, and tracing records their events under
+it. Tracing documents this pattern as producing incorrect traces.
 
 ## Known problems
 
-The lint can report a guard that is passed to `drop` before the `.await`. To
+The lint can report a guard that code passes to `drop` before the `.await`. To
 avoid this, hold the guard in a block that ends before the `.await`.
 
 The lint checks only values whose type is the guard itself. A guard stored in

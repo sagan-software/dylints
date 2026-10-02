@@ -13,8 +13,8 @@ input can change the statement and cause SQL injection.
 
 ## Known problems
 
-The lint flags every construction, including SQL that is built only from
-trusted values or that has been reviewed by hand. It misses constructions
+The lint flags every construction, including SQL that code builds only from
+trusted values or that a reviewer has checked by hand. It misses constructions
 inside a macro expansion.
 
 ## Example
