@@ -5715,6 +5715,7 @@ dependencies = [
  "large_rust_file",
  "manual_test_cases",
  "many_assertions_in_test",
+ "missing_doctest_examples",
  "missing_intent_comments",
  "path_attribute_outside_root",
  "path_string_field",

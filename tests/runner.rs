@@ -138,10 +138,9 @@ fn commit_all(repository: &Path, message: &str) {
     );
 }
 
-/// The runner lists lints from repository, crate-specific, and style libraries.
-#[test]
-fn lists_bundled_private_lints() {
-    let sandbox = Sandbox::new();
+/// Run `--list-private-lints` against an empty workspace and require success.
+fn list_private_lints(sandbox: &Sandbox) -> RunOutput {
+    // Create an empty Git workspace so listing needs no package build.
     let repository = sandbox.path("empty");
     write(
         &repository.join("Cargo.toml"),
@@ -149,24 +148,94 @@ fn lists_bundled_private_lints() {
     );
     git(&repository, &["init", "-q"]);
 
+    // List every default category and require the runner to succeed.
     let output = sandbox.run(&[
         "--repo",
         repository.to_str().expect("sandbox path should be UTF-8"),
         "--list-private-lints",
     ]);
-
     assert!(output.success, "{}", output.text);
+    output
+}
+
+/// Collect the lint name of every lint crate below `dir` that has a `ui/` fixture directory.
+///
+/// A lint crate's package name, with `-` replaced by `_`, is its lint name.
+fn ui_lint_crate_names(dir: &Path, names: &mut Vec<String>) {
+    let manifest = dir.join("Cargo.toml");
+    // Record this directory when it is a lint crate with UI fixtures.
+    if dir.join("ui").is_dir() && manifest.is_file() {
+        let contents = fs::read_to_string(&manifest).expect("lint manifest should be readable");
+        let name = contents
+            .lines()
+            .find_map(|line| line.strip_prefix("name = \""))
+            .and_then(|rest| rest.strip_suffix('"'))
+            .expect("lint manifest should declare a package name");
+        names.push(name.replace('-', "_"));
+    }
+    // Descend into child directories other than build output.
+    for entry in fs::read_dir(dir).expect("lint directory should be readable") {
+        let path = entry
+            .expect("lint directory entry should be readable")
+            .path();
+        if path.is_dir() && path.file_name().is_some_and(|name| name != "target") {
+            ui_lint_crate_names(&path, names);
+        }
+    }
+}
+
+/// The runner lists lints from repository, crate-specific, and style libraries.
+#[test]
+fn lists_bundled_private_lints() {
+    // List the bundled lints from an empty workspace.
+    let sandbox = Sandbox::new();
+    let output = list_private_lints(&sandbox);
+
+    // Sample one lint from a repository, a crate-specific, and a style library.
     for lint in [
         "dependency_full_semver_versions",
         "bevy_main_return_without_app_exit",
         "ad_hoc_from_str",
     ] {
+        // Print the full listing so a missing name is easy to diagnose.
         assert!(
             output.text.contains(lint),
             "missing {lint}:\n{}",
             output.text
         );
     }
+}
+
+/// Every lint crate with UI fixtures is registered in a bundled category library.
+#[test]
+fn lists_every_lint_crate_with_ui_fixtures() {
+    // Discover lint crates from the source tree instead of a hand-kept list.
+    let mut names = Vec::new();
+    ui_lint_crate_names(
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("lints"),
+        &mut names,
+    );
+    assert!(!names.is_empty(), "no lint crates with ui/ were found");
+
+    // Ask the runner which lints its bundled category libraries register.
+    let sandbox = Sandbox::new();
+    let output = list_private_lints(&sandbox);
+
+    // Match whole list rows so a lint name that prefixes another cannot hide a gap.
+    let listed: Vec<&str> = output
+        .text
+        .lines()
+        .filter_map(|line| line.split_whitespace().next())
+        .collect();
+    // Report every unregistered crate at once.
+    let missing: Vec<&String> = names
+        .iter()
+        .filter(|name| !listed.contains(&name.as_str()))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "lint crates missing from --list-private-lints: {missing:?}"
+    );
 }
 
 /// A dry run plans Clippy and the embedded driver without external Dylint helpers.
