@@ -35,7 +35,7 @@ LL | |         });
 LL | |     }
    | |_____^
    |
-   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()`
+   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()` only when the source iterator's `size_hint()` has no side effects
 
 warning: for loop manually counts matching items
   --> $DIR/edge_cases.rs:154:5

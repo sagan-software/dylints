@@ -1,16 +1,16 @@
 warning: for loop manually fills a collection
-  --> $DIR/main.rs:3:5
+  --> $DIR/main.rs:5:5
    |
 LL | /     for value in values {
 LL | |         out.push(value * 2);
 LL | |     }
    | |_____^
    |
-   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()`
+   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()` only when the source iterator's `size_hint()` has no side effects
    = note: `#[warn(manual_iterator_loop)]` on by default
 
 warning: for loop manually counts matching items
-  --> $DIR/main.rs:11:5
+  --> $DIR/main.rs:13:5
    |
 LL | /     for value in values {
 LL | |         if *value % 2 == 0 {
@@ -22,7 +22,7 @@ LL | |     }
    = help: use `.filter(...).count()` instead of incrementing a counter in the loop
 
 warning: for loop manually searches for a matching item
-  --> $DIR/main.rs:21:5
+  --> $DIR/main.rs:23:5
    |
 LL | /     for value in values {
 LL | |         if *value % 2 == 0 {
@@ -34,7 +34,7 @@ LL | |     }
    = help: use `.any(...)` instead of setting a boolean accumulator
 
 warning: for loop manually checks whether all items match
-  --> $DIR/main.rs:31:5
+  --> $DIR/main.rs:33:5
    |
 LL | /     for value in values {
 LL | |         if *value % 2 != 0 {
@@ -46,34 +46,44 @@ LL | |     }
    = help: use `.all(...)` instead of clearing a boolean accumulator
 
 warning: for loop manually fills a collection
-  --> $DIR/main.rs:43:5
+  --> $DIR/main.rs:45:5
    |
 LL | /     for value in values {
 LL | |         out.push(*value);
 LL | |     }
    | |_____^
    |
-   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()`
+   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()` only when the source iterator's `size_hint()` has no side effects
 
 warning: for loop manually fills a collection
-  --> $DIR/main.rs:51:5
+  --> $DIR/main.rs:53:5
    |
 LL | /     for value in values {
 LL | |         out.push(*value);
 LL | |     }
    | |_____^
    |
-   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()`
+   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()` only when the source iterator's `size_hint()` has no side effects
 
 warning: for loop manually fills a collection
-  --> $DIR/main.rs:61:5
+  --> $DIR/main.rs:63:5
    |
 LL | /     for value in values {
 LL | |         out.push(*value);
 LL | |     }
    | |_____^
    |
-   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()`
+   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()` only when the source iterator's `size_hint()` has no side effects
 
-warning: 7 warnings emitted
+warning: for loop manually fills a collection
+  --> $DIR/main.rs:204:5
+   |
+LL | /     for value in side_effecting_items() {
+LL | |         output.push(value * 2);
+LL | |     }
+   | |_____^
+   |
+   = help: use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()` only when the source iterator's `size_hint()` has no side effects
+
+warning: 8 warnings emitted
 

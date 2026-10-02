@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 fn collect_doubled(values: &[i32]) -> Vec<i32> {
     let mut out = Vec::new();
     for value in values {
@@ -165,4 +167,42 @@ fn call_instead_of_increment(values: &[i32]) -> usize {
         }
     }
     count
+}
+
+struct SideEffectingItems {
+    hinted: Cell<bool>,
+    remaining: i32,
+}
+
+impl Iterator for SideEffectingItems {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining == 0 {
+            return None;
+        }
+        self.remaining -= 1;
+        Some(self.remaining + if self.hinted.get() { 20 } else { 0 })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.hinted.set(true);
+        let remaining = self.remaining as usize;
+        (remaining, Some(remaining))
+    }
+}
+
+fn side_effecting_items() -> SideEffectingItems {
+    SideEffectingItems {
+        hinted: Cell::new(false),
+        remaining: 3,
+    }
+}
+
+fn collect_with_side_effecting_size_hint() -> Vec<i32> {
+    let mut output = Vec::new();
+    for value in side_effecting_items() {
+        output.push(value * 2);
+    }
+    output
 }

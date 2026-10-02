@@ -123,7 +123,7 @@ fn matching_operation<'tcx>(
     match accumulator.kind {
         AccumulatorKind::Vec => loop_pushes_to_vec(cx, body, accumulator).then_some((
             "for loop manually fills a collection",
-            "use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()`",
+            "use iterator adapters such as `.map(...)`, `.filter_map(...)`, and `.collect()` only when the source iterator's `size_hint()` has no side effects",
         )),
         AccumulatorKind::Count => loop_counts_matches(cx, body, accumulator).then_some((
             "for loop manually counts matching items",
