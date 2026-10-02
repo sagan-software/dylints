@@ -32,6 +32,10 @@ decisive item.
   with a separate binding.
 - `any` and `all` stop at the first decisive item. If the condition or the
   iterator has side effects, the rewrite runs them fewer times.
+- A custom iterator's `size_hint()` can have side effects or change later
+  `next()` values. Collection adapters can call `size_hint()` during source
+  iteration, so use `.collect()` only when the source iterator's `size_hint()`
+  has no side effects.
 - The lint ignores an accumulator declared inside a macro expansion.
 - Only `Vec::new()` starts a collection. The lint ignores `vec![]` and
   `Vec::with_capacity(n)`.
