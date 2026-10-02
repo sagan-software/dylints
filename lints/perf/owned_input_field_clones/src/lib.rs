@@ -24,7 +24,7 @@ use rustc_hir::{
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty;
-use rustc_span::{Span, Symbol, def_id::LocalDefId};
+use rustc_span::{Span, Symbol, def_id::LocalDefId, kw};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -43,12 +43,14 @@ impl<'tcx> LateLintPass<'tcx> for OwnedInputFieldClones {
         _decl: &'tcx rustc_hir::FnDecl<'tcx>,
         body: &'tcx Body<'tcx>,
         _span: Span,
-        _local_def_id: LocalDefId,
+        local_def_id: LocalDefId,
     ) {
         // Analyze named functions and methods because closures have no stable API boundary.
         if matches!(kind, FnKind::Closure) {
             return;
         }
+        // A trait fixes the parameter types of its methods and their implementations.
+        let has_fixed_signature = is_trait_method(cx, local_def_id);
 
         // Restrict the output shape to a returned struct literal.
         let Some((fields, tail)) = returned_struct_literal(body.value) else {
@@ -61,25 +63,34 @@ impl<'tcx> LateLintPass<'tcx> for OwnedInputFieldClones {
 
         // Evaluate clone and move origins independently for each simple parameter.
         for param in simple_params(cx, body) {
-            let clone_count = cloned_field_count(cx, fields, param.hir_id);
+            // Both rules need at least two fields cloned from the parameter.
+            if cloned_field_count(cx, fields, param.hir_id) < 2 {
+                continue;
+            }
 
-            // Distinguish unavoidable cloning from an owned input that could be consumed.
-            if param.is_borrowed && clone_count > 0 {
-                emit_span_lint_with_help(
-                    cx,
-                    OWNED_INPUT_FIELD_CLONES,
-                    param.span,
-                    format!(
-                        "borrowed parameter `{}` is cloned into the returned struct",
-                        param.name
-                    ),
-                    "take ownership when the output must own data copied from the input",
-                );
-            } else if clone_count > 1
-                && !fields
-                    .iter()
-                    .any(|field| direct_move_from_param(cx, field.expr, param.hir_id))
-            {
+            // Report a borrowed input only when the signature could take ownership instead.
+            if param.is_borrowed {
+                let can_take_ownership = !has_fixed_signature && param.name != kw::SelfLower;
+                if can_take_ownership {
+                    emit_span_lint_with_help(
+                        cx,
+                        OWNED_INPUT_FIELD_CLONES,
+                        param.span,
+                        format!(
+                            "borrowed parameter `{}` is cloned into the returned struct",
+                            param.name
+                        ),
+                        "take ownership when the output must own data copied from the input",
+                    );
+                }
+                continue;
+            }
+
+            // Report an owned input only when no field already moves out of it.
+            let has_moved_field = fields
+                .iter()
+                .any(|field| direct_move_from_param(cx, field.expr, param.hir_id));
+            if !has_moved_field {
                 emit_span_lint_with_help(
                     cx,
                     OWNED_INPUT_FIELD_CLONES,
@@ -93,6 +104,12 @@ impl<'tcx> LateLintPass<'tcx> for OwnedInputFieldClones {
             }
         }
     }
+}
+
+/// Return whether a trait declares or implements this function's signature.
+fn is_trait_method(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+    let def_id = local_def_id.to_def_id();
+    cx.tcx.trait_of_assoc(def_id).is_some() || cx.tcx.trait_impl_of_assoc(def_id).is_some()
 }
 
 /// State used by the owned param analysis.

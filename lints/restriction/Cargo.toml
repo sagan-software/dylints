@@ -31,6 +31,9 @@ manual_test_cases = { path = "manual_test_cases", features = [
 many_assertions_in_test = { path = "many_assertions_in_test", features = [
     "rlib",
 ] }
+missing_doctest_examples = { path = "missing_doctest_examples", features = [
+    "rlib",
+] }
 missing_intent_comments = { path = "missing_intent_comments", features = ["rlib"] }
 path_attribute_outside_root = { path = "path_attribute_outside_root", features = [
     "rlib",

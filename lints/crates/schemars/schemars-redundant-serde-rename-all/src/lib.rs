@@ -19,6 +19,6 @@ use serde as _;
 schemars_support::declare_redundant_serde_attribute_lint! {
     SCHEMARS_REDUNDANT_SERDE_RENAME_ALL,
     SchemarsRedundantSerdeRenameAll,
-    "rename_all",
+    ["rename_all"],
     "a Schemars rename_all attribute duplicates Serde"
 }

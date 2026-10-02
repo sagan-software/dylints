@@ -518,9 +518,11 @@ pub fn wide_query_parameters<'tcx>(
         .filter_map(|(index, input)| {
             let data = query_data_type(cx, *input)?;
             let (total, mutable) = query_access_width(cx, data, &query_data_targets);
-            let is_custom_limit_exceeded = local_adt_id(data)
-                .is_some_and(|target| query_data_targets.contains(&target) && total > 8);
-            (total > 5 || mutable > 4 || is_custom_limit_exceeded).then_some(index)
+            // A named local `QueryData` type groups related access, so it gets a higher total limit.
+            let is_custom_query_data =
+                local_adt_id(data).is_some_and(|target| query_data_targets.contains(&target));
+            let total_limit = if is_custom_query_data { 8 } else { 5 };
+            (total > total_limit || mutable > 4).then_some(index)
         })
         .collect::<Vec<_>>()
         .into_iter()

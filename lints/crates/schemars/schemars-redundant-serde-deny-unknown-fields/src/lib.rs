@@ -23,6 +23,6 @@ use serde as _;
 schemars_support::declare_redundant_serde_attribute_lint! {
     SCHEMARS_REDUNDANT_SERDE_DENY_UNKNOWN_FIELDS,
     SchemarsRedundantSerdeDenyUnknownFields,
-    "deny_unknown_fields",
+    ["deny_unknown_fields"],
     "a Schemars deny_unknown_fields attribute duplicates Serde"
 }

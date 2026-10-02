@@ -12,7 +12,7 @@
 //! A lint to check for boolean names without predicate prefixes.
 //!
 //! It checks source-authored boolean bindings, fields, parameters, return
-//! values, and related declarations for the `is_` or `IS_` convention. Type
+//! values, and related declarations for predicate names such as `is_ready`. Type
 //! resolution and declaration context determine which names are predicates,
 //! while configuration and generated syntax remain outside the lint's scope.
 
@@ -35,7 +35,7 @@ dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
     pub BOOL_NAME_PREFIX,
     Warn,
-    "boolean name lacks an is_/IS_ prefix",
+    "boolean name does not read as a predicate",
     BoolNamePrefix
 }
 
@@ -269,11 +269,15 @@ enum PrefixStyle {
 }
 
 impl PrefixStyle {
-    /// Helper for expected prefix analysis.
-    const fn expected_prefix(self) -> &'static str {
+    /// Rename guidance with predicate examples in this casing style.
+    const fn rename_help(self) -> &'static str {
         match self {
-            Self::Snake => "is_",
-            Self::ScreamingConst => "IS_",
+            Self::Snake => {
+                "rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`"
+            }
+            Self::ScreamingConst => {
+                "rename it to start with `IS_` or `HAS_`, such as `IS_READY` or `HAS_ITEMS`"
+            }
         }
     }
 }
@@ -292,12 +296,11 @@ fn check_prefixed_ident(
 
     // Compare the name against the vocabulary allowed for its casing style.
     let name = ident.name.to_ident_string();
-    let expected_prefix = prefix_style.expected_prefix();
     if has_expected_predicate_name(&name, prefix_style) {
         return;
     }
 
-    emit_bool_name_lint(cx, ident.span, kind, &name, expected_prefix);
+    emit_bool_name_lint(cx, ident.span, kind, &name, prefix_style);
 }
 
 /// Emit the bool name lint diagnostic.
@@ -306,16 +309,16 @@ fn emit_bool_name_lint(
     span: Span,
     kind: &'static str,
     name: &str,
-    expected_prefix: &'static str,
+    prefix_style: PrefixStyle,
 ) {
-    // Name the affected binding and expected prefix in the primary diagnostic.
-    // Provide examples that match both local and constant naming styles.
+    // Name the affected binding in the primary diagnostic.
+    // Give rename examples that match the binding's casing style.
     emit_span_lint_with_help(
         cx,
         BOOL_NAME_PREFIX,
         span,
-        format!("boolean {kind} `{name}` does not start with `{expected_prefix}`"),
-        "rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`",
+        format!("boolean {kind} `{name}` does not read as a predicate"),
+        prefix_style.rename_help(),
     );
 }
 

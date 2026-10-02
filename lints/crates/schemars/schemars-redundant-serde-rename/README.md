@@ -18,10 +18,9 @@ The lint compares source text after swapping `schemars` for `serde`. It
 misses a duplicate written with different spacing or quoting, an attribute
 that holds more than one key, and a type declared inside a function body.
 
-The lint matches any attribute key that starts with `rename`. A duplicated
-`rename_all` attribute triggers this lint as well as
-`schemars-redundant-serde-rename-all`. A different name in the Schemars
-attribute is an intended override and does not trigger the lint.
+A different name in the Schemars attribute is an intended override and does
+not trigger the lint. A duplicated `rename_all` attribute triggers
+`schemars-redundant-serde-rename-all` instead.
 
 ## Example
 

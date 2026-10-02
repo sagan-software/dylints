@@ -20,6 +20,6 @@ use serde as _;
 schemars_support::declare_redundant_serde_attribute_lint! {
     SCHEMARS_REDUNDANT_SERDE_SKIP,
     SchemarsRedundantSerdeSkip,
-    "skip",
+    ["skip", "skip_serializing", "skip_deserializing", "skip_serializing_if"],
     "a Schemars skip attribute duplicates Serde"
 }

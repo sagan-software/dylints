@@ -32,6 +32,8 @@ Rust review lints for local policy restrictions.
   case list instead of using `test-case`.
 - [`many_assertions_in_test`](many_assertions_in_test): flags tests with four or
   more standard assertion macros.
+- [`missing_doctest_examples`](missing_doctest_examples): flags public
+  functions and methods whose doc comment lacks a `# Examples` Rust code block.
 - [`missing_intent_comments`](missing_intent_comments): flags function bodies
   with fewer than one `//` comment per five statements.
 - [`path_attribute_outside_root`](path_attribute_outside_root): flags `path`

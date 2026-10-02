@@ -67,6 +67,8 @@ fn register_restriction_source_lints(
     // Start with test-case and source-intent policies.
     manual_test_cases::register_lints(sess, lint_store);
     many_assertions_in_test::register_lints(sess, lint_store);
+    // Register documentation and path-layout policies.
+    missing_doctest_examples::register_lints(sess, lint_store);
     missing_intent_comments::register_lints(sess, lint_store);
     path_attribute_outside_root::register_lints(sess, lint_store);
     path_string_field::register_lints(sess, lint_store);

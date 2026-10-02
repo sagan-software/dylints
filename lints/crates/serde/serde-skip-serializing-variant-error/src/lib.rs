@@ -20,7 +20,7 @@ dylint_support::documented_early_lint! {
     #[doc = include_str!("../README.md")]
     pub SERDE_SKIP_SERIALIZING_VARIANT_ERROR,
     Warn,
-    "`serde(skip_serializing)` variant errors if serialized",
+    "`serde(skip)` or `serde(skip_serializing)` variant errors if serialized",
     SerdeSkipSerializingVariantError
 }
 
@@ -31,7 +31,20 @@ impl EarlyLintPass for SerdeSkipSerializingVariantError {
     }
 }
 
-/// Check serializable enums for variants skipped only during serialization.
+/// Variant attribute keys that make `serde_derive` return an error when
+/// serializing the variant, each paired with its diagnostic message.
+const SKIP_KEYS: [(&str, &str); 2] = [
+    (
+        "skip",
+        "`skip` makes this variant fail during serialization",
+    ),
+    (
+        "skip_serializing",
+        "`skip_serializing` makes this variant fail during serialization",
+    ),
+];
+
+/// Check serializable enums for variants skipped during serialization.
 fn check_crate(cx: &EarlyContext<'_>, krate: &Crate) {
     // Collect cfg-active Serde enums before inspecting their variant attributes.
     let krate = serde_ast_crate(cx, krate);
@@ -43,16 +56,19 @@ fn check_crate(cx: &EarlyContext<'_>, krate: &Crate) {
         }
 
         for variant in &item.variants {
-            let Some(skip_attr) = ast_serde_attr(cx, variant.attrs, "skip_serializing") else {
-                continue;
-            };
-            emit_span_lint_with_help(
-                cx,
-                SERDE_SKIP_SERIALIZING_VARIANT_ERROR,
-                skip_attr.span,
-                "`skip_serializing` makes this variant fail during serialization",
-                "use `skip` if the variant should be unavailable both ways, or keep this variant away from serialization",
-            );
+            // `serde_derive` treats both keys as serialization skips that error at runtime.
+            for (key, message) in SKIP_KEYS {
+                let Some(skip_attr) = ast_serde_attr(cx, variant.attrs, key) else {
+                    continue;
+                };
+                emit_span_lint_with_help(
+                    cx,
+                    SERDE_SKIP_SERIALIZING_VARIANT_ERROR,
+                    skip_attr.span,
+                    message,
+                    "remove the attribute so the variant serializes, or keep this variant away from serialization",
+                );
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 warning: this query requests a wide component access set
-  --> $DIR/main.rs:36:15
+  --> $DIR/main.rs:58:15
    |
 LL | fn bad(query: Query<(&A, &B, &C, &D, &E, &F)>) {
    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -8,12 +8,20 @@ LL | fn bad(query: Query<(&A, &B, &C, &D, &E, &F)>) {
    = note: `#[warn(bevy_wide_query_access)]` on by default
 
 warning: this query requests a wide component access set
-  --> $DIR/main.rs:44:22
+  --> $DIR/main.rs:66:22
    |
 LL | fn bad_custom(query: Query<WideQuery>) {
    |                      ^^^^^^^^^^^^^^^^
    |
    = help: split the system by behavior and request only the components it uses
 
-warning: 2 warnings emitted
+warning: this query requests a wide component access set
+  --> $DIR/main.rs:74:34
+   |
+LL | fn bad_custom_mutable(mut query: Query<MutableQuery>) {
+   |                                  ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the system by behavior and request only the components it uses
+
+warning: 3 warnings emitted
 

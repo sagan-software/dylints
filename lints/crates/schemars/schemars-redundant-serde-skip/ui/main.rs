@@ -8,6 +8,12 @@ struct Example {
     bad: String,
     #[serde(skip)]
     good: String,
+    #[serde(skip_serializing)]
+    #[schemars(skip_serializing)]
+    bad_skip_serializing: String,
+    #[serde(skip_serializing)]
+    #[schemars(skip)]
+    different_skip: String,
 }
 
 fn main() {}

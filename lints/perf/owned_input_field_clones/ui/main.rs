@@ -87,6 +87,42 @@ fn destructured_input(Input { id, name, note }: Input) -> Output {
     }
 }
 
+fn borrowed_single_clone(input: &Input) -> Output {
+    Output {
+        id: input.id.clone(),
+        name: String::new(),
+        note: String::new(),
+    }
+}
+
+impl Input {
+    fn summary(&self) -> Output {
+        Output {
+            id: self.id.clone(),
+            name: self.name.clone(),
+            note: String::new(),
+        }
+    }
+
+    fn merged(&self, other: &Input) -> Output {
+        Output {
+            id: self.id.clone(),
+            name: other.name.clone(),
+            note: other.note.clone(),
+        }
+    }
+}
+
+impl From<&Input> for Output {
+    fn from(input: &Input) -> Self {
+        Self {
+            id: input.id.clone(),
+            name: input.name.clone(),
+            note: input.note.clone(),
+        }
+    }
+}
+
 struct CloneLike {
     id: InherentClone,
     name: InherentClone,

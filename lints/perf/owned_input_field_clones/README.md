@@ -7,7 +7,12 @@ from a parameter, such as `id: input.id.clone()`. It warns when:
 
 - an owned parameter has two or more fields cloned and no field moved out of
   it, or
-- a borrowed parameter has at least one field cloned.
+- a borrowed parameter other than `self` has two or more fields cloned, in a
+  function whose signature no trait fixes.
+
+The borrowed rule skips `&self` receivers, because a method usually cannot
+consume its receiver, and trait methods such as `From<&T>::from`, because the
+trait fixes the parameter type.
 
 ## Why is this bad?
 
@@ -18,9 +23,8 @@ cost from callers, who may already have an owned value to give up.
 
 ## Known problems
 
-The borrowed rule includes `&self`. Any method that clones one field of `self`
-into a returned struct, such as `fn summary(&self) -> Summary`, triggers the
-lint, even when taking ownership is not an option.
+The borrowed rule cannot see callers. It still warns when every caller needs to
+keep the input after the call.
 
 Clones of `Copy` fields and cheap clones such as `Arc` count toward the total.
 
