@@ -14,6 +14,12 @@ fn extend_vec(output: &mut Vec<i32>, values: Vec<i32>) {
     }
 }
 
+fn extend_array(output: &mut Vec<i32>) {
+    for value in [1, 2, 3] {
+        output.push(value);
+    }
+}
+
 fn extend_deque(output: &mut VecDeque<i32>, values: Vec<i32>) {
     // Transformed items keep help-only output.
     for value in values {
@@ -204,6 +210,47 @@ fn source_reads_target(output: &mut Vec<i32>) {
     }
 }
 
+struct SizeHintItems {
+    hinted: Cell<bool>,
+    remaining: i32,
+}
+
+impl Iterator for SizeHintItems {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining == 0 {
+            return None;
+        }
+        self.remaining -= 1;
+        Some(self.remaining + if self.hinted.get() { 20 } else { 0 })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.hinted.set(true);
+        let remaining = self.remaining as usize;
+        (remaining, Some(remaining))
+    }
+}
+
+fn custom_size_hint(output: &mut Vec<i32>) {
+    for value in (SizeHintItems {
+        hinted: Cell::new(false),
+        remaining: 3,
+    }) {
+        output.push(value);
+    }
+}
+
+fn custom_size_hint_transformed(output: &mut Vec<i32>) {
+    for value in (SizeHintItems {
+        hinted: Cell::new(false),
+        remaining: 3,
+    }) {
+        output.push(value + 1);
+    }
+}
+
 fn target(outputs: &mut [Vec<i32>; 2]) -> &mut Vec<i32> {
     &mut outputs[0]
 }
@@ -229,6 +276,7 @@ fn macro_loop(output: &mut Vec<i32>, values: Vec<i32>) {
 
 fn main() {
     extend_vec(&mut Vec::new(), vec![1]);
+    extend_array(&mut Vec::new());
     extend_deque(&mut VecDeque::new(), vec![1]);
     custom(&mut Custom(Vec::new()), vec![1]);
     custom_deref_mut(
@@ -253,4 +301,6 @@ fn main() {
         vec![1],
     );
     source_reads_target(&mut Vec::new());
+    custom_size_hint(&mut Vec::new());
+    custom_size_hint_transformed(&mut Vec::new());
 }

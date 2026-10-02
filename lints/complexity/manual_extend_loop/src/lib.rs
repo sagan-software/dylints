@@ -31,7 +31,7 @@ use rustc_middle::ty::{
     self,
     adjustment::{Adjust, DerefAdjustKind},
 };
-use rustc_span::Span;
+use rustc_span::{Span, Symbol, symbol::sym};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -43,6 +43,9 @@ dylint_support::documented_late_lint! {
 
 /// Diagnostic help for loops without an exact rewrite.
 const HELP: &str = "use `Extend::extend`, with `map` when the inserted value is transformed";
+/// Diagnostic help when an unchanged source may have custom iteration behavior.
+const UNKNOWN_SOURCE_HELP: &str =
+    "use `Extend::extend` only when the source's `size_hint` has no side effects";
 
 impl<'tcx> LateLintPass<'tcx> for ManualExtendLoop {
     /// Checks a standard loop for one resolved sequence insertion.
@@ -66,7 +69,7 @@ impl<'tcx> LateLintPass<'tcx> for ManualExtendLoop {
                         );
                     }
                     None => {
-                        let _ = diag.help(HELP);
+                        let _ = diag.help(candidate.help);
                     }
                 }
             }),
@@ -80,6 +83,8 @@ struct Candidate {
     span: Span,
     /// Exact replacement when the loop pushes its unchanged item.
     suggestion: Option<String>,
+    /// Help text for loops that do not have an exact replacement.
+    help: &'static str,
 }
 
 /// Returns a candidate when the loop body is one standard sequence insertion.
@@ -90,13 +95,21 @@ fn extend_candidate<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Opt
         .flatten()
         .filter(|loop_info| !loop_info.body.span.from_expansion())?;
     let (receiver, argument) = sequence_insertion(cx, loop_info.body, loop_info.source)?;
-    // Offer the exact rewrite only when `extend` receives the unchanged loop items.
-    let suggestion = is_unchanged_item(cx, &loop_info, argument)
+    // Offer the exact rewrite only for unchanged items from a known standard source.
+    let is_unchanged = is_unchanged_item(cx, &loop_info, argument);
+    let is_safe_source = is_known_standard_source(cx, loop_info.source);
+    let suggestion = (is_unchanged && is_safe_source)
         .then(|| exact_rewrite(cx, expr, &loop_info, receiver))
         .flatten();
+    let help = if is_safe_source {
+        HELP
+    } else {
+        UNKNOWN_SOURCE_HELP
+    };
     Some(Candidate {
         span: loop_info.span.source_callsite(),
         suggestion,
+        help,
     })
 }
 
@@ -120,11 +133,22 @@ fn sequence_insertion<'tcx>(
         });
     // Moving the insertions into one call must not skip an exit or reorder a target read.
     // The source is evaluated while `extend` holds the target borrow, so it cannot read the target.
-    let is_independent = place_root(cx, receiver).is_some_and(|root| {
-        !contains_local(cx, argument, root) && !contains_local(cx, source, root)
-    });
+    let is_independent = place_root(cx, receiver)
+        .is_some_and(|root| is_independent_source(cx, argument, source, root));
     let has_exit = support::contains_control_flow(action);
     (is_insertion && is_independent && !has_exit).then_some((receiver, argument))
+}
+
+/// Returns whether the insertion arguments avoid reads from the target root.
+fn is_independent_source<'tcx>(
+    cx: &LateContext<'tcx>,
+    argument: &'tcx Expr<'tcx>,
+    source: &'tcx Expr<'tcx>,
+    root: HirId,
+) -> bool {
+    let argument_is_independent = !contains_local(cx, argument, root);
+    let source_is_independent = !contains_local(cx, source, root);
+    argument_is_independent && source_is_independent
 }
 
 /// Returns whether the pushed value is the loop binding without a coercion.
@@ -139,6 +163,25 @@ fn is_unchanged_item(
     let is_item = item.is_some() && support::local_binding(cx, argument) == item;
     let is_uncoerced = typeck.expr_ty_adjusted(argument) == typeck.expr_ty(argument);
     is_item && is_uncoerced
+}
+
+/// Returns whether `for` uses a source with standard, side-effect-free iteration metadata.
+fn is_known_standard_source(cx: &LateContext<'_>, source: &Expr<'_>) -> bool {
+    fn is_standard_source_type(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> bool {
+        match ty.kind() {
+            ty::Adt(adt, _) => {
+                cx.tcx.is_diagnostic_item(sym::Vec, adt.did())
+                    || cx
+                        .tcx
+                        .is_diagnostic_item(Symbol::intern("VecDeque"), adt.did())
+            }
+            ty::Array(..) | ty::Slice(..) => true,
+            ty::Ref(_, inner, _) => is_standard_source_type(cx, *inner),
+            _ => false,
+        }
+    }
+
+    is_standard_source_type(cx, cx.typeck_results().expr_ty(source))
 }
 
 /// Renders `target.extend(source)` with the terminator its parent context needs.
@@ -185,10 +228,12 @@ fn place_root_shape(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<HirId> {
 fn is_builtin_collection_type(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     fn is_collection(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> bool {
         match ty.kind() {
-            ty::Adt(adt, _) => cx
-                .tcx
-                .get_diagnostic_name(adt.did())
-                .is_some_and(|name| matches!(name.as_str(), "Vec" | "VecDeque")),
+            ty::Adt(adt, _) => {
+                cx.tcx.is_diagnostic_item(sym::Vec, adt.did())
+                    || cx
+                        .tcx
+                        .is_diagnostic_item(Symbol::intern("VecDeque"), adt.did())
+            }
             ty::Ref(_, inner, _) => is_collection(cx, *inner),
             _ => false,
         }

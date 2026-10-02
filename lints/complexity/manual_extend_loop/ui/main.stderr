@@ -9,7 +9,15 @@ LL | |     }
    = note: `#[warn(manual_extend_loop)]` on by default
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:19:5
+  --> $DIR/main.rs:18:5
+   |
+LL | /     for value in [1, 2, 3] {
+LL | |         output.push(value);
+LL | |     }
+   | |_____^ help: use `Extend::extend`: `output.extend([1, 2, 3])`
+
+warning: collection insertion loop can use `Extend::extend`
+  --> $DIR/main.rs:25:5
    |
 LL | /     for value in values {
 LL | |         output.push_back(value * 2);
@@ -19,7 +27,7 @@ LL | |     }
    = help: use `Extend::extend`, with `map` when the inserted value is transformed
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:25:5
+  --> $DIR/main.rs:31:5
    |
 LL | /     for value in returned {
 LL | |         output.push(value);
@@ -27,15 +35,17 @@ LL | |     }
    | |_____^ help: use `Extend::extend`: `output.extend(returned)`
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:31:5
+  --> $DIR/main.rs:37:5
    |
 LL | /     for value in values.iter().copied() {
 LL | |         output.push(value)
 LL | |     }
-   | |_____^ help: use `Extend::extend`: `output.extend(values.iter().copied())`
+   | |_____^
+   |
+   = help: use `Extend::extend` only when the source's `size_hint` has no side effects
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:37:5
+  --> $DIR/main.rs:43:5
    |
 LL | /     'items: for value in values {
 LL | |         output.push(value);
@@ -43,7 +53,7 @@ LL | |     }
    | |_____^ help: use `Extend::extend`: `output.extend(values)`
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:43:5
+  --> $DIR/main.rs:49:5
    |
 LL | /     for value in values {
 LL | |         output.push(value);
@@ -51,7 +61,7 @@ LL | |     }
    | |_____^ help: use `Extend::extend`: `output.extend(values);`
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:50:5
+  --> $DIR/main.rs:56:5
    |
 LL | /     for value in values {
 LL | |         (*output).push(value);
@@ -59,7 +69,7 @@ LL | |     }
    | |_____^ help: use `Extend::extend`: `(*output).extend(values)`
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:124:9
+  --> $DIR/main.rs:130:9
    |
 LL | /         for value in values {
 LL | |             self.items.push(value);
@@ -67,7 +77,7 @@ LL | |         }
    | |_________^ help: use `Extend::extend`: `self.items.extend(values)`
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:134:17
+  --> $DIR/main.rs:140:17
    |
 LL |           true => for value in values {
    |  _________________^
@@ -78,7 +88,7 @@ LL | |         },
    = help: use `Extend::extend`, with `map` when the inserted value is transformed
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:143:5
+  --> $DIR/main.rs:149:5
    |
 LL | /     for &value in values {
 LL | |         output.push(value);
@@ -88,7 +98,7 @@ LL | |     }
    = help: use `Extend::extend`, with `map` when the inserted value is transformed
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:150:5
+  --> $DIR/main.rs:156:5
    |
 LL | /     for value in values {
 LL | |         output.push(value);
@@ -97,5 +107,31 @@ LL | |     }
    |
    = help: use `Extend::extend`, with `map` when the inserted value is transformed
 
-warning: 11 warnings emitted
+warning: collection insertion loop can use `Extend::extend`
+  --> $DIR/main.rs:237:5
+   |
+LL | /     for value in (SizeHintItems {
+LL | |         hinted: Cell::new(false),
+LL | |         remaining: 3,
+LL | |     }) {
+LL | |         output.push(value);
+LL | |     }
+   | |_____^
+   |
+   = help: use `Extend::extend` only when the source's `size_hint` has no side effects
+
+warning: collection insertion loop can use `Extend::extend`
+  --> $DIR/main.rs:246:5
+   |
+LL | /     for value in (SizeHintItems {
+LL | |         hinted: Cell::new(false),
+LL | |         remaining: 3,
+LL | |     }) {
+LL | |         output.push(value + 1);
+LL | |     }
+   | |_____^
+   |
+   = help: use `Extend::extend` only when the source's `size_hint` has no side effects
+
+warning: 14 warnings emitted
 
