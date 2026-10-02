@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 use std::num::ParseIntError;
 use std::str::Utf8Error;
 
@@ -16,8 +18,18 @@ impl From<Utf8Error> for Error {
     }
 }
 
+#[derive(Debug)]
+struct IntoOnlyError;
+
+impl Into<Error> for IntoOnlyError {
+    fn into(self) -> Error {
+        Error
+    }
+}
+
 fn explicit_from(raw: &str) -> Result<u16, Error> {
-    raw.parse::<u16>().map_err(Error::from)
+    let port = raw.parse::<u16>().map_err(Error::from)?;
+    Ok(port)
 }
 
 fn trait_from(raw: &str) -> Result<u16, Error> {
@@ -29,11 +41,20 @@ fn into_conversion(raw: &str) -> Result<u16, Error> {
 }
 
 fn closure_from(raw: &str) -> Result<u16, Error> {
-    raw.parse::<u16>().map_err(|error| Error::from(error))
+    let port = raw.parse::<u16>().map_err(|error| Error::from(error))?;
+    Ok(port)
 }
 
 fn closure_into(raw: &str) -> Result<u16, Error> {
     raw.parse::<u16>().map_err(|error| error.into())
+}
+
+fn wrapped_try(raw: &str) -> Result<u16, Error> {
+    Ok(raw.parse::<u16>().map_err(Error::from)?)
+}
+
+fn tail_position(raw: &str) -> Result<u16, Error> {
+    raw.parse::<u16>().map_err(Error::from)
 }
 
 fn preserves_context(raw: &str) -> Result<u16, String> {
@@ -57,8 +78,13 @@ fn nested_closure(raw: &str) -> Result<u16, Error> {
     parse()
 }
 
+fn into_without_from(result: Result<u16, IntoOnlyError>) -> Result<u16, Error> {
+    result.map_err(Into::into)
+}
+
 fn from_utf8(bytes: &[u8]) -> Result<&str, Error> {
-    std::str::from_utf8(bytes).map_err(|error| Error::from(error))
+    let text = std::str::from_utf8(bytes).map_err(|error| Error::from(error))?;
+    Ok(text)
 }
 
 fn main() {}

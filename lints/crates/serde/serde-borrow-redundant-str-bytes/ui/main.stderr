@@ -1,16 +1,10 @@
 warning: `serde(borrow)` is redundant on this field type
-  --> $DIR/main.rs:21:5
+  --> $DIR/main.rs:23:5
    |
 LL |     #[serde(borrow)]
    |     ^^^^^^^^^^^^^^^^ help: remove the redundant borrow attribute
    |
    = note: `#[warn(serde_borrow_redundant_str_bytes)]` on by default
-
-warning: `serde(borrow)` is redundant on this field type
-  --> $DIR/main.rs:23:5
-   |
-LL |     #[serde(borrow)]
-   |     ^^^^^^^^^^^^^^^^ help: remove the redundant borrow attribute
 
 warning: `serde(borrow)` is redundant on this field type
   --> $DIR/main.rs:25:5
@@ -25,10 +19,24 @@ LL |     #[serde(borrow)]
    |     ^^^^^^^^^^^^^^^^ help: remove the redundant borrow attribute
 
 warning: `serde(borrow)` is redundant on this field type
-  --> $DIR/main.rs:31:5
+  --> $DIR/main.rs:29:5
    |
 LL |     #[serde(borrow)]
    |     ^^^^^^^^^^^^^^^^ help: remove the redundant borrow attribute
 
-warning: 5 warnings emitted
+warning: `serde(borrow)` is redundant on this field type
+  --> $DIR/main.rs:33:5
+   |
+LL |     #[serde(borrow)]
+   |     ^^^^^^^^^^^^^^^^ help: remove the redundant borrow attribute
+
+warning: `serde(borrow)` is redundant on this field type
+  --> $DIR/main.rs:35:5
+   |
+LL |     #[serde(borrow, rename = "renamed")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `borrow` from this attribute
+
+warning: 6 warnings emitted
 

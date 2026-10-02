@@ -88,6 +88,11 @@ fn check_error_attrs(cx: &EarlyContext<'_>, attrs: &[Attribute], fields: &[ast::
             continue;
         }
 
+        // Thiserror rejects `#[source]` inside a transparent item, so that field
+        // gets help without a rewrite.
+        let suggestion = (!fields.iter().any(|field| has_attr(&field.attrs, "source")))
+            .then_some("#[error(transparent)]");
+
         // Replace the exact forwarding attribute while retaining its source field.
         emit_span_lint_with_suggestion(
             cx,
@@ -95,7 +100,7 @@ fn check_error_attrs(cx: &EarlyContext<'_>, attrs: &[Attribute], fields: &[ast::
             attr.span,
             "`thiserror` can forward this source transparently",
             "replace the manual display forwarding with `#[error(transparent)]`",
-            "#[error(transparent)]",
+            suggestion,
         );
     }
 }
@@ -327,7 +332,7 @@ fn emit_span_lint_with_suggestion(
     span: Span,
     message: &'static str,
     help: &'static str,
-    suggestion: &'static str,
+    suggestion: Option<&'static str>,
 ) {
     // Replacing one complete thiserror attribute is an exact local edit.
     cx.emit_span_lint(
@@ -335,7 +340,12 @@ fn emit_span_lint_with_suggestion(
         span,
         DiagDecorator(move |diag| {
             let _ = diag.primary_message(message);
-            let _ = diag.span_suggestion(span, help, suggestion, Applicability::MachineApplicable);
+            if let Some(suggestion) = suggestion {
+                let _ =
+                    diag.span_suggestion(span, help, suggestion, Applicability::MachineApplicable);
+            } else {
+                let _ = diag.help(help);
+            }
         }),
     );
 }

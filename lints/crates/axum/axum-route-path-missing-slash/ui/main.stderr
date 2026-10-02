@@ -1,5 +1,5 @@
 warning: this route path panics because it does not start with `/`
-  --> $DIR/main.rs:6:41
+  --> $DIR/main.rs:8:41
    |
 LL |     let _: Router = Router::new().route("health", get(|| async {}));
    |                                         ^^^^^^^^ help: prefix the route path with `/`: `"/health"`

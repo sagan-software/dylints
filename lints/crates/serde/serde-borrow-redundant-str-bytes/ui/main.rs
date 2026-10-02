@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 
@@ -30,6 +32,8 @@ struct User<'a> {
     path: BorrowedPath<'a>,
     #[serde(borrow)]
     inline_name: &'a str,
+    #[serde(borrow, rename = "renamed")]
+    renamed_name: &'a str,
 }
 
 #[derive(Deserialize)]

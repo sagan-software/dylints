@@ -1,0 +1,43 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#![allow(dead_code)]
+
+use serde::{Deserialize, Serialize};
+
+#[cfg(any())]
+#[derive(Serialize)]
+struct CfgDisabledSerializeOnly {
+    #[serde(default)]
+    value: String,
+}
+
+#[derive(serde::Serialize)]
+struct SerializeOnlyContainer {
+    value: String,
+}
+
+#[derive(Serialize)]
+struct SerializeOnly {
+    
+    value: String,
+}
+
+#[derive(Deserialize)]
+struct DeserializeOnly {
+    
+    value: String,
+}
+
+#[derive(Deserialize)]
+enum DeserializeOnlyEnum {
+    
+    Hidden,
+}
+
+#[derive(Serialize, Deserialize)]
+struct BothDirections {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    value: String,
+}
+
+fn main() {}

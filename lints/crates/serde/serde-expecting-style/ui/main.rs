@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(dead_code)]
 
 use serde::Deserialize;
@@ -5,6 +7,10 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[serde(expecting = "A user id.")]
 struct BadUserId(String);
+
+#[derive(Deserialize)]
+#[serde(expecting = "A \"quoted\" user id.")]
+struct EscapedUserId(String);
 
 #[derive(Deserialize)]
 #[serde(expecting = "a user id")]

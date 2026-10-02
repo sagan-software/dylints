@@ -1,5 +1,5 @@
 warning: this Schemars attribute duplicates Serde
-  --> $DIR/main.rs:6:1
+  --> $DIR/main.rs:8:1
    |
 LL | #[schemars(rename_all = "camelCase")]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove the redundant Schemars attribute

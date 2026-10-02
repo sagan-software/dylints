@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(dead_code)]
 
 #[derive(Debug)]
@@ -14,6 +16,85 @@ fn destructured_return() -> Result<u64, Error> {
         return Err(Error::Missing);
     };
     Ok(id)
+}
+
+struct Point {
+    x: u64,
+    y: u64,
+}
+
+fn lookup_point() -> Option<Point> {
+    Some(Point { x: 1, y: 2 })
+}
+
+fn struct_pattern_return() -> Result<u64, Error> {
+    let Some(Point { x, y }) = lookup_point() else {
+        return Err(Error::Missing);
+    };
+    Ok(x + y)
+}
+
+fn refutable_inner_pattern(count: Option<u64>) -> Result<u64, Error> {
+    let Some(0) = count else {
+        return Err(Error::Missing);
+    };
+    Ok(0)
+}
+
+fn refutable_nested_pattern() -> Result<&'static str, Error> {
+    let Some((7, name)) = lookup_pair() else {
+        return Err(Error::Missing);
+    };
+    Ok(name)
+}
+
+fn error_uses_local(value: Option<u64>, error: Error) -> Result<u64, Error> {
+    let Some(value) = value else {
+        return Err(error);
+    };
+    drop(error);
+    Ok(value)
+}
+
+struct Holder {
+    name: Option<String>,
+    count: Option<u64>,
+}
+
+fn borrowed_place(holder: &Holder) -> Result<&str, Error> {
+    let Some(ref name) = holder.name else {
+        return Err(Error::Missing);
+    };
+    Ok(name)
+}
+
+fn mutated_copy_place(holder: &mut Holder) -> Result<u64, Error> {
+    let Some(ref mut count) = holder.count else {
+        return Err(Error::Missing);
+    };
+    *count += 1;
+    Ok(*count)
+}
+
+fn copied_place(holder: &Holder) -> Result<u64, Error> {
+    let Some(count) = holder.count else {
+        return Err(Error::Missing);
+    };
+    Ok(count)
+}
+
+fn annotated_let(raw: &str) -> Result<u64, Error> {
+    let Some(value): Option<u64> = raw.parse().ok() else {
+        return Err(Error::Missing);
+    };
+    Ok(value)
+}
+
+fn borrowed_initializer(value: &Option<u64>) -> Result<u64, Error> {
+    let Some(value) = value else {
+        return Err(Error::Missing);
+    };
+    Ok(*value)
 }
 
 fn allowed_continue(items: &[Option<u64>]) -> u64 {

@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(dead_code)]
 
 use std::num::ParseIntError;
@@ -17,6 +19,25 @@ fn block_closure(raw: &str) -> Result<u16, Error> {
 
 fn nested_result(raw: &str) -> Result<Result<u16, Error>, Error> {
     Ok(raw.parse::<u16>().map_err(Error::from))
+}
+
+fn nested_result_with_try(raw: &str) -> Result<Result<u16, Error>, Error> {
+    Ok(Ok(raw.parse::<u16>().map_err(Error::from)?))
+}
+
+fn block_closure_with_try(raw: &str) -> Result<u16, Error> {
+    let port = raw.parse::<u16>().map_err(|error| Error::from(error))?;
+    Ok(port)
+}
+
+macro_rules! parse_port {
+    ($raw:expr) => {
+        $raw.parse::<u16>().map_err(Error::from)?
+    };
+}
+
+fn macro_body_with_try(raw: &str) -> Result<u16, Error> {
+    Ok(parse_port!(raw))
 }
 
 fn adds_context(raw: &str) -> Result<u16, String> {

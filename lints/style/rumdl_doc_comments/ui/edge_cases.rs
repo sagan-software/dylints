@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(dead_code)]
 
 /// Heading jumps are often hard to scan.

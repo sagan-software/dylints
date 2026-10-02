@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // compile-flags: --edition 2024
 // normalize-stderr-test: "(\n)\n\z" -> "$1"
 
@@ -77,4 +79,12 @@ pub fn keep_trailing_space_doc_attr() {}
 #[doc = "Outer docs with\nmultiple lines."]
 pub fn keep_multiline_doc_attr() {}
 
-fn main() {}
+#[doc = "Same-line docs need human review."] pub fn warn_same_line_doc_attr() {}
+
+#[doc = "Docs before another attribute."] #[inline]
+pub fn warn_doc_attr_before_attr() {}
+
+fn main() {
+    warn_same_line_doc_attr();
+    warn_doc_attr_before_attr();
+}

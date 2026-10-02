@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 mod some_internal_thing {
     pub struct CrateQualified;
     pub struct SelfQualified;

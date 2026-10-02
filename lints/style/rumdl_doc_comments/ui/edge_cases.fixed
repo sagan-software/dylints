@@ -1,0 +1,87 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#![allow(dead_code)]
+
+/// Heading jumps are often hard to scan.
+///
+/// ### Third level first
+///
+/// Rustdoc pages sometimes use local subheadings before a full page outline is
+/// present. This block also includes a doctest with hidden setup lines.
+///
+/// ```
+/// # let state = Some("ready");
+/// assert_eq!(state.unwrap(), "ready");
+/// ```
+pub fn heading_jump() {}
+
+/// This has spaced *emphasis* in the middle.
+pub fn spaced_emphasis() {}
+
+/// This paragraph is intentionally written as one long line with `inline_code` so the diagnostic shows that MD013 reports line length without offering a misleading machine-applicable fix.
+pub fn long_line_without_fix() {}
+
+/// This paragraph keeps *spaced* emphasis in a realistic sentence.
+///
+/// ## Details
+///
+/// The follow-up paragraph keeps *another* emphasis issue.
+/// It lets one suggestion demonstrate several coordinated edits.
+pub fn wrapped_multi_fix() {}
+
+/// Clean paragraph with `code` and *emphasis*.
+///
+/// Real rustdoc comments often include multiple top-level sections. Those
+/// headings are intentional here because rustdoc treats them as item-local
+/// sections rather than document-wide titles.
+///
+/// # Errors
+///
+/// Returns [`None`] when the source has no rendered form.
+///
+/// # Panics
+///
+/// This code does not panic. The section exists to exercise rustdoc's
+/// conventional heading names.
+///
+/// # Examples
+///
+/// ```compile_fail
+/// let _: usize = "not a number";
+/// ```
+///
+/// ```rust,ignore
+/// # use crate::clean_markdown;
+/// let text = clean_markdown();
+/// assert_eq!(text, Some("clean"));
+/// ```
+pub fn clean_markdown() -> Option<&'static str> {
+    Some("clean")
+}
+
+/// Exercises rustdoc links to associated items.
+///
+/// The link [`Self::render`] is rustdoc-specific enough that a plain Markdown
+/// parser can misread it. Keeping it in the UI fixture protects that syntax.
+pub trait Renderer {
+    /// The document type returned by [`Self::render`].
+    type Document;
+
+    /// Render the receiver into [`Self::Document`].
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// # use crate::Renderer;
+    /// # struct Html;
+    /// # impl Renderer for Html {
+    /// #     type Document = String;
+    /// #     fn render(&self) -> Self::Document { String::new() }
+    /// # }
+    /// let html = Html;
+    /// let _: String = html.render();
+    /// ```
+    fn render(&self) -> Self::Document;
+}
+
+fn main() {}

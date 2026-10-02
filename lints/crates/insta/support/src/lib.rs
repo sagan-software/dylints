@@ -84,7 +84,8 @@ pub fn insta_macro_invocation(
 /// Replace the public macro name while preserving its path and arguments.
 ///
 /// The replacement succeeds only when the recorded source contains the expected
-/// macro name immediately before the invocation bang.
+/// macro name immediately before the invocation bang, behind an `insta::` or
+/// `::insta::` path. An imported or re-exported name may not cover the replacement.
 #[must_use]
 ///
 /// # Examples
@@ -107,6 +108,11 @@ pub fn insta_macro_replacement(
     replacement_name: &str,
 ) -> Option<String> {
     let name_range = macro_name_range(&invocation.source, &invocation.name)?;
+    // Only an `insta::` path is sure to resolve the replacement macro as well.
+    let path_prefix = invocation.source.get(..name_range.start)?.trim_start();
+    if !matches!(path_prefix, "insta::" | "::insta::") {
+        return None;
+    }
     let mut replacement = invocation.source.clone();
     replacement.replace_range(name_range, replacement_name);
     Some(replacement)

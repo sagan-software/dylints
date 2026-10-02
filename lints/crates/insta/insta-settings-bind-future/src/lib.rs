@@ -13,14 +13,18 @@
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_span;
 
 #[cfg(test)]
 use insta as _;
 
 use insta_support::{is_explicit_async_closure, settings_method_call};
 use rustc_errors::{Applicability, DiagDecorator};
-use rustc_hir::Expr;
+use rustc_hir::{
+    CaptureBy, ClosureKind, CoroutineDesugaring, CoroutineKind, CoroutineSource, Expr, ExprKind,
+};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_span::Span;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -45,21 +49,79 @@ impl<'tcx> LateLintPass<'tcx> for InstaSettingsBindFuture {
             return;
         }
 
+        let closure_prefix = closure_prefix_span(cx, closure);
+
         cx.emit_span_lint(
             INSTA_SETTINGS_BIND_FUTURE,
             call.method_span,
             DiagDecorator(|diagnostic| {
-                let _configured_diagnostic = diagnostic
-                    .primary_message("these settings reset before the returned future is polled")
-                    .span_suggestion(
-                        call.method_span,
-                        "pass the async block directly to `Settings::bind_async` instead",
-                        "bind_async",
+                let help = "pass the async block directly to `Settings::bind_async` instead";
+                let diagnostic = diagnostic
+                    .primary_message("these settings reset before the returned future is polled");
+                // Rename the method and drop the closure head so the async block becomes the argument.
+                if let Some(closure_prefix) = closure_prefix {
+                    let _configured_suggestion = diagnostic.multipart_suggestion(
+                        help,
+                        vec![
+                            (call.method_span, "bind_async".to_owned()),
+                            (closure_prefix, String::new()),
+                        ],
                         Applicability::MachineApplicable,
                     );
+                } else {
+                    let _configured_help = diagnostic.help(help);
+                }
             }),
         );
     }
+}
+
+/// Return the `|| ` or `move || ` source before an async block returned by a closure.
+///
+/// Deleting that prefix turns `|| async { .. }` into the future that
+/// `Settings::bind_async` takes. The closure must take no parameters and must
+/// return the async block directly. A `move` closure must wrap an `async move`
+/// block, because otherwise the block would borrow what the closure moved.
+fn closure_prefix_span(cx: &LateContext<'_>, closure_expr: &Expr<'_>) -> Option<Span> {
+    // Accept only a synchronous closure; async closures have no separate block to keep.
+    let ExprKind::Closure(closure) = closure_expr.kind else {
+        return None;
+    };
+    if !matches!(closure.kind, ClosureKind::Closure) {
+        return None;
+    }
+    let body = cx.tcx.hir_body(closure.body);
+    if !body.params.is_empty() {
+        return None;
+    }
+
+    // Require the body to be the async block itself.
+    let mut body_value = body.value;
+    while let ExprKind::DropTemps(inner) = body_value.kind {
+        body_value = inner;
+    }
+    let ExprKind::Closure(async_block) = body_value.kind else {
+        return None;
+    };
+    let is_async_block = matches!(
+        async_block.kind,
+        ClosureKind::Coroutine(CoroutineKind::Desugared(
+            CoroutineDesugaring::Async,
+            CoroutineSource::Block
+        ))
+    );
+    let keeps_captures = matches!(closure.capture_clause, CaptureBy::Ref)
+        || matches!(async_block.capture_clause, CaptureBy::Value { .. });
+    if !is_async_block || !keeps_captures {
+        return None;
+    }
+
+    // Edit only user-written source that encloses the async block.
+    let (closure_span, block_span) = (closure_expr.span, body_value.span);
+    (!closure_span.from_expansion()
+        && !block_span.from_expansion()
+        && closure_span.contains(block_span))
+    .then(|| closure_span.until(block_span))
 }
 
 /// Run the UI fixture.

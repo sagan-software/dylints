@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(
     dead_code,
     elided_lifetimes_in_paths,

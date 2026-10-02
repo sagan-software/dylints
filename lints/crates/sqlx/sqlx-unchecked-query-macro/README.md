@@ -17,6 +17,9 @@ columns. A type mismatch then fails at runtime instead of at compile time.
 The lint also flags unchecked macros used on purpose, for example for a
 database type that SQLx cannot map to a Rust type.
 
+The checked macro can reject a query that the unchecked macro accepts, so
+`cargo fix` does not apply the suggested rename.
+
 ## Example
 
 ```rust

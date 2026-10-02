@@ -1,10 +1,43 @@
 warning: these settings reset before the returned future is polled
-  --> $DIR/main.rs:9:27
+  --> $DIR/main.rs:11:27
    |
 LL |     let future = settings.bind(|| async { work().await });
-   |                           ^^^^ help: pass the async block directly to `Settings::bind_async` instead: `bind_async`
+   |                           ^^^^
    |
    = note: `#[warn(insta_settings_bind_future)]` on by default
+help: pass the async block directly to `Settings::bind_async` instead
+   |
+LL -     let future = settings.bind(|| async { work().await });
+LL +     let future = settings.bind_async(async { work().await });
+   |
 
-warning: 1 warning emitted
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:19:10
+   |
+LL |         .bind(|| async move {
+   |          ^^^^
+   |
+help: pass the async block directly to `Settings::bind_async` instead
+   |
+LL -         .bind(|| async move {
+LL +         .bind_async(async move {
+   |
+
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:28:14
+   |
+LL |     settings.bind(move || async { work().await }).await;
+   |              ^^^^
+   |
+   = help: pass the async block directly to `Settings::bind_async` instead
+
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:33:14
+   |
+LL |     settings.bind(async || work().await).await;
+   |              ^^^^
+   |
+   = help: pass the async block directly to `Settings::bind_async` instead
+
+warning: 4 warnings emitted
 

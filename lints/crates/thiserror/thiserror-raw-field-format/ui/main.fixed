@@ -1,0 +1,32 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+use thiserror::Error as ThisError;
+
+#[cfg(any())]
+#[derive(thiserror::Error, Debug)]
+#[error("qualified {type}")]
+pub struct QualifiedRawFieldFormat {
+    r#type: String,
+}
+
+#[cfg(any())]
+#[derive(ThisError, Debug)]
+#[error("renamed {kind}")]
+pub struct RenamedRawFieldFormat {
+    r#kind: String,
+}
+
+#[cfg(any())]
+#[derive(thiserror::Error, Debug)]
+#[error("same-line {value}")]
+pub struct SameLineRawFieldFormat {
+    r#value: String,
+}
+
+#[derive(ThisError, Debug)]
+#[error("unraw {type}")]
+pub struct UnrawFieldFormat {
+    r#type: String,
+}
+
+fn main() {}

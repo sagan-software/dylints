@@ -1,5 +1,5 @@
 warning: casting `elapsed_secs()` to `f64` cannot recover its lost precision
-  --> $DIR/main.rs:13:18
+  --> $DIR/main.rs:15:18
    |
 LL |     let _ = time.elapsed_secs() as f64;
    |                  ^^^^^^^^^^^^ help: call `elapsed_secs_f64()` instead: `elapsed_secs_f64`

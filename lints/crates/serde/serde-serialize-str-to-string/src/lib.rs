@@ -10,13 +10,19 @@
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_infer;
+extern crate rustc_span;
+extern crate rustc_trait_selection;
 
 #[cfg(test)]
 use serde as _;
 
 use rustc_errors::{Applicability, DiagDecorator};
 use rustc_hir::{Expr, ExprKind};
+use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_span::sym;
+use rustc_trait_selection::infer::InferCtxtExt as _;
 
 use serde_support::{is_to_string_call, serde_method_call};
 
@@ -78,7 +84,25 @@ fn string_value_expression<'tcx>(
     let ExprKind::MethodCall(_, value, arguments, _) = to_string.kind else {
         return None;
     };
-    (arguments.is_empty() && is_to_string_call(cx, to_string)).then_some(value)
+    // `collect_str(&value)` needs `Display` on the value's own type. A manual
+    // `ToString` impl or an auto-dereferenced receiver does not provide it.
+    (arguments.is_empty() && is_to_string_call(cx, to_string) && implements_display(cx, value))
+        .then_some(value)
+}
+
+/// Return whether the expression's unadjusted type implements `Display`.
+fn implements_display<'tcx>(cx: &LateContext<'tcx>, expr: &Expr<'tcx>) -> bool {
+    let Some(display) = cx.tcx.get_diagnostic_item(sym::Display) else {
+        return false;
+    };
+    let ty = cx.typeck_results().expr_ty(expr);
+
+    // Ask the trait solver because `collect_str` resolves the same obligation.
+    cx.tcx
+        .infer_ctxt()
+        .build(cx.typing_mode())
+        .type_implements_trait(display, [ty], cx.param_env)
+        .must_apply_modulo_regions()
 }
 
 /// Capture source snippets for a direct `collect_str` replacement.

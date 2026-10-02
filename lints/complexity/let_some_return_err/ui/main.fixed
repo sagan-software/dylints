@@ -1,0 +1,125 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#[derive(Debug)]
+enum Error {
+    Missing,
+    Empty,
+}
+
+type Fallible<T> = Result<T, Error>;
+type MaybeUser = Option<&'static str>;
+
+enum Lookup<T> {
+    Some(T),
+    None,
+}
+
+fn find_user(id: u64) -> Option<&'static str> {
+    if id == 1 { Some("ada") } else { None }
+}
+
+fn find_alias_user(id: u64) -> MaybeUser {
+    if id == 1 { Some("ada") } else { None }
+}
+
+fn find_lookup(id: u64) -> Lookup<&'static str> {
+    if id == 1 {
+        Lookup::Some("ada")
+    } else {
+        Lookup::None
+    }
+}
+
+fn direct_return(id: u64) -> Result<&'static str, Error> {
+    let user = (find_user(id)).ok_or_else(|| Error::Missing)?;
+
+    Ok(user)
+}
+
+fn alias_option_and_result(id: u64) -> Fallible<&'static str> {
+    let user = (find_alias_user(id)).ok_or_else(|| Error::Empty)?;
+
+    Ok(user)
+}
+
+fn nested_control_flow(id: u64) -> Result<&'static str, Error> {
+    if id > 0 {
+        let user = (find_user(id)).ok_or_else(|| Error::Missing)?;
+
+        return Ok(user);
+    }
+
+    Ok("fallback")
+}
+
+fn closure_return(id: u64) -> Result<&'static str, Error> {
+    let load = || -> Result<&'static str, Error> {
+        let user = (find_user(id)).ok_or_else(|| Error::Empty)?;
+
+        Ok(user)
+    };
+
+    load()
+}
+
+fn ok_return(id: u64) -> Result<&'static str, Error> {
+    let Some(user) = find_user(id) else {
+        return Ok("fallback");
+    };
+
+    Ok(user)
+}
+
+fn none_return(id: u64) -> Option<&'static str> {
+    let Some(user) = find_user(id) else {
+        return None;
+    };
+
+    Some(user)
+}
+
+fn panic_else(id: u64) -> Result<&'static str, Error> {
+    let Some(user) = find_user(id) else {
+        panic!("missing user");
+    };
+
+    Ok(user)
+}
+
+fn loop_else(id: u64) -> Result<&'static str, Error> {
+    let Some(user) = find_user(id) else { loop {} };
+
+    Ok(user)
+}
+
+fn complex_else(id: u64) -> Result<&'static str, Error> {
+    let Some(user) = find_user(id) else {
+        let error = Error::Missing;
+        return Err(error);
+    };
+
+    Ok(user)
+}
+
+fn local_some_lookalike(id: u64) -> Result<&'static str, Error> {
+    let Lookup::Some(user) = find_lookup(id) else {
+        return Err(Error::Missing);
+    };
+
+    Ok(user)
+}
+
+fn local_err_function(id: u64) -> Result<&'static str, Error> {
+    #[allow(non_snake_case)]
+    fn Err(_error: Error) -> Result<&'static str, Error> {
+        Ok("not the standard Err constructor")
+    }
+
+    let Some(user) = find_user(id) else {
+        return Err(Error::Missing);
+    };
+
+    Ok(user)
+}
+
+fn main() {}

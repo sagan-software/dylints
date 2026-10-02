@@ -10,21 +10,26 @@
 //! It compares a standard `Result` receiver and output with the enclosing
 //! function's error type, then recognizes a mapper that only applies the
 //! existing `From` conversion used by `?`. The visitor skips closures and
-//! unrelated methods so suggestions remain local and machine-applicable.
+//! unrelated methods. It offers a machine-applicable removal only when a `?`
+//! operator consumes the call, so the rewrite keeps the same propagation.
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_infer;
 extern crate rustc_middle;
 extern crate rustc_span;
+extern crate rustc_trait_selection;
 
 use rustc_errors::{Applicability, DiagDecorator};
 use rustc_hir::{
-    Body, Expr, ExprKind, FnDecl, Pat, PatKind, QPath,
+    Body, Expr, ExprKind, FnDecl, MatchSource, Node, Pat, PatKind, QPath,
     intravisit::{FnKind, Visitor, walk_expr},
 };
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
+use rustc_infer::infer::TyCtxtInferExt as _;
+use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::{Span, Symbol, def_id::DefId, sym};
+use rustc_trait_selection::infer::InferCtxtExt as _;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -76,13 +81,9 @@ impl<'tcx> Visitor<'tcx> for MapErrVisitor<'_, 'tcx> {
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
         // Report a removable conversion before descending into child expressions.
         if let Some(removal_span) = unnecessary_map_err(self.cx, self.function_error_ty, expr) {
-            emit_span_lint_with_help(
-                self.cx,
-                UNNECESSARY_MAP_ERR,
-                removal_span,
-                "this `.map_err` only converts the error type",
-                "remove `.map_err(...)` and let `?` apply the `From` conversion",
-            );
+            // Macro bodies are shared by every expansion, so only user-written calls get a fix.
+            let is_fixable = is_try_operand(self.cx, expr) && !expr.span.from_expansion();
+            emit_map_err_lint(self.cx, removal_span, is_fixable);
         }
 
         if matches!(expr.kind, ExprKind::Closure(_)) {
@@ -111,14 +112,55 @@ fn unnecessary_map_err<'tcx>(
         result_error_ty(cx, cx.typeck_results().expr_ty(receiver))
             .map(|receiver_error_ty| (receiver, mapper, receiver_error_ty))
     })
-    .and_then(|(receiver, mapper, _receiver_error_ty)| {
+    .filter(|_| {
         result_error_ty(cx, cx.typeck_results().expr_ty(expr))
-            .map(|output_error_ty| (receiver, mapper, output_error_ty))
+            .is_some_and(|output_error_ty| output_error_ty == function_error_ty)
     })
-    .filter(|(_, _, output_error_ty)| *output_error_ty == function_error_ty)
     // The receiver and output being `Result` types keeps custom `map_err` methods out of scope.
     .filter(|(_, mapper, _)| conversion_mapper(cx, mapper))
+    // `?` converts through `From`, so an `Into`-only conversion is not equivalent.
+    .filter(|(_, _, receiver_error_ty)| implements_from(cx, function_error_ty, *receiver_error_ty))
     .map(|(receiver, _, _)| expr.span.with_lo(receiver.span.hi()))
+}
+
+/// Return whether `target: From<source>` holds in the current function's environment.
+fn implements_from<'tcx>(cx: &LateContext<'tcx>, target: Ty<'tcx>, source: Ty<'tcx>) -> bool {
+    let Some(from_trait) = cx.tcx.get_diagnostic_item(sym::From) else {
+        return false;
+    };
+
+    // Ask the trait solver because `?` resolves the same obligation.
+    cx.tcx
+        .infer_ctxt()
+        .build(cx.typing_mode())
+        .type_implements_trait(from_trait, [target, source], cx.param_env)
+        .must_apply_modulo_regions()
+}
+
+/// Return whether `expr` is the operand of a `?` operator.
+///
+/// HIR lowers `operand?` to `match Try::branch(operand) { .. }` with a
+/// `TryDesugar` source, so the operand's parent is the `branch` call and its
+/// grandparent is that match.
+fn is_try_operand(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    let mut parents = cx.tcx.hir_parent_iter(expr.hir_id);
+    // Require the desugared `Try::branch(operand)` call directly above the operand.
+    let Some((_, Node::Expr(branch_call))) = parents.next() else {
+        return false;
+    };
+    if !matches!(branch_call.kind, ExprKind::Call(_, [argument]) if argument.hir_id == expr.hir_id)
+    {
+        return false;
+    }
+
+    // Require the `?` match that scrutinizes that call.
+    matches!(
+        parents.next(),
+        Some((_, Node::Expr(Expr {
+            kind: ExprKind::Match(scrutinee, _, MatchSource::TryDesugar(_)),
+            ..
+        }))) if scrutinee.hir_id == branch_call.hir_id
+    )
 }
 
 /// Return type information for result error.
@@ -259,22 +301,28 @@ fn path_is_binding(expr: &Expr<'_>, name: Symbol) -> bool {
     segment.ident.name == name
 }
 
-/// Emit the span lint with help diagnostic.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: &'static str,
-    help: &'static str,
-) {
-    // Use rustc's native diagnostic decorator to keep diagnostics consistent.
+/// Emit the lint, with a machine-applicable removal only before `?`.
+///
+/// Without a following `?`, deleting `.map_err(..)` would return the receiver's
+/// error type unchanged, so the diagnostic only explains the rewrite.
+fn emit_map_err_lint(cx: &LateContext<'_>, span: Span, is_fixable: bool) {
     cx.emit_span_lint(
-        lint,
+        UNNECESSARY_MAP_ERR,
         span,
-        DiagDecorator(|diag| {
-            let _ = diag.primary_message(message);
-            let _ =
-                diag.span_suggestion(span, help, String::new(), Applicability::MachineApplicable);
+        DiagDecorator(move |diag| {
+            let _ = diag.primary_message("this `.map_err` only converts the error type");
+            if is_fixable {
+                let _ = diag.span_suggestion(
+                    span,
+                    "remove `.map_err(...)` and let `?` apply the `From` conversion",
+                    String::new(),
+                    Applicability::MachineApplicable,
+                );
+            } else {
+                let _ = diag.help(
+                    "remove `.map_err(...)` and propagate the error with `?`, as in `Ok(value?)`",
+                );
+            }
         }),
     );
 }

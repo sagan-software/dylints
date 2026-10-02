@@ -1,5 +1,5 @@
 warning: MD037 in Rust doc comment at line 1, column 21: Spaces inside emphasis markers: "* emphasis *"
-  --> $DIR/edge_cases.rs:16:1
+  --> $DIR/edge_cases.rs:18:1
    |
 LL | /// This has spaced * emphasis * in the middle.
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `/// This has spaced *emphasis* in the middle.`
@@ -7,7 +7,7 @@ LL | /// This has spaced * emphasis * in the middle.
    = note: `#[warn(rumdl_doc_comments)]` on by default
 
 warning: MD013 in Rust doc comment at line 1, column 85: Line length 184 exceeds 80 characters
-  --> $DIR/edge_cases.rs:19:1
+  --> $DIR/edge_cases.rs:21:1
    |
 LL | /// This paragraph is intentionally written as one long line with `inline_code` so the diagnostic shows that MD013 reports line length without offering a misleading machine-applicable fix.
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -15,7 +15,7 @@ LL | /// This paragraph is intentionally written as one long line with `inline_c
    = help: fix the Markdown in this Rust doc comment
 
 warning: MD022 in Rust doc comment at line 2, column 5: Expected 1 blank line above heading
-  --> $DIR/edge_cases.rs:22:1
+  --> $DIR/edge_cases.rs:24:1
    |
 LL | / /// This paragraph keeps * spaced * emphasis in a realistic sentence.
 LL | | /// ## Details

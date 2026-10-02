@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 //! Documentation fixtures for `rumdl_doc_comments`.
 //!
 //! These crate docs model a small library overview instead of a one-line

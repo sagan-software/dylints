@@ -1,7 +1,10 @@
 #![feature(rustc_private)]
 #![expect(
     clippy::let_underscore_must_use,
-    reason = "rustc diagnostic builder results are configured through side effects"
+    clippy::wildcard_enum_match_arm,
+    reason = "rustc diagnostic builder results are configured through side effects, and the \
+              pattern and expression checks treat every unlisted rustc variant as unsafe or \
+              transparent"
 )]
 
 //! A lint to replace let-else `Option` error returns with `ok_or`.
@@ -16,9 +19,12 @@ extern crate rustc_hir;
 extern crate rustc_middle;
 extern crate rustc_span;
 
+use std::ops::ControlFlow;
+
 use rustc_errors::{Applicability, DiagDecorator};
 use rustc_hir::{
-    Block, Body, Expr, ExprKind, FnDecl, LetStmt, Pat, PatKind, QPath, Stmt, StmtKind,
+    Block, Body, ByRef, Expr, ExprKind, FnDecl, LetStmt, MatchSource, Pat, PatKind, QPath, Stmt,
+    StmtKind, UnOp,
     def::Res,
     intravisit::{FnKind, Visitor, walk_expr, walk_stmt},
 };
@@ -77,15 +83,15 @@ impl<'tcx> Visitor<'tcx> for LetSomeVisitor<'_, 'tcx> {
             return;
         };
 
-        // Emit a source-preserving replacement when the complete pattern matches.
-        if let Some(suggestion) = let_some_returns_err(self.cx, self.function_error_ty, let_stmt) {
+        // Emit a source-preserving replacement only when the rewrite keeps the meaning.
+        if let Some(found) = let_some_returns_err(self.cx, self.function_error_ty, let_stmt) {
             emit_span_lint_with_help(
                 self.cx,
                 LET_SOME_RETURN_ERR,
                 let_stmt.span,
                 "`Option` mismatch returns `Err` manually",
                 "convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`",
-                Some(suggestion),
+                suggestion(self.cx, let_stmt, &found),
             );
         }
 
@@ -102,39 +108,154 @@ impl<'tcx> Visitor<'tcx> for LetSomeVisitor<'_, 'tcx> {
     }
 }
 
+/// One matched `let Some(..) = .. else { return Err(..) };` statement.
+struct LetSomeReturnsErr<'tcx> {
+    /// Initializer that produces the `Option`.
+    init: &'tcx Expr<'tcx>,
+    /// Pattern inside `Some(..)`.
+    pattern: &'tcx Pat<'tcx>,
+    /// Error value passed to `Err(..)`.
+    error: &'tcx Expr<'tcx>,
+}
+
 /// Helper for let some returns err analysis.
 fn let_some_returns_err<'tcx>(
     cx: &LateContext<'tcx>,
     function_error_ty: Ty<'tcx>,
     let_stmt: &'tcx LetStmt<'tcx>,
-) -> Option<String> {
+) -> Option<LetSomeReturnsErr<'tcx>> {
     // Require the initializer, Some pattern, else block, and returned error together.
-    let_stmt
-        .init
-        .zip(some_option_pattern(cx, let_stmt.pat))
-        .and_then(|(init, pattern)| {
-            let_stmt.els.and_then(|els| {
-                block_only_returns_err(cx, function_error_ty, els)
-                    .map(|error| (init, pattern, error))
-            })
-        })
-        // Build the replacement from source snippets so `--fix` preserves the user's expressions.
-        .and_then(|(init, pattern, error)| {
-            let source_map = cx.sess().source_map();
-            source_map
-                .span_to_snippet(pattern.span)
-                .ok()
-                .and_then(|pattern| {
-                    source_map.span_to_snippet(init.span).ok().and_then(|init| {
-                        source_map
-                            .span_to_snippet(error.span)
-                            .ok()
-                            .map(|error| (pattern, init, error))
-                    })
-                })
-        })
-        // Parenthesize the initializer so method-call precedence remains stable.
-        .map(|(pattern, init, error)| format!("let {pattern} = ({init}).ok_or_else(|| {error})?;"))
+    let init = let_stmt.init?;
+    let pattern = some_option_pattern(cx, let_stmt.pat)?;
+    let error = block_only_returns_err(cx, function_error_ty, let_stmt.els?)?;
+    Some(LetSomeReturnsErr {
+        init,
+        pattern,
+        error,
+    })
+}
+
+/// Build the machine-applicable rewrite when it keeps the statement's meaning.
+///
+/// The rewrite `let PATTERN = (INIT).ok_or_else(|| ERROR)?;` compiles with the
+/// same behavior only when the pattern is irrefutable, the initializer is not
+/// a place that the method call would move or copy, the error moves into a
+/// closure unchanged, and no type annotation or macro is involved.
+fn suggestion<'tcx>(
+    cx: &LateContext<'tcx>,
+    let_stmt: &LetStmt<'tcx>,
+    found: &LetSomeReturnsErr<'tcx>,
+) -> Option<String> {
+    // Keep annotated and macro-generated statements on the help-only path.
+    if let_stmt.ty.is_some() || let_stmt.span.from_expansion() {
+        return None;
+    }
+    // `ok_or_else` takes `self`, so the initializer must be an owned `Option` value.
+    let init_ty = cx.typeck_results().expr_ty(found.init);
+    if !option_ty(cx, init_ty) {
+        return None;
+    }
+    let mut has_ref_binding = false;
+    if !is_irrefutable(cx, found.pattern, &mut has_ref_binding) {
+        return None;
+    }
+    // A place initializer is moved or copied by the rewrite, unlike `let`-`else`.
+    if is_place_expr(found.init)
+        && (has_ref_binding || !cx.tcx.type_is_copy_modulo_regions(cx.typing_env(), init_ty))
+    {
+        return None;
+    }
+    if !moves_into_closure_unchanged(found.error) {
+        return None;
+    }
+
+    // Build the replacement from source snippets so `--fix` preserves the user's expressions.
+    let source_map = cx.sess().source_map();
+    let pattern = source_map.span_to_snippet(found.pattern.span).ok()?;
+    let init = source_map.span_to_snippet(found.init.span).ok()?;
+    let error = source_map.span_to_snippet(found.error.span).ok()?;
+    // Parenthesize the initializer so method-call precedence remains stable.
+    Some(format!("let {pattern} = ({init}).ok_or_else(|| {error})?;"))
+}
+
+/// Return whether a pattern always matches, recording by-reference bindings.
+fn is_irrefutable(cx: &LateContext<'_>, pat: &Pat<'_>, has_ref_binding: &mut bool) -> bool {
+    match pat.kind {
+        PatKind::Wild => true,
+        PatKind::Binding(mode, _, _, subpattern) => {
+            *has_ref_binding |= !matches!(mode.0, ByRef::No);
+            subpattern.is_none_or(|subpattern| is_irrefutable(cx, subpattern, has_ref_binding))
+        }
+        PatKind::Ref(inner, ..) => is_irrefutable(cx, inner, has_ref_binding),
+        PatKind::Tuple(subpatterns, _) => subpatterns
+            .iter()
+            .all(|subpattern| is_irrefutable(cx, subpattern, has_ref_binding)),
+        // A struct has one variant, so only its fields can make the pattern refutable.
+        PatKind::TupleStruct(_, subpatterns, _) => {
+            is_struct_pat(cx, pat)
+                && subpatterns
+                    .iter()
+                    .all(|subpattern| is_irrefutable(cx, subpattern, has_ref_binding))
+        }
+        PatKind::Struct(_, fields, _) => {
+            is_struct_pat(cx, pat)
+                && fields
+                    .iter()
+                    .all(|field| is_irrefutable(cx, field.pat, has_ref_binding))
+        }
+        _ => false,
+    }
+}
+
+/// Return whether a pattern's resolved type is a struct.
+fn is_struct_pat(cx: &LateContext<'_>, pat: &Pat<'_>) -> bool {
+    matches!(cx.typeck_results().pat_ty(pat).kind(), ty::Adt(adt, _) if adt.is_struct())
+}
+
+/// Return whether an expression denotes a place rather than a fresh value.
+const fn is_place_expr(expr: &Expr<'_>) -> bool {
+    matches!(
+        expr.kind,
+        ExprKind::Path(_)
+            | ExprKind::Field(..)
+            | ExprKind::Index(..)
+            | ExprKind::Unary(UnOp::Deref, _)
+    )
+}
+
+/// Return whether an error expression keeps its meaning inside `|| error`.
+///
+/// The closure would capture locals, which can conflict with borrows held by
+/// the initializer or with later uses. Control flow such as `return`, `?`, or
+/// `.await` would apply to the closure instead of the enclosing function.
+fn moves_into_closure_unchanged(error: &Expr<'_>) -> bool {
+    ClosureHazard.visit_expr(error).is_continue()
+}
+
+/// Visitor that stops at the first expression a closure would change.
+struct ClosureHazard;
+
+impl<'tcx> Visitor<'tcx> for ClosureHazard {
+    type Result = ControlFlow<()>;
+
+    /// Stop on locals, closures, and control flow; otherwise keep walking.
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) -> Self::Result {
+        match expr.kind {
+            ExprKind::Path(QPath::Resolved(None, path)) if matches!(path.res, Res::Local(_)) => {
+                ControlFlow::Break(())
+            }
+            ExprKind::Ret(_)
+            | ExprKind::Break(..)
+            | ExprKind::Continue(_)
+            | ExprKind::Yield(..)
+            | ExprKind::Become(_)
+            | ExprKind::Closure(_)
+            | ExprKind::Match(_, _, MatchSource::TryDesugar(_) | MatchSource::AwaitDesugar) => {
+                ControlFlow::Break(())
+            }
+            _ => walk_expr(self, expr),
+        }
+    }
 }
 
 /// Helper for some option pattern analysis.
@@ -156,7 +277,12 @@ fn some_option_pattern<'tcx>(
 
 /// Return type information for option pat.
 fn option_pat_ty<'tcx>(cx: &LateContext<'tcx>, pat: &Pat<'tcx>) -> bool {
-    let ty::Adt(adt, _) = cx.typeck_results().pat_ty(pat).kind() else {
+    option_ty(cx, cx.typeck_results().pat_ty(pat))
+}
+
+/// Return whether a type is the standard `Option`.
+fn option_ty<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> bool {
+    let ty::Adt(adt, _) = ty.kind() else {
         return false;
     };
 

@@ -12,7 +12,10 @@ removed in a future major release, which breaks the test build.
 
 ## Known problems
 
-None known.
+The machine-applicable fix is offered only for calls written as
+`insta::assert_display_snapshot!` or `::insta::assert_display_snapshot!`. A call
+through an imported name gets help without a fix, because the import may not
+cover `assert_snapshot!`.
 
 ## Example
 

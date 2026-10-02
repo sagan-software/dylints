@@ -1,5 +1,5 @@
 warning: `to_string` allocates before Serde serializes the string
-  --> $DIR/main.rs:7:5
+  --> $DIR/main.rs:9:5
    |
 LL |     serializer.serialize_str(&value.to_string())
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: serialize the `Display` value directly: `serializer.collect_str(&value)`

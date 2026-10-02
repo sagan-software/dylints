@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![feature(error_generic_member_access)]
 #![allow(dead_code)]
 

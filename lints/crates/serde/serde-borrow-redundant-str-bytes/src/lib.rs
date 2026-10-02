@@ -17,8 +17,8 @@ use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass};
 
 use serde_support::{
-    ast_all_fields, ast_serde_attr, ast_ty_is_implicitly_borrowed, emit_span_lint_with_suggestion,
-    serde_ast_crate,
+    ast_all_fields, ast_attr_is_single_entry, ast_serde_attr, ast_ty_is_implicitly_borrowed,
+    emit_span_lint_with_help, emit_span_lint_with_suggestion, serde_ast_crate,
 };
 
 dylint_support::documented_early_lint! {
@@ -56,15 +56,27 @@ fn check_crate(cx: &EarlyContext<'_>, krate: &Crate) {
                 continue;
             }
 
-            emit_span_lint_with_suggestion(
-                cx,
-                SERDE_BORROW_REDUNDANT_STR_BYTES,
-                borrow_attr.span,
-                "`serde(borrow)` is redundant on this field type",
-                "remove the redundant borrow attribute",
-                String::new(),
-                Applicability::MachineApplicable,
-            );
+            let message = "`serde(borrow)` is redundant on this field type";
+            // Deleting the attribute is exact only when `borrow` is its sole entry.
+            if ast_attr_is_single_entry(cx, borrow_attr, "borrow") {
+                emit_span_lint_with_suggestion(
+                    cx,
+                    SERDE_BORROW_REDUNDANT_STR_BYTES,
+                    borrow_attr.span,
+                    message,
+                    "remove the redundant borrow attribute",
+                    String::new(),
+                    Applicability::MachineApplicable,
+                );
+            } else {
+                emit_span_lint_with_help(
+                    cx,
+                    SERDE_BORROW_REDUNDANT_STR_BYTES,
+                    borrow_attr.span,
+                    message,
+                    "remove `borrow` from this attribute",
+                );
+            }
         }
     }
 }

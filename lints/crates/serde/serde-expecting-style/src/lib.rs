@@ -17,7 +17,8 @@ use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass};
 
 use serde_support::{
-    emit_span_lint_with_suggestion, loaded_rust_sources, parse_items, range_span, serde_attr_value,
+    emit_span_lint_with_help, emit_span_lint_with_suggestion, loaded_rust_sources, parse_items,
+    range_span, serde_attr_value,
 };
 
 dylint_support::documented_early_lint! {
@@ -53,6 +54,19 @@ fn check_source(cx: &EarlyContext<'_>, candidate: &serde_support::SourceCandidat
             let Some(replacement) = normalized_expectation(&value.value) else {
                 continue;
             };
+            let span = range_span(candidate.start_pos, attr.start, attr.end);
+            let message = "`serde(expecting)` should be a lowercase noun phrase without a period";
+            let help = "rewrite the expectation text";
+            // The parsed value drops escape backslashes, so re-quoting it would change or
+            // break an escaped literal. Those literals get help without a rewrite.
+            let has_escape = candidate
+                .source
+                .get(value.literal_start..value.literal_end)
+                .is_none_or(|literal| literal.contains('\\'));
+            if has_escape {
+                emit_span_lint_with_help(cx, SERDE_EXPECTING_STYLE, span, message, help);
+                continue;
+            }
             // Rebuild the bounded attribute text while retaining surrounding arguments.
             let Some(attr_source) = attr.source(&candidate.source) else {
                 continue;
@@ -67,9 +81,9 @@ fn check_source(cx: &EarlyContext<'_>, candidate: &serde_support::SourceCandidat
             emit_span_lint_with_suggestion(
                 cx,
                 SERDE_EXPECTING_STYLE,
-                range_span(candidate.start_pos, attr.start, attr.end),
-                "`serde(expecting)` should be a lowercase noun phrase without a period",
-                "rewrite the expectation text",
+                span,
+                message,
+                help,
                 attr_replacement,
                 Applicability::MachineApplicable,
             );

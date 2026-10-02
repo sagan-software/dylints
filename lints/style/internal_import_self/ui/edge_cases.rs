@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(dead_code, unused_imports)]
 
 mod local {
@@ -11,6 +13,14 @@ mod local {
 
 mod sibling {
     pub struct SiblingItem;
+}
+
+mod grouped {
+    pub mod nested {
+        pub struct Deep;
+    }
+
+    pub struct Shallow;
 }
 
 mod parent {
@@ -48,10 +58,12 @@ use crate::local::QualifiedFromCrate;
 use crate::sibling::SiblingItem as RootSiblingItem;
 use local::AliasItem as RenamedItem;
 use local::Item;
+use grouped::{Shallow, nested::Deep};
 use local::{GroupedOne, GroupedTwo};
 use std::{fmt, io};
 
 fn main() {
+    let _ = (Deep, Shallow);
     let _ = (
         fmt::Error,
         GroupedOne,

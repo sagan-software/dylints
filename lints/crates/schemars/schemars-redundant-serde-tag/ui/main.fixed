@@ -1,0 +1,12 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+use schemars::JsonSchema;
+use serde::Serialize;
+
+#[derive(JsonSchema, Serialize)]
+#[serde(tag = "kind")]
+enum Example {
+    Unit,
+}
+
+fn main() {}

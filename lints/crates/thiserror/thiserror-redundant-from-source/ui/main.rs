@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 use thiserror::{Error, Error as ThisError};
 
 #[derive(thiserror::Error, Debug)]

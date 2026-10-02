@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(dead_code)]
 
 use thiserror::{Error, Error as ThisError};
@@ -51,6 +53,18 @@ pub struct MultiFieldDisplay {
     #[source]
     source: Inner,
     context: String,
+}
+
+#[derive(ThisError, Debug)]
+#[error("{0}")]
+pub struct SourceAttrTupleDisplay(#[source] Inner);
+
+#[derive(ThisError, Debug)]
+#[error("{source}")]
+pub struct SourceAndFromDisplay {
+    #[from]
+    #[source]
+    source: Inner,
 }
 
 // Active `#[error]` outside a thiserror derive is rejected before this lint can run.

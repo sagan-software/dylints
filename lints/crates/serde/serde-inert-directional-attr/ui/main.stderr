@@ -1,5 +1,5 @@
 warning: `serde` attribute is inert for the only derived direction
-  --> $DIR/main.rs:13:1
+  --> $DIR/main.rs:15:1
    |
 LL | #[serde(default)]
    | ^^^^^^^^^^^^^^^^^
@@ -11,7 +11,7 @@ LL - #[serde(default)]
    |
 
 warning: `serde` attribute is inert for the only derived direction
-  --> $DIR/main.rs:20:5
+  --> $DIR/main.rs:22:5
    |
 LL |     #[serde(alias = "old_value")]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -22,7 +22,7 @@ LL -     #[serde(alias = "old_value")]
    |
 
 warning: `serde` attribute is inert for the only derived direction
-  --> $DIR/main.rs:26:5
+  --> $DIR/main.rs:28:5
    |
 LL |     #[serde(skip_serializing_if = "String::is_empty")]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -33,7 +33,7 @@ LL -     #[serde(skip_serializing_if = "String::is_empty")]
    |
 
 warning: `serde` attribute is inert for the only derived direction
-  --> $DIR/main.rs:32:5
+  --> $DIR/main.rs:34:5
    |
 LL |     #[serde(skip_serializing)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
