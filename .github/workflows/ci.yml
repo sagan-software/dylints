@@ -95,6 +95,8 @@ jobs:
         run: |
           cargo install --locked --version "$DYLINT_VERSION" cargo-dylint dylint-link
           echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=dylint-link" >>"$GITHUB_ENV"
+      - name: Validate coverage reporting
+        run: bash scripts/coverage_test.sh
       - name: Measure coverage
         run: scripts/coverage.sh --min-lines "$COVERAGE_MIN_LINES"
         env:
