@@ -27,7 +27,10 @@ while (($# > 0)); do
         shift 2
         ;;
     --path)
-        paths+=("$(realpath "$2")")
+        # llvm-cov takes source files, so expand the directory to its Rust sources.
+        while IFS= read -r -d '' source; do
+            paths+=("$source")
+        done < <(find "$(realpath "$2")" -name '*.rs' ! -path '*/ui/*' ! -path '*/fixtures/*' -print0)
         shift 2
         ;;
     --)
@@ -65,9 +68,14 @@ find "$target_dir/profiles" -name '*.profraw' >"$target_dir/profiles.txt"
 "$llvm_bin/llvm-profdata" merge -sparse --input-files="$target_dir/profiles.txt" -o "$target_dir/coverage.profdata"
 
 # Report against every instrumented executable and shared library.
+# llvm-cov reads its first positional argument as a binary, so only later ones use --object.
 objects=()
 while IFS= read -r -d '' object; do
-    objects+=(--object "$object")
+    if ((${#objects[@]} == 0)); then
+        objects+=("$object")
+    else
+        objects+=(--object "$object")
+    fi
 done < <(find "$target_dir/debug" -maxdepth 2 -type f \( -name '*.so' -o -perm -u+x \) \
     ! -name '*.d' ! -name 'build-script-*' -print0)
 
