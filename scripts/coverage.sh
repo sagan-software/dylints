@@ -65,6 +65,8 @@ mkdir -p "$target_dir" "$report_dir"
 # Build every crate, including the libraries dylint_testing builds, into one target directory.
 export CARGO_TARGET_DIR="$target_dir"
 export CARGO_INCREMENTAL=0
+# Keep instrumented debug artifacts small by default while preserving overrides.
+export CARGO_PROFILE_DEV_DEBUG="${CARGO_PROFILE_DEV_DEBUG:-0}"
 export RUSTFLAGS="${RUSTFLAGS:-} -C instrument-coverage"
 export LLVM_PROFILE_FILE="$target_dir/profiles/%p-%m.profraw"
 mkdir -p "$target_dir/profiles"
