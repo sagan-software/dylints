@@ -4,8 +4,16 @@ warning: `skip_serializing` makes this variant fail during serialization
 LL |     #[serde(skip_serializing)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: use `skip` if the variant should be unavailable both ways, or keep this variant away from serialization
+   = help: remove the attribute so the variant serializes, or keep this variant away from serialization
    = note: `#[warn(serde_skip_serializing_variant_error)]` on by default
 
-warning: 1 warning emitted
+warning: `skip` makes this variant fail during serialization
+  --> $DIR/main.rs:17:5
+   |
+LL |     #[serde(skip)]
+   |     ^^^^^^^^^^^^^^
+   |
+   = help: remove the attribute so the variant serializes, or keep this variant away from serialization
+
+warning: 2 warnings emitted
 
