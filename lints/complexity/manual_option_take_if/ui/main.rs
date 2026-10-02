@@ -167,10 +167,21 @@ fn main() {
     let _ = replaced(&mut first);
     let _ = is_some(&mut first);
     let _ = lookalike(&mut Slot(Some(1)));
+    let _ = explicit_overloaded_deref(&mut SwitchingOption {
+        toggle: Cell::new(false),
+        first: DerefSlot { value: Some(1) },
+        second: DerefSlot { value: Some(2) },
+    });
+    let _ = overloaded_neg(&NegOption {
+        toggle: Cell::new(false),
+        first: Some(1),
+        second: Some(2),
+    });
+    let _ = owned_wrapper(Box::new(Some(1)));
 }
 
 use std::cell::Cell;
-use std::ops::{Deref, DerefMut};
+use std::ops::{Deref, DerefMut, Neg};
 
 struct DerefSlot {
     value: Option<i32>,
@@ -188,7 +199,11 @@ impl Deref for SwitchingOption {
     fn deref(&self) -> &Self::Target {
         let use_second = self.toggle.get();
         self.toggle.set(!use_second);
-        if use_second { &self.second } else { &self.first }
+        if use_second {
+            &self.second
+        } else {
+            &self.first
+        }
     }
 }
 
@@ -196,7 +211,27 @@ impl DerefMut for SwitchingOption {
     fn deref_mut(&mut self) -> &mut Self::Target {
         let use_second = self.toggle.get();
         self.toggle.set(!use_second);
-        if use_second { &mut self.second } else { &mut self.first }
+        if use_second {
+            &mut self.second
+        } else {
+            &mut self.first
+        }
+    }
+}
+
+struct NegOption {
+    toggle: Cell<bool>,
+    first: Option<i32>,
+    second: Option<i32>,
+}
+
+impl Neg for &NegOption {
+    type Output = Option<i32>;
+
+    fn neg(self) -> Self::Output {
+        let use_second = self.toggle.get();
+        self.toggle.set(!use_second);
+        if use_second { self.second } else { self.first }
     }
 }
 
@@ -204,6 +239,33 @@ fn overloaded_deref(option: &mut SwitchingOption) -> Option<i32> {
     // Keep quiet because the custom dereference can select a different slot each time.
     if (*option).value.as_ref().is_some_and(|value| *value > 0) {
         (*option).value.take()
+    } else {
+        None
+    }
+}
+
+fn explicit_overloaded_deref(option: &mut SwitchingOption) -> Option<i32> {
+    // Keep quiet when the overloaded dereference is written explicitly.
+    if (**option).value.as_ref().is_some_and(|value| *value > 0) {
+        (**option).value.take()
+    } else {
+        None
+    }
+}
+
+fn overloaded_neg(option: &NegOption) -> Option<i32> {
+    // Keep quiet because the custom unary operator can select a different value each time.
+    if (-option).as_ref().is_some_and(|value| *value > 0) {
+        (-option).take()
+    } else {
+        None
+    }
+}
+
+fn owned_wrapper(mut option: Box<Option<i32>>) -> Option<i32> {
+    // Keep quiet because the explicit owned-wrapper dereference is not a reference place.
+    if (*option).as_ref().is_some_and(|value| *value > 0) {
+        (*option).take()
     } else {
         None
     }

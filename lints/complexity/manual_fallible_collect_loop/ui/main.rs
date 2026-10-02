@@ -166,6 +166,7 @@ fn main() {
     let _ = parse_all(&["1"]);
     let _ = converted_error(&["1"]);
     let _ = parse_optional(&["1"]);
+    let _ = trait_constructor(&["1"]);
 }
 
 struct ForeignFactory;
@@ -176,9 +177,28 @@ impl ForeignFactory {
     }
 }
 
+trait Factory {
+    fn new() -> Self;
+}
+
+impl Factory for Vec<i32> {
+    fn new() -> Self {
+        vec![99]
+    }
+}
+
 fn foreign_constructor(values: &[&str]) -> Option<Vec<i32>> {
     // Keep quiet because `collect` would drop the existing item from this collection.
     let mut output: Vec<i32> = ForeignFactory::new();
+    for value in values {
+        output.push(value.parse::<i32>().ok()?);
+    }
+    Some(output)
+}
+
+fn trait_constructor(values: &[&str]) -> Option<Vec<i32>> {
+    // Keep quiet because the trait constructor returns a nonempty collection.
+    let mut output: Vec<i32> = <Vec<i32> as Factory>::new();
     for value in values {
         output.push(value.parse::<i32>().ok()?);
     }

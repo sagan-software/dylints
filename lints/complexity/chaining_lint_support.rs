@@ -272,17 +272,24 @@ pub(crate) fn is_empty_constructor(cx: &LateContext<'_>, expr: &Expr<'_>) -> boo
                 .skip_normalization(),
         )
         .is_some();
-    let owner_is_default_trait = match cx.tcx.def_kind(owner_id) {
-        DefKind::Impl { .. } => cx
-            .tcx
-            .impl_opt_trait_id(owner_id)
-            .is_some_and(|trait_id| cx.tcx.get_diagnostic_name(trait_id) == Some(sym::Default)),
-        DefKind::Trait => cx.tcx.get_diagnostic_name(owner_id) == Some(sym::Default),
-        _ => false,
-    };
+    let owner_is_default_trait = is_default_owner(cx, owner_id);
     // `Default::default` resolves through the trait definition, so use its result type.
     (name.as_str() == "default" && owner_is_default_trait && result_is_standard)
         || (name.as_str() == "new" && owner_is_standard)
+}
+
+/// Returns whether an associated function owner is the standard `Default` trait or its impl.
+fn is_default_owner(cx: &LateContext<'_>, owner_id: rustc_span::def_id::DefId) -> bool {
+    match cx.tcx.def_kind(owner_id) {
+        DefKind::Impl { .. } => {
+            let Some(trait_id) = cx.tcx.impl_opt_trait_id(owner_id) else {
+                return false;
+            };
+            cx.tcx.get_diagnostic_name(trait_id) == Some(sym::Default)
+        }
+        DefKind::Trait => cx.tcx.get_diagnostic_name(owner_id) == Some(sym::Default),
+        _ => false,
+    }
 }
 
 /// Early exits found in one expression, excluding nested closure and async bodies.

@@ -18,11 +18,14 @@ extern crate rustc_span;
 mod support;
 
 use rustc_hir::{
-    Expr, ExprKind, LangItem,
+    Expr, ExprKind, LangItem, UnOp,
     def::{CtorOf, DefKind, Res},
 };
 use rustc_lint::{LateContext, LateLintPass};
-use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind};
+use rustc_middle::ty::{
+    self,
+    adjustment::{Adjust, DerefAdjustKind},
+};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -78,16 +81,15 @@ fn option_method<'tcx>(
     };
     let method = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
     let owner = cx.tcx.inherent_impl_of_assoc(method)?;
-    let is_option = cx
+    let owner_ty = cx
         .tcx
         .type_of(owner)
         .instantiate_identity()
-        .skip_normalization()
-        .ty_adt_def()
-        .is_some_and(|adt| {
-            cx.tcx
-                .is_diagnostic_item(rustc_span::sym::Option, adt.did())
-        });
+        .skip_normalization();
+    let owner_adt = owner_ty.ty_adt_def()?;
+    let is_option = cx
+        .tcx
+        .is_diagnostic_item(rustc_span::sym::Option, owner_adt.did());
 
     // Compare the resolved method name only after the owner is known.
     let is_named = cx.tcx.item_name(method).as_str() == name;
@@ -124,11 +126,18 @@ fn same_place(cx: &LateContext<'_>, left: &Expr<'_>, right: &Expr<'_>) -> bool {
         (ExprKind::Field(left_base, left_name), ExprKind::Field(right_base, right_name)) => {
             left_name.name == right_name.name && same_place(cx, left_base, right_base)
         }
-        (ExprKind::Unary(left_op, left_base), ExprKind::Unary(right_op, right_base)) => {
-            left_op == right_op && same_place(cx, left_base, right_base)
+        (ExprKind::Unary(UnOp::Deref, left_base), ExprKind::Unary(UnOp::Deref, right_base))
+            if is_builtin_reference(cx, left_base) && is_builtin_reference(cx, right_base) =>
+        {
+            same_place(cx, left_base, right_base)
         }
         _ => false,
     }
+}
+
+/// Returns whether explicit dereferencing of an expression uses the built-in reference operation.
+fn is_builtin_reference(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    matches!(cx.typeck_results().expr_ty(expr).kind(), ty::Ref(..))
 }
 
 /// Returns whether an expression's implicit adjustments use only built-in operations.

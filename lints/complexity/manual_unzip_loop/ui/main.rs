@@ -168,6 +168,7 @@ fn not_tuple_tail(pairs: Vec<(i32, i32)>) -> Vec<i32> {
 fn main() {
     let _ = unzip(vec![(1, String::from("a"))]);
     let _ = swapped(vec![(1, 2)]);
+    let _ = trait_constructor(vec![(1, 2)]);
 }
 
 struct ForeignFactory;
@@ -182,10 +183,31 @@ impl ForeignFactory {
     }
 }
 
+trait Factory {
+    fn new() -> Self;
+}
+
+impl Factory for Vec<i32> {
+    fn new() -> Self {
+        vec![99]
+    }
+}
+
 fn foreign_constructor(pairs: Vec<(i32, i32)>) -> (Vec<i32>, Vec<i32>) {
     // Keep quiet because both associated functions belong to a non-collection owner.
     let mut left: Vec<i32> = ForeignFactory::new();
     let mut right: Vec<i32> = ForeignFactory::default();
+    for (first, second) in pairs {
+        left.push(first);
+        right.push(second);
+    }
+    (left, right)
+}
+
+fn trait_constructor(pairs: Vec<(i32, i32)>) -> (Vec<i32>, Vec<i32>) {
+    // Keep quiet because the trait constructor returns a nonempty collection.
+    let mut left: Vec<i32> = <Vec<i32> as Factory>::new();
+    let mut right = Vec::new();
     for (first, second) in pairs {
         left.push(first);
         right.push(second);
