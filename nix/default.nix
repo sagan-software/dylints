@@ -523,10 +523,13 @@ let
   runCoverage = pkgs.writeShellApplication {
     name = "run-coverage";
     runtimeInputs = dylintRuntimeInputs ++ [
+      pkgs.coreutils
       pkgs.findutils
+      pkgs.gawk
       pkgs.git
       pkgs.gnused
       pkgs.jq
+      pkgs.stdenv.cc
     ];
     text = withRepoSetup ''
       cd "$PRIVATE_LINTS_ROOT"

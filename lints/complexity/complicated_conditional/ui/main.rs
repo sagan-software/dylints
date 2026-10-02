@@ -236,3 +236,20 @@ fn warn_while_condition(account: &Account) {
 }
 
 fn main() {}
+
+// Simple calls and indexed receivers stay below the diagnostic threshold.
+fn keep_called_and_indexed_receivers(values: &[Option<bool>]) {
+    if values[0].is_some() {
+        consume(());
+    }
+    if Some(true).is_some() {
+        consume(());
+    }
+}
+
+// A boolean block may diverge instead of producing a boolean tail value.
+fn keep_diverging_boolean_block(ready: bool) {
+    if { return; } && ready {
+        consume(());
+    }
+}

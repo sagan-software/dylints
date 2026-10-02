@@ -8,8 +8,10 @@ conditions and match guards.
 ### Scoring
 
 The lint splits the condition at top-level `&&` and `||` and scores each term.
-A method or function call adds 2, an index 2, and a comparison 1 plus the scores
-of its operands. A field access adds nothing on a variable or on a field of a
+A method or function call adds 2 plus its receiver or callee chain and boolean
+argument scores. An index in a receiver or comparison operand adds 2 plus its
+receiver chain score. A comparison adds 1 plus the scores of its operands.
+A field access adds nothing on a variable or on a field of a
 variable, such as `self.config.is_enabled`. On any other value, such as
 `order.customer().address`, it adds 1. A `!`, cast, or reference adds 1. An `if`
 or `match` adds 4, a block 2, and an `if let` pattern 2. A `match` inside a
@@ -54,28 +56,24 @@ place for a comment.
 ## Example
 
 ```rust
-fn ship(order: &Order, region: Region) {
-    if order.customer().address.is_valid()
-        && order.items().iter().all(|item| item.in_stock() && item.ships_to(region))
+fn accepts(values: &[i32], expected: usize) -> bool {
+    if values.iter().filter(|value| **value > 0).count() == expected
+        && values.iter().all(|value| value.abs() < 100 && *value % 2 == 0)
     {
-        send(order);
+        return true;
     }
+    false
 }
 ```
 
 ## Use instead
 
 ```rust
-fn ship(order: &Order, region: Region) {
-    let has_valid_address = order.customer().address.is_valid();
-    let can_ship_all_items = || {
-        order
-            .items()
-            .iter()
-            .all(|item| item.in_stock() && item.ships_to(region))
+fn accepts(values: &[i32], expected: usize) -> bool {
+    let has_expected_count = values.iter().filter(|value| **value > 0).count() == expected;
+    let all_values_fit = || {
+        values.iter().all(|value| value.abs() < 100 && *value % 2 == 0)
     };
-    if has_valid_address && can_ship_all_items() {
-        send(order);
-    }
+    has_expected_count && all_values_fit()
 }
 ```

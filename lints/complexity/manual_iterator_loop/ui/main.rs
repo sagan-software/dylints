@@ -146,3 +146,23 @@ fn complex_count_body(values: &[i32]) -> usize {
 }
 
 fn main() {}
+
+// An unconditional assignment cannot preserve the suggested `any` semantics.
+fn unconditional_bool_assignment(values: &[i32]) -> bool {
+    let mut found = false;
+    for value in values {
+        found = *value > 0;
+    }
+    found
+}
+
+// An unrelated call in the conditional body is not an accumulator increment.
+fn call_instead_of_increment(values: &[i32]) -> usize {
+    let mut count = 0;
+    for value in values {
+        if *value > 0 {
+            std::hint::black_box(value);
+        }
+    }
+    count
+}

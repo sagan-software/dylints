@@ -15,7 +15,6 @@ use rustc_hir::{
     BindingMode, Block, ByRef, Expr, ExprKind, HirId, LangItem, MatchSource, Pat, PatKind, Stmt,
     StmtKind,
     def::{DefKind, Res},
-    def_id::DefId,
     intravisit::{Visitor, walk_expr},
 };
 use rustc_lint::{LateContext, Lint, LintContext};
@@ -112,28 +111,6 @@ fn resolved_into_iter(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     )
 }
 
-/// Returns the definition resolved by a method call expression.
-fn method_def_id(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<DefId> {
-    // Paths can also carry type-dependent definitions, so require a method call.
-    matches!(expr.kind, ExprKind::MethodCall(..))
-        .then(|| cx.typeck_results().type_dependent_def_id(expr.hir_id))
-        .flatten()
-}
-
-/// Returns the resolved definition path for a method call.
-pub(crate) fn method_path<'tcx>(cx: &LateContext<'tcx>, expr: &Expr<'tcx>) -> Option<String> {
-    method_def_id(cx, expr).map(|def_id| cx.tcx.def_path_str(def_id))
-}
-
-/// Returns whether a method call resolves to the target definition suffix.
-pub(crate) fn method_path_ends_with<'tcx>(
-    cx: &LateContext<'tcx>,
-    expr: &Expr<'tcx>,
-    suffix: &str,
-) -> bool {
-    method_path(cx, expr).is_some_and(|path| path.ends_with(suffix))
-}
-
 /// Returns the collection and method names of an inherent collection method.
 ///
 /// The first symbol is the collection's diagnostic item, such as `Vec`, and the
@@ -151,8 +128,12 @@ pub(crate) fn inherent_method<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &Expr<'_>,
 ) -> Option<(Ty<'tcx>, Symbol)> {
+    // Paths can also carry type-dependent definitions, so require a method call.
+    if !matches!(expr.kind, ExprKind::MethodCall(..)) {
+        return None;
+    }
     // Resolve the call, then require that its parent is an inherent impl.
-    let def_id = method_def_id(cx, expr)?;
+    let def_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
     let impl_id = cx.tcx.opt_parent(def_id)?;
     let DefKind::Impl { of_trait: false } = cx.tcx.def_kind(impl_id) else {
         return None;
@@ -199,15 +180,6 @@ fn standard_collection_name(cx: &LateContext<'_>, ty: Ty<'_>) -> Option<Symbol> 
 /// Returns whether a type is one of the supported standard collections.
 pub(crate) fn is_standard_collection(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     standard_collection_name(cx, ty).is_some()
-}
-
-/// Returns whether a type is a slice, array, or standard `Vec`.
-pub(crate) fn is_slice_like(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
-    // Preserve primitive slices and arrays while resolving `Vec` by diagnostic item.
-    match ty.peel_refs().kind() {
-        ty::Slice(_) | ty::Array(..) => true,
-        _ => standard_collection_name(cx, ty) == Some(sym::Vec),
-    }
 }
 
 /// Returns whether a resolution names the constructor of a lang-item variant.
