@@ -516,7 +516,7 @@ let
       cd "$PRIVATE_LINTS_ROOT"
       cargo fmt --all -- --check
       cargo clippy --workspace --lib --bins --tests -- -D warnings
-      cargo test --workspace
+      cargo test --workspace --lib --bins --tests
     '';
   };
 
