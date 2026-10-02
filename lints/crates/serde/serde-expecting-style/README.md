@@ -18,7 +18,9 @@ The lint keeps the case of a first word that looks like an acronym, such as
 `"UUID string"` or `"I/O path"`. It still lowercases a single capital letter
 followed by a space. The fix edits the literal as written. When the
 source uses an escape for its first letter or final period, the lint gives help
-without a fix.
+without a fix. Before emitting a fix, it validates the complete literal range
+and its UTF-8 boundaries before splitting the delimiters. If that validation
+fails, it gives help without a fix.
 
 ## Example
 
