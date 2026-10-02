@@ -151,6 +151,30 @@ if ! rg -F -q 'must name a dedicated coverage directory' "$test_root/unsafe-targ
 	exit 1
 fi
 
+symlink_path="$test_root/symlink-path"
+symlink_target="$test_root/symlink-coverage"
+mkdir -p "$symlink_path"
+ln -s "$repository_root/lints/complexity/chaining_lint_support.rs" \
+	"$symlink_path/source.rs"
+: >"$FAKE_CARGO_LOG"
+: >"$LLVM_COV_LOG"
+symlink_output="$test_root/symlink-output.log"
+COVERAGE_TARGET_DIR="$symlink_target" bash "$repository_root/scripts/coverage.sh" \
+	--min-lines 60.5 --path "$symlink_path" \
+	-- -p coverage-test --tests >"$symlink_output" 2>&1
+if [[ ! -s "$FAKE_CARGO_LOG" ]]; then
+	printf 'symlink scope did not run the selected build\n' >&2
+	exit 1
+fi
+if [[ "$(jq '.data[0].files | length' "$symlink_target/report/summary.json")" != 2 ]]; then
+	printf 'symlink scope did not retain canonical and lexical mappings\n' >&2
+	exit 1
+fi
+if ! rg -F -q 'total line coverage: 66.67%' "$symlink_output"; then
+	printf 'symlink scope did not report the selected canonical source\n' >&2
+	exit 1
+fi
+
 assert_cli_rejects_before_run() {
 	local name="$1"
 	local expected="$2"

@@ -63,7 +63,7 @@ append_path_sources() {
 	while IFS= read -r -d '' source; do
 		paths+=("$source")
 		source_count=$((source_count + 1))
-	done < <(find "$canonical_path" -type f -name '*.rs' ! -path '*/ui/*' ! -path '*/fixtures/*' -print0)
+	done < <(find "$canonical_path" -name '*.rs' ! -path '*/ui/*' ! -path '*/fixtures/*' -print0)
 	if ((source_count == 0)); then
 		printf '%s must contain at least one selected Rust source file: %s\n' \
 			"--path" "$requested_path" >&2
