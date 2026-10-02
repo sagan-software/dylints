@@ -2,9 +2,9 @@
 set -euo pipefail
 case "${1:-}" in
 --print)
-    printf '%s\n' "$FAKE_SYSROOT"
-    ;;
+	printf '%s\n' "$FAKE_SYSROOT"
+	;;
 -vV)
-    printf 'host: x86_64-unknown-linux-gnu\n'
-    ;;
+	printf 'host: x86_64-unknown-linux-gnu\n'
+	;;
 esac

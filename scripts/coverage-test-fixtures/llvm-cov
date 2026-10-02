@@ -2,11 +2,14 @@
 set -euo pipefail
 printf '%s\n' "$*" >>"$LLVM_COV_LOG"
 if [[ "$*" == *'export --summary-only'* ]]; then
-    printf '{"data":[{"files":['
-    printf '{"filename":"%s/lints/complexity/chaining_lint_support.rs","summary":{"lines":{"count":1,"covered":1,"percent":100},"regions":{"count":1,"covered":1,"percent":100}}},' "$FAKE_REPOSITORY_ROOT"
-    printf '{"filename":"%s/lints/complexity/example/src/../../chaining_lint_support.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}},' "$FAKE_REPOSITORY_ROOT"
-    printf '{"filename":"%s/src/runner.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}}' "$FAKE_REPOSITORY_ROOT"
-    printf '],"totals":{"lines":{"count":3,"covered":1,"percent":33.3333333333},"regions":{"count":3,"covered":1,"percent":33.3333333333}}}]}\n'
+	printf '{"data":[{"files":['
+	printf '{"filename":"%s/lints/complexity/chaining_lint_support.rs","summary":{"lines":{"count":1,"covered":1,"percent":100},"regions":{"count":1,"covered":1,"percent":100}}},' "$FAKE_REPOSITORY_ROOT"
+	printf '{"filename":"%s/lints/complexity/example/src/../../chaining_lint_support.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}},' "$FAKE_REPOSITORY_ROOT"
+	printf '{"filename":"%s/src/runner.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}}' "$FAKE_REPOSITORY_ROOT"
+	for index in {1..43}; do
+		printf ',{"filename":"%s/src/generated_%02d.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}}' "$FAKE_REPOSITORY_ROOT" "$index"
+	done
+	printf '],"totals":{"lines":{"count":46,"covered":1,"percent":2.1739130435},"regions":{"count":46,"covered":1,"percent":2.1739130435}}}]}\n'
 elif [[ "$*" == *'export --format=lcov'* ]]; then
-    printf 'TN:\n'
+	printf 'TN:\n'
 fi

@@ -317,7 +317,7 @@ fn is_excluded(root_dir: &Path, workspace: &dyn TableLike, package_dir: &Path) -
 /// walk continues to the file system root.
 fn file_exists_up_to(start: &Path, stop: &Path, names: &[&str]) -> bool {
     for directory in start.ancestors() {
-        if directory_has_file(directory, names) {
+        if names.iter().any(|name| directory.join(name).is_file()) {
             return true;
         }
 
@@ -328,11 +328,6 @@ fn file_exists_up_to(start: &Path, stop: &Path, names: &[&str]) -> bool {
     }
 
     false
-}
-
-/// Return whether any of `names` is a file in `directory`.
-fn directory_has_file(directory: &Path, names: &[&str]) -> bool {
-    names.iter().any(|name| directory.join(name).is_file())
 }
 
 /// Return the byte range that best identifies the top-level entry `key`.

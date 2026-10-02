@@ -332,7 +332,7 @@ extern "C" {
     type Opaque;
     m!();
     fn with_body() {}
-    #[cfg(test)] fn test_ext(); // test-only
+	#[cfg(test)] fn test_ext(); // test-only
 }
 impl E {
     const C: u8 = 0;
@@ -360,19 +360,20 @@ type Ty = u8;
 union U { a: u8 }
 use std::fmt;
 fn verbatim();
-#[cfg(any(test, all(test, unix)))] fn any_test() {} // test-only
+	#[cfg(any(test, all(test, unix)))] fn any_test() {} // test-only
 #[cfg(not(test))] fn not_test() {}
 #[cfg(feature = "x")] fn feature() {}
 #[cfg(all())] fn empty_all() {}
 #[cfg(any())] fn empty_any() {}
 #[cfg(all(,))] fn malformed_children() {}
 #[cfg(1)] fn malformed_predicate() {}
-#[cfg] fn bare_cfg() {}"#;
+	#[cfg] fn bare_cfg() {}"#;
+    const TEST_ONLY_MARKER: &str = "// test-only";
 
-    /// Every item kind and nesting site is classified, and only `// test-only` lines count.
+    /// Every item kind and nesting site is classified, and only marker lines count.
     #[test]
     fn counts_test_items_in_every_nesting_site() {
-        let expected = TEST_ITEMS_SOURCE.matches("// test-only").count();
+        let expected = TEST_ITEMS_SOURCE.matches(TEST_ONLY_MARKER).count();
 
         assert_eq!(
             test_line_count(TEST_ITEMS_SOURCE, TEST_ITEMS_SOURCE.lines().count()),
