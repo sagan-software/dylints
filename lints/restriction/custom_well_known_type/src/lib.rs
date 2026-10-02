@@ -201,7 +201,10 @@ fn def_id_matches_known_paths(
 /// Return type information for well known.
 fn well_known_type(type_name: &str) -> Option<WellKnownType> {
     // Keep exact names so project-specific declarations such as `PaymentMethod` stay quiet.
-    let kind = well_known_kind(type_name)?;
+    let kind = WELL_KNOWN_NAMES
+        .iter()
+        .find(|(candidate, _)| *candidate == type_name)
+        .map(|(_, kind)| *kind)?;
     WELL_KNOWN_TYPES
         .iter()
         .find(|(candidate, _)| *candidate == kind)
@@ -313,14 +316,6 @@ const WELL_KNOWN_NAMES: &[(&str, WellKnownKind)] = &[
     ("Timestamp", WellKnownKind::DateTime),
     ("DateTime", WellKnownKind::DateTime),
 ];
-
-/// Parses a source name into the closed semantic family.
-fn well_known_kind(type_name: &str) -> Option<WellKnownKind> {
-    WELL_KNOWN_NAMES
-        .iter()
-        .find(|(candidate, _)| *candidate == type_name)
-        .map(|(_, kind)| *kind)
-}
 
 /// Helper for ui analysis.
 #[test]

@@ -138,6 +138,7 @@ impl<'tcx> Visitor<'tcx> for LoggingVisitor<'_, 'tcx> {
         if is_logging_macro {
             return ControlFlow::Break(expr.span.source_callsite());
         }
+        // Check ordinary calls only after macro expansion has had a chance to report its source span.
         if logging_function_call(self.cx, expr) {
             return ControlFlow::Break(expr.span);
         }

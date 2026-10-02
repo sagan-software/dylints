@@ -218,23 +218,10 @@ fn check_named_type<'tcx>(
 ) {
     // Peel transparent wrappers before classifying the semantic value.
     let base = peel_wrappers(cx, ty);
-    // Pair recognized boundary names with their disallowed primitive families.
-    let finding = if name.ends_with("_id") && is_integer(base) {
-        Some(("identity data", primitive_name(base)))
-    } else if (name == "http_status" || name.ends_with("_http_status")) && is_integer(base) {
-        Some(("an HTTP status", primitive_name(base)))
-    } else if (matches!(name, "reason" | "reasons" | "reason_code" | "reason_codes")
-        || name.ends_with("_reason_code")
-        || name.ends_with("_reason_codes"))
-        && is_string(cx, base)
-    {
-        Some(("a reason code", primitive_name(base)))
-    } else {
-        None
-    };
-    let Some((domain, primitive)) = finding else {
+    let Some(domain) = semantic_domain(cx, name, base) else {
         return;
     };
+    let primitive = primitive_name(base);
 
     // Report the primitive and prescribe conversion at the system boundary.
     emit_lint(
@@ -243,6 +230,26 @@ fn check_named_type<'tcx>(
         format!("{label} `{name}` uses primitive type `{primitive}` for {domain}"),
         "introduce a validated semantic type and convert at the system boundary",
     );
+}
+
+/// Return the semantic domain when a boundary name and primitive type match.
+fn semantic_domain(cx: &LateContext<'_>, name: &str, base: Ty<'_>) -> Option<&'static str> {
+    // Pair recognized boundary names with the primitive family each domain disallows.
+    let domain = if name.ends_with("_id") && is_integer(base) {
+        Some("identity data")
+    } else if (name == "http_status" || name.ends_with("_http_status")) && is_integer(base) {
+        Some("an HTTP status")
+    } else if (matches!(name, "reason" | "reasons" | "reason_code" | "reason_codes")
+        || name.ends_with("_reason_code")
+        || name.ends_with("_reason_codes"))
+        && is_string(cx, base)
+    {
+        Some("a reason code")
+    } else {
+        None
+    };
+    // Keep the caller focused on emitting the diagnostic after classification.
+    domain
 }
 
 /// Peel transparent containers before classifying the stored domain value.
