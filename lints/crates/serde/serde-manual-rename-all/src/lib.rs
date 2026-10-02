@@ -2,31 +2,28 @@
 
 //! A lint to check for repeated Serde field renames replaceable by `rename_all`.
 //!
-//! This Dylint library resolves the relevant API or syntax, reports the
-//! undesired pattern, and provides the replacement documented by its README.
-//! UI fixtures cover triggering, non-triggering, and boundary forms so callers
-//! can adopt the diagnostic without changing unrelated code.
-//!
-//! This Dylint library resolves Serde field names, reports one common rename
-//! convention written repeatedly, and recommends a container-level rule.
+//! This Dylint library compares every field's explicit Serde name with the
+//! conventions `rename_all` supports, and suggests one container rule when a
+//! single convention reproduces every name in each derived direction.
 
-extern crate rustc_ast;
 extern crate rustc_errors;
+extern crate rustc_hir;
 extern crate rustc_span;
 
 #[cfg(test)]
 use serde as _;
 
-use rustc_ast::Crate;
-use rustc_errors::DiagDecorator;
-use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
+use rustc_errors::{Applicability, DiagDecorator};
+use rustc_hir::Item;
+use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_span::Span;
 
 use serde_support::{
-    AstFieldInfo, AstItemInfo, ItemKind, ast_has_serde_attr, ast_serde_attr,
-    ast_serde_directional_value, serde_ast_crate,
+    AdtKind, SerdeField, SerdeItem, attr_deletion_span, has_serde_attr, is_deletable_attr,
+    serde_attr, serde_directional_value, serde_item,
 };
 
-dylint_support::documented_early_lint! {
+dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
     pub SERDE_MANUAL_RENAME_ALL,
     Warn,
@@ -34,11 +31,9 @@ dylint_support::documented_early_lint! {
     SerdeManualRenameAll
 }
 
-/// The field rename conventions supported by Serde.
+/// The field rename conventions that change a snake-case Rust field name.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum RenameRule {
-    /// Convert ASCII letters to uppercase.
-    Upper,
     /// Convert snake-case fields to `PascalCase`.
     Pascal,
     /// Convert snake-case fields to `camelCase`.
@@ -52,9 +47,9 @@ enum RenameRule {
 }
 
 impl RenameRule {
-    /// All conventions that can observably rename a Rust field.
-    const ALL: [Self; 6] = [
-        Self::Upper,
+    /// Conventions in the order they are tried. `UPPERCASE` is omitted because it
+    /// renames a snake-case field exactly like `SCREAMING_SNAKE_CASE`.
+    const ALL: [Self; 5] = [
         Self::Pascal,
         Self::Camel,
         Self::ScreamingSnake,
@@ -65,7 +60,6 @@ impl RenameRule {
     /// Return Serde's spelling for this rule.
     const fn name(self) -> &'static str {
         match self {
-            Self::Upper => "UPPERCASE",
             Self::Pascal => "PascalCase",
             Self::Camel => "camelCase",
             Self::ScreamingSnake => "SCREAMING_SNAKE_CASE",
@@ -74,127 +68,23 @@ impl RenameRule {
         }
     }
 
-    /// Apply Serde 1.0.228's field conversion for this rule.
+    /// Apply Serde 1.0.228's field conversion for this rule to an ASCII field name.
     fn apply(self, field: &str) -> String {
-        // Apply each closed rule with Serde's documented ASCII transformations.
         match self {
-            Self::Upper | Self::ScreamingSnake => field.to_ascii_uppercase(),
             Self::Pascal => pascal_case(field),
-            Self::Camel => camel_case(field),
+            Self::Camel => {
+                // Serde lowercases the first byte of the Pascal-case spelling.
+                let mut camel = pascal_case(field);
+                if let Some(first) = camel.get_mut(..1) {
+                    first.make_ascii_lowercase();
+                }
+                camel
+            }
+            Self::ScreamingSnake => field.to_ascii_uppercase(),
             Self::Kebab => field.replace('_', "-"),
             Self::ScreamingKebab => field.to_ascii_uppercase().replace('_', "-"),
         }
     }
-}
-
-/// Convert a field to camel case while preserving empty and one-byte names.
-fn camel_case(field: &str) -> String {
-    // Derive camel case from Pascal case while preserving an empty field.
-    let pascal = pascal_case(field);
-    let Some(first) = pascal.get(0..1) else {
-        return pascal;
-    };
-    // Preserve the original Pascal spelling when no remainder follows the first byte.
-    let Some(rest) = pascal.get(1..) else {
-        return pascal;
-    };
-    first.to_ascii_lowercase() + rest
-}
-
-impl EarlyLintPass for SerdeManualRenameAll {
-    /// Check all cfg-active Serde structs in the crate.
-    fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &Crate) {
-        check_crate(cx, krate);
-    }
-}
-
-/// Check structs for one common explicit field rename convention.
-fn check_crate(cx: &EarlyContext<'_>, krate: &Crate) {
-    // Collect cfg-active Serde structs before comparing their explicit names.
-    let krate = serde_ast_crate(cx, krate);
-
-    for item in &krate.items {
-        check_item(cx, item);
-    }
-}
-
-/// Check one cfg-active struct for a common explicit rename convention.
-fn check_item(cx: &EarlyContext<'_>, item: &AstItemInfo<'_>) {
-    // Keep only multi-field Serde structs with named fields and no container rule.
-    if item.kind != ItemKind::Struct || !item.derives.has_serde() {
-        return;
-    }
-    if !has_renamable_fields(item) || ast_has_serde_attr(cx, item.attrs, "rename_all") {
-        return;
-    }
-
-    // Each active direction must be fully representable before field attributes can go away.
-    let serialize_rule = item
-        .derives
-        .has_serialize
-        .then(|| common_rule(cx, &item.fields, Direction::Serialize))
-        .flatten();
-    let deserialize_rule = item
-        .derives
-        .has_deserialize
-        .then(|| common_rule(cx, &item.fields, Direction::Deserialize))
-        .flatten();
-    if (item.derives.has_serialize && serialize_rule.is_none())
-        || (item.derives.has_deserialize && deserialize_rule.is_none())
-    {
-        return;
-    }
-
-    // Anchor the consolidated suggestion at the first field-level rename.
-    let Some(first_attr) = item
-        .fields
-        .iter()
-        .find_map(|field| ast_serde_attr(cx, field.attrs, "rename"))
-    else {
-        return;
-    };
-    emit_lint(cx, first_attr.span, serialize_rule, deserialize_rule);
-}
-
-/// Return whether a struct has enough named fields for a container rule.
-fn has_renamable_fields(item: &AstItemInfo<'_>) -> bool {
-    item.fields.len() >= 2 && item.fields.iter().all(|field| field.name.is_some())
-}
-
-/// One Serde operation direction.
-#[derive(Clone, Copy, Debug)]
-enum Direction {
-    /// Serialization names.
-    Serialize,
-    /// Deserialization names.
-    Deserialize,
-}
-
-/// Find one rule that produces every field's explicit name in a direction.
-fn common_rule(
-    cx: &EarlyContext<'_>,
-    fields: &[AstFieldInfo<'_>],
-    direction: Direction,
-) -> Option<RenameRule> {
-    RenameRule::ALL.into_iter().find(|rule| {
-        fields.iter().all(|field| {
-            let Some(name) = field.name.as_deref() else {
-                return false;
-            };
-            if !name.is_ascii() {
-                return false;
-            }
-            let Some(rename) = ast_serde_directional_value(cx, field.attrs, "rename") else {
-                return false;
-            };
-            let explicit = match direction {
-                Direction::Serialize => rename.serialize.as_deref(),
-                Direction::Deserialize => rename.deserialize.as_deref(),
-            };
-
-            explicit.is_some_and(|explicit| rule.apply(name) == explicit)
-        })
-    })
 }
 
 /// Convert one snake-case Rust field identifier to `PascalCase`.
@@ -218,15 +108,118 @@ fn pascal_case(field: &str) -> String {
     pascal
 }
 
-/// Emit the common container-level replacement.
-fn emit_lint(
-    cx: &EarlyContext<'_>,
-    span: rustc_span::Span,
+impl<'tcx> LateLintPass<'tcx> for SerdeManualRenameAll {
+    /// Check one struct for a common explicit rename convention.
+    fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
+        let Some(item) = serde_item(cx, item) else {
+            return;
+        };
+        check_struct(cx, &item);
+    }
+}
+
+/// Check one struct for a common explicit rename convention.
+fn check_struct(cx: &LateContext<'_>, item: &SerdeItem<'_>) {
+    // Find the container rule that reproduces every explicit field name.
+    let Some(container_attr) = container_rule(item) else {
+        return;
+    };
+    // Anchor the consolidated suggestion at the first field-level rename.
+    let Some(first_attr) = item
+        .fields
+        .iter()
+        .find_map(|field| serde_attr(field.attrs, "rename"))
+    else {
+        return;
+    };
+
+    // Offer the rewrite only when deleting every field attribute is exact.
+    let rewrite = rename_all_rewrite(cx, item, &container_attr);
+    let help = format!("add `{container_attr}` to the struct and remove its field-level renames");
+    cx.emit_span_lint(
+        SERDE_MANUAL_RENAME_ALL,
+        first_attr.span(),
+        DiagDecorator(move |diagnostic| {
+            let _configured =
+                diagnostic.primary_message("all fields use one Serde rename convention");
+            if let Some(parts) = rewrite {
+                let _configured =
+                    diagnostic.multipart_suggestion(help, parts, Applicability::MachineApplicable);
+            } else {
+                let _configured = diagnostic.help(help);
+            }
+        }),
+    );
+}
+
+/// Return the container attribute that replaces every field rename, if one exists.
+fn container_rule(item: &SerdeItem<'_>) -> Option<String> {
+    // Keep only multi-field structs with named fields and no container rule.
+    if item.kind != AdtKind::Struct || !has_renamable_fields(item) {
+        return None;
+    }
+    if has_serde_attr(item.attrs, "rename_all") {
+        return None;
+    }
+
+    // Each derived direction must be fully representable before field attributes can go away.
+    let serialize_rule = common_rule(&item.fields, Direction::Serialize);
+    let deserialize_rule = common_rule(&item.fields, Direction::Deserialize);
+    let is_serialize_covered = !item.derives.has_serialize || serialize_rule.is_some();
+    let is_deserialize_covered = !item.derives.has_deserialize || deserialize_rule.is_some();
+    if !(is_serialize_covered && is_deserialize_covered) {
+        return None;
+    }
+    // Keep only the rules of derived directions.
+    container_attr(
+        serialize_rule.filter(|_| item.derives.has_serialize),
+        deserialize_rule.filter(|_| item.derives.has_deserialize),
+    )
+}
+
+/// Return whether a struct has enough named fields for a container rule.
+fn has_renamable_fields(item: &SerdeItem<'_>) -> bool {
+    item.fields.len() >= 2 && item.fields.iter().all(|field| field.name.is_some())
+}
+
+/// One Serde operation direction.
+#[derive(Clone, Copy, Debug)]
+enum Direction {
+    /// Serialization names.
+    Serialize,
+    /// Deserialization names.
+    Deserialize,
+}
+
+/// Find one rule that produces every field's explicit name in a direction.
+fn common_rule(fields: &[SerdeField<'_>], direction: Direction) -> Option<RenameRule> {
+    RenameRule::ALL.into_iter().find(|rule| {
+        fields.iter().all(|field| {
+            let Some(name) = field.name else {
+                return false;
+            };
+            let name = name.as_str();
+            let Some(rename) = serde_directional_value(field.attrs, "rename") else {
+                return false;
+            };
+            let explicit = match direction {
+                Direction::Serialize => rename.serialize,
+                Direction::Deserialize => rename.deserialize,
+            };
+
+            name.is_ascii() && explicit.is_some_and(|explicit| rule.apply(name) == explicit)
+        })
+    })
+}
+
+/// Return the shortest container attribute that preserves every derived direction.
+///
+/// Each argument is `None` exactly when its direction is not derived.
+fn container_attr(
     serialize: Option<RenameRule>,
     deserialize: Option<RenameRule>,
-) {
-    // Select the shortest container attribute that preserves both active directions.
-    let replacement = match (serialize, deserialize) {
+) -> Option<String> {
+    Some(match (serialize, deserialize) {
         // Equal bidirectional rules use Serde's shared shorthand.
         (Some(serialize), Some(deserialize)) if serialize == deserialize => {
             format!("#[serde(rename_all = \"{}\")]", serialize.name())
@@ -237,7 +230,7 @@ fn emit_lint(
             serialize.name(),
             deserialize.name()
         ),
-        // Single-direction derives retain only their active rename rule.
+        // Single-direction derives retain only their derived rename rule.
         (Some(serialize), None) => {
             format!("#[serde(rename_all(serialize = \"{}\"))]", serialize.name())
         }
@@ -245,25 +238,61 @@ fn emit_lint(
             "#[serde(rename_all(deserialize = \"{}\"))]",
             deserialize.name()
         ),
-        (None, None) => return,
-    };
+        (None, None) => return None,
+    })
+}
 
-    // Suggest the shared attribute while naming the field attributes it replaces.
-    cx.emit_span_lint(
-        SERDE_MANUAL_RENAME_ALL,
-        span,
-        DiagDecorator(move |diagnostic| {
-            let _configured_diagnostic = diagnostic
-                .primary_message("all fields use one Serde rename convention")
-                .help(format!(
-                    "add `{replacement}` to the struct and remove its field-level renames"
-                ));
-        }),
-    );
+/// Build the exact rewrite: insert the container rule and delete each field rename.
+///
+/// The rewrite is exact only when every field's rename attribute holds just
+/// `rename` and comes from plain source.
+fn rename_all_rewrite(
+    cx: &LateContext<'_>,
+    item: &SerdeItem<'_>,
+    container_attr: &str,
+) -> Option<Vec<(Span, String)>> {
+    // Macro output has no source text to rewrite.
+    if item.span.from_expansion() {
+        return None;
+    }
+    // Insert the container attribute on its own line at the item's indentation.
+    let indent = cx.sess().source_map().indentation_before(item.span)?;
+    let mut parts = vec![(
+        item.span.shrink_to_lo(),
+        format!("{container_attr}\n{indent}"),
+    )];
+    // Delete every field rename, and give up if any deletion would be inexact.
+    for field in &item.fields {
+        let attr = serde_attr(field.attrs, "rename")?;
+        if !is_deletable_attr(cx, attr, "rename") {
+            return None;
+        }
+        parts.push((attr_deletion_span(cx, attr), String::new()));
+    }
+    Some(parts)
 }
 
 /// Run the UI fixture.
 #[test]
 fn ui() {
     dylint_testing::ui_test_examples(env!("CARGO_PKG_NAME"));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RenameRule;
+
+    /// Apply each rule to a multi-word field.
+    #[test]
+    fn rules_match_serde() {
+        let applied: Vec<_> = RenameRule::ALL
+            .into_iter()
+            .map(|rule| rule.apply("user_id"))
+            .collect();
+        assert_eq!(
+            applied,
+            ["UserId", "userId", "USER_ID", "user-id", "USER-ID"]
+        );
+        assert_eq!(RenameRule::Camel.apply(""), "");
+    }
 }

@@ -18,9 +18,6 @@ The lint matches only lowercase `inconclusive` at the start of the
 description. A description such as `"Inconclusive - ..."` does not trigger it,
 although old test-case versions matched the word in any case.
 
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
-
 ## Example
 
 ```rust

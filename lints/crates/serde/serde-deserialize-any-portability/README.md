@@ -2,7 +2,10 @@
 
 ## What it does
 
-Checks for method calls to `serde::Deserializer::deserialize_any`.
+Checks for calls to `serde::Deserializer::deserialize_any`, written either as
+a method call or as a path call. Calls inside an implementation of
+`Deserializer` are not checked, because a format forwards to its own
+`deserialize_any` by design.
 
 ## Why is this bad?
 
@@ -13,11 +16,7 @@ Bincode return an error, so the type cannot be read from them.
 ## Known problems
 
 Some types need dynamic input, such as a type that accepts either a string or
-a number. These calls also trigger the lint. The lint also flags calls inside a
-`Deserializer` implementation for a self-describing format.
-
-The lint misses calls written as `Deserializer::deserialize_any(deserializer,
-visitor)`.
+a number. These calls also trigger the lint.
 
 ## Example
 

@@ -39,17 +39,27 @@ impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyReadonlySystemAccess {
         local_def_id: rustc_span::def_id::LocalDefId,
     ) {
         // Report each mutable query used only for reads at its parameter declaration.
-        for index in bevy_support::readonly_mut_query_parameters(cx, kind, body, local_def_id) {
-            let Some(parameter) = declaration.inputs.get(index) else {
-                continue;
-            };
+        let indexes = bevy_support::readonly_mut_query_parameters(cx, kind, body, local_def_id);
+        for parameter in bevy_support::parameter_types(declaration, indexes) {
+            let replacements = bevy_support::shared_query_data_replacements(cx, parameter);
             cx.emit_span_lint(
                 BEVY_READONLY_SYSTEM_ACCESS,
                 parameter.span,
                 rustc_errors::DiagDecorator(|diagnostic| {
-                    let _configured_diagnostic = diagnostic
-                        .primary_message("this mutable query is used only for reading")
-                        .help("request shared component references in this query");
+                    let _configured_diagnostic =
+                        diagnostic.primary_message("this mutable query is used only for reading");
+                    // Callers that pass this exact query type would stop compiling, so the
+                    // rewrite is offered for review rather than applied automatically.
+                    if replacements.is_empty() {
+                        let _helped =
+                            diagnostic.help("request shared component references in this query");
+                    } else {
+                        let _suggested = diagnostic.multipart_suggestion(
+                            "request shared component references in this query",
+                            replacements,
+                            rustc_errors::Applicability::MaybeIncorrect,
+                        );
+                    }
                 }),
             );
         }

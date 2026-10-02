@@ -15,13 +15,13 @@ the convention.
 
 ## Known problems
 
-The lint only detects `UPPERCASE`, `PascalCase`, `camelCase`,
+The lint only detects `PascalCase`, `camelCase`,
 `SCREAMING_SNAKE_CASE`, `kebab-case`, and `SCREAMING-KEBAB-CASE`. It skips a
 struct where any field has no rename, and it does not check enum variants or
 tuple structs.
 
-The lint matches derives to types by name, so two types with the same name in
-one crate can share the same derive result.
+The machine-applicable fix is offered only when each field attribute holds
+just the `rename` entry.
 
 ## Example
 

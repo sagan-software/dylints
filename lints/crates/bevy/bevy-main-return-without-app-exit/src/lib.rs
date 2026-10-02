@@ -32,14 +32,13 @@ impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyMainReturnWithoutAppExit {
     fn check_fn(
         &mut self,
         cx: &rustc_lint::LateContext<'tcx>,
-        kind: rustc_hir::intravisit::FnKind<'tcx>,
+        _: rustc_hir::intravisit::FnKind<'tcx>,
         declaration: &'tcx rustc_hir::FnDecl<'tcx>,
         body: &'tcx rustc_hir::Body<'tcx>,
         _: rustc_span::Span,
         local_def_id: rustc_span::def_id::LocalDefId,
     ) {
-        for span in bevy_support::discarded_app_run_spans(cx, kind, declaration, body, local_def_id)
-        {
+        for span in bevy_support::discarded_app_run_spans(cx, declaration, body, local_def_id) {
             cx.emit_span_lint(
                 BEVY_MAIN_RETURN_WITHOUT_APP_EXIT,
                 span,

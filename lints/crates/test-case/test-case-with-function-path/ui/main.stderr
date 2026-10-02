@@ -1,11 +1,16 @@
 warning: `with` communicates an inline assertion closure
-  --> $DIR/main.rs:9:1
+  --> $DIR/main.rs:17:21
    |
 LL | #[test_case(1_u8 => with validate ; "named function")]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                     ^^^^ help: use `using` for a named reusable validation function: `using`
    |
-   = help: use `using` for a named reusable validation function
    = note: `#[warn(test_case_with_function_path)]` on by default
 
-warning: 1 warning emitted
+warning: `with` communicates an inline assertion closure
+  --> $DIR/main.rs:18:21
+   |
+LL | #[test_case(2_u8 => with checks::validate::<u8> ; "generic path")]
+   |                     ^^^^ help: use `using` for a named reusable validation function: `using`
+
+warning: 2 warnings emitted
 

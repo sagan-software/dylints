@@ -12,25 +12,24 @@ pub struct QualifiedRedundantNamedSource {
 }
 
 #[derive(Error, Debug)]
-#[error("io")]
-pub struct ImportedRedundantNamedSource {
-    #[source]
-    source: std::io::Error,
+pub enum ImportedRedundantNamedSource {
+    #[error("io")]
+    Io {
+        #[source]
+        source: std::io::Error,
+        path: String,
+    },
 }
 
-#[derive(ThisError, Debug)]
-#[error("io")]
-pub struct RenamedRedundantNamedSource {
-    #[source]
-    source: std::io::Error,
-}
+mod glob {
+    use thiserror::*;
 
-#[cfg(any())]
-#[derive(ThisError, Debug)]
-#[error("io")]
-pub struct DisabledRedundantNamedSource {
-    #[source]
-    source: std::io::Error,
+    #[derive(Error, Debug)]
+    #[error("io")]
+    pub struct GlobRedundantNamedSource {
+        #[source]
+        source: std::io::Error,
+    }
 }
 
 #[derive(ThisError, Debug)]
@@ -46,9 +45,10 @@ pub struct RawSourceData {
     r#source: std::io::Error,
 }
 
-// Active `#[source]` outside a thiserror derive is rejected before this lint can run.
-#[derive(Debug)]
-pub struct DebugOnlyNamedSource {
+#[derive(ThisError, Debug)]
+#[error("io")]
+pub struct FromNamedSource {
+    #[from]
     source: std::io::Error,
 }
 

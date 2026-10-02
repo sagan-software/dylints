@@ -14,12 +14,8 @@ even when the two values are equal.
 
 ## Known problems
 
-The lint checks only a numeric literal without a type suffix, with or without
-a leading `-`. A literal such as `0.0_f64`, a constant, or an arithmetic
-expression does not trigger it.
-
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+The lint checks only a numeric literal, with or without a leading `-` or a
+type suffix. A constant or an arithmetic expression does not trigger it.
 
 ## Example
 

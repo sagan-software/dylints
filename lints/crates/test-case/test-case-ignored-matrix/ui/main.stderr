@@ -7,5 +7,13 @@ LL | #[test_matrix([1_u8, 2] => ignore["tracked issue"] ; "disabled")]
    = help: remove the modifier or express exceptional ignored inputs as separate test cases
    = note: `#[warn(test_case_ignored_matrix)]` on by default
 
-warning: 1 warning emitted
+warning: the matrix-wide ignore modifier disables every combination
+  --> $DIR/main.rs:12:1
+   |
+LL | #[test_matrix([1_u8, 2] => inconclusive ; "later matrix")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the modifier or express exceptional ignored inputs as separate test cases
+
+warning: 2 warnings emitted
 

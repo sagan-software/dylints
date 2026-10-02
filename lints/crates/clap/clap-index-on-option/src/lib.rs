@@ -7,14 +7,13 @@
 //! leaves unrelated code unchanged. Its README defines the checked boundary,
 //! the recommended replacement, and the UI fixture that protects behavior.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
 
 #[cfg(test)]
 use clap as _;
-use rustc_errors::DiagDecorator;
+use clap_support::emit_lint_with_help;
 use rustc_hir::Expr;
-use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_lint::{LateContext, LateLintPass};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -27,18 +26,15 @@ dylint_support::documented_late_lint! {
 impl<'tcx> LateLintPass<'tcx> for ClapIndexOnOption {
     /// Check one outermost resolved clap argument chain.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        let Some(span) = clap_support::index_on_option(cx, expr) else {
-            return;
-        };
-        cx.emit_span_lint(
-            CLAP_INDEX_ON_OPTION,
-            span,
-            DiagDecorator(|diagnostic| {
-                let _configured_diagnostic = diagnostic
-                    .primary_message("`index` only configures positional arguments")
-                    .help("remove `index`, or make this argument positional");
-            }),
-        );
+        if let Some(span) = clap_support::index_on_option(cx, expr) {
+            emit_lint_with_help(
+                cx,
+                CLAP_INDEX_ON_OPTION,
+                span,
+                "`index` only configures positional arguments",
+                "remove `index`, or make this argument positional",
+            );
+        }
     }
 }
 

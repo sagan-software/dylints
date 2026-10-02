@@ -20,4 +20,17 @@ struct EffectiveFlags {
     cache: bool,
 }
 
+#[derive(Parser)]
+struct ExplicitSetTrue {
+    #[arg(long, action = ArgAction::SetTrue, default_value_t = true)]
+    color: bool,
+    #[arg(skip = true)]
+    skipped: bool,
+}
+
+#[derive(Clone, clap::ValueEnum)]
+enum Mode {
+    Fast,
+}
+
 fn main() {}

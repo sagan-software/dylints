@@ -12,9 +12,10 @@ tests and the function body never runs. `cargo test` reports no failure.
 
 ## Known problems
 
-The lint counts every case generated for the function. When the function also
-has a `#[test_case(...)]` attribute or another nonempty `#[test_matrix(...)]`
-attribute, the empty matrix is not reported.
+The lint counts the cases of each `#[test_matrix(...)]` attribute from its
+array, tuple, and integer-range literals, the same way test-case expands them.
+A range bound written as a constant fails to expand, so the lint does not
+report it.
 
 ## Example
 

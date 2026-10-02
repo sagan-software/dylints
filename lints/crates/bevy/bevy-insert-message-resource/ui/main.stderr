@@ -1,5 +1,5 @@
 warning: manually inserting `Messages` omits Bevy's message update system
-  --> $DIR/main.rs:17:9
+  --> $DIR/main.rs:23:9
    |
 LL |     app.init_resource::<Messages<Ping>>();
    |         ^^^^^^^^^^^^^
@@ -7,5 +7,13 @@ LL |     app.init_resource::<Messages<Ping>>();
    = help: use `App::add_message::<M>()`
    = note: `#[warn(bevy_insert_message_resource)]` on by default
 
-warning: 1 warning emitted
+warning: manually inserting `Messages` omits Bevy's message update system
+  --> $DIR/main.rs:24:9
+   |
+LL |     app.insert_resource(Messages::<Ping>::default());
+   |         ^^^^^^^^^^^^^^^
+   |
+   = help: use `App::add_message::<M>()`
+
+warning: 2 warnings emitted
 

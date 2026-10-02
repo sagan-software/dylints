@@ -12,6 +12,10 @@ fn valid_nested_router() {
     let _: Router = Router::new().nest("/api", inner);
 }
 
+fn valid_method_router_service() {
+    let _: Router = Router::new().route_service("/api", get(|| async {}));
+}
+
 struct OtherRouter;
 
 impl OtherRouter {

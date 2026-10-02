@@ -1,0 +1,58 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+//! A real plain-data `source` field fails to compile, so this fixture uses a
+//! local error type named `String`. The lint reads the written type name and
+//! reports it, which shows that the check is syntactic.
+#![allow(dead_code)]
+
+use thiserror::Error;
+
+mod shadowed {
+    use thiserror::*;
+
+    /// A local error type that shadows the standard `String` name.
+    #[derive(Error, Debug)]
+    #[error("local")]
+    pub struct String;
+
+    #[derive(Error, Debug)]
+    #[error("route {source}")]
+    pub struct ShadowedSource {
+        r#source: String,
+    }
+}
+
+#[derive(Error, Debug)]
+#[error("{source} -> {destination}")]
+pub struct RawSourceRouteError {
+    r#source: char,
+    destination: char,
+}
+
+#[derive(Error, Debug)]
+#[error("io")]
+pub struct RealSource {
+    source: std::io::Error,
+}
+
+#[derive(Error, Debug)]
+#[error("{source}")]
+pub struct ExplicitSource {
+    source: char,
+    #[source]
+    cause: std::io::Error,
+}
+
+#[derive(Error, Debug)]
+pub enum Variants {
+    #[error("{0}")]
+    Tuple(#[from] std::io::Error),
+    #[error("boxed")]
+    Boxed {
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+    #[error("borrowed")]
+    Borrowed { source: &'static std::io::Error },
+}
+
+fn main() {}

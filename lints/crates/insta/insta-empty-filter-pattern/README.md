@@ -14,8 +14,8 @@ under test.
 
 ## Known problems
 
-The lint checks only a string literal passed directly as the pattern. It does
-not check patterns held in constants or variables, or built at runtime. It
+The lint checks a string literal passed directly as the pattern, or
+a `const` defined in the same crate and initialized with a string literal. It does not check patterns held in variables or built at runtime. It
 does not check other patterns that can match empty text, such as `"a*"`.
 
 ## Example

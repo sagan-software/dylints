@@ -13,8 +13,9 @@ application starts or a test builds that router. The root route is `"/"`.
 
 ## Known problems
 
-The lint checks only a string literal passed directly as the path. It does not
-check paths held in constants or variables, or paths built at runtime.
+The lint checks a string literal passed directly as the path, or a `const`
+defined in the same crate and initialized with a string literal. It does not
+check paths held in variables or built at runtime.
 
 ## Example
 

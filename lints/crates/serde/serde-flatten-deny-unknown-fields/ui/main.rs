@@ -64,6 +64,43 @@ struct QualifiedInnerDeniedOuter {
 }
 
 #[derive(Deserialize)]
+struct OptionalInnerDeniedOuter {
+    id: String,
+    #[serde(flatten)]
+    extra: Option<StrictExtra>,
+}
+
+mod shadow {
+    use serde::Deserialize;
+
+    // Same name as the denied struct above, but it accepts unknown fields.
+    #[derive(Deserialize)]
+    pub struct StrictExtra {
+        pub trace_id: String,
+    }
+}
+
+#[derive(Deserialize)]
+struct ShadowedName {
+    id: String,
+    #[serde(flatten)]
+    extra: shadow::StrictExtra,
+}
+
+#[derive(serde::Serialize)]
+#[serde(deny_unknown_fields)]
+struct SerializeOnlyOuter {
+    id: String,
+    #[serde(flatten)]
+    extra: SerializeExtra,
+}
+
+#[derive(serde::Serialize)]
+struct SerializeExtra {
+    trace_id: String,
+}
+
+#[derive(Deserialize)]
 struct Plain {
     id: String,
     extra: PlainExtra,

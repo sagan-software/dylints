@@ -17,7 +17,7 @@ use axum as _;
 axum_support::declare_router_path_lint! {
     AXUM_NEST_AT_ROOT,
     AxumNestAtRoot,
-    "nest",
+    ["nest"],
     Root,
     "an Axum router is nested at the root",
     "nesting a router at the root panics",

@@ -2,9 +2,9 @@
 
 ## What it does
 
-Checks for an `#[error(...)]` attribute whose format string ends with an empty
-`{}` placeholder and is followed by a format argument, such as
-`#[error("failed: {}", source)]`.
+Checks for an `#[error(...)]` attribute on a type that derives
+`thiserror::Error` when a `{}` placeholder takes a positional argument that is
+just the name of a field, such as `#[error("failed: {}", source)]`.
 
 ## Why is this bad?
 
@@ -15,15 +15,10 @@ the extra argument is redundant.
 
 ## Known problems
 
-The lint matches the attribute source text. It does not check that the
-argument is a named field, so it also warns on arguments such as
-`self.count + 1`, on messages with several `{}` placeholders, and on any
-attribute named `error`, even outside a `thiserror` derive. In these cases it
-gives help text but no automatic fix.
-
-It does not warn when the `{}` placeholder is not the last part of the format
-string, when the placeholder has a format specification such as `{:?}`, or when
-whitespace separates the closing quote from the comma.
+The fix moves the field name into the placeholder and deletes the argument.
+It applies only when the message has exactly one positional placeholder and
+one positional argument, and the format string has no escape sequences.
+Messages with several positional placeholders get help text but no fix.
 
 ## Example
 

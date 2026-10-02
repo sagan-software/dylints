@@ -1,18 +1,71 @@
 warning: `serde(expecting)` should be a lowercase noun phrase without a period
-  --> $DIR/main.rs:8:1
+  --> $DIR/main.rs:8:21
    |
 LL | #[serde(expecting = "A user id.")]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: rewrite the expectation text: `#[serde(expecting = "a user id")]`
+   |                     ^^^^^^^^^^^^
    |
    = note: `#[warn(serde_expecting_style)]` on by default
+help: rewrite the expectation text
+   |
+LL - #[serde(expecting = "A user id.")]
+LL + #[serde(expecting = "a user id")]
+   |
 
 warning: `serde(expecting)` should be a lowercase noun phrase without a period
-  --> $DIR/main.rs:12:1
+  --> $DIR/main.rs:12:21
    |
 LL | #[serde(expecting = "A /"quoted/" user id.")]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: rewrite the expectation text
+   |
+LL - #[serde(expecting = "A /"quoted/" user id.")]
+LL + #[serde(expecting = "a /"quoted/" user id")]
+   |
+
+warning: `serde(expecting)` should be a lowercase noun phrase without a period
+  --> $DIR/main.rs:16:21
+   |
+LL | #[serde(expecting = r#"A "raw" user id."#)]
+   |                     ^^^^^^^^^^^^^^^^^^^^^
+   |
+help: rewrite the expectation text
+   |
+LL - #[serde(expecting = r#"A "raw" user id."#)]
+LL + #[serde(expecting = r#"a "raw" user id"#)]
+   |
+
+warning: `serde(expecting)` should be a lowercase noun phrase without a period
+  --> $DIR/main.rs:20:21
+   |
+LL | #[serde(expecting = "UUID string.")]
+   |                     ^^^^^^^^^^^^^^
+   |
+help: rewrite the expectation text
+   |
+LL - #[serde(expecting = "UUID string.")]
+LL + #[serde(expecting = "UUID string")]
+   |
+
+warning: `serde(expecting)` should be a lowercase noun phrase without a period
+  --> $DIR/main.rs:24:21
+   |
+LL | #[serde(expecting = "/x41 user id")]
+   |                     ^^^^^^^^^^^^^^
    |
    = help: rewrite the expectation text
 
-warning: 2 warnings emitted
+warning: `serde(expecting)` should be a lowercase noun phrase without a period
+  --> $DIR/main.rs:28:42
+   |
+LL | #[serde(deny_unknown_fields, expecting = "Settings.")]
+   |                                          ^^^^^^^^^^^
+   |
+help: rewrite the expectation text
+   |
+LL - #[serde(deny_unknown_fields, expecting = "Settings.")]
+LL + #[serde(deny_unknown_fields, expecting = "settings")]
+   |
+
+warning: 6 warnings emitted
 

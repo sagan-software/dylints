@@ -13,11 +13,11 @@ to. An `if false` guard rejects every value, so the case always fails.
 
 ## Known problems
 
-The lint checks only a guard that is a single `true` or `false` token. A named
+The lint checks only a guard that is the literal `true` or `false`. A named
 constant, `!false`, `(true)`, or a compound expression does not trigger it.
 
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+For `if true`, the fix removes the guard. An `if false` guard gets help text
+but no automatic fix, because the intended condition is unknown.
 
 ## Example
 

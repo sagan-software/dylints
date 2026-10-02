@@ -1,3 +1,7 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#![allow(dead_code)]
+
 use serde::Deserialize;
 
 #[derive(Default, Deserialize)]
@@ -54,6 +58,30 @@ impl Default for ManualDefault {
             verbose: true,
         }
     }
+}
+
+#[derive(Default, Deserialize)]
+struct Generic<T> {
+    #[serde(default)]
+    items: Vec<T>,
+    #[serde(default)]
+    first: Option<T>,
+}
+
+#[derive(Default, Deserialize)]
+struct MultiEntry {
+    #[serde(default, rename = "n")]
+    retries: u32,
+    #[serde(default)]
+    verbose: bool,
+}
+
+#[derive(Default, serde::Serialize)]
+struct SerializeOnly {
+    #[serde(default)]
+    retries: u32,
+    #[serde(default)]
+    verbose: bool,
 }
 
 #[derive(Default, Deserialize)]

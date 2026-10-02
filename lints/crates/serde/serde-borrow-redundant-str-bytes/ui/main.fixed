@@ -20,20 +20,31 @@ struct CfgDisabled<'a> {
 
 #[derive(serde::Deserialize)]
 struct User<'a> {
-    
     name: &'a str,
-    
     raw: &'a [u8],
-    
+    // Serde does not borrow through an alias, so the attribute is required here.
+    #[serde(borrow)]
     aliased_name: BorrowedStr<'a>,
-    
+    #[serde(borrow)]
     aliased_raw: BorrowedBytes<'a>,
+    optional_name: Option<&'a str>,
     #[serde(borrow)]
     path: BorrowedPath<'a>,
-    
     inline_name: &'a str,
     #[serde(borrow, rename = "renamed")]
     renamed_name: &'a str,
+}
+
+#[derive(Deserialize)]
+enum Message<'a> {
+    Text(&'a str),
+    Owned(String),
+}
+
+#[derive(serde::Serialize)]
+struct SerializeOnly<'a> {
+    #[serde(borrow)]
+    name: &'a str,
 }
 
 #[derive(Deserialize)]

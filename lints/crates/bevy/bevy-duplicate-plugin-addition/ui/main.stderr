@@ -1,11 +1,23 @@
 warning: this unique plugin is added twice in the same chain
-  --> $DIR/main.rs:19:33
+  --> $DIR/main.rs:41:33
    |
 LL |     app.add_plugins(GamePlugin).add_plugins(GamePlugin);
    |                                 ^^^^^^^^^^^
    |
-   = help: remove the duplicate `add_plugins` call
    = note: `#[warn(bevy_duplicate_plugin_addition)]` on by default
+help: remove the duplicate `add_plugins` call
+   |
+LL -     app.add_plugins(GamePlugin).add_plugins(GamePlugin);
+LL +     app.add_plugins(GamePlugin);
+   |
 
-warning: 1 warning emitted
+warning: this unique plugin is added twice in the same chain
+  --> $DIR/main.rs:42:36
+   |
+LL |     app.add_plugins(game_plugin()).add_plugins(game_plugin());
+   |                                    ^^^^^^^^^^^
+   |
+   = help: remove the duplicate `add_plugins` call
+
+warning: 2 warnings emitted
 

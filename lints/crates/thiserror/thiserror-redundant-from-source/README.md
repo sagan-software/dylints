@@ -13,9 +13,7 @@ effects on this field.
 
 ## Known problems
 
-The lint recognizes the derive only as `thiserror::Error` or through a
-`use thiserror::Error` or `use thiserror::Error as Name` import. A glob import
-such as `use thiserror::*` hides the derive from the lint.
+None known.
 
 ## Example
 

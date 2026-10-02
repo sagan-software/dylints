@@ -2,7 +2,8 @@
 
 ## What it does
 
-Checks for a `format!(...)` call passed directly to `QueryBuilder::push`.
+Checks for a `format!(...)` call, optionally borrowed, passed directly to
+`QueryBuilder::push`. Qualified forms such as `std::format!` also match.
 
 ## Why is this bad?
 
@@ -12,10 +13,9 @@ statement and cause SQL injection.
 
 ## Known problems
 
-The lint only checks an argument that starts with `format!`. It misses
-`&format!(...)`, `std::format!(...)`, and a formatted string stored in a
-variable first. It also flags `format!` calls that only insert fixed SQL
-fragments.
+The lint checks only an argument that is the direct result of `format!`,
+optionally borrowed. It misses a formatted string stored in a variable first.
+It also flags `format!` calls that only insert fixed SQL fragments.
 
 ## Example
 

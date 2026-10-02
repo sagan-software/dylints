@@ -21,7 +21,7 @@ use axum as _;
 axum_support::declare_router_path_lint! {
     AXUM_ROUTE_LEGACY_COLON_CAPTURE,
     AxumRouteLegacyColonCapture,
-    "route",
+    ["route", "route_service", "nest", "nest_service"],
     LegacyColonCapture,
     "an Axum route uses a legacy colon capture",
     "Axum 0.8 rejects this legacy `:name` capture",

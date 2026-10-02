@@ -18,11 +18,10 @@ use dylint_linting as _;
 #[cfg(test)]
 use bevy_ecs as _;
 
-bevy_support::declare_mutable_query_component_lint! {
+bevy_support::declare_function_parameter_lint! {
     BEVY_CHILDREN_MUTATION_QUERY,
     BevyChildrenMutationQuery,
-    "bevy_ecs",
-    "Children",
+    bevy_support::children_mutation_query_parameters,
     "checks mutable queries that directly manipulate Bevy Children",
     "`Children` should not be manipulated directly",
     "modify `ChildOf` on source entities or use relationship commands"

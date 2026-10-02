@@ -1,11 +1,16 @@
 warning: `inconclusive` generates an ignored Rust test
-  --> $DIR/main.rs:5:1
+  --> $DIR/main.rs:7:18
    |
 LL | #[test_case(1 => inconclusive["tracked issue"] ; "legacy")]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                  ^^^^^^^^^^^^ help: use `ignore["reason"]` to state that behavior directly: `ignore`
    |
-   = help: use `ignore["reason"]` to state that behavior directly
    = note: `#[warn(test_case_inconclusive_modifier)]` on by default
 
-warning: 1 warning emitted
+warning: `inconclusive` generates an ignored Rust test
+  --> $DIR/main.rs:8:18
+   |
+LL | #[test_case(2 => inconclusive ; "legacy without reason")]
+   |                  ^^^^^^^^^^^^ help: use `ignore["reason"]` to state that behavior directly: `ignore`
+
+warning: 2 warnings emitted
 

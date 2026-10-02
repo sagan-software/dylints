@@ -16,31 +16,32 @@ pub enum QualifiedRedundantSource {
 pub enum ImportedRedundantSource {
     #[error("io")]
     Io(
-        #[from]
         #[source]
+        #[from]
         std::io::Error,
     ),
 }
 
 #[derive(ThisError, Debug)]
-pub enum RenamedRedundantSource {
-    #[error("io")]
-    Io(
-        #[from]
-        #[source]
-        std::io::Error,
-    ),
+#[error("io")]
+pub struct RenamedRedundantSource {
+    #[from]
+    #[source]
+    inner: std::io::Error,
 }
 
-#[cfg(any())]
-#[derive(ThisError, Debug)]
-pub enum DisabledRedundantSource {
-    #[error("io")]
-    Io(
-        #[from]
-        #[source]
-        std::io::Error,
-    ),
+mod glob {
+    use thiserror::*;
+
+    #[derive(Error, Debug)]
+    pub enum GlobRedundantSource {
+        #[error("io")]
+        Io(
+            #[from]
+            #[source]
+            std::io::Error,
+        ),
+    }
 }
 
 #[derive(ThisError, Debug)]
@@ -55,10 +56,6 @@ pub enum SourceOnly {
     Io(#[source] std::io::Error),
 }
 
-// Active thiserror helper attributes require a helper-declaring derive macro to compile.
-#[derive(Debug)]
-pub enum DebugOnlyIo {
-    Io(std::io::Error),
+fn main() {
+    let _ = glob::GlobRedundantSource::from(std::io::Error::other("x"));
 }
-
-fn main() {}

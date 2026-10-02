@@ -13,11 +13,7 @@ change whenever an input expression is rewritten.
 
 ## Known problems
 
-The lint looks for any `;` in the attribute source, so a `;` inside an input
-string hides a missing description.
-
-The lint reads only the first test-case attribute on a function. A later
-`#[test_case(...)]` attribute without a description is not reported.
+A function with many generated cases gets one warning for each attribute.
 
 ## Example
 

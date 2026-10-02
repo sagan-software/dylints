@@ -23,5 +23,21 @@ LL |         .required(true)
    |
    = help: remove `required(true)` so the condition controls when the argument is required
 
-warning: 3 warnings emitted
+warning: `required(true)` conflicts with clap's conditional requirement settings
+  --> $DIR/main.rs:31:10
+   |
+LL |         .required(true)
+   |          ^^^^^^^^
+   |
+   = help: remove `required(true)` so the condition controls when the argument is required
+
+warning: `required(true)` conflicts with clap's conditional requirement settings
+  --> $DIR/main.rs:35:10
+   |
+LL |         .required(true);
+   |          ^^^^^^^^
+   |
+   = help: remove `required(true)` so the condition controls when the argument is required
+
+warning: 5 warnings emitted
 

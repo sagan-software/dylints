@@ -2,26 +2,27 @@ warning: Clap derive already selects this parser from the field type
   --> $DIR/main.rs:11:5
    |
 LL |     #[arg(long, value_parser = clap::value_parser!(u16))]
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     ^^^^^^^^^^-----------------------------------------^^
+   |               |
+   |               help: remove the redundant `value_parser` setting
    |
-   = help: remove the redundant `value_parser` setting
    = note: `#[warn(clap_derive_redundant_value_parser)]` on by default
 
 warning: Clap derive already selects this parser from the field type
   --> $DIR/main.rs:13:5
    |
 LL |     #[arg(long, value_parser = value_parser!(PathBuf))]
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: remove the redundant `value_parser` setting
+   |     ^^^^^^^^^^---------------------------------------^^
+   |               |
+   |               help: remove the redundant `value_parser` setting
 
 warning: Clap derive already selects this parser from the field type
   --> $DIR/main.rs:15:5
    |
 LL |     #[arg(long, value_parser = clap::value_parser!(String))]
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: remove the redundant `value_parser` setting
+   |     ^^^^^^^^^^--------------------------------------------^^
+   |               |
+   |               help: remove the redundant `value_parser` setting
 
 warning: Clap derive already selects this parser from the field type
   --> $DIR/main.rs:17:5
@@ -29,5 +30,33 @@ warning: Clap derive already selects this parser from the field type
 LL |     #[arg(value_parser = clap::value_parser!(u32))]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove the redundant `value_parser` setting
 
-warning: 4 warnings emitted
+warning: Clap derive already selects this parser from the field type
+  --> $DIR/main.rs:23:5
+   |
+LL |     #[arg(value_parser = clap::value_parser!(u8), long)]
+   |     ^^^^^^----------------------------------------^^^^^^
+   |           |
+   |           help: remove the redundant `value_parser` setting
+
+warning: Clap derive already selects this parser from the field type
+  --> $DIR/main.rs:25:5
+   |
+LL |     #[arg(long, value_parser = clap::value_parser!(i64), help = "x(1, 2)")]
+   |     ^^^^^^^^^^-----------------------------------------^^^^^^^^^^^^^^^^^^^^
+   |               |
+   |               help: remove the redundant `value_parser` setting
+
+warning: Clap derive already selects this parser from the field type
+  --> $DIR/main.rs:68:13
+   |
+LL |             #[arg(long, value_parser = clap::value_parser!(u16))]
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+LL | generated_parser!();
+   | ------------------- in this macro invocation
+   |
+   = help: remove the redundant `value_parser` setting
+   = note: this warning originates in the macro `generated_parser` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: 7 warnings emitted
 

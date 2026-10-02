@@ -31,6 +31,25 @@ fn good_full_component(query: Query<&LargeAgent, Changed<LargeAgent>>) {
     }
 }
 
+struct Mirror {
+    a: u64,
+    b: u64,
+    c: u64,
+    d: u64,
+    e: u64,
+}
+
+fn bad_same_names_elsewhere(query: Query<&LargeAgent, Changed<LargeAgent>>, mirror: Mirror) {
+    let _sum = mirror.a + mirror.b + mirror.c + mirror.d + mirror.e;
+    let _ = query.iter().count();
+}
+
+fn good_in_closure(query: Query<&LargeAgent, (With<Position>, Changed<LargeAgent>)>) {
+    query.iter().for_each(|agent| {
+        let _sum = agent.a + agent.b + agent.c + agent.d + agent.e;
+    });
+}
+
 fn main() {
     let _bad = bad;
     let _good = good;

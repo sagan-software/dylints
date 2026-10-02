@@ -33,11 +33,12 @@ impl<'tcx> LateLintPass<'tcx> for AxumRouteServiceRouter {
         let Some(call) = router_method_call(cx, expr, "route_service") else {
             return;
         };
-        let [_, service] = call.arguments else {
-            return;
-        };
         // Report only service values whose adjusted type is another Axum router.
-        if !is_router_type(cx, service) {
+        if !call
+            .arguments
+            .last()
+            .is_some_and(|service| is_router_type(cx, service))
+        {
             return;
         }
 

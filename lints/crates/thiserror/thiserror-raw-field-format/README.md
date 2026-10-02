@@ -13,13 +13,15 @@ refers to the same `r#type` field.
 
 ## Known problems
 
-With thiserror 2, an active item with this pattern already fails to compile,
-so the lint is most useful during a migration from thiserror 1. It also scans
-source text, so it warns on items disabled by `#[cfg]`.
+With thiserror 2, an active item with this pattern already fails to compile
+with thiserror's own error, so the lint is most useful on thiserror 1 code
+before a migration.
 
-It recognizes the derive only as `thiserror::Error` or through a
-`use thiserror::Error` or `use thiserror::Error as Name` import. A glob import
-such as `use thiserror::*` hides the derive from the lint.
+thiserror 1 cannot format a keyword field such as `r#type` as `{type}`, so
+that rewrite is offered but not applied automatically. A rewrite of a
+non-keyword name such as `{r#kind}` to `{kind}` works with both versions and is
+applied automatically. A format string with escape sequences gets help text
+but no rewrite.
 
 ## Example
 

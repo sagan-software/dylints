@@ -15,11 +15,9 @@ the validator is shared.
 
 ## Known problems
 
-The lint checks only a path made of identifiers and `::`. A generic path such
-as `validate::<u8>`, a call, or a parenthesized expression does not trigger it.
-
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+The lint checks only a path, including a generic path such as
+`validate::<u8>`. A call or a parenthesized expression does not trigger it.
+The fix renames `with` to `using`, which calls the same function.
 
 ## Example
 

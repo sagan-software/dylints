@@ -7,7 +7,6 @@
 //! leaves unrelated code unchanged. Its README defines the checked boundary,
 //! the recommended replacement, and the UI fixture that protects behavior.
 
-extern crate rustc_ast;
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_span;
@@ -15,9 +14,9 @@ extern crate rustc_span;
 #[cfg(test)]
 use insta as _;
 
-use rustc_ast::LitKind;
+use insta_support::{is_insta_type, string_literal};
 use rustc_errors::DiagDecorator;
-use rustc_hir::{Expr, ExprKind, def::Res};
+use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 
 dylint_support::documented_late_lint! {
@@ -52,10 +51,10 @@ impl<'tcx> LateLintPass<'tcx> for InstaBinarySnapshotMissingExtension {
 /// Resolve a missing-extension binary snapshot name to its source call site.
 fn binary_snapshot_name_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<rustc_span::Span> {
     // Require the expanded Insta value constructor and its resolved definition.
-    let ExprKind::Struct(path, fields, _) = expr.kind else {
+    let ExprKind::Struct(_, fields, _) = expr.kind else {
         return None;
     };
-    if !is_binary_snapshot_value(cx, path, expr.hir_id) {
+    if !is_insta_type(cx, cx.typeck_results().expr_ty(expr), "BinarySnapshotValue") {
         return None;
     }
 
@@ -64,39 +63,10 @@ fn binary_snapshot_name_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<ru
         .iter()
         .find(|field| field.ident.name.as_str() == "name_and_extension")
         .map(|field| field.expr)?;
-    let value = literal_string(name)?;
+    let value = string_literal(cx, name)?;
 
     // Reject names that already carry an extension.
-    (!value.as_str().contains('.')).then_some(name.span.source_callsite())
-}
-
-/// Return whether a resolved constructor is Insta's binary snapshot value.
-fn is_binary_snapshot_value(
-    cx: &LateContext<'_>,
-    path: &rustc_hir::QPath<'_>,
-    hir_id: rustc_hir::HirId,
-) -> bool {
-    // Resolve the constructor definition before inspecting its generated fields.
-    let Res::Def(_, def_id) = cx.typeck_results().qpath_res(path, hir_id) else {
-        return false;
-    };
-    cx.tcx.crate_name(def_id.krate).as_str() == "insta"
-        && cx
-            .tcx
-            .def_path_str(def_id)
-            .ends_with("::BinarySnapshotValue")
-}
-
-/// Extract a string literal from one generated HIR expression.
-const fn literal_string(expr: &Expr<'_>) -> Option<rustc_span::Symbol> {
-    // Restrict source recovery to a literal node with a string value.
-    let ExprKind::Lit(literal) = expr.kind else {
-        return None;
-    };
-    let LitKind::Str(value, _) = literal.node else {
-        return None;
-    };
-    Some(value)
+    (!value.contains('.')).then_some(name.span.source_callsite())
 }
 
 /// Run the UI fixture.

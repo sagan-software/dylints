@@ -9,44 +9,44 @@ const fn expected() -> &'static str {
 pub struct QualifiedTuple(String);
 
 #[derive(Error, Debug)]
-#[error("imported {0} {}", expected())]
-pub struct ImportedTuple(String);
+#[error("named first {0} {named} {}", expected(), named = 1)]
+pub struct NamedFirstTuple(String);
 
 #[derive(ThisError, Debug)]
 #[error("renamed {0:?} {}", expected())]
 pub struct RenamedTuple(String);
 
-#[derive(ThisError, Debug)]
-pub enum TupleVariant {
-    #[error("variant {0} {}", expected())]
-    Ambiguous(String),
+mod glob {
+    use super::expected;
+    use thiserror::*;
 
-    #[error("named {0} {expected}", expected = expected())]
-    NamedArg(String),
+    #[derive(Error, Debug)]
+    pub enum TupleVariant {
+        #[error("variant {0} {}", expected())]
+        Ambiguous(String),
 
-    #[error("escaped {{0}} {}", expected())]
-    EscapedNumeric(String),
+        #[error("named {0} {expected}", expected = expected())]
+        NamedArg(String),
 
-    #[error("field only {0}")]
-    FieldOnly(String),
+        #[error("escaped {{0}} {}", expected())]
+        EscapedNumeric(String),
+
+        #[error("field only {0}")]
+        FieldOnly(String),
+
+        #[error("named field {} {0}", expected())]
+        NamedField { value: String },
+
+        #[error("unit {}", expected())]
+        Unit,
+
+        #[error("empty tuple {0} {}", expected())]
+        EmptyTuple(),
+    }
 }
 
 #[derive(ThisError, Debug)]
-#[error("named {0} {expected}", expected = expected())]
-pub struct NamedTupleArg(String);
-
-#[derive(ThisError, Debug)]
-#[error("field only {0}")]
-pub struct FieldOnlyTuple(String);
-
-#[cfg(any())]
-#[derive(ThisError, Debug)]
-#[error("disabled {0} {}", expected())]
-pub struct DisabledTuple(String);
-
-#[cfg(any())]
-#[derive(Debug)]
-#[error("debug only {0} {}", expected())]
-pub struct DebugOnlyTuple(String);
+#[error("transparent")]
+pub struct Plain(String);
 
 fn main() {}

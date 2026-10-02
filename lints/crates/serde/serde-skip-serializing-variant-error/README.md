@@ -15,9 +15,6 @@ one variant fails at runtime.
 
 Code that never serializes the variant still triggers the lint.
 
-The lint matches derives to types by name, so two types with the same name in
-one crate can share the same derive result.
-
 ## Example
 
 ```rust

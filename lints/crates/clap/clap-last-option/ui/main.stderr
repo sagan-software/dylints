@@ -15,5 +15,13 @@ LL |     let _ = Arg::new("output").last(true).short('o');
    |
    = help: remove `last(true)`, or make the argument positional by removing its long and short names
 
-warning: 2 warnings emitted
+warning: `last(true)` has no effect on a clap option
+  --> $DIR/main.rs:34:42
+   |
+LL |     let _ = Arg::new("input").long(name).last(true);
+   |                                          ^^^^
+   |
+   = help: remove `last(true)`, or make the argument positional by removing its long and short names
+
+warning: 3 warnings emitted
 

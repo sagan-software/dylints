@@ -3,7 +3,7 @@
 ## What it does
 
 Checks for a `#[test_case(...)]` attribute whose description after the `;` is
-an empty or whitespace-only string literal, such as `#[test_case(1; "")]`.
+an empty string literal, such as `#[test_case(1; "")]`.
 
 ## Why is this bad?
 
@@ -13,12 +13,7 @@ covers, so a failure report does not identify the case.
 
 ## Known problems
 
-The lint matches the attribute source text after removing whitespace. A raw
-string such as `r""`, or a description produced by another macro, does not
-trigger it.
-
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+A description produced by another macro does not trigger the lint.
 
 ## Example
 

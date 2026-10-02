@@ -9,21 +9,22 @@
 //! The README defines the supported call shapes and replacement. UI fixtures
 //! cover triggering and non-triggering forms for safe adoption.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
 
 #[cfg(test)]
 use clap as _;
-use rustc_lint::LintContext as _;
 
 clap_support::declare_builder_requirement_lint! {
     CLAP_REQUIRE_EQUALS_WITHOUT_NUM_ARGS,
     ClapRequireEqualsWithoutNumArgs,
-    Arg,
-    "require_equals",
-    true,
-    "num_args",
-    false,
+    clap_support::BuilderRequirement {
+        builder: clap_support::BuilderType::Arg,
+        trigger: "require_equals",
+        is_trigger_true_required: true,
+        required: "num_args",
+        is_requirement_true_required: false,
+        satisfying_actions: &["Set", "Append"],
+    },
     "a clap argument requires equals without an arity",
     "`require_equals(true)` has no configured value arity",
     "add an explicit `.num_args(...)`"

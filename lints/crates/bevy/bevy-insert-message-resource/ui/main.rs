@@ -8,14 +8,23 @@
 )]
 
 use bevy_app::App;
-use bevy_ecs::message::{Message, Messages};
+use bevy_ecs::{
+    message::{Message, Messages},
+    resource::Resource,
+};
 
 #[derive(Message)]
 struct Ping;
 
+#[derive(Resource, Default)]
+struct Score(u32);
+
 fn configure(app: &mut App) {
     app.init_resource::<Messages<Ping>>();
+    app.insert_resource(Messages::<Ping>::default());
     app.add_message::<Ping>();
+    app.init_resource::<Score>();
+    app.insert_resource(Score(0));
 }
 
 fn main() {}

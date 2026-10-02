@@ -24,20 +24,12 @@ LL |     qualified: std::borrow::Cow<'a, str>,
    = help: add `#[serde(borrow)]` if this field should borrow from the input
 
 warning: `Cow` fields need `#[serde(borrow)]` to deserialize borrowed data
-  --> $DIR/main.rs:36:5
+  --> $DIR/main.rs:53:12
    |
-LL |     renamed: TextCow<'a, str>,
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: add `#[serde(borrow)]` if this field should borrow from the input
-
-warning: `Cow` fields need `#[serde(borrow)]` to deserialize borrowed data
-  --> $DIR/main.rs:37:5
-   |
-LL |     aliased: BorrowedText<'a>,
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     Note { body: Cow<'a, str> },
+   |            ^^^^^^^^^^^^^^^^^^
    |
    = help: add `#[serde(borrow)]` if this field should borrow from the input
 
-warning: 5 warnings emitted
+warning: 4 warnings emitted
 

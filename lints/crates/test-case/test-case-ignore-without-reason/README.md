@@ -13,13 +13,8 @@ tends to become permanent.
 
 ## Known problems
 
-The lint matches text before the first `;` in the attribute. It warns when
-that text contains `ignore` but not `ignore[`. An input such as
-`"ignore me"` triggers it, and so does `ignore ["reason"]` written with a
-space before the bracket.
-
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+The lint checks only the `ignore` spelling. A bare `inconclusive` modifier
+triggers `test-case-inconclusive-modifier` instead.
 
 ## Example
 

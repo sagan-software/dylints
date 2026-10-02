@@ -10,8 +10,8 @@ LL | #[error("qualified {0} {}", expected())]
 warning: `thiserror` tuple format mixes numeric fields and positional arguments
   --> $DIR/main.rs:12:1
    |
-LL | #[error("imported {0} {}", expected())]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL | #[error("named first {0} {named} {}", expected(), named = 1)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: give the extra format argument a name, such as `value = value()`
 
@@ -24,10 +24,10 @@ LL | #[error("renamed {0:?} {}", expected())]
    = help: give the extra format argument a name, such as `value = value()`
 
 warning: `thiserror` tuple format mixes numeric fields and positional arguments
-  --> $DIR/main.rs:21:5
+  --> $DIR/main.rs:25:9
    |
-LL |     #[error("variant {0} {}", expected())]
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |         #[error("variant {0} {}", expected())]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: give the extra format argument a name, such as `value = value()`
 

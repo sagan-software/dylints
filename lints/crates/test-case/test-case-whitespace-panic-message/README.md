@@ -14,11 +14,8 @@ can pass the case even when the intended failure never happens.
 
 ## Known problems
 
-The attribute also triggers `test-case-empty-panic-message`, so it gets two
-warnings. A message from a constant or macro does not trigger this lint.
-
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+A message from a constant or macro does not trigger the lint. An empty
+message triggers `test-case-empty-panic-message` instead.
 
 ## Example
 

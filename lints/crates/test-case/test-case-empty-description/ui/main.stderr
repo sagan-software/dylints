@@ -7,5 +7,21 @@ LL | #[test_case(1 ; "")]
    = help: describe the behavior covered by this case
    = note: `#[warn(test_case_empty_description)]` on by default
 
-warning: 1 warning emitted
+warning: this case has an empty explicit description
+  --> $DIR/main.rs:8:1
+   |
+LL | #[test_case(1 ; r"")]
+   | ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe the behavior covered by this case
+
+warning: this case has an empty explicit description
+  --> $DIR/main.rs:12:1
+   |
+LL | #[test_case(2 ; "")]
+   | ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: describe the behavior covered by this case
+
+warning: 3 warnings emitted
 

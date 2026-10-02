@@ -7,5 +7,21 @@ LL | #[test_case(1)]
    = help: add a descriptive case comment after `;`
    = note: `#[warn(test_case_unnamed_test_case)]` on by default
 
-warning: 1 warning emitted
+warning: this case has no explicit display name
+  --> $DIR/main.rs:6:1
+   |
+LL | #[test_case(2)]
+   | ^^^^^^^^^^^^^^^
+   |
+   = help: add a descriptive case comment after `;`
+
+warning: this case has no explicit display name
+  --> $DIR/main.rs:9:1
+   |
+LL | #[test_case([0; 3])]
+   | ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a descriptive case comment after `;`
+
+warning: 3 warnings emitted
 

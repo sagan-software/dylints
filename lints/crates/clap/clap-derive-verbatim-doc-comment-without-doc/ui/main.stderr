@@ -23,5 +23,13 @@ LL |     #[command(verbatim_doc_comment)]
    |
    = help: add a doc comment, or remove `verbatim_doc_comment`
 
-warning: 3 warnings emitted
+warning: `verbatim_doc_comment` has no doc comment to preserve
+  --> $DIR/main.rs:31:9
+   |
+LL |         #[arg(long, verbatim_doc_comment)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a doc comment, or remove `verbatim_doc_comment`
+
+warning: 4 warnings emitted
 

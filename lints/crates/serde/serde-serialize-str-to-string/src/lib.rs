@@ -38,7 +38,7 @@ impl<'tcx> LateLintPass<'tcx> for SerdeSerializeStrToString {
     /// Check semantically resolved Serde method calls.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
         // Resolve the exact serializer method before unpacking its sole argument.
-        let Some(call) = serde_method_call(cx, expr, "ser::Serializer", "serialize_str") else {
+        let Some(call) = serde_method_call(cx, expr, "Serializer", "serialize_str") else {
             return;
         };
         let [argument] = call.arguments else {

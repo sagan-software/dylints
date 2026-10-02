@@ -7,5 +7,13 @@ LL | fn bad(query: Query<&LargeAgent, Changed<LargeAgent>>) {
    = help: split independently changing state and filter on the specific component
    = note: `#[warn(bevy_large_component_change_filter)]` on by default
 
-warning: 1 warning emitted
+warning: this query change-tracks a large component
+  --> $DIR/main.rs:42:36
+   |
+LL | fn bad_same_names_elsewhere(query: Query<&LargeAgent, Changed<LargeAgent>>, mirror: Mirror) {
+   |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split independently changing state and filter on the specific component
+
+warning: 2 warnings emitted
 

@@ -2,8 +2,8 @@
 
 ## What it does
 
-Checks for `axum::Router::nest` calls whose string literal path contains a
-wildcard capture such as `{*rest}`.
+Checks for `axum::Router::nest` and `axum::Router::nest_service` calls whose
+path has a wildcard capture segment such as `{*rest}`.
 
 ## Why is this bad?
 
@@ -14,9 +14,10 @@ inside the nested router.
 
 ## Known problems
 
-The lint checks only a string literal passed directly as the path. It does not
-check paths held in constants or variables, or paths built at runtime. It does
-not check `Router::nest_service` paths.
+The lint checks a string literal passed directly as the path, or a `const`
+defined in the same crate and initialized with a string literal. It does not
+check paths held in variables or built at runtime. An escaped segment such as `{{*rest}}`
+is a literal path and is not reported.
 
 ## Example
 

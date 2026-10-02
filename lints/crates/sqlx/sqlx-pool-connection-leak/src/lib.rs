@@ -30,7 +30,7 @@ impl<'tcx> LateLintPass<'tcx> for SqlxPoolConnectionLeak {
     /// Check semantically resolved calls to `PoolConnection::leak`.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
         if expr.span.from_expansion()
-            || sqlx_method_call(cx, expr, "PoolConnection", &["leak"]).is_none()
+            || sqlx_method_call(cx, expr, &["PoolConnection"], &["leak"]).is_none()
         {
             return;
         }

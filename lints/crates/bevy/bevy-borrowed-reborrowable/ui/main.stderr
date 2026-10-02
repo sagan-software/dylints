@@ -1,5 +1,5 @@
 warning: Bevy `Query` already supports reborrowing
-  --> $DIR/main.rs:15:11
+  --> $DIR/main.rs:25:11
    |
 LL | fn bad(_: &mut Query<&Marker>) {}
    |           ^^^^^^^^^^^^^^^^^^^
@@ -7,5 +7,109 @@ LL | fn bad(_: &mut Query<&Marker>) {}
    = help: take the proxy by value and call its reborrow method where needed
    = note: `#[warn(bevy_borrowed_reborrowable)]` on by default
 
-warning: 1 warning emitted
+warning: Bevy `Commands` already supports reborrowing
+  --> $DIR/main.rs:26:20
+   |
+LL | fn bad_commands(_: &mut Commands) {}
+   |                    ^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `Deferred` already supports reborrowing
+  --> $DIR/main.rs:27:20
+   |
+LL | fn bad_deferred(_: &mut Deferred<CommandQueue>) {}
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `DeferredWorld` already supports reborrowing
+  --> $DIR/main.rs:28:26
+   |
+LL | fn bad_deferred_world(_: &mut DeferredWorld) {}
+   |                          ^^^^^^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `EntityCommands` already supports reborrowing
+  --> $DIR/main.rs:29:27
+   |
+LL | fn bad_entity_commands(_: &mut EntityCommands) {}
+   |                           ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `EntityMut` already supports reborrowing
+  --> $DIR/main.rs:30:22
+   |
+LL | fn bad_entity_mut(_: &mut EntityMut) {}
+   |                      ^^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `FilteredEntityMut` already supports reborrowing
+  --> $DIR/main.rs:31:31
+   |
+LL | fn bad_filtered_entity_mut(_: &mut FilteredEntityMut) {}
+   |                               ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `Mut` already supports reborrowing
+  --> $DIR/main.rs:32:15
+   |
+LL | fn bad_mut(_: &mut Mut<Marker>) {}
+   |               ^^^^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `MutUntyped` already supports reborrowing
+  --> $DIR/main.rs:33:23
+   |
+LL | fn bad_mut_untyped(_: &mut MutUntyped) {}
+   |                       ^^^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `NonSendMut` already supports reborrowing
+  --> $DIR/main.rs:34:24
+   |
+LL | fn bad_non_send_mut(_: &mut NonSendMut<Score>) {}
+   |                        ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `PtrMut` already supports reborrowing
+  --> $DIR/main.rs:35:19
+   |
+LL | fn bad_ptr_mut(_: &mut PtrMut) {}
+   |                   ^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `ResMut` already supports reborrowing
+  --> $DIR/main.rs:36:19
+   |
+LL | fn bad_res_mut(_: &mut ResMut<Score>) {}
+   |                   ^^^^^^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `Commands` already supports reborrowing
+  --> $DIR/main.rs:39:24
+   |
+LL |     let _closure = |_: &mut Commands| {};
+   |                        ^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: Bevy `Commands` already supports reborrowing
+  --> $DIR/main.rs:61:33
+   |
+LL |     fn bad_method(&mut self, _: &mut Commands) {}
+   |                                 ^^^^^^^^^^^^^
+   |
+   = help: take the proxy by value and call its reborrow method where needed
+
+warning: 14 warnings emitted
 

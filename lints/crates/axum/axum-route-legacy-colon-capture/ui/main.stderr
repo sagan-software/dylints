@@ -1,10 +1,74 @@
 warning: Axum 0.8 rejects this legacy `:name` capture
-  --> $DIR/main.rs:8:41
+  --> $DIR/main.rs:10:41
    |
 LL |     let _: Router = Router::new().route("/users/:id", get(|| async {}));
    |                                         ^^^^^^^^^^^^ help: write the capture as `{name}`: `"/users/{id}"`
    |
    = note: `#[warn(axum_route_legacy_colon_capture)]` on by default
 
-warning: 1 warning emitted
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:12:49
+   |
+LL |     let _: Router = Router::new().route_service("/files/:name", get(|| async {}));
+   |                                                 ^^^^^^^^^^^^^^ help: write the capture as `{name}`: `"/files/{name}"`
+
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:13:40
+   |
+LL |     let _: Router = Router::new().nest("/orgs/:org", Router::new());
+   |                                        ^^^^^^^^^^^^ help: write the capture as `{name}`: `"/orgs/{org}"`
+
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:14:48
+   |
+LL |     let _: Router = Router::new().nest_service("/blobs/:blob", get(|| async {}));
+   |                                                ^^^^^^^^^^^^^^ help: write the capture as `{name}`: `"/blobs/{blob}"`
+
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:18:41
+   |
+LL |     let _: Router = Router::new().route(LEGACY_PATH, get(|| async {}));
+   |                                         ^^^^^^^^^^^
+   |
+   = help: write the capture as `{name}`
+
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:19:41
+   |
+LL |     let _: Router = Router::new().route(r"/raw/:id", get(|| async {}));
+   |                                         ^^^^^^^^^^^
+   |
+   = help: write the capture as `{name}`
+
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:20:41
+   |
+LL |     let _: Router = Router::new().route("/users/:id-name", get(|| async {}));
+   |                                         ^^^^^^^^^^^^^^^^^
+   |
+   = help: write the capture as `{name}`
+
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:21:41
+   |
+LL |     let _: Router = Router::new().route("/users/:/id", get(|| async {}));
+   |                                         ^^^^^^^^^^^^^
+   |
+   = help: write the capture as `{name}`
+
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:22:41
+   |
+LL |     let _: Router = Router::new().route("/esc/x61pe/:id", get(|| async {}));
+   |                                         ^^^^^^^^^^^^^^^^
+   |
+   = help: write the capture as `{name}`
+
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:38:18
+   |
+LL |     router.route("/param/:id", get(|| async {}))
+   |                  ^^^^^^^^^^^^ help: write the capture as `{name}`: `"/param/{id}"`
+
+warning: 10 warnings emitted
 

@@ -62,16 +62,17 @@ impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyNarrowExclusiveSystem {
         local_def_id: LocalDefId,
     ) {
         // Retain each narrow world parameter until registration evidence is available.
-        for index in bevy_support::narrow_exclusive_system_parameters(cx, kind, body, local_def_id)
-        {
-            let Some(parameter) = declaration.inputs.get(index) else {
-                continue;
-            };
-            self.candidates.push(Candidate {
-                system: local_def_id,
-                parameter_span: parameter.span,
-            });
-        }
+        let indexes =
+            bevy_support::narrow_exclusive_system_parameters(cx, kind, body, local_def_id);
+        self.candidates
+            .extend(
+                bevy_support::parameter_spans(declaration, indexes).map(|parameter_span| {
+                    Candidate {
+                        system: local_def_id,
+                        parameter_span,
+                    }
+                }),
+            );
     }
 
     /// Record direct systems registered through `App::add_systems`.

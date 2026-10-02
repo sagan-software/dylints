@@ -2,26 +2,27 @@ warning: Clap already infers `ArgAction::SetTrue` from this field type
   --> $DIR/main.rs:9:5
    |
 LL |     #[arg(long, action = ArgAction::SetTrue)]
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     ^^^^^^^^^^-----------------------------^^
+   |               |
+   |               help: remove the redundant `action` setting
    |
-   = help: remove the redundant `action` setting
    = note: `#[warn(clap_derive_redundant_action)]` on by default
 
 warning: Clap already infers `ArgAction::Set` from this field type
   --> $DIR/main.rs:11:5
    |
 LL |     #[arg(long, action = clap::ArgAction::Set)]
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: remove the redundant `action` setting
+   |     ^^^^^^^^^^-------------------------------^^
+   |               |
+   |               help: remove the redundant `action` setting
 
 warning: Clap already infers `ArgAction::Append` from this field type
   --> $DIR/main.rs:13:5
    |
 LL |     #[arg(long, action = ArgAction::Append)]
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: remove the redundant `action` setting
+   |     ^^^^^^^^^^----------------------------^^
+   |               |
+   |               help: remove the redundant `action` setting
 
 warning: Clap already infers `ArgAction::SetTrue` from this field type
   --> $DIR/main.rs:15:5
@@ -33,9 +34,81 @@ warning: Clap already infers `ArgAction::Set` from this field type
   --> $DIR/main.rs:22:9
    |
 LL |         #[arg(long, action = ArgAction::Set)]
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |         ^^^^^^^^^^-------------------------^^
+   |                   |
+   |                   help: remove the redundant `action` setting
+
+warning: Clap already infers `ArgAction::SetTrue` from this field type
+  --> $DIR/main.rs:29:5
+   |
+LL |     #[arg(action = ArgAction::SetTrue, long)]
+   |     ^^^^^^-----------------------------^^^^^^
+   |           |
+   |           help: remove the redundant `action` setting
+
+warning: Clap already infers `ArgAction::SetTrue` from this field type
+  --> $DIR/main.rs:31:5
+   |
+LL |     #[arg(long, action = ArgAction::SetTrue,)]
+   |     ^^^^^^^^^^-----------------------------^^^
+   |               |
+   |               help: remove the redundant `action` setting
+
+warning: Clap already infers `ArgAction::Set` from this field type
+  --> $DIR/main.rs:33:5
+   |
+LL | /      #[arg(
+LL | |          long,
+   | | _____________-
+LL | ||         action = ArgAction::Set,
+   | ||_______________________________- help: remove the redundant `action` setting
+LL | |          help = "a, b"
+LL | |      )]
+   | |_______^
+
+warning: Clap already infers `ArgAction::Append` from this field type
+  --> $DIR/main.rs:51:5
+   |
+LL |     #[arg(long, action = ArgAction::Append)]
+   |     ^^^^^^^^^^----------------------------^^
+   |               |
+   |               help: remove the redundant `action` setting
+
+warning: Clap already infers `ArgAction::Set` from this field type
+  --> $DIR/main.rs:53:5
+   |
+LL |     #[arg(long, action = ArgAction::Set, help = "say /"hi/", then go")]
+   |     ^^^^^^^^^^-------------------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |               |
+   |               help: remove the redundant `action` setting
+
+warning: Clap already infers `ArgAction::SetTrue` from this field type
+  --> $DIR/main.rs:72:5
+   |
+LL |     #[arg(long, action = ArgAction::SetTrue)]
+   |     ^^^^^^^^^^-----------------------------^^
+   |               |
+   |               help: remove the redundant `action` setting
+
+warning: Clap already infers `ArgAction::Set` from this field type
+  --> $DIR/main.rs:80:9
+   |
+LL |         #[arg(long, action = ArgAction::Set)]
+   |         ^^^^^^^^^^-------------------------^^
+   |                   |
+   |                   help: remove the redundant `action` setting
+
+warning: Clap already infers `ArgAction::SetTrue` from this field type
+  --> $DIR/main.rs:89:13
+   |
+LL |             #[arg(long, action = ArgAction::SetTrue)]
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+LL | generated_parser!();
+   | ------------------- in this macro invocation
    |
    = help: remove the redundant `action` setting
+   = note: this warning originates in the macro `generated_parser` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-warning: 5 warnings emitted
+warning: 13 warnings emitted
 

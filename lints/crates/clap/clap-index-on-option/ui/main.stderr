@@ -7,5 +7,13 @@ LL |     let _ = Arg::new("bad").long("bad").index(1);
    = help: remove `index`, or make this argument positional
    = note: `#[warn(clap_index_on_option)]` on by default
 
-warning: 1 warning emitted
+warning: `index` only configures positional arguments
+  --> $DIR/main.rs:6:43
+   |
+LL |     let _ = Arg::new("named").short(name).index(1);
+   |                                           ^^^^^
+   |
+   = help: remove `index`, or make this argument positional
+
+warning: 2 warnings emitted
 

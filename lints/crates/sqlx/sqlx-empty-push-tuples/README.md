@@ -2,7 +2,8 @@
 
 ## What it does
 
-Checks for an empty array literal `[]` passed to `QueryBuilder::push_tuples`.
+Checks for an empty collection passed to `QueryBuilder::push_tuples`: an
+empty array `[]`, `Vec::new()`, or `vec![]`, optionally borrowed.
 
 ## Why is this bad?
 
@@ -12,8 +13,8 @@ SQL. The error only appears when the database runs the query.
 
 ## Known problems
 
-The lint only checks an empty array literal. It misses `&[]`, an empty `Vec`,
-and any collection that is empty at runtime.
+The lint checks only an argument written as `[]`, `Vec::new()`, or `vec![]`,
+optionally borrowed. It misses a collection that is empty only at runtime.
 
 ## Example
 

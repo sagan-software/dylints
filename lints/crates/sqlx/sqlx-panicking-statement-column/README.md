@@ -2,18 +2,17 @@
 
 ## What it does
 
-Checks for calls to `sqlx::Statement::column`.
+Checks for calls to `sqlx::Statement::column` and `sqlx::Row::column`.
 
 ## Why is this bad?
 
 `column` panics when the index or name does not match a column of the prepared
-statement. A changed query then crashes the program instead of returning an
+statement or the row. A changed query then crashes the program instead of returning an
 error the caller can handle.
 
 ## Known problems
 
-The lint flags calls with an index that is known to be valid. It does not
-check `Row::column`, which panics in the same way.
+The lint flags calls with an index that is known to be valid.
 
 ## Example
 

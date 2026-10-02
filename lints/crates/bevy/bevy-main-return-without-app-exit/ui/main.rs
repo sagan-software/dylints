@@ -20,6 +20,19 @@ fn helper_with_closure() {
     let _positive_count = [1, 2, 3].into_iter().filter(|value| *value > 0).count();
 }
 
+mod nested {
+    use bevy_app::App;
+
+    pub fn main() {
+        App::new().run();
+    }
+}
+
 fn main() {
     App::new().run();
+    let _ = App::new().run();
+    if false {
+        App::new().run();
+    }
+    nested::main();
 }

@@ -18,9 +18,6 @@ The lint skips a struct whose `Default` is implemented by hand, because its
 values can differ from the per-field defaults. It skips a struct where any
 field uses `default = "path"`.
 
-The lint matches derives to types by name, so two types with the same name in
-one crate can share the same derive result.
-
 ## Example
 
 ```rust

@@ -14,7 +14,9 @@ debug builds when the command is built.
 ## Known problems
 
 The lint checks only one method chain. It does not check an `Arg` changed in
-later statements.
+later statements. A final `.index(None)` removes the index. A `long` or `short` name counts when its final call passes any value
+other than `None`. A name passed as an `Option` value computed at runtime does
+not count.
 
 ## Example
 

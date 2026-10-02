@@ -19,7 +19,7 @@ use axum as _;
 axum_support::declare_router_path_lint! {
     AXUM_NEST_WILDCARD_PATH,
     AxumNestWildcardPath,
-    "nest",
+    ["nest", "nest_service"],
     NestedWildcard,
     "an Axum nest path contains a wildcard",
     "wildcards in nested router paths panic",

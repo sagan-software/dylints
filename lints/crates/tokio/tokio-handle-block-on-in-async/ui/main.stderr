@@ -1,11 +1,22 @@
 warning: `Handle::block_on` can panic inside a Tokio runtime
-  --> $DIR/main.rs:4:12
+  --> $DIR/main.rs:5:12
    |
 LL |     handle.block_on(async {});
-   |            ^^^^^^^^
+   |     -------^^^^^^^^---------- help: await the future directly: `async {}.await`
    |
-   = help: await the future directly
    = note: `#[warn(tokio_handle_block_on_in_async)]` on by default
 
-warning: 1 warning emitted
+warning: `Handle::block_on` can panic inside a Tokio runtime
+  --> $DIR/main.rs:6:20
+   |
+LL |     let _ = handle.block_on(future);
+   |             -------^^^^^^^^-------- help: await the future directly: `future.await`
+
+warning: `Handle::block_on` can panic inside a Tokio runtime
+  --> $DIR/main.rs:7:20
+   |
+LL |     let _ = handle.block_on(if true { ready(1) } else { ready(2) });
+   |             -------^^^^^^^^---------------------------------------- help: await the future directly: `(if true { ready(1) } else { ready(2) }).await`
+
+warning: 3 warnings emitted
 

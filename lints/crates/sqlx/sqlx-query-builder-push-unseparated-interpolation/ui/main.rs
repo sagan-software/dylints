@@ -5,4 +5,10 @@ fn main() {
     let mut separated = query.separated(", ");
     separated.push_unseparated(format!("id = {}", 1));
     separated.push_unseparated("id = ");
+    separated.push_unseparated(&format!("id = {}", 2));
+    separated.push_unseparated(alloc_format());
+}
+
+fn alloc_format() -> String {
+    std::format!("id = {}", 3)
 }

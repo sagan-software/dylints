@@ -7,5 +7,21 @@ LL | fn bad(query: Query<AgentQuery>) {
    = help: define a smaller query type for this behavior
    = note: `#[warn(bevy_partially_used_query_data)]` on by default
 
-warning: 1 warning emitted
+warning: this custom query uses at most half of its fields
+  --> $DIR/main.rs:49:36
+   |
+LL | fn bad_same_names_elsewhere(query: Query<AgentQuery>, other: Unrelated) {
+   |                                    ^^^^^^^^^^^^^^^^^
+   |
+   = help: define a smaller query type for this behavior
+
+warning: this custom query uses at most half of its fields
+  --> $DIR/main.rs:82:27
+   |
+LL | fn bad_mutable(mut query: Query<MutableAgentQuery>) {
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: define a smaller query type for this behavior
+
+warning: 3 warnings emitted
 

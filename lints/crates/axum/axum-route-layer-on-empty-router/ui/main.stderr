@@ -7,5 +7,21 @@ LL |     let _: Router = Router::new().route_layer(middleware::from_fn(pass_thro
    = help: add the routes before calling `Router::route_layer`
    = note: `#[warn(axum_route_layer_on_empty_router)]` on by default
 
-warning: 1 warning emitted
+warning: applying a route layer before adding routes panics
+  --> $DIR/main.rs:23:10
+   |
+LL |         .route_layer(middleware::from_fn(pass_through));
+   |          ^^^^^^^^^^^
+   |
+   = help: add the routes before calling `Router::route_layer`
+
+warning: applying a route layer before adding routes panics
+  --> $DIR/main.rs:25:28
+   |
+LL |     let _: Router = router.route_layer(middleware::from_fn(pass_through));
+   |                            ^^^^^^^^^^^
+   |
+   = help: add the routes before calling `Router::route_layer`
+
+warning: 3 warnings emitted
 

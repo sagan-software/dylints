@@ -2,10 +2,30 @@ warning: `Runtime::block_on` can panic inside a Tokio runtime
   --> $DIR/main.rs:4:13
    |
 LL |     runtime.block_on(async {});
-   |             ^^^^^^^^
+   |     --------^^^^^^^^---------- help: await the future directly: `async {}.await`
    |
-   = help: await the future directly
    = note: `#[warn(tokio_runtime_block_on_in_async)]` on by default
 
-warning: 1 warning emitted
+warning: `Runtime::block_on` can panic inside a Tokio runtime
+  --> $DIR/main.rs:6:21
+   |
+LL |     let _ = runtime.block_on(task);
+   |             --------^^^^^^^^------ help: await the future directly: `task.await`
+
+warning: calls to `std::mem::drop` with a value that implements `Copy` does nothing
+  --> $DIR/main.rs:15:5
+   |
+LL |     drop(run);
+   |     ^^^^^---^
+   |          |
+   |          argument has type `{closure@$DIR/main.rs:14:15: 14:17}`
+   |
+   = note: `#[warn(dropping_copy_types)]` on by default
+help: use `let _ = ...` to ignore the expression or result
+   |
+LL -     drop(run);
+LL +     let _ = run;
+   |
+
+warning: 3 warnings emitted
 

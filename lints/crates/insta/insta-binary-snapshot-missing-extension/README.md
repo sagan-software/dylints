@@ -13,8 +13,8 @@ snapshot is never recorded or compared.
 
 ## Known problems
 
-The lint checks only a string literal passed directly as the name. It does not
-check names held in constants or variables, or built at runtime.
+The lint checks a string literal passed directly as the name, or
+a `const` defined in the same crate and initialized with a string literal. It does not check names held in variables or built at runtime.
 
 ## Example
 

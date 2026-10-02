@@ -1,10 +1,36 @@
 warning: this route path panics because it does not start with `/`
-  --> $DIR/main.rs:8:41
+  --> $DIR/main.rs:12:41
    |
 LL |     let _: Router = Router::new().route("health", get(|| async {}));
    |                                         ^^^^^^^^ help: prefix the route path with `/`: `"/health"`
    |
    = note: `#[warn(axum_route_path_missing_slash)]` on by default
 
-warning: 1 warning emitted
+warning: this route path panics because it does not start with `/`
+  --> $DIR/main.rs:14:49
+   |
+LL |     let _: Router = Router::new().route_service("files", get(|| async {}));
+   |                                                 ^^^^^^^ help: prefix the route path with `/`: `"/files"`
+
+warning: this route path panics because it does not start with `/`
+  --> $DIR/main.rs:15:40
+   |
+LL |     let _: Router = Router::new().nest("api", Router::new());
+   |                                        ^^^^^ help: prefix the route path with `/`: `"/api"`
+
+warning: this route path panics because it does not start with `/`
+  --> $DIR/main.rs:16:48
+   |
+LL |     let _: Router = Router::new().nest_service("assets", get(|| async {}));
+   |                                                ^^^^^^^^ help: prefix the route path with `/`: `"/assets"`
+
+warning: this route path panics because it does not start with `/`
+  --> $DIR/main.rs:17:41
+   |
+LL |     let _: Router = Router::new().route(RELATIVE, get(|| async {}));
+   |                                         ^^^^^^^^
+   |
+   = help: prefix the route path with `/`
+
+warning: 5 warnings emitted
 

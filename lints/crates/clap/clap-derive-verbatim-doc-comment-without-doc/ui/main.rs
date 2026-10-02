@@ -27,6 +27,10 @@ enum Commands {
     /// Keep this variant's layout.
     #[command(verbatim_doc_comment)]
     Test {},
+    Build {
+        #[arg(long, verbatim_doc_comment)]
+        target: String,
+    },
 }
 
 fn main() {}

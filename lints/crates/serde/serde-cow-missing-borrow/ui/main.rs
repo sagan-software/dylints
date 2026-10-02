@@ -48,6 +48,16 @@ struct StaticComment {
     body: Cow<'static, str>,
 }
 
+#[derive(Deserialize)]
+enum Event<'a> {
+    Note { body: Cow<'a, str> },
+}
+
+#[derive(serde::Serialize)]
+struct SerializeOnly<'a> {
+    body: Cow<'a, str>,
+}
+
 #[derive(serde::Deserialize)]
 struct LocalLookalike<'a> {
     body: local::Cow<'a, str>,

@@ -7,5 +7,13 @@ LL | #[test_case(1_u8 => matches _ ; "vacuous")]
    = help: match the expected variant or value
    = note: `#[warn(test_case_wildcard_match)]` on by default
 
-warning: 1 warning emitted
+warning: the wildcard pattern accepts every returned value
+  --> $DIR/main.rs:7:1
+   |
+LL | #[test_case(3_u8 => matches (_) ; "parenthesized")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: match the expected variant or value
+
+warning: 2 warnings emitted
 

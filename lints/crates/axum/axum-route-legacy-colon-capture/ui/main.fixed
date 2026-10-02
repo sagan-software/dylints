@@ -4,9 +4,38 @@
 
 use axum::{Router, routing::get};
 
+const LEGACY_PATH: &str = "/teams/:team";
+
 fn routes() {
     let _: Router = Router::new().route("/users/{id}", get(|| async {}));
     let _: Router = Router::new().route("/users/{id}", get(|| async {}));
+    let _: Router = Router::new().route_service("/files/{name}", get(|| async {}));
+    let _: Router = Router::new().nest("/orgs/{org}", Router::new());
+    let _: Router = Router::new().nest_service("/blobs/{blob}", get(|| async {}));
+}
+
+fn no_fix_without_simple_literal() {
+    let _: Router = Router::new().route(LEGACY_PATH, get(|| async {}));
+    let _: Router = Router::new().route(r"/raw/:id", get(|| async {}));
+    let _: Router = Router::new().route("/users/:id-name", get(|| async {}));
+    let _: Router = Router::new().route("/users/:/id", get(|| async {}));
+    let _: Router = Router::new().route("/esc\x61pe/:id", get(|| async {}));
+}
+
+fn checks_disabled() {
+    let _: Router = Router::new()
+        .without_v07_checks()
+        .route("/literal/:colon", get(|| async {}));
+    let _: Router = Router::new()
+        .without_v07_checks()
+        .route("/a", get(|| async {}))
+        .route("/literal/:later", get(|| async {}));
+    let router = Router::new().without_v07_checks();
+    let _: Router = router.route("/literal/:colon", get(|| async {}));
+}
+
+fn checks_unknown(router: Router) -> Router {
+    router.route("/param/{id}", get(|| async {}))
 }
 
 fn main() {}

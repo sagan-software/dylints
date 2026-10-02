@@ -2,41 +2,66 @@ warning: `serde(borrow)` is redundant on this field type
   --> $DIR/main.rs:23:5
    |
 LL |     #[serde(borrow)]
-   |     ^^^^^^^^^^^^^^^^ help: remove the redundant borrow attribute
+   |     ^^^^^^^^^^^^^^^^
    |
    = note: `#[warn(serde_borrow_redundant_str_bytes)]` on by default
+help: remove the redundant borrow attribute
+   |
+LL -     #[serde(borrow)]
+   |
 
 warning: `serde(borrow)` is redundant on this field type
   --> $DIR/main.rs:25:5
    |
 LL |     #[serde(borrow)]
-   |     ^^^^^^^^^^^^^^^^ help: remove the redundant borrow attribute
+   |     ^^^^^^^^^^^^^^^^
+   |
+help: remove the redundant borrow attribute
+   |
+LL -     #[serde(borrow)]
+   |
 
 warning: `serde(borrow)` is redundant on this field type
-  --> $DIR/main.rs:27:5
+  --> $DIR/main.rs:32:5
    |
 LL |     #[serde(borrow)]
-   |     ^^^^^^^^^^^^^^^^ help: remove the redundant borrow attribute
+   |     ^^^^^^^^^^^^^^^^
+   |
+help: remove the redundant borrow attribute
+   |
+LL -     #[serde(borrow)]
+   |
 
 warning: `serde(borrow)` is redundant on this field type
-  --> $DIR/main.rs:29:5
+  --> $DIR/main.rs:36:5
    |
 LL |     #[serde(borrow)]
-   |     ^^^^^^^^^^^^^^^^ help: remove the redundant borrow attribute
-
-warning: `serde(borrow)` is redundant on this field type
-  --> $DIR/main.rs:33:5
+   |     ^^^^^^^^^^^^^^^^
    |
-LL |     #[serde(borrow)]
-   |     ^^^^^^^^^^^^^^^^ help: remove the redundant borrow attribute
+help: remove the redundant borrow attribute
+   |
+LL -     #[serde(borrow)]
+   |
 
 warning: `serde(borrow)` is redundant on this field type
-  --> $DIR/main.rs:35:5
+  --> $DIR/main.rs:38:5
    |
 LL |     #[serde(borrow, rename = "renamed")]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: remove `borrow` from this attribute
+
+warning: `serde(borrow)` is redundant on this field type
+  --> $DIR/main.rs:44:10
+   |
+LL |     Text(#[serde(borrow)] &'a str),
+   |          ^^^^^^^^^^^^^^^^
+   |
+help: remove the redundant borrow attribute
+   |
+LL -     Text(#[serde(borrow)] &'a str),
+LL +     Text(&'a str),
+   |
 
 warning: 6 warnings emitted
 

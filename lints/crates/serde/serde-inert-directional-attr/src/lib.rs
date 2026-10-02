@@ -2,31 +2,23 @@
 
 //! A lint to check for serde attributes that cannot affect the derived direction.
 //!
-//! This Dylint library resolves the relevant API or syntax, reports the
-//! undesired pattern, and provides the replacement documented by its README.
-//! UI fixtures cover triggering, non-triggering, and boundary forms so callers
-//! can adopt the diagnostic without changing unrelated code.
-//!
-//! This Dylint library resolves Serde derive directions and attributes, reports
-//! inert settings, and recommends removing or relocating the unused marker.
+//! This Dylint library resolves which Serde traits a type derives and reports
+//! container, field, and variant entries that affect only the direction the
+//! type does not derive. It removes an attribute whose only entry is inert.
 
-extern crate rustc_ast;
-extern crate rustc_errors;
-extern crate rustc_span;
+extern crate rustc_hir;
 
 #[cfg(test)]
 use serde as _;
 
-use rustc_ast::Crate;
-use rustc_errors::Applicability;
-use rustc_lint::{EarlyContext, EarlyLintPass};
+use rustc_hir::{Attribute, HirId, Item};
+use rustc_lint::{LateContext, LateLintPass};
 
 use serde_support::{
-    AstItemInfo, ast_all_fields, ast_attr_has_word, ast_attr_is_single_entry,
-    emit_span_lint_with_help, emit_span_lint_with_suggestion, serde_ast_crate,
+    Help, SerdeItem, all_fields, attr_has_entry, emit_lint, namespace_attrs, serde_item,
 };
 
-dylint_support::documented_early_lint! {
+dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
     pub SERDE_INERT_DIRECTIONAL_ATTR,
     Warn,
@@ -34,120 +26,65 @@ dylint_support::documented_early_lint! {
     SerdeInertDirectionalAttr
 }
 
-impl EarlyLintPass for SerdeInertDirectionalAttr {
-    /// Check crate for this lint.
-    fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &Crate) {
-        check_crate(cx, krate);
-    }
-}
+impl<'tcx> LateLintPass<'tcx> for SerdeInertDirectionalAttr {
+    /// Check one item that derives exactly one Serde direction.
+    fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
+        let Some(item) = serde_item(cx, item) else {
+            return;
+        };
+        // Select the keys that affect only the direction absent from this item.
+        let (keys, help) = if item.derives.only_serialize() {
+            (
+                DESERIALIZE_ONLY_KEYS,
+                "remove the deserialization-only attribute, or add `Deserialize` if it was intended",
+            )
+        } else if item.derives.only_deserialize() {
+            (
+                SERIALIZE_ONLY_KEYS,
+                "remove the serialization-only attribute, or add `Serialize` if it was intended",
+            )
+        } else {
+            return;
+        };
 
-/// Check crate for this lint.
-fn check_crate(cx: &EarlyContext<'_>, krate: &Crate) {
-    // Collect cfg-active Serde items before comparing derive directions and attributes.
-    let krate = serde_ast_crate(cx, krate);
-
-    // Inspect directional attributes only when the item derives one direction.
-    for item in &krate.items {
-        if !(item.derives.only_serialize() || item.derives.only_deserialize()) {
-            continue;
-        }
-
-        for attr in directional_attrs(item) {
-            let Some(inert_key) = inert_key_for_item(cx, item, attr) else {
+        for (hir_id, attr) in directional_attrs(cx, &item) {
+            let Some(key) = keys.iter().find(|key| attr_has_entry(attr, key)) else {
                 continue;
             };
             // Use a machine-applicable deletion only when the attribute is one simple entry.
-            if ast_attr_is_single_entry(cx, attr, inert_key) {
-                emit_span_lint_with_suggestion(
-                    cx,
-                    SERDE_INERT_DIRECTIONAL_ATTR,
-                    attr.span,
-                    "`serde` attribute is inert for the only derived direction",
-                    inert_help(inert_key, item),
-                    String::new(),
-                    Applicability::MachineApplicable,
-                );
-            } else {
-                emit_span_lint_with_help(
-                    cx,
-                    SERDE_INERT_DIRECTIONAL_ATTR,
-                    attr.span,
-                    "`serde` attribute is inert for the only derived direction",
-                    inert_help(inert_key, item),
-                );
-            }
+            emit_lint(
+                cx,
+                SERDE_INERT_DIRECTIONAL_ATTR,
+                hir_id,
+                attr.span(),
+                "`serde` attribute is inert for the only derived direction",
+                Help::attr_deletion(cx, attr, key, help),
+            );
         }
     }
 }
 
-/// Helper for directional attrs analysis.
-fn directional_attrs<'item>(item: &'item AstItemInfo<'_>) -> Vec<&'item rustc_ast::Attribute> {
-    // Collect container attributes before nested field and variant attributes.
-    let mut attrs = Vec::new();
-    attrs.extend(
-        item.attrs
-            .iter()
-            .filter(|attr| attr.has_name(rustc_span::Symbol::intern("serde"))),
-    );
-    for field in ast_all_fields(item) {
-        attrs.extend(
-            field
-                .attrs
-                .iter()
-                .filter(|attr| attr.has_name(rustc_span::Symbol::intern("serde"))),
-        );
+/// Return container, field, and variant attributes with their owning node.
+fn directional_attrs<'tcx>(
+    cx: &LateContext<'tcx>,
+    item: &SerdeItem<'tcx>,
+) -> Vec<(HirId, &'tcx Attribute)> {
+    // Container attributes come first, so diagnostics follow source order.
+    let item_hir_id = cx.tcx.local_def_id_to_hir_id(item.def_id);
+    let mut attrs: Vec<_> = namespace_attrs(item.attrs, "serde")
+        .map(|attr| (item_hir_id, attr))
+        .collect();
+    // Field attributes carry the field node so `allow` on a field applies.
+    for field in all_fields(item) {
+        attrs.extend(namespace_attrs(field.attrs, "serde").map(|attr| (field.hir_id, attr)));
     }
-    // Variant attributes are distinct from their fields already returned above.
     for variant in &item.variants {
-        attrs.extend(
-            variant
-                .attrs
-                .iter()
-                .filter(|attr| attr.has_name(rustc_span::Symbol::intern("serde"))),
-        );
+        attrs.extend(namespace_attrs(variant.attrs, "serde").map(|attr| (variant.hir_id, attr)));
     }
-
     attrs
 }
 
-/// Helper for inert key for item analysis.
-fn inert_key_for_item<'key>(
-    cx: &EarlyContext<'_>,
-    item: &AstItemInfo<'_>,
-    attr: &rustc_ast::Attribute,
-) -> Option<&'key str> {
-    // Select the keys that affect only the direction absent from this item.
-    if item.derives.only_serialize() {
-        return first_matching_key(cx, attr, DESERIALIZE_ONLY_KEYS);
-    }
-    if item.derives.only_deserialize() {
-        return first_matching_key(cx, attr, SERIALIZE_ONLY_KEYS);
-    }
-
-    None
-}
-
-/// Return the first matching key.
-fn first_matching_key<'key>(
-    cx: &EarlyContext<'_>,
-    attr: &rustc_ast::Attribute,
-    keys: &[&'key str],
-) -> Option<&'key str> {
-    keys.iter()
-        .copied()
-        .find(|key| ast_attr_has_word(cx, attr, key))
-}
-
-/// Helper for inert help analysis.
-fn inert_help(key: &str, item: &AstItemInfo<'_>) -> &'static str {
-    if item.derives.only_serialize() && DESERIALIZE_ONLY_KEYS.contains(&key) {
-        "remove the deserialization-only attribute, or add `Deserialize` if it was intended"
-    } else {
-        "remove the serialization-only attribute, or add `Serialize` if it was intended"
-    }
-}
-
-/// `DESERIALIZE_ONLY_KEYS` configuration used by this lint.
+/// Serde keys that affect only deserialization.
 const DESERIALIZE_ONLY_KEYS: &[&str] = &[
     "alias",
     "default",
@@ -155,7 +92,7 @@ const DESERIALIZE_ONLY_KEYS: &[&str] = &[
     "borrow",
     "skip_deserializing",
 ];
-/// `SERIALIZE_ONLY_KEYS` configuration used by this lint.
+/// Serde keys that affect only serialization.
 const SERIALIZE_ONLY_KEYS: &[&str] = &[
     "skip_serializing",
     "skip_serializing_if",
@@ -163,7 +100,7 @@ const SERIALIZE_ONLY_KEYS: &[&str] = &[
     "getter",
 ];
 
-/// Helper for ui analysis.
+/// Run the UI fixture.
 #[test]
 fn ui() {
     dylint_testing::ui_test_examples(env!("CARGO_PKG_NAME"));

@@ -15,12 +15,7 @@ shows.
 ## Known problems
 
 test-case still supports `inconclusive`, so a project may keep it on purpose.
-
-The lint matches text before the first `;` in the attribute. An input string
-that contains `inconclusive` also triggers it.
-
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+The fix renames the keyword to `ignore` and keeps any reason.
 
 ## Example
 

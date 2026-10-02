@@ -5,22 +5,26 @@
 
 extern crate rustc_ast;
 extern crate rustc_driver as _;
+extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_lint;
 extern crate rustc_middle;
 extern crate rustc_span;
 
-use std::{fs::File, io::Read, str::FromStr};
+use std::{fs::File, io::Read, ops::Range, str::FromStr};
 
 use rustc_ast::{
-    Attribute, Crate, FieldDef, GenericArg, Item, ItemKind, LitKind, MetaItem, MetaItemInner, Ty,
-    TyKind, Variant,
+    Attribute, Crate, FieldDef, GenericArg, Item, ItemKind, LitKind, Ty, TyKind, Variant,
     visit::{Visitor, walk_item},
 };
-use rustc_hir::{Expr, ExprKind, Node, def::Res};
-use rustc_lint::{EarlyContext, LateContext, LintContext};
+use rustc_errors::DiagDecorator;
+use rustc_hir::{
+    Expr, ExprKind, LangItem, Node,
+    def::{CtorOf, DefKind, Res},
+};
+use rustc_lint::{EarlyContext, LateContext, Lint, LintContext};
 use rustc_middle::ty;
-use rustc_span::{Span, Symbol, sym};
+use rustc_span::{BytePos, Span, Symbol, sym};
 
 /// One Clap derive macro recognized by the derive reference.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -253,24 +257,11 @@ struct ClapAstCollector<'ast, 'cx> {
     items: Vec<ClapAstItem<'ast>>,
 }
 
-impl std::fmt::Debug for ClapAstCollector<'_, '_> {
-    /// Format collector state without exposing the lint context.
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter
-            .debug_struct("ClapAstCollector")
-            .field("items", &self.items)
-            .finish_non_exhaustive()
-    }
-}
-
 impl<'ast> Visitor<'ast> for ClapAstCollector<'ast, '_> {
     /// Collect one cfg-active struct or enum before walking nested items.
     fn visit_item(&mut self, item: &'ast Item) {
-        // Prefer structured derive metadata and fall back to original source when expansion consumed it.
-        let mut derives = clap_derives(self.cx, &item.attrs);
-        if !derives.has_clap() {
-            derives = source_clap_derives(self.cx, item.span);
-        }
+        // Expansion consumes `#[derive]` attributes, so read them from the source.
+        let mut derives = source_clap_derives(self.cx, item.span);
         if !derives.has_clap() && item_has_clap_helper(item) {
             // Custom derives are expanded before this pass and consume the `derive`
             // entry. Their registered helper attributes remain on the source item.
@@ -335,70 +326,25 @@ fn has_clap_helper_attr(attrs: &[Attribute]) -> bool {
     })
 }
 
-/// Recover Clap derive flags from one item's structured attributes and source.
-fn clap_derives(cx: &EarlyContext<'_>, attrs: &[Attribute]) -> ClapDerives {
-    // Deduplicate recognized derive kinds while examining every derive attribute.
-    let mut derives = ClapDerives::default();
-
-    for attr in attrs.iter().filter(|attr| attr.has_name(sym::derive)) {
-        // Use structured meta items when rustc retained the derive arguments.
-        if let Some(arguments) = attr.meta_item_list() {
-            for argument in arguments {
-                let Some(meta) = argument.meta_item() else {
-                    continue;
-                };
-                record_derive_name(meta_path_last_name(meta), &mut derives);
-            }
-        }
-
-        let Ok(source) = cx.sess().source_map().span_to_snippet(attr.span) else {
-            continue;
-        };
-        // Scan source tokens as a fallback for custom derive expansion shapes.
-        for token in
-            source.split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
-        {
-            record_derive_name(Some(token), &mut derives);
-        }
-    }
-
-    derives
-}
-
 /// Recover derives from the original source after macro expansion consumed them.
 fn source_clap_derives(cx: &EarlyContext<'_>, item_span: Span) -> ClapDerives {
-    // Recover only the source segment immediately preceding the expanded item.
+    // Isolate the nearest derive attribute before the item to avoid unrelated tokens.
     let mut derives = ClapDerives::default();
-    let Some(segment) = source_segment_before_span(cx, item_span) else {
-        return derives;
-    };
-    let Some(derive_start) = segment.rfind("#[derive") else {
-        return derives;
-    };
-    // Isolate the nearest derive attribute to avoid unrelated earlier tokens.
-    let Some(derive_source) = segment.get(derive_start..) else {
-        return derives;
-    };
+    let segment = source_segment_before_span(cx, item_span, &['{', '}', ';']);
+    let derive_source = segment
+        .as_deref()
+        .and_then(|segment| segment.get(segment.rfind("#[derive")?..));
 
     // Normalize path punctuation and record each recognized final segment once.
-    for token in derive_source
-        .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
-    {
-        record_derive_name(Some(token), &mut derives);
+    for token in derive_source.into_iter().flat_map(|source| {
+        source.split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
+    }) {
+        if let Ok(derive) = token.parse() {
+            derives.insert(derive);
+        }
     }
 
     derives
-}
-
-/// Record one final derive path segment.
-fn record_derive_name(name: Option<&str>, derives: &mut ClapDerives) {
-    let Some(name) = name else {
-        return;
-    };
-
-    if let Ok(derive) = name.parse() {
-        derives.insert(derive);
-    }
 }
 
 /// Convert rustc AST fields into compact records.
@@ -444,7 +390,11 @@ pub fn ast_clap_attr<'attr>(
     })
 }
 
-/// Find a Clap helper attribute containing exactly one named entry.
+/// Return the span that removes one named entry from a Clap helper attribute.
+///
+/// When the entry is the attribute's only entry, the span covers the whole
+/// attribute. Otherwise it covers the entry and the comma that separates it from
+/// a neighbor, so the remaining entries stay valid.
 #[must_use]
 ///
 /// # Examples
@@ -452,23 +402,41 @@ pub fn ast_clap_attr<'attr>(
 /// ```rust
 /// # #![feature(rustc_private)]
 /// let _call = |cx, attrs, attribute_name, key| {
-///     let _ = clap_support::ast_clap_attr_single_entry(cx, attrs, attribute_name, key);
+///     let _ = clap_support::ast_clap_attr_entry_removal(cx, attrs, attribute_name, key);
 /// };
 /// ```
-pub fn ast_clap_attr_single_entry<'attr>(
+pub fn ast_clap_attr_entry_removal(
     cx: &EarlyContext<'_>,
-    attrs: &'attr [Attribute],
+    attrs: &[Attribute],
     attribute_name: &str,
     key: &str,
-) -> Option<&'attr Attribute> {
-    let attr = attrs
-        .iter()
-        .find(|attr| attr.has_name(Symbol::intern(attribute_name)))?;
-    if has_single_structured_entry(attr, key) {
-        return Some(attr);
+) -> Option<Span> {
+    let attr = ast_clap_attr(cx, attrs, attribute_name, key)?;
+    // Rewrite only attributes written in user source.
+    if attr.span.from_expansion() {
+        return None;
     }
     let source = cx.sess().source_map().span_to_snippet(attr.span).ok()?;
-    (has_one_top_level_entry(&source) && attr_entry_source(&source, key).is_some()).then_some(attr)
+    let ranges = attr_entry_ranges(&source)?;
+    let index = ranges.iter().position(|range| {
+        source
+            .get(range.clone())
+            .is_some_and(|entry| entry_has_key(entry, key))
+    })?;
+    let entry = ranges.get(index)?;
+    // Pair the entry with the comma before it, or after it when it comes first.
+    let removal = if let Some(previous) = index.checked_sub(1).and_then(|before| ranges.get(before))
+    {
+        previous.end..entry.end
+    } else if let Some(next) = ranges.get(index + 1) {
+        entry.start..next.start
+    } else {
+        return Some(attr.span);
+    };
+
+    let low = attr.span.lo() + BytePos(u32::try_from(removal.start).ok()?);
+    let high = attr.span.lo() + BytePos(u32::try_from(removal.end).ok()?);
+    Some(attr.span.with_lo(low).with_hi(high))
 }
 
 /// Return whether a named Clap derive-helper attribute contains a key.
@@ -508,23 +476,9 @@ pub fn ast_clap_attr_entry_source(
     attribute_name: &str,
     key: &str,
 ) -> Option<String> {
+    // Structured metadata drops non-literal values such as `ArgAction::Set`, so
+    // read the matching entry from the attribute's source.
     let attr = ast_clap_attr(cx, attrs, attribute_name, key)?;
-
-    if let Some(arguments) = attr.meta_item_list() {
-        for argument in arguments {
-            let Some(meta) = argument.meta_item() else {
-                continue;
-            };
-            if meta_path_last_name(meta) == Some(key)
-                && let Ok(source) = cx.sess().source_map().span_to_snippet(meta.span)
-            {
-                return Some(source);
-            }
-        }
-    }
-
-    // Derive helper metadata can be thin during early linting. Keep the fallback
-    // bounded to the matching attribute and return only the matching entry.
     let source = cx.sess().source_map().span_to_snippet(attr.span).ok()?;
     attr_entry_source(&source, key).map(str::to_owned)
 }
@@ -556,7 +510,7 @@ pub fn ast_has_doc(attrs: &[Attribute]) -> bool {
 /// };
 /// ```
 pub fn source_has_doc_before(cx: &EarlyContext<'_>, span: Span) -> bool {
-    source_segment_before_span(cx, span).is_some_and(|source| {
+    source_segment_before_span(cx, span, &['{', '}', ';', ',']).is_some_and(|source| {
         source
             .as_bytes()
             .windows(3)
@@ -687,36 +641,30 @@ pub fn ast_is_special_clap_field(cx: &EarlyContext<'_>, attrs: &[Attribute]) -> 
 
 /// Return a single exact wrapper name and its type argument.
 fn one_type_wrapper(ty: &Ty) -> Option<(&str, &Ty)> {
-    // Accept one unqualified path with exactly one type argument.
-    let TyKind::Path(_, path) = &ty.kind else {
-        return None;
-    };
-    let [segment] = path.segments.as_slice() else {
-        return None;
-    };
-    // Require angle brackets with one type argument and no lifetime or const arguments.
-    let arguments = segment.args.as_deref()?;
-    let rustc_ast::GenericArgs::AngleBracketed(arguments) = arguments else {
-        return None;
-    };
-    let [rustc_ast::AngleBracketedArg::Arg(GenericArg::Type(inner))] = arguments.args.as_slice()
-    else {
-        return None;
-    };
-
-    Some((segment.ident.name.as_str(), inner))
+    // Accept one unqualified path segment with exactly one angle-bracketed type argument.
+    if let TyKind::Path(_, path) = &ty.kind
+        && let [segment] = path.segments.as_slice()
+        && let Some(rustc_ast::GenericArgs::AngleBracketed(arguments)) = segment.args.as_deref()
+        && let [rustc_ast::AngleBracketedArg::Arg(GenericArg::Type(inner))] =
+            arguments.args.as_slice()
+    {
+        Some((segment.ident.name.as_str(), inner))
+    } else {
+        None
+    }
 }
 
 /// Return the name of one unqualified type without generic arguments.
 fn exact_type_name(ty: &Ty) -> Option<&str> {
     // Reject qualified or generic paths before returning the sole segment.
-    let TyKind::Path(_, path) = &ty.kind else {
-        return None;
-    };
-    let [segment] = path.segments.as_slice() else {
-        return None;
-    };
-    segment.args.is_none().then(|| segment.ident.name.as_str())
+    if let TyKind::Path(_, path) = &ty.kind
+        && let [segment] = path.segments.as_slice()
+        && segment.args.is_none()
+    {
+        Some(segment.ident.name.as_str())
+    } else {
+        None
+    }
 }
 
 /// Return true when an AST attribute contains a word-like key.
@@ -726,53 +674,45 @@ fn ast_attr_has_word(cx: &EarlyContext<'_>, attr: &Attribute, key: &str) -> bool
         return true;
     }
 
-    let Ok(source) = cx.sess().source_map().span_to_snippet(attr.span) else {
-        return false;
-    };
-    attr_entry_source(&source, key).is_some()
-}
-
-/// Return whether rustc's structured metadata holds exactly one entry named `key`.
-fn has_single_structured_entry(attr: &Attribute, key: &str) -> bool {
-    // Rustc omits the list when the attribute arguments are not plain meta items.
-    let Some(arguments) = attr.meta_item_list() else {
-        return false;
-    };
-    let [argument] = arguments.as_slice() else {
-        return false;
-    };
-    meta_inner_key(argument) == Some(key)
+    cx.sess()
+        .source_map()
+        .span_to_snippet(attr.span)
+        .is_ok_and(|source| attr_entry_source(&source, key).is_some())
 }
 
 /// Return whether rustc's structured metadata holds any entry named `key`.
 fn has_structured_entry(attr: &Attribute, key: &str) -> bool {
     attr.meta_item_list().is_some_and(|arguments| {
-        arguments
-            .iter()
-            .any(|argument| meta_inner_key(argument) == Some(key))
+        arguments.iter().any(|argument| {
+            argument.meta_item().and_then(|meta| {
+                meta.path
+                    .segments
+                    .iter()
+                    .next_back()
+                    .map(|segment| segment.ident.name.as_str())
+            }) == Some(key)
+        })
     })
-}
-
-/// Return a meta-list entry's final path segment.
-fn meta_inner_key(inner: &MetaItemInner) -> Option<&str> {
-    meta_path_last_name(inner.meta_item()?)
-}
-
-/// Return a meta item's final path segment.
-fn meta_path_last_name(meta: &MetaItem) -> Option<&str> {
-    meta.path
-        .segments
-        .iter()
-        .next_back()
-        .map(|segment| segment.ident.name.as_str())
 }
 
 /// Find one top-level attribute entry by exact key.
 fn attr_entry_source<'source>(source: &'source str, key: &str) -> Option<&'source str> {
+    attr_entry_ranges(source)?
+        .into_iter()
+        .filter_map(|range| source.get(range))
+        .find(|entry| entry_has_key(entry, key))
+}
+
+/// Return the trimmed byte range of each nonempty top-level entry in an attribute.
+///
+/// Ranges index into `source`, which spans the whole attribute such as
+/// `#[arg(long, action = ArgAction::Set)]`.
+fn attr_entry_ranges(source: &str) -> Option<Vec<Range<usize>>> {
     // Isolate the attribute argument text before scanning individual entries.
     let arguments_start = source.find('(')? + 1;
     let arguments_end = source.rfind(')')?;
     let arguments = source.get(arguments_start..arguments_end)?;
+    let mut ranges = Vec::new();
     let mut entry_start = 0;
     let mut delimiter_depth = 0_u32;
     // Track quoted strings separately so commas inside them remain data.
@@ -798,55 +738,36 @@ fn attr_entry_source<'source>(source: &'source str, key: &str) -> Option<&'sourc
             '(' | '[' | '{' => delimiter_depth = delimiter_depth.saturating_add(1),
             ')' | ']' | '}' => delimiter_depth = delimiter_depth.saturating_sub(1),
             ',' if delimiter_depth == 0 => {
-                let entry = arguments.get(entry_start..index)?.trim();
-                if entry_has_key(entry, key) {
-                    return Some(entry);
-                }
+                push_trimmed_range(&mut ranges, arguments, entry_start..index, arguments_start);
                 entry_start = index + character.len_utf8();
             }
             _ => {}
         }
     }
 
-    // Check the final entry because it has no trailing comma.
-    let entry = arguments.get(entry_start..)?.trim();
-    entry_has_key(entry, key).then_some(entry)
+    // Record the final entry because it has no trailing comma.
+    push_trimmed_range(
+        &mut ranges,
+        arguments,
+        entry_start..arguments.len(),
+        arguments_start,
+    );
+    Some(ranges)
 }
 
-/// Return whether an attribute argument list contains no top-level comma.
-fn has_one_top_level_entry(source: &str) -> bool {
-    let Some(arguments_start) = source.find('(') else {
-        return false;
-    };
-    let Some(arguments_end) = source.rfind(')') else {
-        return false;
-    };
-    let Some(arguments) = source.get(arguments_start + 1..arguments_end) else {
-        return false;
-    };
-    let mut delimiter_depth = 0_u32;
-    let mut in_string = false;
-    let mut escaped = false;
-    for character in arguments.chars() {
-        if in_string {
-            if escaped {
-                escaped = false;
-            } else if character == '\\' {
-                escaped = true;
-            } else if character == '"' {
-                in_string = false;
-            }
-            continue;
-        }
-        match character {
-            '"' => in_string = true,
-            '(' | '[' | '{' => delimiter_depth = delimiter_depth.saturating_add(1),
-            ')' | ']' | '}' => delimiter_depth = delimiter_depth.saturating_sub(1),
-            ',' if delimiter_depth == 0 => return false,
-            _ => {}
-        }
+/// Record one entry range without surrounding whitespace, skipping empty entries.
+fn push_trimmed_range(
+    ranges: &mut Vec<Range<usize>>,
+    arguments: &str,
+    range: Range<usize>,
+    offset: usize,
+) {
+    let text = arguments.get(range.clone()).unwrap_or_default();
+    let start = range.start + (text.len() - text.trim_start().len());
+    let end = range.end - (text.len() - text.trim_end().len());
+    if start < end {
+        ranges.push(offset + start..offset + end);
     }
-    !arguments.trim().is_empty()
 }
 
 /// Return whether an attribute entry starts with an exact key.
@@ -861,8 +782,12 @@ fn entry_has_key(entry: &str, key: &str) -> bool {
         || rest.is_empty()
 }
 
-/// Load source preceding a span, bounded by the previous structural delimiter.
-fn source_segment_before_span(cx: &EarlyContext<'_>, span: Span) -> Option<String> {
+/// Load source preceding a span, bounded by the previous `boundaries` character.
+fn source_segment_before_span(
+    cx: &EarlyContext<'_>,
+    span: Span,
+    boundaries: &[char],
+) -> Option<String> {
     // Resolve the source file and convert the global span to a local byte offset.
     let files = cx.sess().source_map().files();
     let source_file = files.iter().find(|source_file| {
@@ -882,7 +807,9 @@ fn source_segment_before_span(cx: &EarlyContext<'_>, span: Span) -> Option<Strin
         .char_indices()
         .rev()
         .find_map(|(index, character)| {
-            matches!(character, '{' | '}' | ';' | ',').then_some(index + character.len_utf8())
+            boundaries
+                .contains(&character)
+                .then_some(index + character.len_utf8())
         })
         .unwrap_or(0);
 
@@ -985,6 +912,106 @@ pub fn builder_calls<'tcx>(
     calls
 }
 
+/// Return the variant name when an expression is a unit variant of one clap enum.
+///
+/// The path must resolve to a variant constructor whose enum is the named type in
+/// `clap_builder`, such as `ArgAction` or `ValueHint`.
+#[must_use]
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, expr, enum_name| {
+///     let _ = clap_support::clap_enum_variant(cx, expr, enum_name);
+/// };
+/// ```
+pub fn clap_enum_variant(cx: &LateContext<'_>, expr: &Expr<'_>, enum_name: &str) -> Option<Symbol> {
+    // Resolve the constructor, then its variant and enum definitions.
+    let ExprKind::Path(ref path) = expr.kind else {
+        return None;
+    };
+    let Res::Def(DefKind::Ctor(CtorOf::Variant, _), constructor) = cx.qpath_res(path, expr.hir_id)
+    else {
+        return None;
+    };
+    let variant = cx.tcx.parent(constructor);
+    let enumeration = cx.tcx.parent(variant);
+
+    (cx.tcx.crate_name(enumeration.krate).as_str() == "clap_builder"
+        && cx.tcx.item_name(enumeration).as_str() == enum_name)
+        .then(|| cx.tcx.item_name(variant))
+}
+
+/// Classify one argument passed to a clap `IntoResettable` setter.
+///
+/// Returns `Some(false)` for the literal `None`, which resets the setting, and
+/// `Some(true)` for any value whose type is not `Option`. An `Option` value
+/// computed at runtime returns `None` because its effect is unknown.
+#[must_use]
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, expr| {
+///     let _ = clap_support::resettable_state(cx, expr);
+/// };
+/// ```
+pub fn resettable_state(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<bool> {
+    // Recognize the `None` constructor before looking at the argument type.
+    if let ExprKind::Path(ref path) = expr.kind
+        && let Res::Def(DefKind::Ctor(..), constructor) = cx.qpath_res(path, expr.hir_id)
+    {
+        let is_none_constructor =
+            cx.tcx.lang_items().get(LangItem::OptionNone) == Some(cx.tcx.parent(constructor));
+        if is_none_constructor {
+            return Some(false);
+        }
+    }
+
+    let is_option = cx
+        .typeck_results()
+        .expr_ty(expr)
+        .ty_adt_def()
+        .is_some_and(|definition| cx.tcx.is_diagnostic_item(sym::Option, definition.did()));
+    (!is_option).then_some(true)
+}
+
+/// Return the state of the final call to one resettable builder method.
+fn final_resettable_state(
+    cx: &LateContext<'_>,
+    calls: &[BuilderCall<'_>],
+    method_name: &str,
+) -> Option<(bool, Span)> {
+    // A later call replaces an earlier one, so only the last call decides.
+    let call = calls
+        .iter()
+        .rev()
+        .find(|call| call.method.as_str() == method_name)?;
+    resettable_state(cx, call.args.first()?).map(|state| (state, call.span))
+}
+
+/// Return whether a clap argument chain ends with a `long` or `short` name.
+///
+/// Each name is checked by its final call, so `.long(None)` removes a name set
+/// earlier. A name passed as an `Option` computed at runtime does not count.
+#[must_use]
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, calls| {
+///     let _ = clap_support::has_option_name(cx, calls);
+/// };
+/// ```
+pub fn has_option_name(cx: &LateContext<'_>, calls: &[BuilderCall<'_>]) -> bool {
+    ["long", "short"]
+        .into_iter()
+        .any(|method| matches!(final_resettable_state(cx, calls, method), Some((true, _))))
+}
+
 /// Return a literal boolean argument when the call has exactly one.
 #[must_use]
 ///
@@ -998,86 +1025,83 @@ pub fn builder_calls<'tcx>(
 /// ```
 pub const fn bool_argument(call: BuilderCall<'_>) -> Option<bool> {
     // Require one literal boolean and reject computed expressions.
-    let [argument] = call.args else {
-        return None;
-    };
-    let ExprKind::Lit(literal) = argument.kind else {
-        return None;
-    };
-
-    // Preserve only the boolean literal variant after expression-shape validation.
-    let LitKind::Bool(value) = literal.node else {
-        return None;
-    };
-    Some(value)
+    if let [argument] = call.args
+        && let ExprKind::Lit(literal) = argument.kind
+        && let LitKind::Bool(value) = literal.node
+    {
+        Some(value)
+    } else {
+        None
+    }
 }
 
-/// Return whether an expression resolves to the target clap `ValueHint` variant.
-#[must_use]
-///
-/// # Examples
-///
-/// ```rust
-/// # #![feature(rustc_private)]
-/// let _call = |cx, expr, variant_name| {
-///     let _ = clap_support::is_value_hint_variant(cx, expr, variant_name);
-/// };
-/// ```
-pub fn is_value_hint_variant(cx: &LateContext<'_>, expr: &Expr<'_>, variant_name: &str) -> bool {
-    // Resolve a path expression before comparing its owning crate and variant name.
-    let ExprKind::Path(ref path) = expr.kind else {
-        return false;
-    };
-    let Res::Def(_, def_id) = cx.typeck_results().qpath_res(path, expr.hir_id) else {
-        return false;
-    };
-
-    cx.tcx.crate_name(def_id.krate).as_str() == "clap_builder"
-        && cx.tcx.item_name(def_id).as_str() == variant_name
+/// One clap builder setting that needs another setting on the same chain.
+#[derive(Clone, Copy, Debug)]
+pub struct BuilderRequirement {
+    /// Builder type whose chain is checked.
+    pub builder: BuilderType,
+    /// Method that triggers the requirement.
+    pub trigger: &'static str,
+    /// Whether the trigger counts only with a literal `true` argument.
+    pub is_trigger_true_required: bool,
+    /// Method that satisfies the requirement.
+    pub required: &'static str,
+    /// Whether the requirement counts only with a literal `true` argument.
+    pub is_requirement_true_required: bool,
+    /// `ArgAction` variants whose final `action` call also satisfies the requirement.
+    pub satisfying_actions: &'static [&'static str],
 }
 
 /// Return a trigger span when one outermost builder chain lacks a required method.
+///
+/// The final trigger call must be active, and neither the final requirement call
+/// nor the final `action` call may satisfy the requirement.
 #[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
 /// # #![feature(rustc_private)]
-/// let _call = |cx, expr, builder_type, trigger, is_trigger_true_required, required, is_requirement_true_required| {
-///     let _ = clap_support::builder_call_without_requirement(cx, expr, builder_type, trigger, is_trigger_true_required, required, is_requirement_true_required);
+/// let _call = |cx, expr, requirement| {
+///     let _ = clap_support::builder_call_without_requirement(cx, expr, requirement);
 /// };
 /// ```
 pub fn builder_call_without_requirement<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
-    builder_type: BuilderType,
-    trigger: &str,
-    is_trigger_true_required: bool,
-    required: &str,
-    is_requirement_true_required: bool,
+    requirement: BuilderRequirement,
 ) -> Option<Span> {
     // Analyze each fluent chain once at its outermost call.
     if !is_outermost_builder_call(cx, expr) {
         return None;
     }
-    let calls = builder_calls(cx, expr, builder_type);
+    let calls = builder_calls(cx, expr, requirement.builder);
+    // The final trigger call decides whether the trigger is still active.
     let trigger_call = calls
         .iter()
-        .copied()
-        .find(|call| is_configured_call(*call, trigger, is_trigger_true_required))?;
-    // A requirement satisfies the contract only with its requested boolean value.
+        .rev()
+        .find(|call| call.method.as_str() == requirement.trigger)?;
+    if requirement.is_trigger_true_required && bool_argument(*trigger_call) != Some(true) {
+        return None;
+    }
+
+    // The final requirement call satisfies the contract with an accepted value.
     let has_requirement = calls
         .iter()
-        .any(|call| is_configured_call(*call, required, is_requirement_true_required));
+        .rev()
+        .find(|call| call.method.as_str() == requirement.required)
+        .is_some_and(|call| {
+            !requirement.is_requirement_true_required || bool_argument(*call) == Some(true)
+        });
+    // An explicit value-taking action also fixes the value count.
+    let has_satisfying_action = calls
+        .iter()
+        .rev()
+        .find(|call| call.method.as_str() == "action")
+        .and_then(|call| clap_enum_variant(cx, call.args.first()?, "ArgAction"))
+        .is_some_and(|action| requirement.satisfying_actions.contains(&action.as_str()));
 
-    (!has_requirement).then_some(trigger_call.span)
-}
-
-/// Return whether a builder call names `builder_method` with the requested `bool`.
-fn is_configured_call(call: BuilderCall<'_>, builder_method: &str, is_true_required: bool) -> bool {
-    // A call that requires `true` accepts only a literal `true` argument.
-    let has_accepted_value = !is_true_required || bool_argument(call) == Some(true);
-    call.method.as_str() == builder_method && has_accepted_value
+    (!has_requirement && !has_satisfying_action).then_some(trigger_call.span)
 }
 
 /// Return an `index` span when a clap argument chain also configures an option name.
@@ -1097,11 +1121,37 @@ pub fn index_on_option<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> 
         return None;
     }
     let calls = builder_calls(cx, expr, BuilderType::Arg);
-    let index = calls.iter().find(|call| call.method.as_str() == "index")?;
-    calls
-        .iter()
-        .any(|call| matches!(call.method.as_str(), "short" | "long"))
-        .then_some(index.span)
+    // Require an index that the chain does not reset and a remaining option name.
+    let (true, span) = final_resettable_state(cx, &calls, "index")? else {
+        return None;
+    };
+    has_option_name(cx, &calls).then_some(span)
+}
+
+/// Emit one clap lint with a primary message and a help line.
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, lint, span| {
+///     clap_support::emit_lint_with_help(cx, lint, span, "message", "help");
+/// };
+/// ```
+pub fn emit_lint_with_help(
+    cx: &LateContext<'_>,
+    lint: &'static Lint,
+    span: Span,
+    message: &'static str,
+    help: &'static str,
+) {
+    cx.emit_span_lint(
+        lint,
+        span,
+        DiagDecorator(|diagnostic| {
+            let _configured_diagnostic = diagnostic.primary_message(message).help(help);
+        }),
+    );
 }
 
 /// Declare one missing-prerequisite clap builder lint.
@@ -1110,11 +1160,7 @@ macro_rules! declare_builder_requirement_lint {
     (
         $lint:ident,
         $pass:ident,
-        $builder:ident,
-        $trigger:literal,
-        $trigger_true:literal,
-        $required:literal,
-        $required_true:literal,
+        $requirement:expr,
         $description:literal,
         $message:literal,
         $help:literal
@@ -1134,25 +1180,10 @@ macro_rules! declare_builder_requirement_lint {
                 cx: &rustc_lint::LateContext<'tcx>,
                 expr: &'tcx rustc_hir::Expr<'tcx>,
             ) {
-                let Some(span) = $crate::builder_call_without_requirement(
-                    cx,
-                    expr,
-                    $crate::BuilderType::$builder,
-                    $trigger,
-                    $trigger_true,
-                    $required,
-                    $required_true,
-                ) else {
-                    return;
-                };
-                cx.emit_span_lint(
-                    $lint,
-                    span,
-                    rustc_errors::DiagDecorator(|diagnostic| {
-                        let _configured_diagnostic =
-                            diagnostic.primary_message($message).help($help);
-                    }),
-                );
+                if let Some(span) = $crate::builder_call_without_requirement(cx, expr, $requirement)
+                {
+                    $crate::emit_lint_with_help(cx, $lint, span, $message, $help);
+                }
             }
         }
 
@@ -1172,19 +1203,19 @@ fn is_builder_method(
     builder_type: BuilderType,
 ) -> bool {
     // Resolve the method definition before checking the receiver type.
-    let Some(method_def_id) = cx.typeck_results().type_dependent_def_id(expr.hir_id) else {
-        return false;
-    };
-    if cx.tcx.crate_name(method_def_id.krate).as_str() != "clap_builder" {
-        return false;
-    }
+    let is_clap_method = cx
+        .typeck_results()
+        .type_dependent_def_id(expr.hir_id)
+        .is_some_and(|method| cx.tcx.crate_name(method.krate).as_str() == "clap_builder");
 
     // Require the receiver's nominal Clap builder type, not only the method owner.
-    let receiver_ty = cx.typeck_results().expr_ty(receiver).peel_refs();
-    let ty::Adt(definition, _) = receiver_ty.kind() else {
-        return false;
+    let is_expected_builder = if let ty::Adt(definition, _) =
+        cx.typeck_results().expr_ty(receiver).peel_refs().kind()
+    {
+        let is_clap_builder = cx.tcx.crate_name(definition.did().krate).as_str() == "clap_builder";
+        is_clap_builder && cx.tcx.item_name(definition.did()).as_str() == builder_type.item_name()
+    } else {
+        false
     };
-
-    cx.tcx.crate_name(definition.did().krate).as_str() == "clap_builder"
-        && cx.tcx.item_name(definition.did()).as_str() == builder_type.item_name()
+    is_clap_method && is_expected_builder
 }

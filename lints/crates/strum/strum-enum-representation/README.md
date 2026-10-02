@@ -35,9 +35,6 @@ purpose from the names that `FromStr` parses.
 The lint reports only the first divergent variant of each enum. It skips
 variants with non-ASCII names.
 
-The lint matches derives to enums by name, so two enums with the same name in
-one crate can share the same derive result.
-
 ## Example
 
 ```rust

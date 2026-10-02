@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(
     dead_code,
     elided_lifetimes_in_paths,
@@ -7,14 +9,42 @@
     unused_results
 )]
 
-use bevy_ecs::{component::Component, world::World};
+use bevy_ecs::{component::Component, entity::Entity, system::Commands, world::World};
 
 #[derive(Component)]
 struct Marker;
 
+#[derive(Component)]
+struct Health(u32);
+
+fn unit() {}
+
+macro_rules! with_unit {
+    ($component:expr) => {
+        ($component, ())
+    };
+}
+
 fn spawn(world: &mut World) {
     world.spawn((Marker, ()));
+    world.spawn(((), Marker));
+    world.spawn((Marker, (), Health(1)));
+    world.spawn(((), (), Marker));
+    world.spawn((Marker, (Health(1), ())));
+    world.spawn(());
+    world.spawn(((), ()));
+    world.spawn((Marker, unit()));
+    world.spawn(with_unit!(Marker));
     world.spawn(Marker);
+    world.spawn_empty();
+}
+
+fn commands(mut commands: Commands, entity: Entity) {
+    commands.spawn(());
+    commands.entity(entity).insert((Marker, ()));
+    commands.entity(entity).insert_if_new(((), Health(2)));
+    let nested = (Marker, ());
+    commands.spawn(nested);
 }
 
 fn main() {}

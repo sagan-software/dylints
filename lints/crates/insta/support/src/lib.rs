@@ -12,13 +12,18 @@ extern crate rustc_ast;
 extern crate rustc_driver as _;
 extern crate rustc_hir;
 extern crate rustc_lint;
+extern crate rustc_middle;
 extern crate rustc_span;
 
 use dylint_linting as _;
 use rustc_ast::LitKind;
-use rustc_hir::{ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, Node, def::Res};
+use rustc_hir::{
+    ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, Node, QPath,
+    def::{DefKind, Res},
+};
 use rustc_lint::{LateContext, LintContext};
-use rustc_span::{ExpnData, ExpnKind, MacroKind, Span, SyntaxContext, def_id::DefId};
+use rustc_middle::ty::Ty;
+use rustc_span::{ExpnData, ExpnKind, MacroKind, Span, SyntaxContext, def_id::DefId, sym};
 
 /// Public Insta snapshot assertion macros.
 const SNAPSHOT_MACROS: &[&str] = &[
@@ -130,6 +135,8 @@ fn macro_name_range(source: &str, name: &str) -> Option<std::ops::Range<usize>> 
 ///
 /// The invocation span excludes the loop introduced by a macro expansion itself,
 /// so callers see only source-level loops written around the snapshot assertion.
+/// The walk stops at the enclosing item, so a loop around a nested function
+/// definition does not count.
 #[must_use]
 ///
 /// # Examples
@@ -141,20 +148,25 @@ fn macro_name_range(source: &str, name: &str) -> Option<std::ops::Range<usize>> 
 /// };
 /// ```
 pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>, invocation_span: Span) -> bool {
-    cx.tcx.hir_parent_iter(expr.hir_id).any(|(_, node)| {
-        matches!(
-            node,
-            Node::Expr(parent)
-                if matches!(parent.kind, ExprKind::Loop(..))
-                    && parent.span.source_callsite() != invocation_span
-        )
-    })
+    cx.tcx
+        .hir_parent_iter(expr.hir_id)
+        .take_while(|(_, node)| {
+            !matches!(node, Node::Item(_) | Node::ImplItem(_) | Node::TraitItem(_))
+        })
+        .any(|(_, node)| {
+            matches!(
+                node,
+                Node::Expr(parent)
+                    if matches!(parent.kind, ExprKind::Loop(..))
+                        && parent.span.source_callsite() != invocation_span
+            )
+        })
 }
 
 /// Return whether an Insta `allow_duplicates!` expansion encloses this expression.
 ///
-/// The check accepts both the public macro expansion and the resolved helper
-/// function used by Insta, covering the two supported source-level spellings.
+/// The check finds the helper call that both `allow_duplicates!` and a direct
+/// `with_allow_duplicates` call produce.
 #[must_use]
 ///
 /// # Examples
@@ -166,51 +178,44 @@ pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>, invocation_span: Span) 
 /// };
 /// ```
 pub fn is_in_allow_duplicates(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    if insta_macro_expansion(cx, expr.span, &["allow_duplicates"]).is_some() {
-        return true;
-    }
-
+    // `allow_duplicates!` expands to a call of this helper around its body.
     cx.tcx.hir_parent_iter(expr.hir_id).any(|(_, node)| {
-        let Node::Expr(parent) = node else {
-            return false;
-        };
-        let ExprKind::Call(callee, _) = parent.kind else {
-            return false;
-        };
-        let ExprKind::Path(ref path) = callee.kind else {
-            return false;
-        };
-        let Res::Def(_, def_id) = cx.typeck_results().qpath_res(path, callee.hir_id) else {
-            return false;
-        };
-        cx.tcx.crate_name(def_id.krate).as_str() == "insta"
-            && cx.tcx.item_name(def_id).as_str() == "with_allow_duplicates"
+        matches!(
+            node,
+            Node::Expr(Expr { kind: ExprKind::Call(callee, _), .. })
+                if is_insta_function(cx, callee, "with_allow_duplicates")
+        )
     })
 }
 
-/// Extract a literal string argument without evaluating arbitrary code.
+/// Extract a string argument without evaluating arbitrary code.
 ///
-/// Only a direct HIR string literal is accepted, which keeps lint decisions free
-/// from side effects and from assumptions about constant evaluation.
+/// The argument must be a string literal, a reference to one, or a path to a
+/// `const` in the current crate whose initializer is such a literal.
 #[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
 /// # #![feature(rustc_private)]
-/// let _call = |expr| {
-///     let _ = insta_support::string_literal(expr);
+/// let _call = |cx, expr| {
+///     let _ = insta_support::string_literal(cx, expr);
 /// };
 /// ```
-pub fn string_literal(expr: &Expr<'_>) -> Option<String> {
-    // Accept only direct string literals so lint decisions never evaluate code.
-    let ExprKind::Lit(literal) = expr.kind else {
+pub fn string_literal(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<String> {
+    if let ExprKind::Lit(literal) = expr.kind {
+        return literal.node.str().map(|value| value.as_str().to_owned());
+    }
+
+    let ExprKind::Path(ref path) = expr.kind else {
         return None;
     };
-    let LitKind::Str(value, _) = literal.node else {
+    // Read the initializer of a local constant without evaluating it.
+    let Res::Def(DefKind::Const { .. }, def_id) = cx.qpath_res(path, expr.hir_id) else {
         return None;
     };
-    Some(value.as_str().to_owned())
+    let body = cx.tcx.hir_maybe_body_owned_by(def_id.as_local()?)?;
+    string_literal(cx, body.value)
 }
 
 /// Extract the source contents of one complete cooked or raw string literal.
@@ -258,8 +263,8 @@ pub fn source_string_literal(source: &str) -> Option<String> {
 
 /// Return whether an expression has Insta's public `Content` type.
 ///
-/// The resolved nominal type must belong to Insta and end in `Content`, excluding
-/// local structs that happen to use the same type name.
+/// The resolved nominal type must belong to Insta and be named `Content`,
+/// excluding local structs that happen to use the same type name.
 #[must_use]
 ///
 /// # Examples
@@ -271,12 +276,72 @@ pub fn source_string_literal(source: &str) -> Option<String> {
 /// };
 /// ```
 pub fn is_content_expression(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    let ty = cx.typeck_results().expr_ty(expr).peel_refs();
-    let Some(definition) = ty.ty_adt_def() else {
+    is_insta_type(cx, cx.typeck_results().expr_ty(expr).peel_refs(), "Content")
+}
+
+/// Return whether a type is the named nominal type defined by Insta.
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, ty, type_name| {
+///     let _ = insta_support::is_insta_type(cx, ty, type_name);
+/// };
+/// ```
+#[must_use]
+pub fn is_insta_type(cx: &LateContext<'_>, ty: Ty<'_>, type_name: &str) -> bool {
+    ty.ty_adt_def().is_some_and(|definition| {
+        is_insta_item(cx, definition.did())
+            && cx.tcx.item_name(definition.did()).as_str() == type_name
+    })
+}
+
+/// Return whether a callee path resolves to the named function in the `insta` crate.
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, callee, name| {
+///     let _ = insta_support::is_insta_function(cx, callee, name);
+/// };
+/// ```
+#[must_use]
+pub fn is_insta_function(cx: &LateContext<'_>, callee: &Expr<'_>, name: &str) -> bool {
+    matches!(
+        callee.kind,
+        ExprKind::Path(ref path)
+            if matches!(
+                cx.qpath_res(path, callee.hir_id),
+                Res::Def(_, def_id)
+                    if is_insta_item(cx, def_id) && cx.tcx.item_name(def_id).as_str() == name
+            )
+    )
+}
+
+/// Return whether a definition belongs to the `insta` crate.
+fn is_insta_item(cx: &LateContext<'_>, def_id: DefId) -> bool {
+    cx.tcx.crate_name(def_id.krate).as_str() == "insta"
+}
+
+/// Return whether a definition is the named inherent method of one Insta type.
+fn is_insta_method(cx: &LateContext<'_>, def_id: DefId, owner: &str, method_name: &str) -> bool {
+    // Check the method, then the self type of the impl block that defines it.
+    if !is_insta_item(cx, def_id) || cx.tcx.item_name(def_id).as_str() != method_name {
         return false;
-    };
-    cx.tcx.crate_name(definition.did().krate).as_str() == "insta"
-        && cx.tcx.def_path_str(definition.did()).ends_with("::Content")
+    }
+    cx.tcx.opt_parent(def_id).is_some_and(|container| {
+        matches!(cx.tcx.def_kind(container), DefKind::Impl { .. })
+            && is_insta_type(
+                cx,
+                cx.tcx
+                    .type_of(container)
+                    .instantiate_identity()
+                    .skip_norm_wip(),
+                owner,
+            )
+    })
 }
 
 /// Return whether a resolved method belongs to Insta's `Content` type.
@@ -303,32 +368,7 @@ pub fn content_method_call<'hir>(
         return None;
     };
     let def_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
-    let path = cx.tcx.def_path_str(def_id);
-    (cx.tcx.crate_name(def_id.krate).as_str() == "insta"
-        && owner_and_item(&path) == Some(("Content", expected_method)))
-    .then_some(receiver)
-}
-
-/// Return whether a method is one of `Content`'s automatically resolving accessors.
-///
-/// Accessor names must use the `as_` convention and resolve on Insta's `Content`
-/// type before they are accepted as automatic value conversions.
-#[must_use]
-///
-/// # Examples
-///
-/// ```rust
-/// # #![feature(rustc_private)]
-/// let _call = |cx, expr| {
-///     let _ = insta_support::is_content_accessor(cx, expr);
-/// };
-/// ```
-pub fn is_content_accessor(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    let ExprKind::MethodCall(segment, _, _, _) = expr.kind else {
-        return false;
-    };
-    segment.ident.name.as_str().starts_with("as_")
-        && content_method_call(cx, expr, segment.ident.name.as_str()).is_some()
+    is_insta_method(cx, def_id, "Content", expected_method).then_some(receiver)
 }
 
 /// One semantically resolved `insta::Settings` method call and its arguments.
@@ -372,10 +412,10 @@ pub fn settings_method_call<'hir>(
     })
 }
 
-/// Match a Settings setter whose only argument is an empty string literal.
+/// Match a Settings setter whose only argument is an empty string.
 ///
-/// The result is returned only for the exact Settings method and one direct empty
-/// string literal, leaving computed values outside this source-shape contract.
+/// The argument must be an empty string literal or a local constant initialized
+/// with one, leaving computed values outside this contract.
 #[must_use]
 ///
 /// # Examples
@@ -392,16 +432,8 @@ pub fn empty_string_settings_call<'hir>(
     expected_method: &str,
 ) -> Option<SettingsMethodCall<'hir>> {
     let call = settings_method_call(cx, expr, expected_method)?;
-    matches!(
-        call.arguments,
-        [argument]
-            if matches!(
-                argument.kind,
-                ExprKind::Lit(literal)
-                    if matches!(literal.node, LitKind::Str(value, _) if value.as_str().is_empty())
-            )
-    )
-    .then_some(call)
+    matches!(call.arguments, [argument] if string_literal(cx, argument).is_some_and(|value| value.is_empty()))
+        .then_some(call)
 }
 
 /// A contextual condition for a Settings method.
@@ -493,10 +525,19 @@ pub fn is_in_async_body(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     false
 }
 
-/// Match a direct `insta::Settings::new` call.
+/// A call that creates `insta::Settings` from Insta's defaults.
+#[derive(Clone, Copy, Debug)]
+pub struct SettingsDefaultsCall {
+    /// Span of the constructor name to replace with `clone_current`, when the
+    /// call is spelled `<type>::new()` or `<type>::default()`.
+    pub name_span: Option<Span>,
+}
+
+/// Match `Settings::new()`, `Settings::default()`, or `Default::default()`
+/// producing `insta::Settings`.
 ///
-/// The call must have no arguments and resolve to the external Settings constructor,
-/// which excludes local functions that merely use the same name.
+/// The constructor name can be replaced only when the call names the type, as in
+/// `Settings::new()`. A trait path such as `Default::default()` gets no name span.
 #[must_use]
 ///
 /// # Examples
@@ -504,22 +545,39 @@ pub fn is_in_async_body(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 /// ```rust
 /// # #![feature(rustc_private)]
 /// let _call = |cx, expr| {
-///     let _ = insta_support::is_settings_new_call(cx, expr);
+///     let _ = insta_support::settings_defaults_call(cx, expr);
 /// };
 /// ```
-pub fn is_settings_new_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    // Require a direct zero-argument path call before semantic resolution.
+pub fn settings_defaults_call(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+) -> Option<SettingsDefaultsCall> {
+    // Require a direct zero-argument path call that produces Insta's Settings.
     let ExprKind::Call(callee, []) = expr.kind else {
-        return false;
+        return None;
     };
     let ExprKind::Path(ref path) = callee.kind else {
-        return false;
+        return None;
     };
-    // Reject same-named functions unless resolution proves `Settings::new`.
-    let Res::Def(_, def_id) = cx.typeck_results().qpath_res(path, callee.hir_id) else {
-        return false;
+    let def_id = cx.qpath_res(path, callee.hir_id).opt_def_id()?;
+    if !is_insta_type(cx, cx.typeck_results().expr_ty(expr), "Settings") {
+        return None;
+    }
+
+    // Accept Insta's constructor or any resolution of `Default::default`.
+    let is_new = is_insta_method(cx, def_id, "Settings", "new");
+    let is_default = cx.tcx.item_name(def_id).as_str() == "default"
+        && (is_insta_item(cx, def_id)
+            || cx.tcx.opt_parent(def_id) == cx.tcx.get_diagnostic_item(sym::Default));
+    if !is_new && !is_default {
+        return None;
+    }
+    let name_span = if let QPath::TypeRelative(_, segment) = path {
+        (!segment.ident.span.from_expansion()).then_some(segment.ident.span)
+    } else {
+        None
     };
-    is_settings_def(cx, def_id, "new")
+    Some(SettingsDefaultsCall { name_span })
 }
 
 /// Declare one contextual Settings method lint.
@@ -754,16 +812,7 @@ pub fn is_explicit_async_closure(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool 
 
 /// Return whether a definition is the requested `insta::Settings` method.
 fn is_settings_def(cx: &LateContext<'_>, def_id: DefId, expected_method: &str) -> bool {
-    cx.tcx.crate_name(def_id.krate).as_str() == "insta"
-        && owner_and_item(&cx.tcx.def_path_str(def_id)) == Some(("Settings", expected_method))
-}
-
-/// Return the final owner and item segments of a definition path.
-fn owner_and_item(path: &str) -> Option<(&str, &str)> {
-    let mut segments = path.rsplit("::");
-    let item = segments.next()?;
-    let owner = segments.next()?;
-    Some((owner, item))
+    is_insta_method(cx, def_id, "Settings", expected_method)
 }
 
 /// Recognize both async blocks and async closures.
@@ -797,23 +846,26 @@ fn insta_macro_expansion(
     span: Span,
     expected_names: &[&str],
 ) -> Option<(String, Span)> {
-    // Walk outward from expanded HIR toward the public Insta invocation.
+    // Walk outward from expanded HIR toward the outermost public Insta invocation,
+    // because Insta macros call themselves recursively from inside their expansion.
+    let mut outermost = None;
     let mut context = span.ctxt();
     while context != SyntaxContext::root() {
         // Accept only requested macro names whose resolved definition belongs to Insta.
         let expansion = context.outer_expn_data();
         if let Some(public_name) = insta_public_macro_name(cx, &expansion, expected_names) {
-            return Some((public_name, expansion.call_site));
+            outermost = Some((public_name, expansion.call_site));
         }
 
         // Stop when malformed hygiene points back to the same context.
         let next = expansion.call_site.ctxt();
-        if next == context {
-            break;
-        }
-        context = next;
+        context = if next == context {
+            SyntaxContext::root()
+        } else {
+            next
+        };
     }
-    None
+    outermost
 }
 
 /// Return the public name of a requested bang macro defined by Insta.
@@ -896,15 +948,12 @@ fn split_top_level(source: &str) -> Vec<&str> {
     let mut index = 0_usize;
     // Store expected closers for every nested Rust group.
     let mut delimiters = Vec::new();
-    while index < bytes.len() {
+    while let Some(&byte) = bytes.get(index) {
         // Skip literals and comments because their commas are data.
         if let Some(next) = skipped_token_end(source, index) {
             index = next;
             continue;
         }
-        let Some(&byte) = bytes.get(index) else {
-            break;
-        };
         // Split only on commas outside all nested groups.
         match byte {
             b'(' => delimiters.push(b')'),
@@ -981,10 +1030,7 @@ fn block_comment_end(bytes: &[u8], start: usize) -> Option<usize> {
 fn cooked_literal_end(bytes: &[u8], quote: usize, delimiter: u8) -> usize {
     // Start after the opening quote and skip escaped byte pairs together.
     let mut index = quote + 1;
-    while index < bytes.len() {
-        let Some(&byte) = bytes.get(index) else {
-            break;
-        };
+    while let Some(&byte) = bytes.get(index) {
         // Return after the first unescaped matching delimiter.
         match byte {
             b'\\' => index = (index + 2).min(bytes.len()),
@@ -1054,7 +1100,9 @@ pub const fn snapshot_macro_names() -> &'static [&'static str] {
 
 #[cfg(test)]
 mod tests {
-    use super::{InstaMacroInvocation, insta_macro_replacement};
+    use super::{
+        InstaMacroInvocation, insta_macro_replacement, macro_arguments, source_string_literal,
+    };
     use rustc_span::DUMMY_SP;
 
     #[test]
@@ -1085,5 +1133,98 @@ mod tests {
             insta_macro_replacement(&invocation, "assert_snapshot"),
             None
         );
+    }
+
+    #[test]
+    fn macro_arguments_skip_literals_and_comments() {
+        let source = concat!(
+            "insta::assert_snapshot!(\n",
+            "    \"a, (b\", // c, )\n",
+            "    /* d, /* e, */ f) */ 'g',\n",
+            "    b\"h, )\", br#\"i, \"j\"#, ',', b',',\n",
+            "    [k, (l, m)], {n, o}, r\"p, q\", \"s\\\", t\",\n",
+            ")",
+        );
+
+        assert_eq!(
+            macro_arguments(source),
+            Some(
+                [
+                    "\"a, (b\"",
+                    concat!("/", "/ c, )\n    /* d, /* e, */ f) */ 'g'"),
+                    "b\"h, )\"",
+                    "br#\"i, \"j\"#",
+                    "','",
+                    "b','",
+                    "[k, (l, m)]",
+                    "{n, o}",
+                    "r\"p, q\"",
+                    "\"s\\\", t\"",
+                ]
+                .map(str::to_owned)
+                .to_vec()
+            )
+        );
+    }
+
+    #[test]
+    fn macro_arguments_accept_each_delimiter_and_reject_others() {
+        let actual = [
+            macro_arguments("insta::glob![a, b]"),
+            macro_arguments("insta::glob!{a}"),
+            macro_arguments("insta::glob!<a>"),
+            macro_arguments("insta::glob!(a"),
+            macro_arguments("no_bang(a)"),
+        ];
+        let expected = [
+            Some(vec!["a".to_owned(), "b".to_owned()]),
+            Some(vec!["a".to_owned()]),
+            None,
+            None,
+            None,
+        ];
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn macro_arguments_tolerate_unterminated_source() {
+        let actual = [
+            macro_arguments("m!(a /* open"),
+            macro_arguments("m!(r#\"open"),
+            macro_arguments("m!(\"open"),
+            macro_arguments("m!(r, 'lifetime)"),
+        ];
+        let expected = [
+            None,
+            None,
+            None,
+            Some(vec!["r".to_owned(), "'lifetime".to_owned()]),
+        ];
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn source_string_literal_reads_cooked_and_raw_forms() {
+        let actual = [
+            source_string_literal(" \"../a\" "),
+            source_string_literal("r\"../a\""),
+            source_string_literal("r##\"../a\"##"),
+            source_string_literal("r#\"../a\"##"),
+            source_string_literal("b\"../a\""),
+            source_string_literal("rx\"../a\""),
+            source_string_literal("value"),
+            source_string_literal("r##\"../a\"#"),
+        ];
+        let expected = [
+            Some("../a".to_owned()),
+            Some("../a".to_owned()),
+            Some("../a".to_owned()),
+            None,
+            None,
+            None,
+            None,
+            None,
+        ];
+        assert_eq!(actual, expected);
     }
 }

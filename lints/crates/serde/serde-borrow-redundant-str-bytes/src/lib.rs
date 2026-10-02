@@ -1,27 +1,26 @@
 #![feature(rustc_private)]
 
 //! A lint to check for redundant serde borrow attributes on borrowed strings and bytes.
-//! This Dylint library resolves the named API or syntax at compile time,
-//! reports a source diagnostic for the undesired or redundant pattern, and
-//! leaves unrelated code unchanged. Its README defines the checked boundary,
-//! the recommended replacement, and the UI fixture that protects behavior.
+//!
+//! This Dylint library finds `#[serde(borrow)]` on fields whose written type
+//! `serde_derive` already borrows implicitly, and removes the attribute when it
+//! holds no other entry. Type aliases are not flagged, because Serde does
+//! not borrow through them.
 
-extern crate rustc_ast;
-extern crate rustc_errors;
+extern crate rustc_hir;
 
 #[cfg(test)]
 use serde as _;
 
-use rustc_ast::Crate;
-use rustc_errors::Applicability;
-use rustc_lint::{EarlyContext, EarlyLintPass};
+use rustc_hir::Item;
+use rustc_lint::{LateContext, LateLintPass};
 
 use serde_support::{
-    ast_all_fields, ast_attr_is_single_entry, ast_serde_attr, ast_ty_is_implicitly_borrowed,
-    emit_span_lint_with_help, emit_span_lint_with_suggestion, serde_ast_crate,
+    Help, all_fields, emit_lint, is_deletable_attr, serde_attr, serde_item,
+    ty_is_implicitly_borrowed,
 };
 
-dylint_support::documented_early_lint! {
+dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
     pub SERDE_BORROW_REDUNDANT_STR_BYTES,
     Warn,
@@ -29,59 +28,45 @@ dylint_support::documented_early_lint! {
     SerdeBorrowRedundantStrBytes
 }
 
-impl EarlyLintPass for SerdeBorrowRedundantStrBytes {
-    /// Check crate for this lint.
-    fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &Crate) {
-        check_crate(cx, krate);
-    }
-}
-
-/// Check deserializable items for redundant borrow attributes on already-borrowed fields.
-fn check_crate(cx: &EarlyContext<'_>, krate: &Crate) {
-    // Collect cfg-active items and alias facts before inspecting field types.
-    let krate = serde_ast_crate(cx, krate);
-
-    // Restrict checks to deserializable items with explicit borrow attributes.
-    for item in &krate.items {
+impl<'tcx> LateLintPass<'tcx> for SerdeBorrowRedundantStrBytes {
+    /// Check the fields of one deserializable item.
+    fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
+        // Only deserializable items borrow from their input.
+        let Some(item) = serde_item(cx, item) else {
+            return;
+        };
         if !item.derives.has_deserialize {
-            continue;
+            return;
         }
 
-        // Report attributes only when the field type already borrows implicitly.
-        for field in ast_all_fields(item) {
-            let Some(borrow_attr) = ast_serde_attr(cx, field.attrs, "borrow") else {
+        // Report attributes only when Serde already borrows the written field type.
+        for field in all_fields(&item) {
+            let Some(borrow_attr) = serde_attr(field.attrs, "borrow") else {
                 continue;
             };
-            if !ast_ty_is_implicitly_borrowed(field.ty, &krate.type_facts) {
+            if !ty_is_implicitly_borrowed(field.ty) {
                 continue;
             }
 
-            let message = "`serde(borrow)` is redundant on this field type";
             // Deleting the attribute is exact only when `borrow` is its sole entry.
-            if ast_attr_is_single_entry(cx, borrow_attr, "borrow") {
-                emit_span_lint_with_suggestion(
-                    cx,
-                    SERDE_BORROW_REDUNDANT_STR_BYTES,
-                    borrow_attr.span,
-                    message,
-                    "remove the redundant borrow attribute",
-                    String::new(),
-                    Applicability::MachineApplicable,
-                );
+            let help = if is_deletable_attr(cx, borrow_attr, "borrow") {
+                "remove the redundant borrow attribute"
             } else {
-                emit_span_lint_with_help(
-                    cx,
-                    SERDE_BORROW_REDUNDANT_STR_BYTES,
-                    borrow_attr.span,
-                    message,
-                    "remove `borrow` from this attribute",
-                );
-            }
+                "remove `borrow` from this attribute"
+            };
+            emit_lint(
+                cx,
+                SERDE_BORROW_REDUNDANT_STR_BYTES,
+                field.hir_id,
+                borrow_attr.span(),
+                "`serde(borrow)` is redundant on this field type",
+                Help::attr_deletion(cx, borrow_attr, "borrow", help),
+            );
         }
     }
 }
 
-/// Helper for ui analysis.
+/// Run the UI fixture.
 #[test]
 fn ui() {
     dylint_testing::ui_test_examples(env!("CARGO_PKG_NAME"));

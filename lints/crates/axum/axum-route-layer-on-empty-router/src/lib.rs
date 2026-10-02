@@ -13,7 +13,7 @@ extern crate rustc_hir;
 #[cfg(test)]
 use axum as _;
 
-use axum_support::{is_router_new_call, router_method_call};
+use axum_support::{is_empty_router, router_method_call};
 use rustc_errors::DiagDecorator;
 use rustc_hir::Expr;
 use rustc_lint::{LateContext, LateLintPass, LintContext};
@@ -27,13 +27,13 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for AxumRouteLayerOnEmptyRouter {
-    /// Prove the receiver is Axum's empty `Router::new()` value.
+    /// Prove the receiver is an Axum router that has no routes yet.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        // Resolve the layer method and require its receiver to be a fresh empty router.
+        // Resolve the layer method and require a receiver proved to have no routes.
         let Some(call) = router_method_call(cx, expr, "route_layer") else {
             return;
         };
-        if !is_router_new_call(cx, call.receiver) {
+        if !is_empty_router(cx, call.receiver) {
             return;
         }
 

@@ -11,10 +11,8 @@
 //! This Dylint library resolves test-case validator paths, reports unsupported
 //! function forms, and recommends a callable path with the expected signature.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
 
-use rustc_lint::LintContext as _;
 #[cfg(test)]
 extern crate test_case as _;
 

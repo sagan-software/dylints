@@ -1,26 +1,28 @@
 #![feature(rustc_private)]
 
-//! A lint to check for serde `skip_serializing` fields that still deserialize.
+//! A lint to check for skipped fields that deserialization still requires.
 //!
-//! This Dylint library resolves Serde field attributes, reports asymmetric
-//! serialization policy, and recommends matching serialization and deserialization.
-//!
-//! The README defines the supported field attributes and replacement. UI
-//! fixtures cover triggering and non-triggering forms for safe adoption.
+//! This Dylint library finds fields of types that derive both Serde directions
+//! when serialization omits the field but deserialization has no default for
+//! it, so the type's own output fails to deserialize.
 
-extern crate rustc_ast;
+extern crate rustc_hir;
+extern crate rustc_middle;
+extern crate rustc_span;
 
 #[cfg(test)]
 use serde as _;
 
-use rustc_ast::Crate;
-use rustc_lint::{EarlyContext, EarlyLintPass};
+use rustc_hir::Item;
+use rustc_lint::{LateContext, LateLintPass};
+use rustc_middle::ty;
+use rustc_span::sym;
 
 use serde_support::{
-    ast_all_fields, ast_has_serde_attr, ast_serde_attr, emit_span_lint_with_help, serde_ast_crate,
+    Help, SerdeField, all_fields, emit_lint, has_serde_attr, serde_attr, serde_item,
 };
 
-dylint_support::documented_early_lint! {
+dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
     pub SERDE_SKIP_SERIALIZING_ROUNDTRIP,
     Warn,
@@ -28,59 +30,67 @@ dylint_support::documented_early_lint! {
     SerdeSkipSerializingRoundtrip
 }
 
-impl EarlyLintPass for SerdeSkipSerializingRoundtrip {
-    /// Check crate for this lint.
-    fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &Crate) {
-        check_crate(cx, krate);
-    }
-}
-
-/// Check serializable/deserializable fields for one-way skip attributes.
-fn check_crate(cx: &EarlyContext<'_>, krate: &Crate) {
-    // Collect cfg-active Serde items and resolved type facts once for the crate.
-    let krate = serde_ast_crate(cx, krate);
-
-    // Restrict round-trip checks to items that support both directions.
-    for item in &krate.items {
-        if !(item.derives.has_serialize && item.derives.has_deserialize) {
-            continue;
+impl<'tcx> LateLintPass<'tcx> for SerdeSkipSerializingRoundtrip {
+    /// Check the fields of one item that derives both directions.
+    fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
+        // A round trip needs both directions and no container default.
+        let Some(item) = serde_item(cx, item) else {
+            return;
+        };
+        if !(item.derives.has_serialize && item.derives.has_deserialize)
+            || has_serde_attr(item.attrs, "default")
+        {
+            return;
         }
-        let container_default = ast_has_serde_attr(cx, item.attrs, "default");
 
         // Report one-way field skips only when deserialization cannot fill the field.
-        for field in ast_all_fields(item) {
-            let Some(skip_serializing) = ast_serde_attr(cx, field.attrs, "skip_serializing") else {
+        for field in all_fields(&item) {
+            let Some(skip_serializing) = serde_attr(field.attrs, "skip_serializing") else {
                 continue;
             };
-            if field_deserializes_safely(cx, field.attrs, container_default) {
+            if field_deserializes_when_missing(cx, field) {
                 continue;
             }
 
-            emit_span_lint_with_help(
+            emit_lint(
                 cx,
                 SERDE_SKIP_SERIALIZING_ROUNDTRIP,
-                skip_serializing.span,
+                field.hir_id,
+                skip_serializing.span(),
                 "`skip_serializing` does not skip deserializing this field",
-                "use `skip`, add `skip_deserializing`, or provide a default for deserialization",
+                Help::text(
+                    "use `skip`, add `skip_deserializing`, or provide a default for deserialization",
+                ),
             );
         }
     }
 }
 
-/// Return whether serde can fill a skipped field during deserialization.
-fn field_deserializes_safely(
-    cx: &EarlyContext<'_>,
-    attrs: &[rustc_ast::Attribute],
-    container_default: bool,
-) -> bool {
-    // Serde fills skipped/defaulted fields during deserialization, so round-trips can succeed.
-    container_default
-        || ast_has_serde_attr(cx, attrs, "skip")
-        || ast_has_serde_attr(cx, attrs, "skip_deserializing")
-        || ast_has_serde_attr(cx, attrs, "default")
+/// Return whether Serde fills the field when the input omits it.
+///
+/// Skipped and defaulted fields get a default. A missing `Option` field becomes
+/// `None`, unless a custom `deserialize_with` makes Serde report it as missing.
+fn field_deserializes_when_missing(cx: &LateContext<'_>, field: &SerdeField<'_>) -> bool {
+    // Skipped and defaulted fields get a default value.
+    if ["skip", "skip_deserializing", "default"]
+        .iter()
+        .any(|key| has_serde_attr(field.attrs, key))
+    {
+        return true;
+    }
+    // A custom deserializer makes Serde report a missing field instead of `None`.
+    if has_serde_attr(field.attrs, "with") || has_serde_attr(field.attrs, "deserialize_with") {
+        return false;
+    }
+    let field_ty = cx
+        .tcx
+        .type_of(field.def_id)
+        .instantiate_identity()
+        .skip_norm_wip();
+    matches!(field_ty.kind(), ty::Adt(adt, _) if cx.tcx.is_diagnostic_item(sym::Option, adt.did()))
 }
 
-/// Helper for ui analysis.
+/// Run the UI fixture.
 #[test]
 fn ui() {
     dylint_testing::ui_test_examples(env!("CARGO_PKG_NAME"));

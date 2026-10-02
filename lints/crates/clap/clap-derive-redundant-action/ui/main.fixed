@@ -2,15 +2,15 @@
 // rustfix-only-machine-applicable
 #![allow(dead_code)]
 
-use clap::{ArgAction, Parser, Subcommand};
+use clap::{ArgAction, Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
 struct RedundantActions {
-    #[arg(long, action = ArgAction::SetTrue)]
+    #[arg(long)]
     verbose: bool,
-    #[arg(long, action = clap::ArgAction::Set)]
+    #[arg(long)]
     output: Option<String>,
-    #[arg(long, action = ArgAction::Append)]
+    #[arg(long)]
     include: Vec<String>,
     
     standalone: bool,
@@ -19,9 +19,22 @@ struct RedundantActions {
 #[derive(Subcommand)]
 enum Commands {
     Run {
-        #[arg(long, action = ArgAction::Set)]
+        #[arg(long)]
         profile: String,
     },
+}
+
+#[derive(Parser)]
+struct EntryPositions {
+    #[arg(long)]
+    first: bool,
+    #[arg(long,)]
+    trailing: bool,
+    #[arg(
+        long,
+        help = "a, b"
+    )]
+    middle: Option<String>,
 }
 
 #[derive(Parser)]
@@ -31,5 +44,53 @@ struct CustomActions {
     #[arg(long = "no-color", action = ArgAction::SetFalse)]
     color: bool,
 }
+
+#[derive(Parser)]
+struct Wrappers {
+    #[arg(long)]
+    optional_values: Option<Vec<String>>,
+    #[arg(long, help = "say \"hi\", then go")]
+    escaped: String,
+    #[command(flatten)]
+    shared: Shared,
+}
+
+#[derive(Args)]
+struct Shared {
+    #[arg(long)]
+    quiet: bool,
+}
+
+#[derive(Clone, ValueEnum)]
+enum Mode {
+    Fast,
+}
+
+#[cfg_attr(all(), derive(Parser))]
+struct CfgDerived {
+    #[arg(long)]
+    verbose: bool,
+}
+
+#[cfg_attr(all(), derive(Subcommand))]
+enum CfgCommands {
+    #[command(about = "run")]
+    Run {
+        #[arg(long)]
+        profile: String,
+    },
+}
+
+macro_rules! generated_parser {
+    () => {
+        #[derive(Parser)]
+        struct Generated {
+            #[arg(long, action = ArgAction::SetTrue)]
+            verbose: bool,
+        }
+    };
+}
+
+generated_parser!();
 
 fn main() {}

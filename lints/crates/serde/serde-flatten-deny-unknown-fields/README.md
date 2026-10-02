@@ -2,9 +2,10 @@
 
 ## What it does
 
-Checks for a `#[serde(flatten)]` field in a struct that has
-`#[serde(deny_unknown_fields)]`, or whose type is a struct in the crate that
-has `#[serde(deny_unknown_fields)]`.
+Checks for a `#[serde(flatten)]` field in a struct that derives
+`Deserialize` when the struct has `#[serde(deny_unknown_fields)]`, or when
+the field type, or the `T` of an `Option<T>` field, is a struct in the crate
+that has `#[serde(deny_unknown_fields)]`.
 
 ## Why is this bad?
 
@@ -15,13 +16,8 @@ the other as unknown.
 
 ## Known problems
 
-The lint finds the flattened struct by the last name in the field type. It
-misses a flattened struct wrapped in another type, such as `Option<Extra>`, or
-defined in another crate. A different struct with the same name and
-`deny_unknown_fields` can cause a false positive.
-
-The lint matches derives to types by name, so two types with the same name in
-one crate can share the same derive result.
+The lint reads `deny_unknown_fields` only from structs defined in the crate,
+so it misses a flattened struct from another crate.
 
 ## Example
 

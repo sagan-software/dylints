@@ -1,11 +1,19 @@
-warning: `Statement::column` panics for an invalid index
-  --> $DIR/main.rs:4:19
+warning: SQLx `column` panics for an invalid index or name
+  --> $DIR/main.rs:10:19
    |
 LL |     TestStatement.column(0);
    |                   ^^^^^^
    |
-   = help: use `try_column`
+   = help: use `try_column` and handle or propagate the error
    = note: `#[warn(sqlx_panicking_statement_column)]` on by default
 
-warning: 1 warning emitted
+warning: SQLx `column` panics for an invalid index or name
+  --> $DIR/main.rs:12:13
+   |
+LL |     TestRow.column("name");
+   |             ^^^^^^
+   |
+   = help: use `try_column` and handle or propagate the error
+
+warning: 2 warnings emitted
 

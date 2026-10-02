@@ -15,5 +15,13 @@ LL | #[test_case(1.0_f64 => is almost 1.0 precision -0.1 ; "negative precision")
    |
    = help: use a positive tolerance that reflects the expected numerical error
 
-warning: 2 warnings emitted
+warning: an absolute difference cannot be less than this precision
+  --> $DIR/main.rs:16:1
+   |
+LL | #[test_case(1.0_f64 => it (almost_equal_to 1.0 precision 0.1) and not almost 2.0 precision 0.0 ; "nested")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a positive tolerance that reflects the expected numerical error
+
+warning: 3 warnings emitted
 

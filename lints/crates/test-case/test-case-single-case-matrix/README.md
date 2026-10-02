@@ -12,9 +12,8 @@ inputs do not vary, and `#[test_case(...)]` states that shape directly.
 
 ## Known problems
 
-The lint counts every case generated for the function. When the function also
-has a `#[test_case(...)]` attribute or another `#[test_matrix(...)]`
-attribute, the single-case matrix is not reported.
+The lint counts the cases of each `#[test_matrix(...)]` attribute from its
+array, tuple, and integer-range literals, the same way test-case expands them.
 
 The lint gives help text but no automatic fix.
 

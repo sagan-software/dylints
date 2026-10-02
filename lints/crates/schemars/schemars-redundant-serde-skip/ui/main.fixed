@@ -6,10 +6,16 @@ use serde::Serialize;
 #[derive(JsonSchema, Serialize)]
 struct Example {
     #[serde(skip)]
-    
+
     bad: String,
     #[serde(skip)]
     good: String,
+    #[serde(skip_serializing)]
+
+    bad_skip_serializing: String,
+    #[serde(skip_serializing)]
+    #[schemars(skip)]
+    different_skip: String,
 }
 
 fn main() {}

@@ -4,7 +4,8 @@
 
 Checks for Insta snapshot assertion macros, such as `assert_snapshot!` and
 `assert_debug_snapshot!`, inside a `for`, `while`, or `loop` body that is not
-wrapped in `insta::allow_duplicates!`.
+wrapped in `insta::allow_duplicates!`. An assertion with a computed snapshot
+name is not reported.
 
 ## Why is this bad?
 
@@ -15,8 +16,10 @@ the iteration order. An inline snapshot repeated in a loop fails. Inside
 
 ## Known problems
 
-The lint warns even when each pass uses a different snapshot name. It does not
-check assertions inside closures passed to iterator methods such as
+The lint skips an assertion whose explicit name is computed, such as
+`format!("case_{i}")`, because each pass can use a different name. It still
+warns for a literal name or a `const` name, which repeats on each pass. It
+does not check assertions inside closures passed to iterator methods such as
 `for_each`, or inside functions called from a loop.
 
 ## Example

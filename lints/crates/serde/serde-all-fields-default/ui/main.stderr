@@ -1,19 +1,45 @@
 warning: all fields use `serde(default)` with a derived `Default` implementation
-  --> $DIR/main.rs:5:5
+  --> $DIR/main.rs:9:5
+   |
+LL |     #[serde(default)]
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(serde_all_fields_default)]` on by default
+help: add `#[serde(default)]` to the struct and remove its field-level defaults
+   |
+LL + #[serde(default)]
+LL | struct Named {
+LL ~     retries: u32,
+LL ~     verbose: bool,
+   |
+
+warning: all fields use `serde(default)` with a derived `Default` implementation
+  --> $DIR/main.rs:16:14
+   |
+LL | struct Tuple(#[serde(default)] u32, #[serde(default)] bool);
+   |              ^^^^^^^^^^^^^^^^^
+   |
+help: add `#[serde(default)]` to the struct and remove its field-level defaults
+   |
+LL + #[serde(default)]
+LL ~ struct Tuple(u32, bool);
+   |
+
+warning: all fields use `serde(default)` with a derived `Default` implementation
+  --> $DIR/main.rs:65:5
    |
 LL |     #[serde(default)]
    |     ^^^^^^^^^^^^^^^^^
    |
    = help: add `#[serde(default)]` to the struct and remove its field-level defaults
-   = note: `#[warn(serde_all_fields_default)]` on by default
 
 warning: all fields use `serde(default)` with a derived `Default` implementation
-  --> $DIR/main.rs:12:14
+  --> $DIR/main.rs:73:5
    |
-LL | struct Tuple(#[serde(default)] u32, #[serde(default)] bool);
-   |              ^^^^^^^^^^^^^^^^^
+LL |     #[serde(default, rename = "n")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: add `#[serde(default)]` to the struct and remove its field-level defaults
 
-warning: 2 warnings emitted
+warning: 4 warnings emitted
 

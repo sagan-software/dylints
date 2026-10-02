@@ -7,5 +7,21 @@ LL | fn bad(query: Query<&Enemy>) {
    = help: use an Entity query with a With<T> filter
    = note: `#[warn(bevy_presence_only_query_fetch)]` on by default
 
-warning: 1 warning emitted
+warning: this query fetches component values but only checks presence or count
+  --> $DIR/main.rs:10:21
+   |
+LL | fn bad_empty(query: Query<&Enemy>) {
+   |                     ^^^^^^^^^^^^^
+   |
+   = help: use an Entity query with a With<T> filter
+
+warning: this query fetches component values but only checks presence or count
+  --> $DIR/main.rs:14:26
+   |
+LL | fn bad_in_closure(query: Query<&Enemy>) {
+   |                          ^^^^^^^^^^^^^
+   |
+   = help: use an Entity query with a With<T> filter
+
+warning: 3 warnings emitted
 

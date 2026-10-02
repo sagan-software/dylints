@@ -7,5 +7,13 @@ LL | #[test_case(1 => panics ; "one")]
    = help: add the expected panic message
    = note: `#[warn(test_case_panics_without_message)]` on by default
 
-warning: 1 warning emitted
+warning: this case accepts any panic
+  --> $DIR/main.rs:7:1
+   |
+LL | #[test_case(3 => panics)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add the expected panic message
+
+warning: 2 warnings emitted
 

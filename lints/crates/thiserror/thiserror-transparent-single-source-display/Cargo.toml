@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 dylint_linting.workspace = true
 dylint_support = { package = "dylint-support", path = "../../../../support/dylint" }
+thiserror_support = { package = "thiserror-support", path = "../support" }
 
 [dev-dependencies]
 dylint_testing.workspace = true

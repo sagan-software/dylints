@@ -1,6 +1,15 @@
 // run-rustfix
 // rustfix-only-machine-applicable
+use insta::Settings;
+
+type Alias = Settings;
+
 fn main() {
     let _ = insta::Settings::clone_current();
+    let _ = Settings::clone_current();
+    let _ = Alias::clone_current();
+    let _: Settings = Default::default();
+    let _ = <Settings as Default>::default();
     let _ = insta::Settings::clone_current();
+    let _: Vec<u8> = Default::default();
 }

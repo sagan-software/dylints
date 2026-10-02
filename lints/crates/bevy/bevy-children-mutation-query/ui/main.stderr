@@ -1,5 +1,5 @@
 warning: `Children` should not be manipulated directly
-  --> $DIR/main.rs:15:11
+  --> $DIR/main.rs:18:11
    |
 LL | fn bad(_: Query<&mut Children>) {}
    |           ^^^^^^^^^^^^^^^^^^^^
@@ -7,5 +7,29 @@ LL | fn bad(_: Query<&mut Children>) {}
    = help: modify `ChildOf` on source entities or use relationship commands
    = note: `#[warn(bevy_children_mutation_query)]` on by default
 
-warning: 1 warning emitted
+warning: `Children` should not be manipulated directly
+  --> $DIR/main.rs:20:28
+   |
+LL | fn detach_all(mut parents: Query<&mut Children>) {
+   |                            ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: modify `ChildOf` on source entities or use relationship commands
+
+warning: `Children` should not be manipulated directly
+  --> $DIR/main.rs:26:37
+   |
+LL | fn reorder_then_escape(mut parents: Query<&mut Children>) {
+   |                                     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: modify `ChildOf` on source entities or use relationship commands
+
+warning: `Children` should not be manipulated directly
+  --> $DIR/main.rs:33:43
+   |
+LL | fn reorder_through_reference(mut parents: Query<&mut Children>) {
+   |                                           ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: modify `ChildOf` on source entities or use relationship commands
+
+warning: 4 warnings emitted
 

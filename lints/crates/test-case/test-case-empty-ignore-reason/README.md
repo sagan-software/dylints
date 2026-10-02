@@ -3,7 +3,7 @@
 ## What it does
 
 Checks for a `#[test_case(...)]` or `#[test_matrix(...)]` attribute that uses
-the `ignore[""]` modifier with an empty or whitespace-only reason.
+an `ignore[""]` or `inconclusive[""]` modifier with an empty reason.
 
 ## Why is this bad?
 
@@ -13,14 +13,8 @@ so the case can stay disabled indefinitely.
 
 ## Known problems
 
-The lint matches the attribute source text after removing whitespace. A
-whitespace-only reason such as `ignore[" "]` also triggers
-`test-case-whitespace-ignore-reason`, so the attribute gets two warnings. An
-empty `inconclusive[""]` reason or a raw string such as `ignore[r""]` does not
-trigger this lint.
-
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+A reason from a constant or macro does not trigger the lint. A
+whitespace-only reason triggers `test-case-whitespace-ignore-reason` instead.
 
 ## Example
 

@@ -3,7 +3,7 @@
 ## What it does
 
 Checks for a `#[serde(expecting = "...")]` message on a struct or enum that
-starts with an uppercase ASCII letter or ends with a period.
+starts with a capitalized word or ends with a period.
 
 ## Why is this bad?
 
@@ -14,13 +14,11 @@ be capitalized and should not end with a period.
 
 ## Known problems
 
-The lint flags a message that starts with an acronym, such as `"UUID string"`,
-and suggests `"uUID string"`. It only checks plain string literals and misses
-raw strings. A message with an escape sequence, such as `"A \"quoted\" id."`,
-gets help without a fix.
-
-The lint reads source files as text, so it also checks items disabled by
-`cfg`.
+The lint keeps the case of a first word that looks like an acronym, such as
+`"UUID string"` or `"I/O path"`, but it still lowercases a single capital
+letter followed by a space. The fix edits the literal as written, so a literal
+whose first letter or final period is written as an escape gets help without a
+fix.
 
 ## Example
 

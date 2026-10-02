@@ -1,10 +1,44 @@
 warning: this named field is formatted positionally
-  --> $DIR/main.rs:7:5
+  --> $DIR/main.rs:12:5
    |
 LL |     #[error("failed: {}", source)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: capture the field directly as `{field}`: `#[error("failed: {source}")]`
    |
    = note: `#[warn(thiserror_named_field_positional_format)]` on by default
 
-warning: 1 warning emitted
+warning: this named field is formatted positionally
+  --> $DIR/main.rs:16:5
+   |
+LL |     #[error("{:?} failed", code)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: capture the field directly as `{field}`: `#[error("{code:?} failed")]`
+
+warning: this named field is formatted positionally
+  --> $DIR/main.rs:18:5
+   |
+LL |     #[error("{} at {}", path, line)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: capture the field directly as `{field}`
+
+warning: this named field is formatted positionally
+  --> $DIR/main.rs:20:5
+   |
+LL |     #[error("{}, {extra}", path, extra = 1)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: capture the field directly as `{field}`: `#[error("{path}, {extra}", extra = 1)]`
+
+warning: this named field is formatted positionally
+  --> $DIR/main.rs:24:5
+   |
+LL |     #[error("{} over {}", count, LIMIT)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: capture the field directly as `{field}`
+
+warning: this named field is formatted positionally
+  --> $DIR/main.rs:34:5
+   |
+LL |     #[error("glob: {}", reason)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: capture the field directly as `{field}`: `#[error("glob: {reason}")]`
+
+warning: 6 warnings emitted
 

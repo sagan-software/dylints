@@ -29,7 +29,11 @@ dylint_support::documented_late_lint! {
 impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyDuplicateDependencies {
     /// Count loaded direct Bevy facade crates after crate analysis.
     fn check_crate(&mut self, cx: &rustc_lint::LateContext<'tcx>) {
-        if bevy_support::loaded_bevy_facades(cx) < 2 {
+        // Test harnesses load dev-only fixture versions; the UI example checks the package graph.
+        if cx.sess().opts.test {
+            return;
+        }
+        if bevy_support::direct_bevy_facades(cx) < 2 {
             return;
         }
         cx.emit_span_lint(

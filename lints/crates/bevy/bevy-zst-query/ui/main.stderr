@@ -7,5 +7,21 @@ LL | fn bad(_: Query<&Marker>) {}
    = help: move marker components to a `With<T>` or `Without<T>` filter
    = note: `#[warn(bevy_zst_query)]` on by default
 
-warning: 1 warning emitted
+warning: this query fetches a zero-sized component
+  --> $DIR/main.rs:19:17
+   |
+LL | fn bad_tuple(_: Query<(&Position, &mut Marker)>) {}
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: move marker components to a `With<T>` or `Without<T>` filter
+
+warning: this query fetches a zero-sized component
+  --> $DIR/main.rs:22:24
+   |
+LL |     let _closure = |_: Query<&Marker>| {};
+   |                        ^^^^^^^^^^^^^^
+   |
+   = help: move marker components to a `With<T>` or `Without<T>` filter
+
+warning: 3 warnings emitted
 

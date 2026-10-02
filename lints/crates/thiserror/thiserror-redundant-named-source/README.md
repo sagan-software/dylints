@@ -2,7 +2,8 @@
 
 ## What it does
 
-Checks for `#[source]` on a field named `source` in a `thiserror::Error` type.
+Checks for `#[source]` on a field named `source` in a `thiserror::Error`
+struct or variant when no other field has `#[source]` or `#[from]`.
 
 ## Why is this bad?
 
@@ -12,11 +13,8 @@ the field would not be the source without it.
 
 ## Known problems
 
-A field written as the raw identifier `r#source` does not trigger the lint.
-
-The lint recognizes the derive only as `thiserror::Error` or through a
-`use thiserror::Error` or `use thiserror::Error as Name` import. A glob import
-such as `use thiserror::*` hides the derive from the lint.
+A field written as the raw identifier `r#source` is ordinary data for
+thiserror, so `#[source]` on it is not redundant and the lint does not warn.
 
 ## Example
 

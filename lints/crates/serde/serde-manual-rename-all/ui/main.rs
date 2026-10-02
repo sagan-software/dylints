@@ -1,3 +1,7 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#![allow(dead_code)]
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -21,6 +25,30 @@ struct DifferentDirections {
     #[serde(rename(deserialize = "FIRST-NAME"))]
     first_name: String,
     #[serde(rename(deserialize = "LAST-NAME"))]
+    last_name: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct MultiEntry {
+    #[serde(rename = "firstName", default)]
+    first_name: String,
+    #[serde(rename = "lastName")]
+    last_name: String,
+}
+
+#[derive(Serialize)]
+struct RawIdentifier {
+    #[serde(rename = "TYPE")]
+    r#type: String,
+    #[serde(rename = "USER_ID")]
+    user_id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct OneDirectionMissing {
+    #[serde(rename(serialize = "firstName"))]
+    first_name: String,
+    #[serde(rename(serialize = "lastName"))]
     last_name: String,
 }
 

@@ -13,16 +13,52 @@ extern crate rustc_errors;
 extern crate rustc_hir;
 
 use dylint_linting as _;
+use rustc_lint::LintContext as _;
 
 #[cfg(test)]
 use bevy_app as _;
 
-bevy_support::declare_expression_span_lint! {
-    BEVY_DUPLICATE_PLUGIN_ADDITION,
-    BevyDuplicatePluginAddition,
+dylint_support::documented_late_lint! {
+    #[doc = include_str!("../README.md")]
+    pub BEVY_DUPLICATE_PLUGIN_ADDITION,
     Warn,
-    bevy_support::duplicate_plugin_addition_span,
     "checks adjacent duplicate Bevy plugin additions",
-    "this unique plugin is added twice in the same chain",
-    "remove the duplicate `add_plugins` call"
+    BevyDuplicatePluginAddition
+}
+
+impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyDuplicatePluginAddition {
+    /// Check chained `add_plugins` calls that repeat one unique plugin.
+    fn check_expr(
+        &mut self,
+        cx: &rustc_lint::LateContext<'tcx>,
+        expr: &'tcx rustc_hir::Expr<'tcx>,
+    ) {
+        let Some(duplicate) = bevy_support::duplicate_plugin_addition(cx, expr) else {
+            return;
+        };
+        cx.emit_span_lint(
+            BEVY_DUPLICATE_PLUGIN_ADDITION,
+            duplicate.method_span,
+            rustc_errors::DiagDecorator(|diagnostic| {
+                let _configured_diagnostic = diagnostic
+                    .primary_message("this unique plugin is added twice in the same chain");
+                // Delete the repeated call only when its argument cannot run code.
+                if let Some(removal) = duplicate.removal {
+                    let _suggested = diagnostic.span_suggestion_verbose(
+                        removal,
+                        "remove the duplicate `add_plugins` call",
+                        "",
+                        rustc_errors::Applicability::MachineApplicable,
+                    );
+                } else {
+                    let _helped = diagnostic.help("remove the duplicate `add_plugins` call");
+                }
+            }),
+        );
+    }
+}
+
+#[test]
+fn ui() {
+    dylint_testing::ui_test_examples(env!("CARGO_PKG_NAME"));
 }

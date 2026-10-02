@@ -17,9 +17,10 @@ action such as `ArgAction::SetTrue`, clap panics in debug builds.
 ## Known problems
 
 The lint checks only one method chain. It warns when `num_args` is called on the
-same `Arg` in a later statement. It warns when `.action(ArgAction::Set)` already
-makes the argument take one value. It does not check a call whose argument is
-not the literal `true`.
+same `Arg` in a later statement. It does not warn when the final `action` call
+is `ArgAction::Set` or `ArgAction::Append`, because that action already makes
+the argument take one value. It checks only the final `allow_hyphen_values` call, and
+only when its argument is the literal `true`.
 
 ## Example
 

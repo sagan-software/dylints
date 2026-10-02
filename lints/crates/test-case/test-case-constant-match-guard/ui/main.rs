@@ -1,13 +1,17 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // compile-flags: --test
 
 use test_case::test_case;
 
 #[test_case(1_u8 => matches Some(_) if true ; "redundant guard")]
+#[test_case(3_u8 => matches Some(_) if false ; "guard never matches")]
 fn always_true(value: u8) -> Option<u8> {
     Some(value)
 }
 
 #[test_case(2_u8 => matches Some(value) if value > 0 ; "meaningful guard")]
+#[test_case(4_u8 => matches Some(_) ; "if true in the description")]
 fn meaningful(value: u8) -> Option<u8> {
     Some(value)
 }

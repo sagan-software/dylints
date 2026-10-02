@@ -37,8 +37,8 @@ impl<'tcx> LateLintPass<'tcx> for InstaEmptyFilterPattern {
             return;
         };
 
-        // Report only the literal empty pattern that matches every position.
-        if string_literal(pattern).as_deref() != Some("") {
+        // Report only a known empty pattern, which matches every position.
+        if string_literal(cx, pattern).as_deref() != Some("") {
             return;
         }
 

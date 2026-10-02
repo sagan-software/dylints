@@ -7,5 +7,21 @@ LL |     query.push(format!("id = {}", 1));
    = help: append fixed SQL and pass values with `push_bind`
    = note: `#[warn(sqlx_query_builder_push_interpolation)]` on by default
 
-warning: 1 warning emitted
+warning: `format!` inserts values directly into SQL text
+  --> $DIR/main.rs:7:11
+   |
+LL |     query.push(&format!("id = {}", 2));
+   |           ^^^^
+   |
+   = help: append fixed SQL and pass values with `push_bind`
+
+warning: `format!` inserts values directly into SQL text
+  --> $DIR/main.rs:8:11
+   |
+LL |     query.push(std::format!("id = {}", 3));
+   |           ^^^^
+   |
+   = help: append fixed SQL and pass values with `push_bind`
+
+warning: 3 warnings emitted
 

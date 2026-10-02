@@ -1,22 +1,28 @@
-warning: `source` fields are source errors without an attribute
+warning: a field named `source` is already the error source
   --> $DIR/main.rs:10:5
    |
-LL |     #[source]
-   |     ^^^^^^^^^ help: remove the redundant `#[source]` attribute
+LL |       #[source]
+   |  _____-^^^^^^^^
+LL | |     source: std::io::Error,
+   | |____- help: remove the redundant `#[source]` attribute
    |
    = note: `#[warn(thiserror_redundant_named_source)]` on by default
 
-warning: `source` fields are source errors without an attribute
-  --> $DIR/main.rs:17:5
+warning: a field named `source` is already the error source
+  --> $DIR/main.rs:18:9
    |
-LL |     #[source]
-   |     ^^^^^^^^^ help: remove the redundant `#[source]` attribute
+LL |           #[source]
+   |  _________-^^^^^^^^
+LL | |         source: std::io::Error,
+   | |________- help: remove the redundant `#[source]` attribute
 
-warning: `source` fields are source errors without an attribute
-  --> $DIR/main.rs:24:5
+warning: a field named `source` is already the error source
+  --> $DIR/main.rs:30:9
    |
-LL |     #[source]
-   |     ^^^^^^^^^ help: remove the redundant `#[source]` attribute
+LL |           #[source]
+   |  _________-^^^^^^^^
+LL | |         source: std::io::Error,
+   | |________- help: remove the redundant `#[source]` attribute
 
 warning: 3 warnings emitted
 

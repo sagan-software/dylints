@@ -1,11 +1,23 @@
 warning: this match guard is always true or always false
-  --> $DIR/main.rs:5:1
+  --> $DIR/main.rs:7:36
    |
 LL | #[test_case(1_u8 => matches Some(_) if true ; "redundant guard")]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                                    ^^^^^^^^
+   |
+   = note: `#[warn(test_case_constant_match_guard)]` on by default
+help: remove a true guard or replace a false guard with the intended condition
+   |
+LL - #[test_case(1_u8 => matches Some(_) if true ; "redundant guard")]
+LL + #[test_case(1_u8 => matches Some(_) ; "redundant guard")]
+   |
+
+warning: this match guard is always true or always false
+  --> $DIR/main.rs:8:36
+   |
+LL | #[test_case(3_u8 => matches Some(_) if false ; "guard never matches")]
+   |                                    ^^^^^^^^^
    |
    = help: remove a true guard or replace a false guard with the intended condition
-   = note: `#[warn(test_case_constant_match_guard)]` on by default
 
-warning: 1 warning emitted
+warning: 2 warnings emitted
 

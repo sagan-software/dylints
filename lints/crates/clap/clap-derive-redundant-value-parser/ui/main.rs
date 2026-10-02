@@ -19,11 +19,23 @@ struct RedundantParsers {
 }
 
 #[derive(Parser)]
+struct EntryPositions {
+    #[arg(value_parser = clap::value_parser!(u8), long)]
+    first: u8,
+    #[arg(long, value_parser = clap::value_parser!(i64), help = "x(1, 2)")]
+    middle: i64,
+}
+
+#[derive(Parser)]
 struct CustomParsers {
     #[arg(long, value_parser = clap::value_parser!(u16).range(1..))]
     port: u16,
     #[arg(long, value_parser = parse_name)]
     name: String,
+    #[arg(long, value_parser = parse_boxed)]
+    boxed: Box<str>,
+    #[arg(skip)]
+    skipped: u8,
 }
 
 fn parse_name(value: &str) -> Result<String, &'static str> {
@@ -33,5 +45,32 @@ fn parse_name(value: &str) -> Result<String, &'static str> {
         Ok(value.to_owned())
     }
 }
+
+fn parse_boxed(value: &str) -> Result<Box<str>, &'static str> {
+    Ok(value.into())
+}
+
+#[derive(Clone, clap::ValueEnum)]
+enum Mode {
+    Fast,
+}
+
+#[derive(Parser)]
+struct ValueEnumField {
+    #[arg(long, value_enum, value_parser = clap::value_parser!(Mode))]
+    mode: Mode,
+}
+
+macro_rules! generated_parser {
+    () => {
+        #[derive(Parser)]
+        struct Generated {
+            #[arg(long, value_parser = clap::value_parser!(u16))]
+            port: u16,
+        }
+    };
+}
+
+generated_parser!();
 
 fn main() {}

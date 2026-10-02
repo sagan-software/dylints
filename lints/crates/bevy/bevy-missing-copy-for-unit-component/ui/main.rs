@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(
     dead_code,
     elided_lifetimes_in_paths,
@@ -10,10 +12,29 @@
 
 use bevy_ecs::component::Component;
 
+macro_rules! marker {
+    ($name:ident) => {
+        #[derive(Component)]
+        struct $name;
+    };
+}
+
 #[derive(Component)]
 struct Missing;
 
-#[derive(Component, Clone, Copy)]
+/// A documented marker.
+#[derive(Component)]
+pub struct DocumentedMissing;
+
+marker!(GeneratedMissing);
+
+#[derive(Component, Clone, Copy, Default)]
 struct Present;
+
+#[derive(Component)]
+struct WithField(u8);
+
+#[derive(Component, Clone)]
+struct CloneOnly;
 
 fn main() {}

@@ -132,7 +132,10 @@ impl BevyComponentFieldContention {
 
 /// Return whether two nonempty field sets have no member in common.
 fn fields_are_disjoint(left: &[rustc_span::Symbol], right: &[rustc_span::Symbol]) -> bool {
-    !left.is_empty() && !right.is_empty() && left.iter().all(|field| !right.contains(field))
+    let has_left_fields = !left.is_empty();
+    let has_right_fields = !right.is_empty();
+    let has_no_shared_fields = left.iter().all(|field| !right.contains(field));
+    has_left_fields && has_right_fields && has_no_shared_fields
 }
 
 #[test]

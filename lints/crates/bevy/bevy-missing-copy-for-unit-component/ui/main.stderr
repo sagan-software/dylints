@@ -1,15 +1,47 @@
 warning: this unit component does not implement `Copy`
-  --> $DIR/main.rs:14:1
+  --> $DIR/main.rs:23:1
    |
 LL | struct Missing;
    | ^^^^^^^^^^^^^^
    |
    = help: derive or implement `Copy`
 note: the lint level is defined here
-  --> $DIR/main.rs:9:9
+  --> $DIR/main.rs:11:9
    |
 LL | #![warn(bevy_missing_copy_for_unit_component)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-warning: 1 warning emitted
+warning: this unit component does not implement `Copy`
+  --> $DIR/main.rs:27:1
+   |
+LL | pub struct DocumentedMissing;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: derive or implement `Copy`
+
+warning: this unit component does not implement `Copy`
+  --> $DIR/main.rs:18:9
+   |
+LL |         struct $name;
+   |         ^^^^^^^^^^^^^
+...
+LL | marker!(GeneratedMissing);
+   | ------------------------- in this macro invocation
+   |
+   = help: derive or implement `Copy`
+   = note: this warning originates in the macro `marker` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: this unit component does not implement `Copy`
+  --> $DIR/main.rs:38:1
+   |
+LL | struct CloneOnly;
+   | ^^^^^^^^^^^^^^^^
+   |
+help: derive or implement `Copy`
+   |
+LL + #[derive(Copy)]
+LL | struct CloneOnly;
+   |
+
+warning: 4 warnings emitted
 

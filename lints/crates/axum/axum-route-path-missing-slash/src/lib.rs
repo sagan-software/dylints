@@ -17,7 +17,7 @@ use axum as _;
 axum_support::declare_router_path_lint! {
     AXUM_ROUTE_PATH_MISSING_SLASH,
     AxumRoutePathMissingSlash,
-    "route",
+    ["route", "route_service", "nest", "nest_service"],
     MissingLeadingSlash,
     "an Axum route path does not start with a slash",
     "this route path panics because it does not start with `/`",

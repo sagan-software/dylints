@@ -3,6 +3,8 @@
 use test_case::test_case;
 
 #[test_case(vec![1_u8, 2] => it contains_in_order [2] ; "one element")]
+#[test_case(vec![1_u8, 2] => it contains_in_order [1, 2] ; "two elements")]
+#[test_case(vec![1_u8, 2] => it contains 2 and contains_in_order [1] ; "joined matcher")]
 fn singleton(values: Vec<u8>) -> Vec<u8> {
     values
 }

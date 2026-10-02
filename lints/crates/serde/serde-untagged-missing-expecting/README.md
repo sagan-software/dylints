@@ -16,9 +16,6 @@ description of valid input.
 
 The lint does not check `#[serde(untagged)]` on a single variant.
 
-The lint matches derives to types by name, so two types with the same name in
-one crate can share the same derive result.
-
 ## Example
 
 ```rust

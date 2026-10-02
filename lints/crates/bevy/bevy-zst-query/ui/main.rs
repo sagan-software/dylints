@@ -16,6 +16,23 @@ struct Marker;
 struct Position(f32);
 
 fn bad(_: Query<&Marker>) {}
+fn bad_tuple(_: Query<(&Position, &mut Marker)>) {}
+
+fn bad_closure() {
+    let _closure = |_: Query<&Marker>| {};
+}
+
 fn good(_: Query<&Position, With<Marker>>) {}
+fn good_option(_: Query<Option<&Marker>>) {}
+
+trait MarkerSystem {
+    fn run(&self, query: Query<&Marker>);
+}
+
+struct Runner;
+
+impl MarkerSystem for Runner {
+    fn run(&self, _: Query<&Marker>) {}
+}
 
 fn main() {}

@@ -7,5 +7,13 @@ LL | struct Motion {
    = help: split independently written fields into separate components
    = note: `#[warn(bevy_component_field_contention)]` on by default
 
-warning: 1 warning emitted
+warning: systems in one schedule write disjoint fields of this component
+  --> $DIR/main.rs:11:1
+   |
+LL | struct Heading {
+   | ^^^^^^^^^^^^^^
+   |
+   = help: split independently written fields into separate components
+
+warning: 2 warnings emitted
 

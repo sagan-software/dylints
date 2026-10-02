@@ -2,9 +2,9 @@
 
 ## What it does
 
-Checks for an `#[error(...)]` format string that captures a `Path` or `PathBuf`
-field as `{field}` when the package's `Cargo.toml` sets
-`default-features = false` on `thiserror` without enabling its `std` feature.
+Checks for an `#[error(...)]` format string that captures a `Path` or
+`PathBuf` field as `{field}` when the compiled package's `Cargo.toml`
+disables thiserror's default features without enabling its `std` feature.
 
 ## Why is this bad?
 
@@ -14,17 +14,17 @@ that does not mention the feature.
 
 ## Known problems
 
-The lint scans source and manifest text instead of resolved types and
-features. It reads only inline dependency entries such as
-`thiserror = { version = "2", default-features = false }` in the nearest
-`Cargo.toml`, so it misses a `[dependencies.thiserror]` table. It warns even
-when another dependency enables thiserror's `std` feature through Cargo feature
+The lint reads the manifest of the package being compiled, including
+`[dependencies.thiserror]` tables, `[target.*]` tables, renamed
+dependencies, and `workspace = true` declarations. It still warns when
+another dependency enables thiserror's `std` feature through Cargo feature
 unification.
 
-It treats a field as a path when any line in the file declares that field name
-with a type containing `Path`, so a same-named field in another struct can
-cause a warning. It checks only the exact `{field}` capture, not `{field:<10}`
-or a positional argument.
+The lint runs before type checking, because the missing feature makes type
+checking fail. It therefore recognizes a field type by its written name, so a
+type alias for `PathBuf` does not trigger it. It checks only the exact
+`{field}` capture; a capture with a format spec needs `Display` in every
+configuration.
 
 ## Example
 

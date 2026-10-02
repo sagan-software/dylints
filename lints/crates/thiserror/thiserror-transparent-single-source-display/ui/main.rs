@@ -1,5 +1,3 @@
-// run-rustfix
-// rustfix-only-machine-applicable
 #![allow(dead_code)]
 
 use thiserror::{Error, Error as ThisError};
@@ -16,29 +14,29 @@ pub struct QualifiedManualSourceDisplay {
 }
 
 #[derive(Error, Debug)]
-#[error("{source}")]
+#[error("{inner}")]
 pub struct ImportedManualSourceDisplay {
     #[from]
-    source: Inner,
+    inner: Inner,
 }
 
 #[derive(ThisError, Debug)]
 #[error("{0}")]
 pub struct RenamedManualTupleDisplay(#[from] Inner);
 
-#[derive(ThisError, Debug)]
-pub enum VariantManualSourceDisplay {
-    #[error("{0}")]
-    Variant(#[from] Inner),
+mod glob {
+    use thiserror::*;
+
+    #[derive(Error, Debug)]
+    pub enum VariantManualSourceDisplay {
+        #[error("{0}")]
+        Variant(#[from] super::Inner),
+    }
 }
 
-#[cfg(any())]
 #[derive(ThisError, Debug)]
-#[error("{source}")]
-pub struct DisabledManualSourceDisplay {
-    #[from]
-    source: Inner,
-}
+#[error("{0}")]
+pub struct SourceAttrTupleDisplay(#[source] Inner);
 
 #[derive(ThisError, Debug)]
 #[error(transparent)]
@@ -56,21 +54,25 @@ pub struct MultiFieldDisplay {
 }
 
 #[derive(ThisError, Debug)]
-#[error("{0}")]
-pub struct SourceAttrTupleDisplay(#[source] Inner);
-
-#[derive(ThisError, Debug)]
-#[error("{source}")]
-pub struct SourceAndFromDisplay {
-    #[from]
-    #[source]
+#[error("wrapped: {source}")]
+pub struct PrefixedDisplay {
     source: Inner,
 }
 
-// Active `#[error]` outside a thiserror derive is rejected before this lint can run.
-#[derive(Debug)]
-pub struct DebugOnlyWrapper {
+#[derive(ThisError, Debug)]
+#[error("{source:?}")]
+pub struct DebugDisplay {
     source: Inner,
+}
+
+#[derive(ThisError, Debug)]
+#[error("{}", .0)]
+pub struct PositionalDisplay(#[from] Inner);
+
+#[derive(ThisError, Debug)]
+#[error("{value}")]
+pub struct DataDisplay {
+    value: String,
 }
 
 fn main() {}

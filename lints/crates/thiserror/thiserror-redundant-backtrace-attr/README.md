@@ -2,8 +2,9 @@
 
 ## What it does
 
-Checks for `#[backtrace]` on a field of a `thiserror::Error` type when the
-field's type is named `Backtrace` and the field is not a source field.
+Checks for `#[backtrace]` on the field that thiserror already uses as the
+backtrace: the first field of a `thiserror::Error` struct or variant whose
+written type is named `Backtrace`, when that field is not a source field.
 
 ## Why is this bad?
 
@@ -15,12 +16,8 @@ backtrace, so the lint skips fields named `source` and fields marked
 
 ## Known problems
 
-The lint checks only the last segment of the written type path, so any type
-named `Backtrace` matches and a type alias does not.
-
-It recognizes the derive only as `thiserror::Error` or through a
-`use thiserror::Error` or `use thiserror::Error as Name` import. A glob import
-such as `use thiserror::*` hides the derive from the lint.
+thiserror itself reads the written type name, so a type alias for
+`Backtrace` is not a backtrace field and does not trigger the lint.
 
 ## Example
 

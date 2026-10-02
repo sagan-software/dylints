@@ -7,6 +7,9 @@ use std::backtrace::Backtrace;
 
 use thiserror::{Error, Error as ThisError};
 
+/// A type alias that thiserror does not recognize as a backtrace.
+type Trace = Backtrace;
+
 #[derive(thiserror::Error, Debug)]
 #[error("failed")]
 pub struct QualifiedRedundantBacktrace {
@@ -15,32 +18,21 @@ pub struct QualifiedRedundantBacktrace {
 }
 
 #[derive(Error, Debug)]
-#[error("failed")]
-pub struct ImportedRedundantBacktrace {
-    #[backtrace]
-    backtrace: Backtrace,
+pub enum ImportedRedundantBacktrace {
+    #[error("failed")]
+    Failed(String, #[backtrace] Backtrace),
 }
 
-#[derive(ThisError, Debug)]
-#[error("failed")]
-pub struct RenamedRedundantBacktrace {
-    #[backtrace]
-    backtrace: Backtrace,
-}
+mod glob {
+    use std::backtrace::Backtrace;
+    use thiserror::*;
 
-#[derive(ThisError, Debug)]
-#[error("failed")]
-pub struct SameLineRedundantBacktrace {
-    #[backtrace]
-    backtrace: Backtrace,
-}
-
-#[cfg(any())]
-#[derive(ThisError, Debug)]
-#[error("disabled")]
-pub struct DisabledRedundantBacktrace {
-    #[backtrace]
-    backtrace: Backtrace,
+    #[derive(Error, Debug)]
+    #[error("failed")]
+    pub struct GlobRedundantBacktrace {
+        #[backtrace]
+        trace: Backtrace,
+    }
 }
 
 #[derive(ThisError, Debug)]
@@ -50,18 +42,27 @@ pub struct AutomaticBacktrace {
 }
 
 #[derive(ThisError, Debug)]
+#[error("alias")]
+pub struct AliasedBacktrace {
+    #[backtrace]
+    trace: Trace,
+}
+
+#[derive(ThisError, Debug)]
+#[error("second")]
+pub struct SecondBacktrace {
+    first: Backtrace,
+    #[backtrace]
+    second: Backtrace,
+}
+
+#[derive(ThisError, Debug)]
 pub enum ForwardingBacktrace {
     #[error("io")]
     Io {
         #[backtrace]
         source: std::io::Error,
     },
-}
-
-// A literal active `#[backtrace]` without a helper-declaring derive is rejected by rustc.
-#[derive(Debug)]
-pub struct DebugOnlyBacktrace {
-    backtrace: Backtrace,
 }
 
 fn main() {}

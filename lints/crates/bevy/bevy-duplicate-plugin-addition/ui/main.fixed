@@ -1,0 +1,49 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#![allow(
+    dead_code,
+    elided_lifetimes_in_paths,
+    let_underscore_drop,
+    missing_docs,
+    unknown_lints,
+    unused_results
+)]
+
+use bevy_app::{App, Plugin};
+
+struct GamePlugin;
+
+impl Plugin for GamePlugin {
+    fn build(&self, _: &mut App) {}
+}
+
+struct AudioPlugin;
+
+impl Plugin for AudioPlugin {
+    fn build(&self, _: &mut App) {}
+}
+
+struct RepeatablePlugin;
+
+impl Plugin for RepeatablePlugin {
+    fn build(&self, _: &mut App) {}
+
+    fn is_unique(&self) -> bool {
+        false
+    }
+}
+
+fn game_plugin() -> GamePlugin {
+    GamePlugin
+}
+
+fn configure(app: &mut App) {
+    app.add_plugins(GamePlugin);
+    app.add_plugins(game_plugin()).add_plugins(game_plugin());
+    app.add_plugins(GamePlugin).add_plugins(AudioPlugin);
+    app.add_plugins(RepeatablePlugin)
+        .add_plugins(RepeatablePlugin);
+    app.add_plugins(GamePlugin);
+}
+
+fn main() {}

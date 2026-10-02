@@ -18,9 +18,6 @@ A variant named `Other` or `Unknown` that is meant to match only its own tag
 also triggers the lint. The lint misses fallback variants with other names or
 in a position other than last.
 
-The lint matches derives to types by name, so two types with the same name in
-one crate can share the same derive result.
-
 ## Example
 
 ```rust

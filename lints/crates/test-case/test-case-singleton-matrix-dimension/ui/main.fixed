@@ -1,0 +1,29 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+// compile-flags: --test
+
+use test_case::test_matrix;
+
+#[test_matrix(1_u8, [true, false])]
+fn singleton_collection(_value: u8, _expected: bool) {}
+
+#[test_matrix("label", [true, false])]
+fn singleton_tuple(_label: &str, _expected: bool) {}
+
+#[test_matrix([[1_u8, 2]], [true, false])]
+fn singleton_nested_array(_values: [u8; 2], _expected: bool) {}
+
+#[test_matrix([1_u8, 2], [true, false] ; "first")]
+#[test_matrix(3_u8, [true, false] ; "second")]
+fn later_attribute(_value: u8, _expected: bool) {}
+
+#[test_matrix(1_u8, [true, false])]
+fn scalar_constant(_value: u8, _expected: bool) {}
+
+#[test_matrix([1_u8], [true])]
+fn single_case(_value: u8, _expected: bool) {}
+
+#[test_matrix([1_u8, 2], [true, false])]
+fn varying_dimensions(_value: u8, _expected: bool) {}
+
+fn main() {}

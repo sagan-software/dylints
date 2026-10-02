@@ -7,5 +7,13 @@ LL |     let _ = Runtime::new();
    = help: reuse the active runtime
    = note: `#[warn(tokio_runtime_new_in_async)]` on by default
 
-warning: 1 warning emitted
+warning: dropping this runtime in async code can panic
+  --> $DIR/main.rs:13:17
+   |
+LL |         let _ = Runtime::new();
+   |                 ^^^^^^^^^^^^
+   |
+   = help: reuse the active runtime
+
+warning: 2 warnings emitted
 

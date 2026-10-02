@@ -7,5 +7,13 @@ LL | #[test_case(vec![1_u8, 2] => it contains_in_order [2] ; "one element")]
    = help: use the `contains` matcher for the expected element
    = note: `#[warn(test_case_singleton_contains_in_order)]` on by default
 
-warning: 1 warning emitted
+warning: ordering is not observable for a one-element expected sequence
+  --> $DIR/main.rs:7:1
+   |
+LL | #[test_case(vec![1_u8, 2] => it contains 2 and contains_in_order [1] ; "joined matcher")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use the `contains` matcher for the expected element
+
+warning: 2 warnings emitted
 

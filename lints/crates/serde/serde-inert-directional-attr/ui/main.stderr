@@ -43,5 +43,13 @@ help: remove the serialization-only attribute, or add `Serialize` if it was inte
 LL -     #[serde(skip_serializing)]
    |
 
-warning: 4 warnings emitted
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:53:5
+   |
+LL |     #[serde(rename = "v", default)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the deserialization-only attribute, or add `Deserialize` if it was intended
+
+warning: 5 warnings emitted
 

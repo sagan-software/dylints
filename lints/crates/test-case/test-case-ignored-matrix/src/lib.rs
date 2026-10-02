@@ -9,10 +9,8 @@
 //! The README defines the supported matrix shapes and replacement. UI fixtures
 //! cover triggering and non-triggering forms for safe adoption.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
 
-use rustc_lint::LintContext as _;
 #[cfg(test)]
 extern crate test_case as _;
 

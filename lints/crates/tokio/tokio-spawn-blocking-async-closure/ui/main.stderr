@@ -1,5 +1,5 @@
 warning: the future returned by this closure is not polled
-  --> $DIR/main.rs:2:13
+  --> $DIR/main.rs:16:13
    |
 LL |     let _ = tokio::task::spawn_blocking(|| async {});
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -7,5 +7,29 @@ LL |     let _ = tokio::task::spawn_blocking(|| async {});
    = help: use `tokio::spawn` or a synchronous closure
    = note: `#[warn(tokio_spawn_blocking_async_closure)]` on by default
 
-warning: 1 warning emitted
+warning: the future returned by this closure is not polled
+  --> $DIR/main.rs:17:13
+   |
+LL |     let _ = tokio::task::spawn_blocking(async || 1_u8);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `tokio::spawn` or a synchronous closure
+
+warning: the future returned by this closure is not polled
+  --> $DIR/main.rs:18:13
+   |
+LL |     let _ = tokio::task::spawn_blocking(make_future);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `tokio::spawn` or a synchronous closure
+
+warning: the future returned by this closure is not polled
+  --> $DIR/main.rs:19:13
+   |
+LL |     let _ = tokio::task::spawn_blocking(ready_value);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `tokio::spawn` or a synchronous closure
+
+warning: 4 warnings emitted
 

@@ -76,13 +76,16 @@ impl<'tcx> LateLintPass<'tcx> for InstaSettingsBindFuture {
     }
 }
 
-/// Return the `|| ` or `move || ` source before an async block returned by a closure.
+/// Return the `||` or `move ||` source before an async block returned by a closure.
 ///
 /// Deleting that prefix turns `|| async { .. }` into the future that
 /// `Settings::bind_async` takes. The closure must take no parameters and must
 /// return the async block directly. A `move` closure must wrap an `async move`
 /// block, because otherwise the block would borrow what the closure moved.
-fn closure_prefix_span(cx: &LateContext<'_>, closure_expr: &Expr<'_>) -> Option<Span> {
+fn closure_prefix_span<'tcx>(
+    cx: &LateContext<'tcx>,
+    closure_expr: &'tcx Expr<'tcx>,
+) -> Option<Span> {
     // Accept only a synchronous closure; async closures have no separate block to keep.
     let ExprKind::Closure(closure) = closure_expr.kind else {
         return None;
@@ -90,38 +93,51 @@ fn closure_prefix_span(cx: &LateContext<'_>, closure_expr: &Expr<'_>) -> Option<
     if !matches!(closure.kind, ClosureKind::Closure) {
         return None;
     }
+    // Require the body to be a parameterless async block.
+    let (body_value, async_capture) = direct_async_block(cx, closure)?;
+    // Preserve captures when deleting the outer closure.
+    let is_capture_preserving = matches!(closure.capture_clause, CaptureBy::Ref)
+        || matches!(async_capture, CaptureBy::Value { .. });
+    // Edit only user-written source that encloses the async block.
+    is_capture_preserving
+        .then(|| {
+            let closure_span = closure_expr.span;
+            let block_span = body_value.span;
+            // Keep a fix only when both spans are written by the caller.
+            (!closure_span.from_expansion()
+                && !block_span.from_expansion()
+                && closure_span.contains(block_span))
+            .then(|| closure_span.until(block_span))
+        })
+        .flatten()
+}
+
+/// Return a direct async block and its capture mode.
+fn direct_async_block<'tcx>(
+    cx: &LateContext<'tcx>,
+    closure: &'tcx rustc_hir::Closure<'tcx>,
+) -> Option<(&'tcx Expr<'tcx>, CaptureBy)> {
+    // Inspect the closure body and reject parameters before examining its value.
     let body = cx.tcx.hir_body(closure.body);
     if !body.params.is_empty() {
         return None;
     }
-
-    // Require the body to be the async block itself.
     let mut body_value = body.value;
+    // Remove compiler-inserted temporary expressions around the returned block.
     while let ExprKind::DropTemps(inner) = body_value.kind {
         body_value = inner;
     }
     let ExprKind::Closure(async_block) = body_value.kind else {
         return None;
     };
-    let is_async_block = matches!(
+    matches!(
         async_block.kind,
         ClosureKind::Coroutine(CoroutineKind::Desugared(
             CoroutineDesugaring::Async,
             CoroutineSource::Block
         ))
-    );
-    let keeps_captures = matches!(closure.capture_clause, CaptureBy::Ref)
-        || matches!(async_block.capture_clause, CaptureBy::Value { .. });
-    if !is_async_block || !keeps_captures {
-        return None;
-    }
-
-    // Edit only user-written source that encloses the async block.
-    let (closure_span, block_span) = (closure_expr.span, body_value.span);
-    (!closure_span.from_expansion()
-        && !block_span.from_expansion()
-        && closure_span.contains(block_span))
-    .then(|| closure_span.until(block_span))
+    )
+    .then_some((body_value, async_block.capture_clause))
 }
 
 /// Run the UI fixture.

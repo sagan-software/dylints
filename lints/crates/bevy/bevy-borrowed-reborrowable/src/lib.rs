@@ -34,29 +34,29 @@ impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyBorrowedReborrowable {
         cx: &rustc_lint::LateContext<'tcx>,
         kind: rustc_hir::intravisit::FnKind<'tcx>,
         declaration: &'tcx rustc_hir::FnDecl<'tcx>,
-        body: &'tcx rustc_hir::Body<'tcx>,
+        _: &'tcx rustc_hir::Body<'tcx>,
         _: rustc_span::Span,
         local_def_id: rustc_span::def_id::LocalDefId,
     ) {
         // Report each borrowed reborrowable parameter at its declaration span.
-        for (index, proxy) in
-            bevy_support::borrowed_reborrowable_parameters(cx, kind, body, local_def_id)
+        for (index, proxy) in bevy_support::borrowed_reborrowable_parameters(cx, kind, local_def_id)
         {
-            let Some(parameter) = declaration.inputs.get(index) else {
-                continue;
-            };
-            cx.emit_span_lint(
-                BEVY_BORROWED_REBORROWABLE,
-                parameter.span,
-                rustc_errors::DiagDecorator(|diagnostic| {
-                    let _configured_diagnostic = diagnostic
-                        .primary_message(format!(
-                            "Bevy `{}` already supports reborrowing",
-                            proxy.name()
-                        ))
-                        .help("take the proxy by value and call its reborrow method where needed");
-                }),
-            );
+            for span in bevy_support::parameter_spans(declaration, [index]) {
+                cx.emit_span_lint(
+                    BEVY_BORROWED_REBORROWABLE,
+                    span,
+                    rustc_errors::DiagDecorator(|diagnostic| {
+                        let _configured_diagnostic = diagnostic
+                            .primary_message(format!(
+                                "Bevy `{}` already supports reborrowing",
+                                proxy.name()
+                            ))
+                            .help(
+                                "take the proxy by value and call its reborrow method where needed",
+                            );
+                    }),
+                );
+            }
         }
     }
 }

@@ -7,5 +7,13 @@ LL | fn bad(query: Query<EntityRef>) {
    = help: request the fixed component set directly in the query
    = note: `#[warn(bevy_unfiltered_entity_access_query)]` on by default
 
-warning: 1 warning emitted
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:12:23
+   |
+LL | fn bad_mut(mut query: Query<EntityMut>) {
+   |                       ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: 2 warnings emitted
 

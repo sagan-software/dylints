@@ -5,7 +5,7 @@
     reason = "UI examples inherit the lint crate's compiler-only dependencies"
 )]
 
-use test_case::test_matrix;
+use test_case::{test_case, test_matrix};
 
 /// Scalar inputs produce one test case.
 #[test_matrix("input", 1_u8)]
@@ -18,6 +18,12 @@ fn singleton_lists(_input: &str, _expected: u8) {}
 /// A one-value range produces one test case.
 #[test_matrix(0..1, [1_u8])]
 fn singleton_range(_input: isize, _expected: u8) {}
+
+/// Each one-case matrix is reported, even when the function has other cases.
+#[test_case("direct", 0_u8 ; "direct case")]
+#[test_matrix(["first"], [1_u8])]
+#[test_case::test_matrix(["second"], 2_u8)]
+fn several_attributes(_input: &str, _expected: u8) {}
 
 /// Multiple generated cases remain a meaningful matrix.
 #[test_matrix(["a", "b"], [1_u8, 2])]

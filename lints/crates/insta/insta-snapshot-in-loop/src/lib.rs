@@ -9,57 +9,46 @@
 
 extern crate rustc_errors;
 extern crate rustc_hir;
-extern crate rustc_span;
 
 #[cfg(test)]
 use insta as _;
 
-use std::collections::HashSet;
-
 use insta_support::{
-    insta_macro_invocation, is_in_allow_duplicates, is_in_loop, snapshot_macro_names,
+    insta_macro_invocation, is_in_allow_duplicates, is_in_loop, is_insta_function, is_insta_type,
+    snapshot_macro_names, string_literal,
 };
 use rustc_errors::DiagDecorator;
-use rustc_hir::Expr;
+use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
-use rustc_span::Span;
 
-dylint_support::documented_late_lint_with_pass! {
+dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
     pub INSTA_SNAPSHOT_IN_LOOP,
     Warn,
     "an Insta snapshot assertion is repeated in a loop without allow_duplicates",
-    InstaSnapshotInLoop,
-    InstaSnapshotInLoop::default()
-}
-
-/// Track source macro invocations already visited through expanded HIR.
-/// The pass retains invocation spans so one macro expansion cannot emit
-/// duplicate diagnostics for each generated expression it visits.
-#[derive(Debug, Default)]
-pub struct InstaSnapshotInLoop {
-    /// Complete invocation spans that already emitted a diagnostic.
-    reported: HashSet<Span>,
+    InstaSnapshotInLoop
 }
 
 impl<'tcx> LateLintPass<'tcx> for InstaSnapshotInLoop {
-    /// Check resolved snapshot macros inside direct source-level loops.
+    /// Check the runtime assertion call that every snapshot macro expands to.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        // Resolve a supported snapshot macro before checking its source-level context.
-        let Some(invocation) = insta_macro_invocation(cx, expr, snapshot_macro_names()) else {
+        // Resolve Insta's runtime assertion and the public macro that produced it.
+        let Some((snapshot, invocation)) = snapshot_argument(cx, expr).and_then(|snapshot| {
+            Some((
+                snapshot,
+                insta_macro_invocation(cx, expr, snapshot_macro_names())?,
+            ))
+        }) else {
             return;
         };
-        if !is_in_loop(cx, expr, invocation.span) {
+        // A name computed on each pass can name a different snapshot every time.
+        if !is_in_loop(cx, expr, invocation.span)
+            || is_in_allow_duplicates(cx, expr)
+            || !has_repeated_name(cx, snapshot)
+        {
             return;
         }
-        if is_in_allow_duplicates(cx, expr) {
-            return;
-        }
-        // Deduplicate expanded expressions that belong to one macro invocation.
-        if !self.reported.insert(invocation.span) {
-            return;
-        }
-
+        // Each macro invocation expands to exactly one runtime assertion call.
         cx.emit_span_lint(
             INSTA_SNAPSHOT_IN_LOOP,
             invocation.span,
@@ -72,6 +61,49 @@ impl<'tcx> LateLintPass<'tcx> for InstaSnapshotInLoop {
             }),
         );
     }
+}
+
+/// Return the snapshot value argument of a call to Insta's runtime assertion.
+fn snapshot_argument<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+) -> Option<&'tcx Expr<'tcx>> {
+    if let ExprKind::Call(callee, [snapshot, ..]) = expr.kind
+        && is_insta_function(cx, callee, "assert_snapshot")
+    {
+        Some(snapshot)
+    } else {
+        None
+    }
+}
+
+/// Return whether every pass gives the snapshot the same name.
+///
+/// Insta's macros pass `(name, content).into()` or a `BinarySnapshotValue`. An
+/// automatic name, an inline snapshot, or a literal name repeats on each pass.
+/// A computed name can differ between passes, so it does not count.
+fn has_repeated_name(cx: &LateContext<'_>, snapshot: &Expr<'_>) -> bool {
+    // Peel the `.into()` conversion around the generated value.
+    let ExprKind::MethodCall(_, value, [], _) = snapshot.kind else {
+        return true;
+    };
+    // Inspect the generated value before classifying the snapshot name.
+    let name = if let ExprKind::Tup([name, _]) = value.kind {
+        Some(name)
+    } else if let ExprKind::Struct(_, fields, _) = value.kind {
+        fields
+            .iter()
+            .find(|field| field.ident.name.as_str() == "name_and_extension")
+            .map(|field| field.expr)
+    } else {
+        None
+    };
+    name.is_none_or(|name| {
+        let name_ty = cx.typeck_results().expr_ty(name).peel_refs();
+        is_insta_type(cx, name_ty, "AutoName")
+            || is_insta_type(cx, name_ty, "InlineValue")
+            || string_literal(cx, name).is_some()
+    })
 }
 
 #[test]

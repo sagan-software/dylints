@@ -17,7 +17,7 @@ use axum as _;
 axum_support::declare_router_path_lint! {
     AXUM_ROUTE_SERVICE_EMPTY_PATH,
     AxumRouteServiceEmptyPath,
-    "route_service",
+    ["route_service"],
     Empty,
     "an Axum route service has an empty path",
     "this empty route-service path panics",

@@ -17,12 +17,11 @@ by `test-case-single-case-matrix` instead.
 ## Known problems
 
 The lint checks only array and tuple literals written in the attribute. A
-one-value range such as `0..1`, a constant, or a macro does not trigger it. It
-gives help text but no automatic fix.
+one-value range such as `0..1`, a constant, or a macro does not trigger it.
 
-The lint counts every case generated for the function, including cases from
-other test-case attributes. It reads only the first test-case attribute on a
-function, so a one-value collection in a later attribute is not reported.
+The fix replaces the collection with its value. When that value is itself an
+array, tuple, or range, unwrapping it would create a new input set, so the lint
+gives help text but no automatic fix.
 
 ## Example
 

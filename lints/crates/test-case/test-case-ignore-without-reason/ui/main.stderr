@@ -7,5 +7,13 @@ LL | #[test_case(1 => ignore ; "one")]
    = help: add an ignore reason
    = note: `#[warn(test_case_ignore_without_reason)]` on by default
 
-warning: 1 warning emitted
+warning: this ignored case does not explain why
+  --> $DIR/main.rs:8:1
+   |
+LL | #[test_case(4 => ignore)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add an ignore reason
+
+warning: 2 warnings emitted
 

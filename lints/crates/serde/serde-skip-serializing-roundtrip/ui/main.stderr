@@ -15,5 +15,21 @@ LL |     #[serde(skip_serializing)]
    |
    = help: use `skip`, add `skip_deserializing`, or provide a default for deserialization
 
-warning: 2 warnings emitted
+warning: `skip_serializing` does not skip deserializing this field
+  --> $DIR/main.rs:45:5
+   |
+LL |     #[serde(skip_serializing, with = "hash_format")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `skip`, add `skip_deserializing`, or provide a default for deserialization
+
+warning: `skip_serializing` does not skip deserializing this field
+  --> $DIR/main.rs:52:9
+   |
+LL |         #[serde(skip_serializing)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `skip`, add `skip_deserializing`, or provide a default for deserialization
+
+warning: 4 warnings emitted
 

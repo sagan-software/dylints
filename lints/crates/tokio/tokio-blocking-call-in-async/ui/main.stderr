@@ -4,8 +4,12 @@ warning: this Tokio blocking method panics in an asynchronous execution context
 LL |     let _guard = mutex.blocking_lock();
    |                        ^^^^^^^^^^^^^
    |
-   = help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
    = note: `#[warn(tokio_blocking_call_in_async)]` on by default
+help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+   |
+LL -     let _guard = mutex.blocking_lock();
+LL +     let _guard = mutex.lock().await;
+   |
 
 warning: this Tokio blocking method panics in an asynchronous execution context
   --> $DIR/main.rs:11:30
@@ -13,7 +17,11 @@ warning: this Tokio blocking method panics in an asynchronous execution context
 LL |     let _read_guard = rwlock.blocking_read();
    |                              ^^^^^^^^^^^^^
    |
-   = help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+   |
+LL -     let _read_guard = rwlock.blocking_read();
+LL +     let _read_guard = rwlock.read().await;
+   |
 
 warning: this Tokio blocking method panics in an asynchronous execution context
   --> $DIR/main.rs:12:31
@@ -21,7 +29,11 @@ warning: this Tokio blocking method panics in an asynchronous execution context
 LL |     let _write_guard = rwlock.blocking_write();
    |                               ^^^^^^^^^^^^^^
    |
-   = help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+   |
+LL -     let _write_guard = rwlock.blocking_write();
+LL +     let _write_guard = rwlock.write().await;
+   |
 
 warning: this Tokio blocking method panics in an asynchronous execution context
   --> $DIR/main.rs:15:20
@@ -29,7 +41,11 @@ warning: this Tokio blocking method panics in an asynchronous execution context
 LL |     let _ = sender.blocking_send(1_u8);
    |                    ^^^^^^^^^^^^^
    |
-   = help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+   |
+LL -     let _ = sender.blocking_send(1_u8);
+LL +     let _ = sender.send(1_u8).await;
+   |
 
 warning: this Tokio blocking method panics in an asynchronous execution context
   --> $DIR/main.rs:16:22
@@ -37,7 +53,59 @@ warning: this Tokio blocking method panics in an asynchronous execution context
 LL |     let _ = receiver.blocking_recv();
    |                      ^^^^^^^^^^^^^
    |
-   = help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+   |
+LL -     let _ = receiver.blocking_recv();
+LL +     let _ = receiver.recv().await;
+   |
 
-warning: 5 warnings emitted
+warning: this Tokio blocking method panics in an asynchronous execution context
+  --> $DIR/main.rs:18:22
+   |
+LL |     let _ = receiver.blocking_recv_many(&mut buffer, 4);
+   |                      ^^^^^^^^^^^^^^^^^^
+   |
+help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+   |
+LL -     let _ = receiver.blocking_recv_many(&mut buffer, 4);
+LL +     let _ = receiver.recv_many(&mut buffer, 4).await;
+   |
+
+warning: this Tokio blocking method panics in an asynchronous execution context
+  --> $DIR/main.rs:21:16
+   |
+LL |     let _ = rx.blocking_recv();
+   |                ^^^^^^^^^^^^^
+   |
+help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+   |
+LL -     let _ = rx.blocking_recv();
+LL +     let _ = rx.await;
+   |
+
+warning: this Tokio blocking method panics in an asynchronous execution context
+  --> $DIR/main.rs:24:16
+   |
+LL |     let _ = rx.blocking_recv();
+   |                ^^^^^^^^^^^^^
+   |
+help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+   |
+LL -     let _ = rx.blocking_recv();
+LL +     let _ = rx.recv().await;
+   |
+
+warning: this Tokio blocking method panics in an asynchronous execution context
+  --> $DIR/main.rs:28:24
+   |
+LL |     let _guard = mutex.blocking_lock_owned();
+   |                        ^^^^^^^^^^^^^^^^^^^
+   |
+help: use the asynchronous equivalent with `.await`, or call it inside `spawn_blocking`
+   |
+LL -     let _guard = mutex.blocking_lock_owned();
+LL +     let _guard = mutex.lock_owned().await;
+   |
+
+warning: 9 warnings emitted
 

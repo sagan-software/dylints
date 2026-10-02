@@ -2,7 +2,8 @@
 
 ## What it does
 
-Checks for `insta::Settings::new()` calls.
+Checks for `insta::Settings::new()`, `Settings::default()`, and
+`Default::default()` calls that create `insta::Settings`.
 
 ## Why is this bad?
 
@@ -14,8 +15,10 @@ the code change only what it needs.
 
 ## Known problems
 
-The lint warns even when a test must start from the defaults on purpose. It
-does not check `Settings::default()`.
+The lint warns even when a test must start from the defaults on purpose. The
+machine-applicable fix renames the constructor only when the call names the
+type, as in `Settings::new()`. A trait path such as `Default::default()` gets
+help text only.
 
 ## Example
 

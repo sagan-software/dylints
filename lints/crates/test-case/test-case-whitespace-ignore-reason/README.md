@@ -14,12 +14,8 @@ before it can run again. It is also easy to miss in review.
 
 ## Known problems
 
-A whitespace-only `ignore` reason also triggers `test-case-empty-ignore-reason`, so the
-attribute gets two warnings. A reason from a constant or macro does not
-trigger this lint.
-
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+A reason from a constant or macro does not trigger the lint. An empty reason
+triggers `test-case-empty-ignore-reason` instead.
 
 ## Example
 

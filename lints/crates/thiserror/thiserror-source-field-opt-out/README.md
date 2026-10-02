@@ -2,8 +2,9 @@
 
 ## What it does
 
-Checks for a field named `source` whose type is `String`, `&str`, `str`,
-`char`, `bool`, or a primitive integer, in a file that derives an `Error` type.
+Checks for a field named `source` in a type that derives `thiserror::Error`
+when no field has `#[source]` or `#[from]` and the field's written type is
+`String`, `str`, `&str`, `char`, `bool`, or a primitive number.
 
 ## Why is this bad?
 
@@ -14,14 +15,10 @@ implement `std::error::Error`. Thiserror 2 accepts the raw identifier
 
 ## Known problems
 
-The lint scans source text line by line. It warns on any line that starts with
-`source:` or `pub source:` followed by one of the listed types, anywhere in a
-file that contains a derive ending in `Error`. A matching field in another
-struct, or a function parameter on its own line, can trigger it. It also warns
-on items disabled by `#[cfg]`.
-
-It does not warn for other data types such as `Option<String>` or `f64`, or for
-visibility such as `pub(crate) source`.
+The lint runs before type checking, because the field makes type checking
+fail. It therefore reads the written type name: a local type named `String`
+that implements `Error` triggers it, and a type alias for a primitive does
+not. It does not warn for other data types such as `Option<String>`.
 
 ## Example
 

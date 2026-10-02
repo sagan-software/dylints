@@ -17,7 +17,7 @@ use axum as _;
 axum_support::declare_router_path_lint! {
     AXUM_ROUTE_LEGACY_WILDCARD_CAPTURE,
     AxumRouteLegacyWildcardCapture,
-    "route",
+    ["route", "route_service"],
     LegacyWildcardCapture,
     "an Axum route uses a legacy wildcard capture",
     "Axum 0.8 rejects this legacy `*name` capture",

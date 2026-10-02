@@ -1,10 +1,9 @@
 warning: `thiserror` treats this `source` field as `Error::source()`
-  --> $DIR/main.rs:7:5
+  --> $DIR/main.rs:21:9
    |
-LL |     source: char,
-   |     ^^^^^^^^^^^^^
+LL |         source: String,
+   |         ^^^^^^ help: rename ordinary data fields to `r#source` to opt out: `r#source`
    |
-   = help: rename ordinary data fields to `r#source` to opt out
    = note: `#[warn(thiserror_source_field_opt_out)]` on by default
 
 warning: 1 warning emitted

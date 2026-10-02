@@ -8,10 +8,8 @@
 //! UI fixtures cover triggering, non-triggering, and boundary forms so callers
 //! can adopt the diagnostic without changing unrelated code.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
 
-use rustc_lint::LintContext as _;
 #[cfg(test)]
 extern crate test_case as _;
 

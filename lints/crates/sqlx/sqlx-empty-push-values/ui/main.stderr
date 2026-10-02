@@ -1,11 +1,35 @@
 warning: an empty values list produces invalid SQL
   --> $DIR/main.rs:5:11
    |
-LL |     query.push_values::<u8>([]);
+LL |     query.push_values::<&u8>(&[]);
    |           ^^^^^^^^^^^
    |
    = help: handle the empty collection before building the query
    = note: `#[warn(sqlx_empty_push_values)]` on by default
 
-warning: 1 warning emitted
+warning: an empty values list produces invalid SQL
+  --> $DIR/main.rs:6:11
+   |
+LL |     query.push_values(Vec::<u8>::new());
+   |           ^^^^^^^^^^^
+   |
+   = help: handle the empty collection before building the query
+
+warning: an empty values list produces invalid SQL
+  --> $DIR/main.rs:8:11
+   |
+LL |     query.push_values::<u8>(vec![]);
+   |           ^^^^^^^^^^^
+   |
+   = help: handle the empty collection before building the query
+
+warning: an empty values list produces invalid SQL
+  --> $DIR/main.rs:10:11
+   |
+LL |     query.push_values::<u8>([]);
+   |           ^^^^^^^^^^^
+   |
+   = help: handle the empty collection before building the query
+
+warning: 4 warnings emitted
 

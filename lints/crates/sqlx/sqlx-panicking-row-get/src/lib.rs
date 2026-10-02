@@ -37,7 +37,7 @@ impl<'tcx> LateLintPass<'tcx> for SqlxPanickingRowGet {
         if expr.span.from_expansion() {
             return;
         }
-        let Some(method) = sqlx_method_call(cx, expr, "Row", &["get", "get_unchecked"]) else {
+        let Some(method) = sqlx_method_call(cx, expr, &["Row"], &["get", "get_unchecked"]) else {
             return;
         };
         // Select the matching fallible method for the resolved panicking variant.

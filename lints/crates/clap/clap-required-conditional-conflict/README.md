@@ -16,9 +16,9 @@ Clap panics in debug builds when the command is built.
 ## Known problems
 
 The lint checks only one method chain. It does not check an `Arg` changed in
-later statements. A conditional method counts only when its arguments are
-string literals or a nonempty array literal, so conditions passed through
-variables or constants are missed.
+later statements. `required_if_eq` and `required_unless_present` count with any
+arguments. The `_any` and `_all` forms count only when their argument is a
+nonempty array literal, so conditions passed through variables are missed.
 
 ## Example
 

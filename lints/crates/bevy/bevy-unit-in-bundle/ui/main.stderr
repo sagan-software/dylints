@@ -1,11 +1,163 @@
 warning: unit values are skipped when Bevy inserts this bundle
-  --> $DIR/main.rs:16:26
+  --> $DIR/main.rs:29:26
    |
 LL |     world.spawn((Marker, ()));
    |                          ^^
    |
-   = help: remove the unit value or use `spawn_empty` for an empty spawn
    = note: `#[warn(bevy_unit_in_bundle)]` on by default
+help: remove the unit value
+   |
+LL -     world.spawn((Marker, ()));
+LL +     world.spawn((Marker,));
+   |
 
-warning: 1 warning emitted
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:30:18
+   |
+LL |     world.spawn(((), Marker));
+   |                  ^^
+   |
+help: remove the unit value
+   |
+LL -     world.spawn(((), Marker));
+LL +     world.spawn((Marker,));
+   |
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:31:26
+   |
+LL |     world.spawn((Marker, (), Health(1)));
+   |                          ^^
+   |
+help: remove the unit value
+   |
+LL -     world.spawn((Marker, (), Health(1)));
+LL +     world.spawn((Marker, Health(1)));
+   |
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:32:18
+   |
+LL |     world.spawn(((), (), Marker));
+   |                  ^^
+   |
+   = help: remove the unit value or use `spawn_empty` for an empty spawn
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:32:22
+   |
+LL |     world.spawn(((), (), Marker));
+   |                      ^^
+   |
+help: remove the unit value
+   |
+LL -     world.spawn(((), (), Marker));
+LL +     world.spawn(((), Marker));
+   |
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:33:38
+   |
+LL |     world.spawn((Marker, (Health(1), ())));
+   |                                      ^^
+   |
+help: remove the unit value
+   |
+LL -     world.spawn((Marker, (Health(1), ())));
+LL +     world.spawn((Marker, (Health(1),)));
+   |
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:34:17
+   |
+LL |     world.spawn(());
+   |                 ^^
+   |
+help: spawn the empty entity with `spawn_empty()`
+   |
+LL -     world.spawn(());
+LL +     world.spawn_empty();
+   |
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:35:18
+   |
+LL |     world.spawn(((), ()));
+   |                  ^^
+   |
+   = help: remove the unit value or use `spawn_empty` for an empty spawn
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:35:22
+   |
+LL |     world.spawn(((), ()));
+   |                      ^^
+   |
+   = help: remove the unit value or use `spawn_empty` for an empty spawn
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:36:26
+   |
+LL |     world.spawn((Marker, unit()));
+   |                          ^^^^^^
+   |
+   = help: remove the unit value or use `spawn_empty` for an empty spawn
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:24:22
+   |
+LL |         ($component, ())
+   |                      ^^
+...
+LL |     world.spawn(with_unit!(Marker));
+   |                 ------------------ in this macro invocation
+   |
+   = help: remove the unit value or use `spawn_empty` for an empty spawn
+   = note: this warning originates in the macro `with_unit` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:43:20
+   |
+LL |     commands.spawn(());
+   |                    ^^
+   |
+help: spawn the empty entity with `spawn_empty()`
+   |
+LL -     commands.spawn(());
+LL +     commands.spawn_empty();
+   |
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:44:45
+   |
+LL |     commands.entity(entity).insert((Marker, ()));
+   |                                             ^^
+   |
+help: remove the unit value
+   |
+LL -     commands.entity(entity).insert((Marker, ()));
+LL +     commands.entity(entity).insert((Marker,));
+   |
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:45:44
+   |
+LL |     commands.entity(entity).insert_if_new(((), Health(2)));
+   |                                            ^^
+   |
+help: remove the unit value
+   |
+LL -     commands.entity(entity).insert_if_new(((), Health(2)));
+LL +     commands.entity(entity).insert_if_new((Health(2),));
+   |
+
+warning: unit values are skipped when Bevy inserts this bundle
+  --> $DIR/main.rs:47:20
+   |
+LL |     commands.spawn(nested);
+   |                    ^^^^^^
+   |
+   = help: remove the unit value or use `spawn_empty` for an empty spawn
+
+warning: 15 warnings emitted
 

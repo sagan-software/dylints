@@ -1,5 +1,5 @@
 warning: `allow_hyphen_values(true)` is ambiguous without `num_args`
-  --> $DIR/main.rs:4:29
+  --> $DIR/main.rs:8:29
    |
 LL |     let _ = Arg::new("bad").allow_hyphen_values(true);
    |                             ^^^^^^^^^^^^^^^^^^^
@@ -7,5 +7,29 @@ LL |     let _ = Arg::new("bad").allow_hyphen_values(true);
    = help: add an explicit `.num_args(...)`
    = note: `#[warn(clap_allow_hyphen_values_without_num_args)]` on by default
 
-warning: 1 warning emitted
+warning: `allow_hyphen_values(true)` is ambiguous without `num_args`
+  --> $DIR/main.rs:11:10
+   |
+LL |         .allow_hyphen_values(true);
+   |          ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add an explicit `.num_args(...)`
+
+warning: `allow_hyphen_values(true)` is ambiguous without `num_args`
+  --> $DIR/main.rs:23:45
+   |
+LL |     let _ = Arg::new("local").action(local).allow_hyphen_values(true);
+   |                                             ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add an explicit `.num_args(...)`
+
+warning: `allow_hyphen_values(true)` is ambiguous without `num_args`
+  --> $DIR/main.rs:26:10
+   |
+LL |         .allow_hyphen_values(true);
+   |          ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add an explicit `.num_args(...)`
+
+warning: 4 warnings emitted
 

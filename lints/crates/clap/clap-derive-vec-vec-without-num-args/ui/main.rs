@@ -23,4 +23,25 @@ struct ExplicitBoundary {
     optional_pairs: Option<Vec<Vec<String>>>,
 }
 
+#[derive(Parser)]
+struct OtherFields {
+    #[arg(long)]
+    single: Vec<String>,
+    #[arg(skip)]
+    skipped_groups: Vec<Vec<String>>,
+    #[arg(skip)]
+    boxed: Box<u8>,
+    #[arg(skip)]
+    pair: (u8, u8),
+    #[arg(skip)]
+    qualified: std::string::String,
+    #[arg(skip)]
+    map: std::collections::HashMap<String, String>,
+}
+
+#[derive(Clone, clap::ValueEnum)]
+enum Mode {
+    Fast,
+}
+
 fn main() {}

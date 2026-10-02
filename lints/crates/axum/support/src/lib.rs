@@ -8,18 +8,19 @@
 //! route contracts, and preserve exact source text for machine-applicable fixes.
 //! They keep path diagnostics tied to `axum::Router` while excluding local lookalikes.
 
-extern crate rustc_ast;
 extern crate rustc_driver as _;
 extern crate rustc_hir;
 extern crate rustc_lint;
 extern crate rustc_middle;
 extern crate rustc_span;
 
-use rustc_ast::LitKind;
-use rustc_hir::{Expr, ExprKind, def::Res};
+use rustc_hir::{
+    Expr, ExprKind, Node,
+    def::{DefKind, Res},
+};
 use rustc_lint::{LateContext, LintContext};
 use rustc_middle::ty;
-use rustc_span::{Span, def_id::DefId};
+use rustc_span::{Span, Symbol, def_id::DefId};
 
 use dylint_linting as _;
 
@@ -100,7 +101,10 @@ pub fn router_method_call<'hir>(
     };
     // Require both the resolved Axum method and its Router receiver.
     let def_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
-    if !is_axum_method(cx, def_id, expected_method) || !is_router_type(cx, receiver) {
+    if !is_axum_item(cx, def_id)
+        || cx.tcx.item_name(def_id).as_str() != expected_method
+        || !is_router_type(cx, receiver)
+    {
         return None;
     }
 
@@ -111,11 +115,9 @@ pub fn router_method_call<'hir>(
     })
 }
 
-/// Return whether a resolved definition is the named method from the `axum` crate.
-fn is_axum_method(cx: &LateContext<'_>, def_id: DefId, expected_method: &str) -> bool {
-    // Check the defining crate before comparing the item name.
-    let is_axum_item = cx.tcx.crate_name(def_id.krate).as_str() == "axum";
-    is_axum_item && cx.tcx.item_name(def_id).as_str() == expected_method
+/// Return whether a resolved definition belongs to the `axum` crate.
+fn is_axum_item(cx: &LateContext<'_>, def_id: DefId) -> bool {
+    cx.tcx.crate_name(def_id.krate).as_str() == "axum"
 }
 
 /// Return whether an expression has Axum's resolved `Router` type.
@@ -133,19 +135,29 @@ fn is_axum_method(cx: &LateContext<'_>, def_id: DefId, expected_method: &str) ->
 /// };
 /// ```
 pub fn is_router_type(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
-    let expression_ty = cx.typeck_results().expr_ty(expr).peel_refs();
-    let ty::Adt(definition, _) = expression_ty.kind() else {
-        return false;
-    };
-
-    cx.tcx.crate_name(definition.did().krate).as_str() == "axum"
-        && cx.tcx.item_name(definition.did()).as_str() == "Router"
+    matches!(
+        cx.typeck_results().expr_ty(expr).peel_refs().kind(),
+        ty::Adt(definition, _)
+            if is_axum_item(cx, definition.did())
+                && cx.tcx.item_name(definition.did()).as_str() == "Router"
+    )
 }
 
-/// Return whether an expression is a direct call to `axum::Router::new`.
+/// Axum `Router` methods that never add a path route to the router.
+const ROUTE_FREE_METHODS: &[&str] = &[
+    "fallback",
+    "fallback_service",
+    "layer",
+    "method_not_allowed_fallback",
+    "reset_fallback",
+    "with_state",
+    "without_v07_checks",
+];
+
+/// Return whether a router expression is proved to have no path routes.
 ///
-/// The call must have zero arguments and resolve to Axum's constructor before the
-/// result type is accepted, preventing same-named local functions from matching.
+/// The walk starts at the expression and follows route-free Axum builder calls and
+/// immutable `let` initializers back to a direct `axum::Router::new()` call.
 #[must_use]
 ///
 /// # Examples
@@ -153,10 +165,92 @@ pub fn is_router_type(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 /// ```rust
 /// # #![feature(rustc_private)]
 /// let _call = |cx, expr| {
-///     let _ = axum_support::is_router_new_call(cx, expr);
+///     let _ = axum_support::is_empty_router(cx, expr);
 /// };
 /// ```
-pub fn is_router_new_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+pub fn is_empty_router<'tcx>(cx: &LateContext<'tcx>, mut expr: &'tcx Expr<'tcx>) -> bool {
+    loop {
+        if is_router_new_call(cx, expr) {
+            return true;
+        }
+        // Continue only through steps that cannot add a route.
+        expr = match previous_router_step(cx, expr) {
+            Some(RouterStep::Method { name, receiver })
+                if ROUTE_FREE_METHODS.contains(&name.as_str()) =>
+            {
+                receiver
+            }
+            Some(RouterStep::Binding(initializer)) => initializer,
+            Some(RouterStep::Method { .. }) | None => return false,
+        };
+    }
+}
+
+/// One step backward from a router value toward the expression that built it.
+enum RouterStep<'tcx> {
+    /// The value is the result of a resolved Axum `Router` method call.
+    Method {
+        /// Resolved Axum method name.
+        name: Symbol,
+        /// Router receiver of the method call.
+        receiver: &'tcx Expr<'tcx>,
+    },
+    /// The value is a local binding initialized by this expression.
+    Binding(&'tcx Expr<'tcx>),
+}
+
+/// Return the expression that produced one router value, when the HIR shows it.
+fn previous_router_step<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+) -> Option<RouterStep<'tcx>> {
+    if let ExprKind::MethodCall(_, receiver, _, _) = expr.kind {
+        // Follow only methods that Axum defines on a Router receiver.
+        let def_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
+        return (is_axum_item(cx, def_id) && is_router_type(cx, receiver)).then(|| {
+            RouterStep::Method {
+                name: cx.tcx.item_name(def_id),
+                receiver,
+            }
+        });
+    }
+
+    let ExprKind::Path(ref path) = expr.kind else {
+        return None;
+    };
+    // Follow a simple `let` binding to its initializer.
+    if let Res::Local(binding) = cx.qpath_res(path, expr.hir_id)
+        && let Some((_, Node::LetStmt(local))) = cx.tcx.hir_parent_iter(binding).next()
+        && local.pat.hir_id == binding
+    {
+        local.init.map(RouterStep::Binding)
+    } else {
+        None
+    }
+}
+
+/// Return whether the router behind an expression has called `without_v07_checks`.
+///
+/// The walk follows Axum builder calls and `let` initializers. An origin it cannot
+/// see, such as a function parameter, counts as keeping the default checks.
+fn has_disabled_v07_checks<'tcx>(cx: &LateContext<'tcx>, mut expr: &'tcx Expr<'tcx>) -> bool {
+    loop {
+        expr = match previous_router_step(cx, expr) {
+            Some(RouterStep::Method { name, .. }) if name.as_str() == "without_v07_checks" => {
+                return true;
+            }
+            Some(RouterStep::Method { receiver, .. }) => receiver,
+            Some(RouterStep::Binding(initializer)) => initializer,
+            None => return false,
+        };
+    }
+}
+
+/// Return whether an expression is a direct call to `axum::Router::new`.
+///
+/// The call must have zero arguments and resolve to Axum's constructor before the
+/// result type is accepted, preventing same-named local functions from matching.
+fn is_router_new_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // Match a zero-argument call before resolving its callee.
     let ExprKind::Call(callee, []) = expr.kind else {
         return false;
@@ -164,52 +258,62 @@ pub fn is_router_new_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     let ExprKind::Path(ref path) = callee.kind else {
         return false;
     };
-    let Res::Def(_, def_id) = cx.typeck_results().qpath_res(path, callee.hir_id) else {
+    let Res::Def(_, def_id) = cx.qpath_res(path, callee.hir_id) else {
         return false;
     };
 
     // Check the defining crate and result type to reject local lookalikes.
-    cx.tcx.crate_name(def_id.krate).as_str() == "axum"
+    is_axum_item(cx, def_id)
         && cx.tcx.item_name(def_id).as_str() == "new"
         && is_router_type(cx, expr)
 }
 
-/// Return the literal path when a resolved router call violates one path contract.
+/// Return the path diagnostic when a resolved router call violates one path contract.
 ///
-/// Only direct string literals are eligible for fixes. Computed paths still receive
-/// semantic diagnostics when their source shape cannot be rewritten without guessing.
+/// The path may be a string literal or a local `const` initialized by one. Only a
+/// direct literal can receive a fix; a constant gets a diagnostic at the use site.
 #[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
 /// # #![feature(rustc_private)]
-/// let _call = |cx, expr, expected_method, violation| {
-///     let _ = axum_support::router_path_violation(cx, expr, expected_method, violation);
+/// let _call = |cx, expr, expected_methods, violation| {
+///     let _ = axum_support::router_path_violation(cx, expr, expected_methods, violation);
 /// };
 /// ```
-pub fn router_path_violation(
-    cx: &LateContext<'_>,
-    expr: &Expr<'_>,
-    expected_method: &str,
+pub fn router_path_violation<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+    expected_methods: &[&str],
     violation: RouterPathViolation,
 ) -> Option<RouterPathDiagnostic> {
-    // Restrict literal validation to the resolved Router method.
-    let (path, value) = router_literal_path(cx, expr, expected_method)?;
+    // Restrict path validation to the resolved Router methods.
+    let call = expected_methods
+        .iter()
+        .find_map(|method| router_method_call(cx, expr, method))?;
+    let path = call.arguments.first()?;
+    let (value, is_direct_literal) = path_value(cx, path)?;
     // Borrow the interned text before applying the selected path contract.
     let value = value.as_str();
 
     if !is_path_violation(value, violation) {
         return None;
     }
+    // Axum accepts legacy segments after `Router::without_v07_checks`.
+    let is_legacy = matches!(
+        violation,
+        RouterPathViolation::LegacyColonCapture | RouterPathViolation::LegacyWildcardCapture
+    );
+    if is_legacy && has_disabled_v07_checks(cx, call.receiver) {
+        return None;
+    }
 
     // Limit machine fixes to literals whose source spelling can be rewritten without
     // guessing at escape sequences or raw-string delimiters.
-    let replacement = cx
-        .sess()
-        .source_map()
-        .span_to_snippet(path.span)
-        .ok()
+    let replacement = is_direct_literal
+        .then(|| cx.sess().source_map().span_to_snippet(path.span).ok())
+        .flatten()
         .and_then(|source| path_replacement(source.as_str(), value, violation));
 
     Some(RouterPathDiagnostic {
@@ -218,21 +322,26 @@ pub fn router_path_violation(
     })
 }
 
-/// Resolve one direct string-literal path argument from an Axum router call.
-fn router_literal_path<'hir>(
-    cx: &LateContext<'_>,
-    expr: &'hir Expr<'hir>,
-    expected_method: &str,
-) -> Option<(&'hir Expr<'hir>, rustc_span::Symbol)> {
-    let call = router_method_call(cx, expr, expected_method)?;
-    let path = call.arguments.first()?;
-    let ExprKind::Lit(literal) = path.kind else {
+/// Return a path argument's string value and whether it is a direct literal.
+///
+/// A path to a local `const` resolves to the string literal that initializes it.
+fn path_value(cx: &LateContext<'_>, path: &Expr<'_>) -> Option<(Symbol, bool)> {
+    if let ExprKind::Lit(literal) = path.kind {
+        return literal.node.str().map(|value| (value, true));
+    }
+
+    let ExprKind::Path(ref qpath) = path.kind else {
         return None;
     };
-    let LitKind::Str(value, _) = literal.node else {
+    // Read the initializer of a local constant without evaluating it.
+    let Res::Def(DefKind::Const { .. }, def_id) = cx.qpath_res(qpath, path.hir_id) else {
         return None;
     };
-    Some((path, value))
+    let body = cx.tcx.hir_maybe_body_owned_by(def_id.as_local()?)?;
+    let ExprKind::Lit(literal) = body.value.kind else {
+        return None;
+    };
+    literal.node.str().map(|value| (value, false))
 }
 
 /// Return whether a router path literal value breaks the selected path contract.
@@ -250,7 +359,10 @@ fn is_path_violation(value: &str, violation: RouterPathViolation) -> bool {
         RouterPathViolation::Root => {
             value.is_empty() || (value.len() == 1 && value.as_bytes() == *b"/")
         }
-        RouterPathViolation::NestedWildcard => value.contains("{*"),
+        // Match Axum's own test: a whole segment `{*name}` that is not an escaped `}}`.
+        RouterPathViolation::NestedWildcard => value.split('/').any(|segment| {
+            segment.starts_with("{*") && segment.ends_with('}') && !segment.ends_with("}}")
+        }),
     }
 }
 
@@ -261,19 +373,7 @@ fn path_replacement(source: &str, value: &str, violation: RouterPathViolation) -
         return None;
     }
 
-    let replacement = path_replacement_text(value, violation)?;
-    Some(format!("\"{replacement}\""))
-}
-
-/// Return the unescaped contents of a simple cooked string source literal.
-fn literal_contents(source: &str) -> Option<&str> {
-    let source = source.trim();
-    source.strip_prefix('"')?.strip_suffix('"')
-}
-
-/// Build the replacement text after the source literal has been validated.
-fn path_replacement_text(value: &str, violation: RouterPathViolation) -> Option<String> {
-    Some(match violation {
+    let replacement = match violation {
         RouterPathViolation::Empty => char::from(b'/').to_string(),
         RouterPathViolation::MissingLeadingSlash => format!("{}{value}", char::from(b'/')),
         RouterPathViolation::LegacyColonCapture => replace_legacy_captures(value, ':', "{", "}")?,
@@ -281,7 +381,14 @@ fn path_replacement_text(value: &str, violation: RouterPathViolation) -> Option<
             replace_legacy_captures(value, '*', "{*", "}")?
         }
         RouterPathViolation::Root | RouterPathViolation::NestedWildcard => return None,
-    })
+    };
+    Some(format!("\"{replacement}\""))
+}
+
+/// Return the unescaped contents of a simple cooked string source literal.
+fn literal_contents(source: &str) -> Option<&str> {
+    let source = source.trim();
+    source.strip_prefix('"')?.strip_suffix('"')
 }
 
 /// Convert valid legacy capture segments while preserving every other path segment.
@@ -332,7 +439,7 @@ macro_rules! declare_router_path_lint {
     (
         $lint:ident,
         $pass:ident,
-        $method:literal,
+        [$($method:literal),+ $(,)?],
         $violation:ident,
         $description:literal,
         $message:literal,
@@ -356,7 +463,7 @@ macro_rules! declare_router_path_lint {
                 let Some(path_diagnostic) = $crate::router_path_violation(
                     cx,
                     expr,
-                    $method,
+                    &[$($method),+],
                     $crate::RouterPathViolation::$violation,
                 ) else {
                     return;
@@ -436,15 +543,16 @@ mod tests {
     fn replacements(cases: &[(&str, RouterPathViolation)]) -> Vec<Option<String>> {
         cases
             .iter()
-            .map(|&(source, violation)| path_replacement(source, literal_value(source), violation))
+            .map(|&(source, violation)| {
+                path_replacement(
+                    source,
+                    source
+                        .trim_start_matches('r')
+                        .trim_matches('#')
+                        .trim_matches('"'),
+                    violation,
+                )
+            })
             .collect()
-    }
-
-    /// Return the value spelled by a cooked or raw string literal without escapes.
-    fn literal_value(source: &str) -> &str {
-        source
-            .trim_start_matches('r')
-            .trim_matches('#')
-            .trim_matches('"')
     }
 }

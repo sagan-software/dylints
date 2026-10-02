@@ -1,28 +1,28 @@
 warning: `Backtrace` fields are detected without `#[backtrace]`
-  --> $DIR/main.rs:13:5
+  --> $DIR/main.rs:16:5
    |
-LL |     #[backtrace]
-   |     ^^^^^^^^^^^^ help: remove the redundant `#[backtrace]` attribute
+LL |       #[backtrace]
+   |  _____-^^^^^^^^^^^
+LL | |     backtrace: std::backtrace::Backtrace,
+   | |____- help: remove the redundant `#[backtrace]` attribute
    |
    = note: `#[warn(thiserror_redundant_backtrace_attr)]` on by default
 
 warning: `Backtrace` fields are detected without `#[backtrace]`
-  --> $DIR/main.rs:20:5
+  --> $DIR/main.rs:23:20
    |
-LL |     #[backtrace]
-   |     ^^^^^^^^^^^^ help: remove the redundant `#[backtrace]` attribute
+LL |     Failed(String, #[backtrace] Backtrace),
+   |                    ^^^^^^^^^^^^-
+   |                    |
+   |                    help: remove the redundant `#[backtrace]` attribute
 
 warning: `Backtrace` fields are detected without `#[backtrace]`
-  --> $DIR/main.rs:27:5
+  --> $DIR/main.rs:33:9
    |
-LL |     #[backtrace]
-   |     ^^^^^^^^^^^^ help: remove the redundant `#[backtrace]` attribute
+LL |           #[backtrace]
+   |  _________-^^^^^^^^^^^
+LL | |         trace: Backtrace,
+   | |________- help: remove the redundant `#[backtrace]` attribute
 
-warning: `Backtrace` fields are detected without `#[backtrace]`
-  --> $DIR/main.rs:34:5
-   |
-LL |     #[backtrace]
-   |     ^^^^^^^^^^^^ help: remove the redundant `#[backtrace]` attribute
-
-warning: 4 warnings emitted
+warning: 3 warnings emitted
 

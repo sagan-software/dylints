@@ -1,22 +1,25 @@
 #![feature(rustc_private)]
 
 //! A lint to check for tagged Serde enum fallbacks missing `other`.
-//! This Dylint library resolves the named API or syntax at compile time,
-//! reports a source diagnostic for the undesired or redundant pattern, and
-//! leaves unrelated code unchanged. Its README defines the checked boundary,
-//! the recommended replacement, and the UI fixture that protects behavior.
+//!
+//! This Dylint library finds internally or adjacently tagged enums that derive
+//! `Deserialize` and end with a unit variant named `Other` or `Unknown` that
+//! lacks `#[serde(other)]`. Such a variant matches only its own tag, while
+//! its name suggests it should catch every unrecognized tag.
 
-extern crate rustc_ast;
+extern crate rustc_hir;
 
 #[cfg(test)]
 use serde as _;
 
-use rustc_ast::Crate;
-use rustc_lint::{EarlyContext, EarlyLintPass};
+use rustc_hir::Item;
+use rustc_lint::{LateContext, LateLintPass};
 
-use serde_support::{ItemKind, ast_has_serde_attr, emit_span_lint_with_help, serde_ast_crate};
+use serde_support::{
+    AdtKind, Help, SerdeItem, SerdeVariant, emit_lint, has_serde_attr, serde_item,
+};
 
-dylint_support::documented_early_lint! {
+dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
     pub SERDE_FALLBACK_MISSING_OTHER,
     Warn,
@@ -24,48 +27,39 @@ dylint_support::documented_early_lint! {
     SerdeFallbackMissingOther
 }
 
-impl EarlyLintPass for SerdeFallbackMissingOther {
-    /// Check all cfg-active Serde enums in the crate.
-    fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &Crate) {
-        check_crate(cx, krate);
-    }
-}
-
-/// Check the final variant of tagged enums for a likely fallback.
-fn check_crate(cx: &EarlyContext<'_>, krate: &Crate) {
-    // Collect cfg-active Serde items before evaluating tagged enum policy.
-    let krate = serde_ast_crate(cx, krate);
-
-    // Keep only deserializable tagged enums whose variants lack an explicit fallback.
-    for item in &krate.items {
-        if !is_tagged_deserializable_enum(cx, item) {
-            continue;
+impl<'tcx> LateLintPass<'tcx> for SerdeFallbackMissingOther {
+    /// Check the final variant of one tagged enum.
+    fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
+        // Require a tagged enum before looking at its final variant.
+        let Some(item) = serde_item(cx, item) else {
+            return;
+        };
+        if !is_tagged_deserializable_enum(&item) {
+            return;
         }
-        let Some(fallback) = fallback_variant(cx, item) else {
-            continue;
+        let Some(fallback) = fallback_variant(&item) else {
+            return;
         };
 
-        emit_span_lint_with_help(
+        // Report the variant itself, since the fix is an attribute on it.
+        emit_lint(
             cx,
             SERDE_FALLBACK_MISSING_OTHER,
+            fallback.hir_id,
             fallback.span,
             "this fallback-looking variant accepts only its own literal tag",
-            "add `#[serde(other)]` if it should accept every unrecognized tag",
+            Help::text("add `#[serde(other)]` if it should accept every unrecognized tag"),
         );
     }
 }
 
 /// Return whether an enum can use a final variant as a tagged fallback.
-fn is_tagged_deserializable_enum(
-    cx: &EarlyContext<'_>,
-    item: &serde_support::AstItemInfo<'_>,
-) -> bool {
-    // Require a cfg-active enum with Serde's deserialization derive.
-    if item.kind != ItemKind::Enum || !item.derives.has_deserialize {
+fn is_tagged_deserializable_enum(item: &SerdeItem<'_>) -> bool {
+    // Require a tagged enum with Serde's deserialization derive.
+    if item.kind != AdtKind::Enum || !item.derives.has_deserialize {
         return false;
     }
-    if !ast_has_serde_attr(cx, item.attrs, "tag") || ast_has_serde_attr(cx, item.attrs, "untagged")
-    {
+    if !has_serde_attr(item.attrs, "tag") || has_serde_attr(item.attrs, "untagged") {
         return false;
     }
 
@@ -73,27 +67,23 @@ fn is_tagged_deserializable_enum(
     !item
         .variants
         .iter()
-        .any(|variant| ast_has_serde_attr(cx, variant.attrs, "other"))
+        .any(|variant| has_serde_attr(variant.attrs, "other"))
 }
 
 /// Return the final unit variant when it looks like an unmarked fallback.
-fn fallback_variant<'ast>(
-    cx: &EarlyContext<'_>,
-    item: &'ast serde_support::AstItemInfo<'ast>,
-) -> Option<&'ast serde_support::AstVariantInfo<'ast>> {
+fn fallback_variant<'item, 'tcx>(
+    item: &'item SerdeItem<'tcx>,
+) -> Option<&'item SerdeVariant<'tcx>> {
     // Treat only a final unit variant named Other or Unknown as a candidate.
     let fallback = item.variants.last()?;
-    if !fallback.is_unit || !matches!(fallback.name.as_str(), "Other" | "Unknown") {
+    if !fallback.is_unit || !matches!(fallback.ident.name.as_str(), "Other" | "Unknown") {
         return None;
     }
 
     // Skip variants intentionally excluded from deserialization.
-    if ast_has_serde_attr(cx, fallback.attrs, "skip")
-        || ast_has_serde_attr(cx, fallback.attrs, "skip_deserializing")
-    {
-        return None;
-    }
-    Some(fallback)
+    (!has_serde_attr(fallback.attrs, "skip")
+        && !has_serde_attr(fallback.attrs, "skip_deserializing"))
+    .then_some(fallback)
 }
 
 /// Run the UI fixture.

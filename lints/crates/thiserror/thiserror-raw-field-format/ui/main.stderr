@@ -1,8 +1,8 @@
 warning: `thiserror` 2 expects unraw field names in format strings
-  --> $DIR/main.rs:7:1
+  --> $DIR/main.rs:8:1
    |
-LL | #[error("qualified {r#type}")]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("qualified {type}")]`
+LL | #[error("keyword {r#type}")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("keyword {type}")]`
    |
    = note: `#[warn(thiserror_raw_field_format)]` on by default
 
@@ -13,10 +13,18 @@ LL | #[error("renamed {r#kind}")]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("renamed {kind}")]`
 
 warning: `thiserror` 2 expects unraw field names in format strings
-  --> $DIR/main.rs:21:1
+  --> $DIR/main.rs:24:9
    |
-LL | #[error("same-line {r#value}")]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("same-line {value}")]`
+LL |         #[error("variant {r#value:?} and {r#value}")]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove `r#` inside the format placeholder: `#[error("variant {value:?} and {value}")]`
 
-warning: 3 warnings emitted
+warning: `thiserror` 2 expects unraw field names in format strings
+  --> $DIR/main.rs:30:1
+   |
+LL | #[error("escaped /"{r#kind}/"")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove `r#` inside the format placeholder
+
+warning: 4 warnings emitted
 

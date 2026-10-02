@@ -22,4 +22,17 @@ fn valid_arguments() {
         .value_hint(ValueHint::CommandName);
 }
 
+fn computed_name(name: &'static str) {
+    let _ = Arg::new("command")
+        .long(name)
+        .value_hint(ValueHint::CommandWithArguments);
+}
+
+fn removed_name() {
+    let _ = Arg::new("command")
+        .long("command")
+        .long(None)
+        .value_hint(ValueHint::CommandWithArguments);
+}
+
 fn main() {}

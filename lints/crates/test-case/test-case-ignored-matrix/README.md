@@ -18,9 +18,6 @@ during a short migration. An `ignore` modifier without a reason also triggers
 `test-case-ignore-without-reason`, and `inconclusive` also triggers
 `test-case-inconclusive-modifier`.
 
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
-
 ## Example
 
 ```rust

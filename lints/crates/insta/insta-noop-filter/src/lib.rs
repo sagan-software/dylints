@@ -9,14 +9,16 @@
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_span;
 
 #[cfg(test)]
 use insta as _;
 
 use insta_support::{settings_method_call, string_literal};
-use rustc_errors::DiagDecorator;
-use rustc_hir::Expr;
+use rustc_errors::{Applicability, DiagDecorator};
+use rustc_hir::{Expr, Node, StmtKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_span::Span;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -37,7 +39,7 @@ impl<'tcx> LateLintPass<'tcx> for InstaNoopFilter {
             return;
         };
         let (Some(pattern_value), Some(replacement_value)) =
-            (string_literal(pattern), string_literal(replacement))
+            (string_literal(cx, pattern), string_literal(cx, replacement))
         else {
             return;
         };
@@ -51,16 +53,37 @@ impl<'tcx> LateLintPass<'tcx> for InstaNoopFilter {
             return;
         }
 
+        let statement_span = statement_span(cx, expr);
         cx.emit_span_lint(
             INSTA_NOOP_FILTER,
             expr.span,
-            DiagDecorator(|diagnostic| {
-                let _configured_diagnostic = diagnostic
-                    .primary_message("this filter replaces matched text with itself")
-                    .help("remove the filter or provide a stable replacement");
+            DiagDecorator(move |diagnostic| {
+                let diagnostic =
+                    diagnostic.primary_message("this filter replaces matched text with itself");
+                // Removing a whole statement drops only a filter that changes nothing.
+                if let Some(statement_span) = statement_span {
+                    let _configured_suggestion = diagnostic.span_suggestion(
+                        statement_span,
+                        "remove the filter",
+                        "",
+                        Applicability::MachineApplicable,
+                    );
+                } else {
+                    let _configured_help =
+                        diagnostic.help("remove the filter or provide a stable replacement");
+                }
             }),
         );
     }
+}
+
+/// Return the span of the `expr;` statement that consists of this call alone.
+fn statement_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Span> {
+    let (_, Node::Stmt(statement)) = cx.tcx.hir_parent_iter(expr.hir_id).next()? else {
+        return None;
+    };
+    (matches!(statement.kind, StmtKind::Semi(_)) && !statement.span.from_expansion())
+        .then_some(statement.span)
 }
 
 #[test]

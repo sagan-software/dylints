@@ -14,15 +14,12 @@ into a new allocation even though the type has a lifetime for borrowing.
 
 ## Known problems
 
-The lint only recognizes `std::borrow::Cow`, `alloc::borrow::Cow`, a name
-imported from one of them with `use`, and a type alias defined in the crate.
-It misses `Cow` imported through a glob and `Cow` nested in another type,
-such as `Option<Cow<'a, str>>`.
+Serde recognizes a borrowable `Cow` by its written name, so the lint checks
+only a field whose type path ends in `Cow` and resolves to the standard
+`Cow`. Serde does not borrow through a renamed import, a type alias, or a
+wrapper such as `Option<Cow<'a, str>>`, so the lint skips those fields.
 
 A field that should always own its data also triggers the lint.
-
-The lint matches derives to types by name, so two types with the same name in
-one crate can share the same derive result.
 
 ## Example
 

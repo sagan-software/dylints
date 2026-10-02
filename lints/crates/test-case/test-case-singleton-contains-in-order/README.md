@@ -14,12 +14,9 @@ order check that does not happen.
 
 ## Known problems
 
-The lint checks only an array or parenthesized literal written in the
-attribute. A constant or variable with one element does not trigger it. The
-lint gives help text but no automatic fix.
-
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+The lint checks only an array or tuple literal written in the attribute. A
+constant or variable with one element does not trigger it. The lint gives help
+text but no automatic fix.
 
 ## Example
 

@@ -11,21 +11,22 @@
 //! This Dylint library resolves Clap argument builders, reports trailing
 //! variable arguments without an arity, and recommends declaring their range.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
 
 #[cfg(test)]
 use clap as _;
-use rustc_lint::LintContext as _;
 
 clap_support::declare_builder_requirement_lint! {
     CLAP_TRAILING_VAR_ARG_WITHOUT_NUM_ARGS,
     ClapTrailingVarArgWithoutNumArgs,
-    Arg,
-    "trailing_var_arg",
-    true,
-    "num_args",
-    false,
+    clap_support::BuilderRequirement {
+        builder: clap_support::BuilderType::Arg,
+        trigger: "trailing_var_arg",
+        is_trigger_true_required: true,
+        required: "num_args",
+        is_requirement_true_required: false,
+        satisfying_actions: &["Append"],
+    },
     "a clap trailing variable argument has no arity",
     "`trailing_var_arg(true)` requires `num_args`",
     "add `.num_args(...)` to this argument"

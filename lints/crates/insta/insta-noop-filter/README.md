@@ -15,8 +15,9 @@ records.
 ## Known problems
 
 The lint skips patterns that contain any of `.^$*+?()[]{}|\`, even when the
-filter still has no effect. It checks only string literals passed directly as
-arguments.
+filter still has no effect. It checks string literals passed directly as
+arguments, and a `const` defined in the same crate and initialized with a string literal. The machine-applicable fix removes the call only
+when the call is a whole statement.
 
 ## Example
 

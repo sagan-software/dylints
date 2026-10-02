@@ -12,15 +12,12 @@ can pass the case even when the intended failure never happens.
 
 ## Known problems
 
-The lint matches text before the first `;` in the attribute. It warns when no
-`"` follows the first `panics`, so `panics EXPECTED_MESSAGE` with a constant
-also triggers it.
-
 Some tests only need to check that a function panics, because the message is
 not stable. The lint warns on those tests too.
 
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
+test-case 3.3 drops a bare `panics` that a description follows, as in
+`1 => panics ; "name"`, so the generated test no longer expects a panic. The
+lint reports this form too.
 
 ## Example
 

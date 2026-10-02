@@ -15,5 +15,13 @@ LL | #[test_matrix(0..0, [1_u8, 2])]
    |
    = help: populate every input set so the Cartesian product is nonempty
 
-warning: 2 warnings emitted
+warning: this test matrix generates no test cases
+  --> $DIR/main.rs:20:1
+   |
+LL | #[test_matrix(["b", "c"], 3..1)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: populate every input set so the Cartesian product is nonempty
+
+warning: 3 warnings emitted
 

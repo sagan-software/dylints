@@ -78,10 +78,10 @@ fn local_schema_target(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<LocalDef
     let ExprKind::MethodCall(_, _, [value], _) = expr.kind else {
         return None;
     };
-    if !matches!(
-        schemars_method_name(cx, expr),
-        Some("root_schema_for_value" | "into_root_schema_for_value")
-    ) {
+    if !["root_schema_for_value", "into_root_schema_for_value"]
+        .into_iter()
+        .any(|name| is_schemars_method_call(cx, expr, name))
+    {
         return None;
     }
 
@@ -91,13 +91,6 @@ fn local_schema_target(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<LocalDef
         return None;
     };
     adt.did().as_local()
-}
-
-/// Resolve the supported Schemars method name without accepting user lookalikes.
-fn schemars_method_name(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<&'static str> {
-    ["root_schema_for_value", "into_root_schema_for_value"]
-        .into_iter()
-        .find(|name| is_schemars_method_call(cx, expr, name))
 }
 
 /// Run the UI fixture.

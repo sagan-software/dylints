@@ -12,12 +12,17 @@ extern crate rustc_ast;
 extern crate rustc_driver as _;
 extern crate rustc_hir;
 extern crate rustc_lint;
+extern crate rustc_middle;
 extern crate rustc_span;
 
 use rustc_ast::LitKind;
-use rustc_hir::{Expr, ExprKind, def::Res};
-use rustc_lint::{LateContext, LintContext as _};
-use rustc_span::{ExpnKind, MacroKind, Span, Symbol, def_id::DefId};
+use rustc_hir::{
+    Expr, ExprKind,
+    def::{CtorOf, DefKind, Res},
+};
+use rustc_lint::LateContext;
+use rustc_middle::ty;
+use rustc_span::{ExpnKind, MacroKind, Span, Symbol, def_id::DefId, sym};
 
 use dylint_linting as _;
 
@@ -47,7 +52,10 @@ pub struct SqlxMacroCall {
     pub name: Symbol,
 }
 
-/// Resolve a method call to an exact `SQLx` owner and one allowed method name.
+/// Resolve a method call to a `SQLx` owner and one allowed method name.
+///
+/// The owner is the trait that declares the method or the type whose inherent
+/// impl defines it.
 ///
 /// Type-dependent resolution and owner matching exclude extension traits, local
 /// methods, and unrelated APIs that happen to share the same source spelling.
@@ -57,14 +65,14 @@ pub struct SqlxMacroCall {
 ///
 /// ```rust
 /// # #![feature(rustc_private)]
-/// let _call = |cx, expr, expected_owner, expected_methods| {
-///     let _ = sqlx_support::sqlx_method_call(cx, expr, expected_owner, expected_methods);
+/// let _call = |cx, expr| {
+///     let _ = sqlx_support::sqlx_method_call(cx, expr, &["Row"], &["get"]);
 /// };
 /// ```
 pub fn sqlx_method_call<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
-    expected_owner: &str,
+    expected_owners: &[&str],
     expected_methods: &[&str],
 ) -> Option<SqlxMethodCall<'hir>> {
     // Type-dependent resolution rejects extension traits and user methods with the same spelling.
@@ -74,10 +82,10 @@ pub fn sqlx_method_call<'hir>(
     let def_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
     let method_name = segment.ident.name;
 
-    (is_sqlx_def(cx, def_id)
-        && expected_methods.contains(&method_name.as_str())
-        && has_definition_owner(cx, def_id, expected_owner))
-    .then_some(SqlxMethodCall {
+    let is_expected_method = expected_methods.contains(&method_name.as_str());
+    let is_expected_owner =
+        definition_owner(cx, def_id).is_some_and(|owner| expected_owners.contains(&owner.as_str()));
+    (is_sqlx_def(cx, def_id) && is_expected_method && is_expected_owner).then_some(SqlxMethodCall {
         span: segment.ident.span,
         name: method_name,
         arguments,
@@ -92,9 +100,9 @@ pub fn sqlx_method_call<'hir>(
 pub enum MethodArgumentViolation {
     /// Every resolved call is discouraged by the selected `SQLx` lint rule.
     Any,
-    /// The first argument is built with `format!`, producing a dynamic SQL string.
+    /// The first argument is a `format!` result, possibly borrowed, producing dynamic SQL.
     FormattedSql,
-    /// The first argument is an empty collection literal with no query values.
+    /// The first argument is an empty array or an empty `Vec`, possibly borrowed.
     EmptyCollection,
     /// The first argument is integer zero, which represents an invalid bound value.
     Zero,
@@ -121,30 +129,71 @@ pub fn sqlx_method_argument_violation<'hir>(
     expected_method: &str,
     violation: MethodArgumentViolation,
 ) -> Option<SqlxMethodCall<'hir>> {
-    let call = sqlx_method_call(cx, expr, owner, &[expected_method])?;
+    let call = sqlx_method_call(cx, expr, &[owner], &[expected_method])?;
+    let argument = call.arguments.first();
     let is_invalid = match violation {
         MethodArgumentViolation::Any => true,
-        MethodArgumentViolation::FormattedSql => call.arguments.first().is_some_and(|argument| {
-            cx.sess()
-                .source_map()
-                .span_to_snippet(argument.span.source_callsite())
-                .is_ok_and(|snippet| snippet.trim_start().starts_with("format!"))
-        }),
-        MethodArgumentViolation::EmptyCollection => matches!(
-            call.arguments,
-            [argument, ..] if matches!(argument.kind, ExprKind::Array([]))
-        ),
-        MethodArgumentViolation::Zero => matches!(
-            call.arguments,
-            [argument, ..]
-                if matches!(
-                    argument.kind,
-                    ExprKind::Lit(literal)
-                        if matches!(literal.node, LitKind::Int(value, _) if value.get() == 0)
-                )
-        ),
+        MethodArgumentViolation::FormattedSql => {
+            argument.is_some_and(|argument| is_format_result(cx, argument))
+        }
+        MethodArgumentViolation::EmptyCollection => {
+            argument.is_some_and(|argument| is_empty_collection(cx, argument))
+        }
+        MethodArgumentViolation::Zero => argument.is_some_and(is_zero_literal),
     };
     is_invalid.then_some(call)
+}
+
+/// Return the expression under any number of `&` and `&mut` borrows.
+const fn peel_borrows<'hir>(mut expr: &'hir Expr<'hir>) -> &'hir Expr<'hir> {
+    while let ExprKind::AddrOf(_, _, inner) = expr.kind {
+        expr = inner;
+    }
+    expr
+}
+
+/// Return true when an expression is the output of the standard `format!` macro.
+///
+/// The macro is resolved through expansion data, so `format!`, `std::format!`,
+/// and `alloc::format!` all match, and a borrow such as `&format!(...)` is peeled.
+fn is_format_result(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    let expr = peel_borrows(expr);
+    // Only the outermost expression of the expansion counts, not a value nested in it.
+    if !expr.span.from_expansion() {
+        return false;
+    }
+    let expansion = expr.span.ctxt().outer_expn_data();
+    expansion
+        .macro_def_id
+        .is_some_and(|def_id| cx.tcx.is_diagnostic_item(sym::format_macro, def_id))
+}
+
+/// Return true for `[]`, `Vec::new()`, or `vec![]`, possibly borrowed.
+fn is_empty_collection(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    let expr = peel_borrows(expr);
+    // An empty array literal holds no rows.
+    if matches!(expr.kind, ExprKind::Array([])) {
+        return true;
+    }
+    // `vec![]` expands to `Vec::new()`, which resolves to the `vec_new` diagnostic item.
+    let ExprKind::Call(callee, []) = expr.kind else {
+        return false;
+    };
+    let ExprKind::Path(ref path) = callee.kind else {
+        return false;
+    };
+    let Res::Def(_, def_id) = cx.qpath_res(path, callee.hir_id) else {
+        return false;
+    };
+    cx.tcx.get_diagnostic_name(def_id) == Some(Symbol::intern("vec_new"))
+}
+
+/// Return true for the integer literal zero.
+fn is_zero_literal(expr: &Expr<'_>) -> bool {
+    matches!(
+        expr.kind,
+        ExprKind::Lit(literal) if matches!(literal.node, LitKind::Int(value, _) if value.get() == 0)
+    )
 }
 
 /// Declare one `SQLx` method-argument lint.
@@ -219,17 +268,15 @@ pub fn assert_sql_safe_argument<'hir>(
     let ExprKind::Path(ref path) = callee.kind else {
         return None;
     };
-    let Res::Def(_, def_id) = cx.typeck_results().qpath_res(path, callee.hir_id) else {
+    let Res::Def(DefKind::Ctor(CtorOf::Struct, _), ctor_def_id) =
+        cx.typeck_results().qpath_res(path, callee.hir_id)
+    else {
         return None;
     };
-    // Compare the resolved definition path after the constructor shape is known.
-    let definition_path = cx.tcx.def_path_str(def_id);
-
-    (is_sqlx_def(cx, def_id)
-        && definition_path
-            .split("::")
-            .any(|segment| segment == "AssertSqlSafe"))
-    .then_some(argument)
+    // The constructor's parent is the struct it builds.
+    let struct_def_id = cx.tcx.parent(ctor_def_id);
+    let is_assert_sql_safe = cx.tcx.item_name(struct_def_id).as_str() == "AssertSqlSafe";
+    (is_sqlx_def(cx, struct_def_id) && is_assert_sql_safe).then_some(argument)
 }
 
 /// Resolve an unchecked `SQLx` query macro from an expanded expression.
@@ -296,10 +343,30 @@ fn is_sqlx_def(cx: &LateContext<'_>, def_id: DefId) -> bool {
     )
 }
 
-/// Return whether the segment immediately before the item name is the expected owner.
-fn has_definition_owner(cx: &LateContext<'_>, def_id: DefId, expected_owner: &str) -> bool {
-    let path = cx.tcx.def_path_str(def_id);
-    path.rsplit("::").nth(1) == Some(expected_owner)
+/// Return the trait or type that owns an associated function.
+///
+/// A trait method is owned by its trait. An inherent method is owned by the
+/// type its impl block names, and a trait impl method by the implemented trait.
+fn definition_owner(cx: &LateContext<'_>, def_id: DefId) -> Option<Symbol> {
+    let parent = cx.tcx.parent(def_id);
+    if matches!(cx.tcx.def_kind(parent), DefKind::Trait) {
+        return Some(cx.tcx.item_name(parent));
+    }
+    if matches!(cx.tcx.def_kind(parent), DefKind::Impl { of_trait: true }) {
+        return Some(cx.tcx.item_name(cx.tcx.impl_trait_id(parent)));
+    }
+    if !matches!(cx.tcx.def_kind(parent), DefKind::Impl { of_trait: false }) {
+        return None;
+    }
+    let self_ty = cx
+        .tcx
+        .type_of(parent)
+        .instantiate_identity()
+        .skip_norm_wip();
+    let ty::Adt(adt, _) = self_ty.kind() else {
+        return None;
+    };
+    Some(cx.tcx.item_name(adt.did()))
 }
 
 /// Return whether the macro skips `SQLx`'s input or output type checking.

@@ -17,7 +17,7 @@ use axum as _;
 axum_support::declare_router_path_lint! {
     AXUM_NEST_SERVICE_AT_ROOT,
     AxumNestServiceAtRoot,
-    "nest_service",
+    ["nest_service"],
     Root,
     "an Axum service is nested at the root",
     "nesting a service at the root panics",

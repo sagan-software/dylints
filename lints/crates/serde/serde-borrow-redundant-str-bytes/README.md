@@ -2,25 +2,25 @@
 
 ## What it does
 
-Checks for `#[serde(borrow)]` on a `&str` or `&[u8]` field of a type that
-derives `Deserialize`, including through a type alias defined in the crate.
+Checks for `#[serde(borrow)]` on a field of a type that derives
+`Deserialize` when the field is written as `&str`, `&[u8]`, or an `Option` of
+either.
 
 ## Why is this bad?
 
-Serde always borrows `&str` and `&[u8]` fields from the input. The attribute
+Serde always borrows fields written as `&str` and `&[u8]`, or `Option` of
+either, from the input. The attribute
 changes nothing on these types, and readers can mistake it for a needed
 setting.
 
 ## Known problems
 
-The lint misses a type alias from another crate.
+Serde decides implicit borrowing from the written type, so a type alias for
+`&str` still needs `#[serde(borrow)]` and the lint does not flag it.
 
 The machine-applicable fix deletes the whole attribute, so it is offered only
 when `borrow` is the attribute's only entry. An attribute such as
 `#[serde(borrow, rename = "name")]` gets help without a fix.
-
-The lint matches derives to types by name, so two types with the same name in
-one crate can share the same derive result.
 
 ## Example
 

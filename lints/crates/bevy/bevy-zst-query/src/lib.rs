@@ -39,13 +39,11 @@ impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyZstQuery {
         local_def_id: rustc_span::def_id::LocalDefId,
     ) {
         // Map each zero-sized query parameter index back to its declaration span.
-        for index in bevy_support::zst_query_parameters(cx, kind, local_def_id) {
-            let Some(parameter) = declaration.inputs.get(index) else {
-                continue;
-            };
+        let indexes = bevy_support::zst_query_parameters(cx, kind, local_def_id);
+        for span in bevy_support::parameter_spans(declaration, indexes) {
             cx.emit_span_lint(
                 BEVY_ZST_QUERY,
-                parameter.span,
+                span,
                 rustc_errors::DiagDecorator(|diagnostic| {
                     let _configured_diagnostic = diagnostic
                         .primary_message("this query fetches a zero-sized component")

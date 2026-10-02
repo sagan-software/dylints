@@ -9,6 +9,7 @@ extern crate rustc_driver as _;
 extern crate rustc_hir;
 extern crate rustc_lint;
 extern crate rustc_middle;
+extern crate rustc_session;
 extern crate rustc_span;
 
 use core::ops::ControlFlow;
@@ -89,6 +90,15 @@ impl MarkerTrait {
             Self::Clone => "Clone",
             Self::Copy => "Copy",
             Self::Default => "Default",
+        }
+    }
+
+    /// Return the trait's rustc diagnostic item.
+    const fn diagnostic_item(self) -> Symbol {
+        match self {
+            Self::Clone => rustc_span::sym::Clone,
+            Self::Copy => rustc_span::sym::Copy,
+            Self::Default => rustc_span::sym::Default,
         }
     }
 }
@@ -283,37 +293,65 @@ pub fn trait_is_named(
 ///
 /// ```rust
 /// # #![feature(rustc_private)]
-/// let _call = |cx, kind, body, local_def_id, component_crate, component_name| {
-///     let _ = bevy_support::mutable_query_component_parameters(cx, kind, body, local_def_id, component_crate, component_name);
+/// let _call = |cx, kind, local_def_id, component_crate, component_name| {
+///     let _ = bevy_support::mutable_query_component_parameters(cx, kind, local_def_id, component_crate, component_name);
 /// };
 /// ```
 pub fn mutable_query_component_parameters<'tcx>(
     cx: &LateContext<'tcx>,
     kind: FnKind<'tcx>,
-    body: &Body<'tcx>,
     local_def_id: LocalDefId,
     component_crate: &str,
     component_name: &str,
-) -> impl Iterator<Item = usize> {
-    let signature = function_signature(cx, kind, local_def_id);
+) -> Vec<usize> {
+    let mut indexes = Vec::new();
+    indexes.extend(
+        adjustable_inputs(cx, kind, local_def_id)
+            .into_iter()
+            .filter(|(_, input)| {
+                query_data_type(cx, *input).is_some_and(|data| {
+                    query_data_mut_components(data).any(|component| {
+                        type_is_named(cx, component, component_crate, component_name)
+                    })
+                })
+            })
+            .map(|(index, _)| index),
+    );
+    indexes
+}
 
-    signature
-        .skip_binder()
-        .inputs()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, input)| {
-            let is_self = body.params.get(index).is_some_and(|parameter| {
-                matches!(
-                    parameter.pat.kind,
-                    PatKind::Binding(_, _, identifier, _) if identifier.name.as_str() == "self"
-                )
-            });
-            (!is_self && query_data_has_mut_component(cx, *input, component_crate, component_name))
-                .then_some(index)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+/// Return mutable `Children` query parameters unless the body only reorders children.
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, kind, body, local_def_id| {
+///     let _ = bevy_support::children_mutation_query_parameters(cx, kind, body, local_def_id);
+/// };
+/// ```
+pub fn children_mutation_query_parameters<'tcx>(
+    cx: &LateContext<'tcx>,
+    kind: FnKind<'tcx>,
+    body: &Body<'tcx>,
+    local_def_id: LocalDefId,
+) -> Vec<usize> {
+    let indexes =
+        mutable_query_component_parameters(cx, kind, local_def_id, "bevy_ecs", "Children");
+    if indexes.is_empty() {
+        return indexes;
+    }
+    // Bevy's inherent `Children` methods reorder entries without breaking the relationship.
+    let mut visitor = ChildrenMutationVisitor {
+        cx,
+        saw_reorder: false,
+        saw_other_mutation: false,
+    };
+    visitor.visit_expr(body.value);
+    if visitor.saw_reorder && !visitor.saw_other_mutation {
+        return Vec::new();
+    }
+    indexes
 }
 
 /// Return parameter indexes that borrow a reborrowable Bevy proxy.
@@ -322,42 +360,40 @@ pub fn mutable_query_component_parameters<'tcx>(
 ///
 /// ```rust
 /// # #![feature(rustc_private)]
-/// let _call = |cx, kind, body, local_def_id| {
-///     let _ = bevy_support::borrowed_reborrowable_parameters(cx, kind, body, local_def_id);
+/// let _call = |cx, kind, local_def_id| {
+///     let _ = bevy_support::borrowed_reborrowable_parameters(cx, kind, local_def_id);
 /// };
 /// ```
 pub fn borrowed_reborrowable_parameters<'tcx>(
     cx: &LateContext<'tcx>,
     kind: FnKind<'tcx>,
-    body: &Body<'tcx>,
     local_def_id: LocalDefId,
-) -> impl Iterator<Item = (usize, Reborrowable)> {
-    let signature = function_signature(cx, kind, local_def_id);
-    let signature = signature.skip_binder();
-    let output = signature.output();
+) -> Vec<(usize, Reborrowable)> {
+    let inputs = adjustable_inputs(cx, kind, local_def_id);
+    // The output type decides whether a borrowed region must outlive the call.
+    let output = match kind {
+        FnKind::Closure => cx.tcx.closure_user_provided_sig(local_def_id).value,
+        FnKind::ItemFn(..) | FnKind::Method(..) => cx
+            .tcx
+            .fn_sig(local_def_id)
+            .instantiate_identity()
+            .skip_norm_wip(),
+    }
+    .skip_binder()
+    .output();
 
-    signature
-        .inputs()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, input)| {
-            let ty::Ref(region, inner, Mutability::Mut) = input.kind() else {
-                return None;
-            };
-            let is_self = body.params.get(index).is_some_and(|parameter| {
-                matches!(
-                    parameter.pat.kind,
-                    PatKind::Binding(_, _, identifier, _) if identifier.name.as_str() == "self"
-                )
-            });
-            if is_self || output.visit_with(&mut ContainsRegion(*region)).is_break() {
-                return None;
-            }
-
-            reborrowable_type(cx, *inner).map(|reborrowable| (index, reborrowable))
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+    let mut parameters = Vec::new();
+    parameters.extend(inputs.into_iter().filter_map(|(index, input)| {
+        let ty::Ref(region, inner, Mutability::Mut) = input.kind() else {
+            return None;
+        };
+        // A returned borrow of the proxy needs the outer reference.
+        if output.visit_with(&mut ContainsRegion(*region)).is_break() {
+            return None;
+        }
+        reborrowable_type(cx, *inner).map(|reborrowable| (index, reborrowable))
+    }));
+    parameters
 }
 
 /// Return parameter indexes whose query data contains a direct ZST reference.
@@ -374,19 +410,19 @@ pub fn zst_query_parameters<'tcx>(
     cx: &LateContext<'tcx>,
     kind: FnKind<'tcx>,
     local_def_id: LocalDefId,
-) -> impl Iterator<Item = usize> {
-    function_signature(cx, kind, local_def_id)
-        .skip_binder()
-        .inputs()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, input)| {
-            query_data_type(cx, *input)
-                .is_some_and(|query_data| direct_query_refs(query_data).any(|ty| is_zst(cx, ty)))
-                .then_some(index)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+) -> Vec<usize> {
+    let mut indexes = Vec::new();
+    indexes.extend(
+        adjustable_inputs(cx, kind, local_def_id)
+            .into_iter()
+            .filter(|(_, input)| {
+                query_data_type(cx, *input).is_some_and(|query_data| {
+                    direct_query_refs(query_data).any(|ty| is_zst(cx, ty))
+                })
+            })
+            .map(|(index, _)| index),
+    );
+    indexes
 }
 
 /// Return mutable query parameters used only through read-only query methods.
@@ -404,34 +440,84 @@ pub fn readonly_mut_query_parameters<'tcx>(
     kind: FnKind<'tcx>,
     body: &Body<'tcx>,
     local_def_id: LocalDefId,
-) -> impl Iterator<Item = usize> {
-    let signature = function_signature(cx, kind, local_def_id);
+) -> Vec<usize> {
+    let mut indexes = Vec::new();
+    indexes.extend(
+        adjustable_inputs(cx, kind, local_def_id)
+            .into_iter()
+            .filter_map(|(index, input)| {
+                let query_data = query_data_type(cx, input)?;
+                if !query_data_has_any_mut_ref(query_data) {
+                    return None;
+                }
+                let binding_id = parameter_binding(body, index)?;
+                // Every direct use must be one of the read-only query methods.
+                let mut visitor = QueryBindingUseVisitor {
+                    cx,
+                    binding_id,
+                    saw_read: false,
+                    saw_other_use: false,
+                };
+                visitor.visit_expr(body.value);
+                (visitor.saw_read && !visitor.saw_other_use).then_some(index)
+            }),
+    );
+    indexes
+}
 
-    signature
-        .skip_binder()
-        .inputs()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, input)| {
-            let query_data = query_data_type(cx, *input)?;
-            if !query_data_has_any_mut_ref(query_data) {
-                return None;
-            }
-            let parameter = body.params.get(index)?;
-            let PatKind::Binding(_, binding_id, _, None) = parameter.pat.kind else {
-                return None;
-            };
-            let mut visitor = QueryBindingUseVisitor {
-                cx,
-                binding_id,
-                saw_read: false,
-                saw_other_use: false,
-            };
-            visitor.visit_expr(body.value);
-            (visitor.saw_read && !visitor.saw_other_use).then_some(index)
+/// Return replacements that turn mutable `Query` references
+/// into shared references.
+///
+/// The result is empty unless the declared type spells `Query<D, ..>` directly
+/// and `D` is a mutable reference or tuple of direct mutable references.
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, parameter| {
+///     let _ = bevy_support::shared_query_data_replacements(cx, parameter);
+/// };
+/// ```
+pub fn shared_query_data_replacements(
+    cx: &LateContext<'_>,
+    parameter: &rustc_hir::Ty<'_>,
+) -> Vec<(Span, String)> {
+    // Peel a reference to the query, then require a resolved `Query` path.
+    let query = if let rustc_hir::TyKind::Ref(_, mutable) = parameter.kind {
+        mutable.ty
+    } else {
+        parameter
+    };
+    let rustc_hir::TyKind::Path(rustc_hir::QPath::Resolved(None, path)) = query.kind else {
+        return Vec::new();
+    };
+    let Res::Def(_, def_id) = path.res else {
+        return Vec::new();
+    };
+    if !trait_is_named(cx, def_id, "bevy_ecs", "Query") || parameter.span.from_expansion() {
+        return Vec::new();
+    }
+    let Some(data) = path
+        .segments
+        .last()
+        .and_then(|segment| segment.args)
+        .and_then(|arguments| {
+            arguments.args.iter().find_map(|argument| {
+                if let rustc_hir::GenericArg::Type(ty) = argument {
+                    Some(ty.as_unambig_ty())
+                } else {
+                    None
+                }
+            })
         })
-        .collect::<Vec<_>>()
-        .into_iter()
+    else {
+        return Vec::new();
+    };
+    // Rewrite each `&mut` prefix while keeping any explicit lifetime.
+    let mut replacements = Vec::new();
+    collect_shared_reference_replacements(cx, data, &mut replacements);
+    replacements
 }
 
 /// Return query parameters that fetch whole entities before fixed typed access.
@@ -449,26 +535,24 @@ pub fn unfiltered_entity_access_query_parameters<'tcx>(
     kind: FnKind<'tcx>,
     body: &Body<'tcx>,
     local_def_id: LocalDefId,
-) -> impl Iterator<Item = usize> {
+) -> Vec<usize> {
     if !body_contains_fixed_entity_access(cx, body) {
-        return Vec::new().into_iter();
+        return Vec::new();
     }
 
-    function_signature(cx, kind, local_def_id)
-        .skip_binder()
-        .inputs()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, input)| {
-            query_data_type(cx, *input)
-                .is_some_and(|data| {
+    let mut indexes = Vec::new();
+    indexes.extend(
+        adjustable_inputs(cx, kind, local_def_id)
+            .into_iter()
+            .filter(|(_, input)| {
+                query_data_type(cx, *input).is_some_and(|data| {
                     type_is_named(cx, data, "bevy_ecs", "EntityRef")
                         || type_is_named(cx, data, "bevy_ecs", "EntityMut")
                 })
-                .then_some(index)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+            })
+            .map(|(index, _)| index),
+    );
+    indexes
 }
 
 /// Return local non-resource components with at least eight fields and a
@@ -489,7 +573,7 @@ pub fn local_large_components(cx: &LateContext<'_>) -> impl Iterator<Item = Loca
     local_trait_targets(cx, "bevy_ecs", "Component")
         .into_iter()
         .filter(move |target| !resources.contains(target))
-        .filter(|target| local_named_field_count(cx, *target) >= 8)
+        .filter(|target| local_named_fields(cx, *target).len() >= 8)
         .filter(|target| local_type_size(cx, *target).is_some_and(|bytes| bytes > 64))
 }
 
@@ -507,25 +591,24 @@ pub fn wide_query_parameters<'tcx>(
     cx: &LateContext<'tcx>,
     kind: FnKind<'tcx>,
     local_def_id: LocalDefId,
-) -> impl Iterator<Item = usize> {
+) -> Vec<usize> {
     let query_data_targets = local_trait_targets(cx, "bevy_ecs", "QueryData");
 
-    function_signature(cx, kind, local_def_id)
-        .skip_binder()
-        .inputs()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, input)| {
-            let data = query_data_type(cx, *input)?;
-            let (total, mutable) = query_access_width(cx, data, &query_data_targets);
-            // A named local `QueryData` type groups related access, so it gets a higher total limit.
-            let is_custom_query_data =
-                local_adt_id(data).is_some_and(|target| query_data_targets.contains(&target));
-            let total_limit = if is_custom_query_data { 8 } else { 5 };
-            (total > total_limit || mutable > 4).then_some(index)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+    let mut indexes = Vec::new();
+    indexes.extend(
+        adjustable_inputs(cx, kind, local_def_id)
+            .into_iter()
+            .filter_map(|(index, input)| {
+                let data = query_data_type(cx, input)?;
+                let (total, mutable) = query_access_width(cx, data, &query_data_targets);
+                // A named local `QueryData` type groups related access, so it gets a higher total limit.
+                let is_custom_query_data =
+                    local_adt_id(data).is_some_and(|target| query_data_targets.contains(&target));
+                let total_limit = if is_custom_query_data { 8 } else { 5 };
+                (total > total_limit || mutable > 4).then_some(index)
+            }),
+    );
+    indexes
 }
 
 /// Return broad custom query parameters that use at most half their named fields.
@@ -543,34 +626,33 @@ pub fn partially_used_query_data_parameters<'tcx>(
     kind: FnKind<'tcx>,
     body: &Body<'tcx>,
     local_def_id: LocalDefId,
-) -> impl Iterator<Item = usize> {
+) -> Vec<usize> {
     let query_data_targets = local_trait_targets(cx, "bevy_ecs", "QueryData");
-    let mut visitor = FieldNameVisitor { names: Vec::new() };
-    visitor.visit_expr(body.value);
 
-    function_signature(cx, kind, local_def_id)
-        .skip_binder()
-        .inputs()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, input)| {
-            let data = query_data_type(cx, *input)?;
-            let target = local_adt_id(data)?;
-            if !query_data_targets.contains(&target) {
-                return None;
-            }
-            let fields = local_named_fields(cx, target);
-            if fields.len() <= 8 {
-                return None;
-            }
-            let used = fields
-                .iter()
-                .filter(|field| visitor.names.contains(field))
-                .count();
-            (used * 2 <= fields.len()).then_some(index)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+    let mut indexes = Vec::new();
+    indexes.extend(
+        adjustable_inputs(cx, kind, local_def_id)
+            .into_iter()
+            .filter_map(|(index, input)| {
+                let data = query_data_type(cx, input)?;
+                let target = local_adt_id(data)?;
+                if !query_data_targets.contains(&target) {
+                    return None;
+                }
+                let fields = local_named_fields(cx, target);
+                if fields.len() <= 8 {
+                    return None;
+                }
+                // Count fields read through the derived item structs of this query data type.
+                let owners = query_data_item_types(cx, target);
+                let used = used_field_names(cx, body, &owners)
+                    .iter()
+                    .filter(|field| fields.contains(field))
+                    .count();
+                (used * 2 <= fields.len()).then_some(index)
+            }),
+    );
+    indexes
 }
 
 /// Return shared query parameters used only for presence or count checks.
@@ -588,34 +670,28 @@ pub fn presence_only_query_parameters<'tcx>(
     kind: FnKind<'tcx>,
     body: &Body<'tcx>,
     local_def_id: LocalDefId,
-) -> impl Iterator<Item = usize> {
-    let signature = function_signature(cx, kind, local_def_id);
-
-    signature
-        .skip_binder()
-        .inputs()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, input)| {
-            let data = query_data_type(cx, *input)?;
-            if !matches!(data.kind(), ty::Ref(_, _, Mutability::Not)) {
-                return None;
-            }
-            let parameter = body.params.get(index)?;
-            let PatKind::Binding(_, binding_id, _, None) = parameter.pat.kind else {
-                return None;
-            };
-            let mut visitor = PresenceQueryUseVisitor {
-                cx,
-                binding_id,
-                saw_presence_use: false,
-                saw_other_use: false,
-            };
-            visitor.visit_expr(body.value);
-            (visitor.saw_presence_use && !visitor.saw_other_use).then_some(index)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+) -> Vec<usize> {
+    let mut indexes = Vec::new();
+    indexes.extend(
+        adjustable_inputs(cx, kind, local_def_id)
+            .into_iter()
+            .filter_map(|(index, input)| {
+                let data = query_data_type(cx, input)?;
+                if !matches!(data.kind(), ty::Ref(_, _, Mutability::Not)) {
+                    return None;
+                }
+                let binding_id = parameter_binding(body, index)?;
+                let mut visitor = PresenceQueryUseVisitor {
+                    cx,
+                    binding_id,
+                    saw_presence_use: false,
+                    saw_other_use: false,
+                };
+                visitor.visit_expr(body.value);
+                (visitor.saw_presence_use && !visitor.saw_other_use).then_some(index)
+            }),
+    );
+    indexes
 }
 
 /// Return a narrow exclusive-system parameter that can use normal system parameters.
@@ -633,39 +709,34 @@ pub fn narrow_exclusive_system_parameters<'tcx>(
     kind: FnKind<'tcx>,
     body: &Body<'tcx>,
     local_def_id: LocalDefId,
-) -> impl Iterator<Item = usize> {
+) -> Vec<usize> {
     if !matches!(kind, FnKind::ItemFn(..)) {
-        return Vec::new().into_iter();
+        return Vec::new();
     }
-    let signature = function_signature(cx, kind, local_def_id);
 
-    signature
-        .skip_binder()
-        .inputs()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, input)| {
-            let ty::Ref(_, inner, Mutability::Mut) = input.kind() else {
-                return None;
-            };
-            if !type_is_named(cx, *inner, "bevy_ecs", "World") {
-                return None;
-            }
-            let parameter = body.params.get(index)?;
-            let PatKind::Binding(_, binding_id, _, None) = parameter.pat.kind else {
-                return None;
-            };
-            let mut visitor = WorldBindingUseVisitor {
-                cx,
-                binding_id,
-                saw_narrow_access: false,
-                saw_other_use: false,
-            };
-            visitor.visit_expr(body.value);
-            (visitor.saw_narrow_access && !visitor.saw_other_use).then_some(index)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+    let mut indexes = Vec::new();
+    indexes.extend(
+        adjustable_inputs(cx, kind, local_def_id)
+            .into_iter()
+            .filter_map(|(index, input)| {
+                let ty::Ref(_, inner, Mutability::Mut) = input.kind() else {
+                    return None;
+                };
+                if !type_is_named(cx, *inner, "bevy_ecs", "World") {
+                    return None;
+                }
+                let binding_id = parameter_binding(body, index)?;
+                let mut visitor = WorldBindingUseVisitor {
+                    cx,
+                    binding_id,
+                    saw_narrow_access: false,
+                    saw_other_use: false,
+                };
+                visitor.visit_expr(body.value);
+                (visitor.saw_narrow_access && !visitor.saw_other_use).then_some(index)
+            }),
+    );
+    indexes
 }
 
 /// Return query parameters that change-track a large local component.
@@ -683,28 +754,20 @@ pub fn large_component_change_filter_parameters<'tcx>(
     kind: FnKind<'tcx>,
     body: &Body<'tcx>,
     local_def_id: LocalDefId,
-) -> impl Iterator<Item = usize> {
+) -> Vec<usize> {
+    let inputs = adjustable_inputs(cx, kind, local_def_id);
     let large_components = local_large_components(cx).collect::<Vec<_>>();
-    let mut visitor = FieldNameVisitor { names: Vec::new() };
-    visitor.visit_expr(body.value);
 
-    function_signature(cx, kind, local_def_id)
-        .skip_binder()
-        .inputs()
-        .iter()
-        .enumerate()
-        .filter_map(|(index, input)| {
-            let filter = query_filter_type(cx, *input)?;
-            let component = query_filter_tracked_component(cx, filter, &large_components)?;
-            let fields = local_named_fields(cx, component);
-            let used = fields
-                .iter()
-                .filter(|field| visitor.names.contains(field))
-                .count();
-            (used * 2 < fields.len()).then_some(index)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+    let mut indexes = Vec::new();
+    indexes.extend(inputs.into_iter().filter_map(|(index, input)| {
+        let filter = query_filter_type(cx, input)?;
+        let component = query_filter_tracked_component(cx, filter, &large_components)?;
+        // Count only fields read from values of the tracked component type.
+        let fields = local_named_fields(cx, component);
+        let used = used_field_names(cx, body, &[component.to_def_id()]).len();
+        (used * 2 < fields.len()).then_some(index)
+    }));
+    indexes
 }
 
 /// Return field access for a function with one mutable local component query.
@@ -728,11 +791,9 @@ pub fn mutable_component_field_access<'tcx>(
     if !matches!(kind, FnKind::ItemFn(..)) {
         return None;
     }
-    let components = function_signature(cx, kind, local_def_id)
-        .skip_binder()
-        .inputs()
-        .iter()
-        .filter_map(|input| query_data_type(cx, *input))
+    let components = adjustable_inputs(cx, kind, local_def_id)
+        .into_iter()
+        .filter_map(|(_, input)| query_data_type(cx, input))
         .flat_map(query_data_mut_components)
         .filter_map(local_adt_id)
         .collect::<Vec<_>>();
@@ -762,7 +823,7 @@ pub fn mutable_component_field_access<'tcx>(
     })
 }
 
-/// Return direct local systems from one resolved `App::add_systems` call.
+/// Return local systems from one resolved `App::add_systems` call.
 #[must_use]
 ///
 /// # Examples
@@ -786,22 +847,15 @@ pub fn directly_registered_systems(
         cx,
         cx.typeck_results().expr_ty_adjusted(schedule).peel_refs(),
     )?;
-    // Keep only direct local function paths because later analysis needs their bodies.
-    let systems = direct_system_expressions(systems)
-        .filter_map(|system| {
-            let ExprKind::Path(ref path) = system.kind else {
-                return None;
-            };
-            let Res::Def(_, def_id) = cx.typeck_results().qpath_res(path, system.hir_id) else {
-                return None;
-            };
-            def_id.as_local()
-        })
+    // Keep only local function paths because later analysis needs their bodies.
+    let systems = system_expressions(cx, systems)
+        .into_iter()
+        .filter_map(|system| system_function(cx, system)?.as_local())
         .collect::<Vec<_>>();
     (!systems.is_empty()).then_some(RegisteredSystems { schedule, systems })
 }
 
-/// Return whether a direct system function mutably queries camera-filtered entities.
+/// Return whether a system function mutably queries camera-filtered entities.
 #[must_use]
 ///
 /// # Examples
@@ -827,7 +881,7 @@ pub fn is_system_mutably_querying_camera(cx: &LateContext<'_>, def_id: DefId) ->
         })
 }
 
-/// Return spans for direct systems that mutate a camera in `FixedUpdate`.
+/// Return spans for systems that mutate a camera in `FixedUpdate`.
 ///
 /// # Examples
 ///
@@ -837,34 +891,30 @@ pub fn is_system_mutably_querying_camera(cx: &LateContext<'_>, def_id: DefId) ->
 ///     let _ = bevy_support::camera_fixed_update_system_spans(cx, expr);
 /// };
 /// ```
-pub fn camera_fixed_update_system_spans(
-    cx: &LateContext<'_>,
-    expr: &Expr<'_>,
-) -> impl Iterator<Item = Span> {
+pub fn camera_fixed_update_system_spans(cx: &LateContext<'_>, expr: &Expr<'_>) -> Vec<Span> {
     // Require the exact registration method and the fixed-update schedule.
     let Some(call) = app_method_call(cx, expr, "add_systems") else {
-        return Vec::new().into_iter();
+        return Vec::new();
     };
     let [schedule, systems, ..] = call.arguments else {
-        return Vec::new().into_iter();
+        return Vec::new();
     };
     if !expression_has_type(cx, schedule, "bevy_app", "FixedUpdate") {
-        return Vec::new().into_iter();
+        return Vec::new();
     }
 
-    // Report only direct systems whose signatures prove mutable camera access.
-    direct_system_expressions(systems)
-        .filter_map(|system| {
-            let ExprKind::Path(ref path) = system.kind else {
-                return None;
-            };
-            let Res::Def(_, def_id) = cx.typeck_results().qpath_res(path, system.hir_id) else {
-                return None;
-            };
-            is_system_mutably_querying_camera(cx, def_id).then_some(system.span)
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
+    // Report only systems whose signatures prove mutable camera access.
+    let mut spans = Vec::new();
+    spans.extend(
+        system_expressions(cx, systems)
+            .into_iter()
+            .filter(|system| {
+                system_function(cx, system)
+                    .is_some_and(|def_id| is_system_mutably_querying_camera(cx, def_id))
+            })
+            .map(|system| system.span),
+    );
+    spans
 }
 
 /// Return the disallowed schedule argument span for one `App::add_systems` call.
@@ -942,7 +992,20 @@ pub fn iter_current_update_messages_span(cx: &LateContext<'_>, expr: &Expr<'_>) 
     .map(|call| call.method_span)
 }
 
-/// Return unit expression spans passed to known Bevy bundle methods.
+/// One unit value passed inside a Bevy bundle.
+#[derive(Clone, Debug)]
+pub struct UnitBundleValue {
+    /// Span of the unit expression.
+    pub span: Span,
+    /// Replacements that remove the unit value without changing the inserted components.
+    ///
+    /// The list is empty when no exact rewrite is known.
+    pub replacements: Vec<(Span, String)>,
+    /// Message that describes the replacements.
+    pub suggestion: &'static str,
+}
+
+/// Return unit values passed to known Bevy bundle methods.
 #[must_use]
 ///
 /// # Examples
@@ -950,12 +1013,12 @@ pub fn iter_current_update_messages_span(cx: &LateContext<'_>, expr: &Expr<'_>) 
 /// ```rust
 /// # #![feature(rustc_private)]
 /// let _call = |cx, expr| {
-///     let _ = bevy_support::unit_bundle_spans(cx, expr);
+///     let _ = bevy_support::unit_bundle_values(cx, expr);
 /// };
 /// ```
-pub fn unit_bundle_spans(cx: &LateContext<'_>, expr: &Expr<'_>) -> Vec<Span> {
+pub fn unit_bundle_values(cx: &LateContext<'_>, expr: &Expr<'_>) -> Vec<UnitBundleValue> {
     // Resolve only method calls before inspecting receiver-specific bundle behavior.
-    let ExprKind::MethodCall(_, receiver, arguments, _) = expr.kind else {
+    let ExprKind::MethodCall(segment, receiver, [bundle, ..], _) = expr.kind else {
         return Vec::new();
     };
     let Some(def_id) = cx.typeck_results().type_dependent_def_id(expr.hir_id) else {
@@ -966,13 +1029,10 @@ pub fn unit_bundle_spans(cx: &LateContext<'_>, expr: &Expr<'_>) -> Vec<Span> {
     }
 
     // Restrict the accepted API set to methods whose first argument is a bundle.
-    let receiver_name = adt_name(
-        cx,
-        cx.typeck_results().expr_ty_adjusted(receiver).peel_refs(),
-    );
+    let receiver_ty = cx.typeck_results().expr_ty_adjusted(receiver).peel_refs();
     let method_symbol = cx.tcx.item_name(def_id);
     let method_name = method_symbol.as_str();
-    let is_bundle_accepted = receiver_name.is_some_and(|name| {
+    let is_bundle_accepted = adt_name(cx, receiver_ty).is_some_and(|name| {
         matches!(
             name.as_str(),
             "Commands"
@@ -986,18 +1046,40 @@ pub fn unit_bundle_spans(cx: &LateContext<'_>, expr: &Expr<'_>) -> Vec<Span> {
     if !is_bundle_accepted {
         return Vec::new();
     }
-    // A missing bundle argument cannot contain a unit value.
-    let Some(bundle) = arguments.first() else {
-        return Vec::new();
-    };
+
+    // A literal unit spawn is exactly `spawn_empty`, which every accepted spawner provides.
+    if method_name == "spawn" && is_unit_literal(bundle) {
+        let replacements = if expr.span.from_expansion() {
+            Vec::new()
+        } else {
+            vec![(
+                segment.ident.span.to(expr.span.shrink_to_hi()),
+                String::from("spawn_empty()"),
+            )]
+        };
+        return vec![UnitBundleValue {
+            span: bundle.span,
+            replacements,
+            suggestion: "spawn the empty entity with `spawn_empty()`",
+        }];
+    }
 
     // Preserve every nested unit span so diagnostics can target the smallest expression.
-    let mut spans = Vec::new();
-    collect_unit_expression_spans(cx.typeck_results().expr_ty(bundle), bundle, &mut spans);
-    spans
+    let mut values = Vec::new();
+    collect_unit_bundle_values(cx.typeck_results().expr_ty(bundle), bundle, &mut values);
+    values
 }
 
-/// Return the duplicate `add_plugins` method span for adjacent chained calls.
+/// Spans for an `add_plugins` call that repeats the previous plugin.
+#[derive(Clone, Copy, Debug)]
+pub struct DuplicatePluginAddition {
+    /// Span of the repeated `add_plugins` method name.
+    pub method_span: Span,
+    /// Span of `.add_plugins(..)` to delete when removal is exact.
+    pub removal: Option<Span>,
+}
+
+/// Return the duplicate `add_plugins` call for adjacent chained calls.
 #[must_use]
 ///
 /// # Examples
@@ -1005,24 +1087,58 @@ pub fn unit_bundle_spans(cx: &LateContext<'_>, expr: &Expr<'_>) -> Vec<Span> {
 /// ```rust
 /// # #![feature(rustc_private)]
 /// let _call = |cx, expr| {
-///     let _ = bevy_support::duplicate_plugin_addition_span(cx, expr);
+///     let _ = bevy_support::duplicate_plugin_addition(cx, expr);
 /// };
 /// ```
-pub fn duplicate_plugin_addition_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Span> {
+pub fn duplicate_plugin_addition(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+) -> Option<DuplicatePluginAddition> {
     // Require adjacent resolved registration calls before comparing their arguments.
     let outer = app_method_call(cx, expr, "add_plugins")?;
     let inner = app_method_call(cx, outer.receiver, "add_plugins")?;
-    let outer_plugin = outer.arguments.first()?;
-    let inner_plugin = inner.arguments.first()?;
+    let [outer_plugin] = outer.arguments else {
+        return None;
+    };
+    let [inner_plugin] = inner.arguments else {
+        return None;
+    };
     let outer_ty = cx.typeck_results().expr_ty(outer_plugin);
     let inner_ty = cx.typeck_results().expr_ty(inner_plugin);
 
     // Default plugin uniqueness makes equal adjacent plugin types duplicates.
-    (outer_ty == inner_ty && local_plugin_uses_default_uniqueness(cx, outer_ty))
-        .then_some(outer.method_span)
+    if outer_ty != inner_ty || !local_plugin_uses_default_uniqueness(cx, outer_ty) {
+        return None;
+    }
+    // Deleting a path argument cannot drop side effects; other arguments might run code.
+    let removal = (matches!(outer_plugin.kind, ExprKind::Path(_))
+        && !expr.span.from_expansion()
+        && !outer.receiver.span.from_expansion())
+    .then(|| {
+        outer
+            .receiver
+            .span
+            .shrink_to_hi()
+            .to(expr.span.shrink_to_hi())
+    });
+    Some(DuplicatePluginAddition {
+        method_span: outer.method_span,
+        removal,
+    })
 }
 
-/// Return the method span when `Time::elapsed_secs()` is immediately cast to `f64`.
+/// A widening of `Time::elapsed_secs()` to `f64`.
+#[derive(Clone, Debug)]
+pub struct ElapsedSecsWidening {
+    /// Span of the `elapsed_secs` method name.
+    pub method_span: Span,
+    /// Spans of the conversion syntax to delete when the rewrite is exact.
+    ///
+    /// The list is empty when the expression comes from a macro expansion.
+    pub removals: Vec<Span>,
+}
+
+/// Return a `Time::elapsed_secs()` value widened to `f64` by `as`, `From`, or `Into`.
 #[must_use]
 ///
 /// # Examples
@@ -1030,22 +1146,62 @@ pub fn duplicate_plugin_addition_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> 
 /// ```rust
 /// # #![feature(rustc_private)]
 /// let _call = |cx, expr| {
-///     let _ = bevy_support::elapsed_secs_cast_f64_span(cx, expr);
+///     let _ = bevy_support::elapsed_secs_widening(cx, expr);
 /// };
 /// ```
-pub fn elapsed_secs_cast_f64_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Span> {
-    // Require an explicit cast to `f64` before resolving the source method.
-    let ExprKind::Cast(operand, _) = expr.kind else {
-        return None;
-    };
+pub fn elapsed_secs_widening(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<ElapsedSecsWidening> {
+    // Every accepted form produces an `f64` from one `elapsed_secs` call.
     if !matches!(
         cx.typeck_results().expr_ty(expr).kind(),
         ty::Float(ty::FloatTy::F64)
     ) {
         return None;
     }
-
-    bevy_method_call(cx, operand, "bevy_time", "Time", "elapsed_secs").map(|call| call.method_span)
+    let (operand, removals) = if let ExprKind::Cast(operand, _) = expr.kind {
+        // `time.elapsed_secs() as f64`
+        (
+            operand,
+            vec![operand.span.between(expr.span.shrink_to_hi())],
+        )
+    } else if let ExprKind::Call(function, [argument]) = expr.kind
+        && resolved_trait_method(cx, function, rustc_span::sym::From)
+    {
+        // `f64::from(time.elapsed_secs())`
+        (
+            argument,
+            vec![
+                expr.span.shrink_to_lo().to(argument.span.shrink_to_lo()),
+                argument.span.between(expr.span.shrink_to_hi()),
+            ],
+        )
+    } else if let ExprKind::MethodCall(_, receiver, [], _) = expr.kind {
+        let is_into_conversion = cx
+            .typeck_results()
+            .type_dependent_def_id(expr.hir_id)
+            .and_then(|def_id| cx.tcx.trait_of_assoc(def_id))
+            .is_some_and(|def_id| cx.tcx.is_diagnostic_item(rustc_span::sym::Into, def_id));
+        if !is_into_conversion {
+            return None;
+        }
+        // `time.elapsed_secs().into()`
+        (
+            receiver,
+            vec![receiver.span.between(expr.span.shrink_to_hi())],
+        )
+    } else {
+        return None;
+    };
+    let call = bevy_method_call(cx, operand, "bevy_time", "Time", "elapsed_secs")?;
+    // Macro-produced syntax has no reliable source text to rewrite.
+    let removals = if expr.span.from_expansion() || operand.span.from_expansion() {
+        Vec::new()
+    } else {
+        removals
+    };
+    Some(ElapsedSecsWidening {
+        method_span: call.method_span,
+        removals,
+    })
 }
 
 /// Return local component-like types that lack `Reflect`.
@@ -1096,12 +1252,46 @@ pub fn local_unit_components_missing_trait(
     cx: &LateContext<'_>,
     marker_trait: MarkerTrait,
 ) -> impl Iterator<Item = LocalDefId> {
-    let implemented = local_standard_trait_targets(cx, marker_trait.name());
+    let implemented = local_standard_trait_targets(cx, marker_trait);
 
     local_trait_targets(cx, "bevy_ecs", "Component")
         .into_iter()
         .filter(|target| local_item_is_unit_struct(cx, *target))
         .filter(move |target| !implemented.contains(target))
+}
+
+/// Return an attribute insertion that derives a trait on a unit component.
+///
+/// The result is `None` when the derive could fail to compile: when the item
+/// comes from a macro expansion, or when `Copy` is missing its `Clone` supertrait.
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, target, marker_trait| {
+///     let _ = bevy_support::missing_trait_derive(cx, target, marker_trait);
+/// };
+/// ```
+pub fn missing_trait_derive(
+    cx: &LateContext<'_>,
+    target: LocalDefId,
+    marker_trait: MarkerTrait,
+) -> Option<(Span, String)> {
+    let span = cx.tcx.def_span(target);
+    if span.from_expansion() {
+        return None;
+    }
+    // `Copy` requires `Clone`, so its derive compiles only next to an existing `Clone`.
+    if marker_trait == MarkerTrait::Copy
+        && !local_standard_trait_targets(cx, MarkerTrait::Clone).contains(&target)
+    {
+        return None;
+    }
+    Some((
+        span.shrink_to_lo(),
+        format!("#[derive({})]\n", marker_trait.name()),
+    ))
 }
 
 /// Return local Bevy trait implementations whose names violate conventions.
@@ -1145,7 +1335,7 @@ pub fn unconventional_bevy_type_names(
     violations
 }
 
-/// Count loaded crates whose original metadata name is `bevy`.
+/// Count direct dependencies whose original crate name is `bevy`.
 #[must_use]
 ///
 /// # Examples
@@ -1153,40 +1343,46 @@ pub fn unconventional_bevy_type_names(
 /// ```rust
 /// # #![feature(rustc_private)]
 /// let _call = |cx| {
-///     let _ = bevy_support::loaded_bevy_facades(cx);
+///     let _ = bevy_support::direct_bevy_facades(cx);
 /// };
 /// ```
-pub fn loaded_bevy_facades(cx: &LateContext<'_>) -> usize {
+pub fn direct_bevy_facades(cx: &LateContext<'_>) -> usize {
     cx.tcx
         .crates(())
         .iter()
-        .filter(|&&crate_num| cx.tcx.crate_name(crate_num).as_str() == "bevy")
+        .filter(|&&crate_num| {
+            cx.tcx.crate_name(crate_num).as_str() == "bevy"
+                && cx
+                    .tcx
+                    .extern_crate(crate_num)
+                    .is_some_and(rustc_session::cstore::ExternCrate::is_direct)
+        })
         .count()
 }
 
-/// Return whether a unit-returning entrypoint contains a discarded `App::run`.
+/// Return discarded `App::run` spans in the crate's unit-returning entry function.
 #[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
 /// # #![feature(rustc_private)]
-/// let _call = |cx, kind, declaration, body, _local_def_id| {
-///     let _ = bevy_support::discarded_app_run_spans(cx, kind, declaration, body, _local_def_id);
+/// let _call = |cx, declaration, body, local_def_id| {
+///     let _ = bevy_support::discarded_app_run_spans(cx, declaration, body, local_def_id);
 /// };
 /// ```
 pub fn discarded_app_run_spans<'tcx>(
     cx: &LateContext<'tcx>,
-    kind: FnKind<'tcx>,
     declaration: &FnDecl<'tcx>,
     body: &Body<'tcx>,
-    _local_def_id: LocalDefId,
+    local_def_id: LocalDefId,
 ) -> Vec<Span> {
-    // Only named free-function items with a unit declaration can be this entrypoint.
-    let FnKind::ItemFn(identifier, ..) = kind else {
-        return Vec::new();
-    };
-    if identifier.name.as_str() != "main"
+    // Only the resolved entry function with a unit declaration can be this entrypoint.
+    let is_entry = cx
+        .tcx
+        .entry_fn(())
+        .is_some_and(|(entry, _)| entry == local_def_id.to_def_id());
+    if !is_entry
         || !matches!(
             declaration.output,
             rustc_hir::FnRetTy::DefaultReturn(_)
@@ -1304,102 +1500,6 @@ macro_rules! declare_expression_span_lint {
     };
 }
 
-/// Declare a lint whose semantic matcher returns one expression span and a fixed replacement.
-#[macro_export]
-macro_rules! declare_expression_span_suggestion_lint {
-    (
-        $lint:ident, $pass:ident, $level:ident, $checker:path, $description:literal,
-        $message:literal, $help:literal, $replacement:literal
-    ) => {
-        dylint_support::documented_late_lint! {
-            #[doc = include_str!("../README.md")]
-            pub $lint,
-            $level,
-            $description,
-            $pass
-        }
-
-        impl<'tcx> rustc_lint::LateLintPass<'tcx> for $pass {
-            /// Check one semantically resolved Bevy expression and offer its exact replacement.
-            fn check_expr(
-                &mut self,
-                cx: &rustc_lint::LateContext<'tcx>,
-                expr: &'tcx rustc_hir::Expr<'tcx>,
-            ) {
-                use rustc_lint::LintContext as _;
-
-                let Some(span) = $checker(cx, expr) else {
-                    return;
-                };
-                cx.emit_span_lint(
-                    $lint,
-                    span,
-                    rustc_errors::DiagDecorator(|diagnostic| {
-                        let _configured_diagnostic =
-                            diagnostic.primary_message($message).span_suggestion(
-                                span,
-                                $help,
-                                $replacement,
-                                rustc_errors::Applicability::MachineApplicable,
-                            );
-                    }),
-                );
-            }
-        }
-
-        /// Run the positive and negative UI fixture.
-        #[test]
-        fn ui() {
-            dylint_testing::ui_test_examples(env!("CARGO_PKG_NAME"));
-        }
-    };
-}
-
-/// Declare a lint whose semantic matcher returns multiple expression spans.
-#[macro_export]
-macro_rules! declare_expression_spans_lint {
-    (
-        $lint:ident, $pass:ident, $level:ident, $checker:path, $description:literal,
-        $message:literal, $help:literal
-    ) => {
-        dylint_support::documented_late_lint! {
-            #[doc = include_str!("../README.md")]
-            pub $lint,
-            $level,
-            $description,
-            $pass
-        }
-
-        impl<'tcx> rustc_lint::LateLintPass<'tcx> for $pass {
-            /// Check semantically resolved Bevy expressions.
-            fn check_expr(
-                &mut self,
-                cx: &rustc_lint::LateContext<'tcx>,
-                expr: &'tcx rustc_hir::Expr<'tcx>,
-            ) {
-                use rustc_lint::LintContext as _;
-
-                for span in $checker(cx, expr) {
-                    cx.emit_span_lint(
-                        $lint,
-                        span,
-                        rustc_errors::DiagDecorator(|diagnostic| {
-                            let _configured_diagnostic =
-                                diagnostic.primary_message($message).help($help);
-                        }),
-                    );
-                }
-            }
-        }
-
-        /// Run the positive and negative UI fixture.
-        #[test]
-        fn ui() {
-            dylint_testing::ui_test_examples(env!("CARGO_PKG_NAME"));
-        }
-    };
-}
-
 /// Declare a lint against mutable query access to one managed Bevy component.
 #[macro_export]
 macro_rules! declare_mutable_query_component_lint {
@@ -1422,26 +1522,23 @@ macro_rules! declare_mutable_query_component_lint {
                 cx: &rustc_lint::LateContext<'tcx>,
                 kind: rustc_hir::intravisit::FnKind<'tcx>,
                 declaration: &'tcx rustc_hir::FnDecl<'tcx>,
-                body: &'tcx rustc_hir::Body<'tcx>,
+                _: &'tcx rustc_hir::Body<'tcx>,
                 _: rustc_span::Span,
                 local_def_id: rustc_span::def_id::LocalDefId,
             ) {
                 use rustc_lint::LintContext as _;
 
-                for index in $crate::mutable_query_component_parameters(
+                let indexes = $crate::mutable_query_component_parameters(
                     cx,
                     kind,
-                    body,
                     local_def_id,
                     $component_crate,
                     $component,
-                ) {
-                    let Some(parameter) = declaration.inputs.get(index) else {
-                        continue;
-                    };
+                );
+                for span in $crate::parameter_spans(declaration, indexes) {
                     cx.emit_span_lint(
                         $lint,
-                        parameter.span,
+                        span,
                         rustc_errors::DiagDecorator(|diagnostic| {
                             let _configured_diagnostic =
                                 diagnostic.primary_message($message).help($help);
@@ -1487,13 +1584,11 @@ macro_rules! declare_function_parameter_lint {
             ) {
                 use rustc_lint::LintContext as _;
 
-                for index in $checker(cx, kind, body, local_def_id) {
-                    let Some(parameter) = declaration.inputs.get(index) else {
-                        continue;
-                    };
+                let indexes = $checker(cx, kind, body, local_def_id);
+                for span in $crate::parameter_spans(declaration, indexes) {
                     cx.emit_span_lint(
                         $lint,
-                        parameter.span,
+                        span,
                         rustc_errors::DiagDecorator(|diagnostic| {
                             let _configured_diagnostic =
                                 diagnostic.primary_message($message).help($help);
@@ -1539,13 +1634,11 @@ macro_rules! declare_function_parameter_type_lint {
             ) {
                 use rustc_lint::LintContext as _;
 
-                for index in $checker(cx, kind, local_def_id) {
-                    let Some(parameter) = declaration.inputs.get(index) else {
-                        continue;
-                    };
+                let indexes = $checker(cx, kind, local_def_id);
+                for span in $crate::parameter_spans(declaration, indexes) {
                     cx.emit_span_lint(
                         $lint,
-                        parameter.span,
+                        span,
                         rustc_errors::DiagDecorator(|diagnostic| {
                             let _configured_diagnostic =
                                 diagnostic.primary_message($message).help($help);
@@ -1629,16 +1722,25 @@ macro_rules! declare_missing_unit_component_trait_lint {
             fn check_crate(&mut self, cx: &rustc_lint::LateContext<'tcx>) {
                 use rustc_lint::LintContext as _;
 
-                for target in $crate::local_unit_components_missing_trait(
-                    cx,
-                    $crate::MarkerTrait::$marker_trait,
-                ) {
+                let marker_trait = $crate::MarkerTrait::$marker_trait;
+                for target in $crate::local_unit_components_missing_trait(cx, marker_trait) {
+                    let derive = $crate::missing_trait_derive(cx, target, marker_trait);
                     cx.emit_span_lint(
                         $lint,
                         cx.tcx.def_span(target),
                         rustc_errors::DiagDecorator(|diagnostic| {
-                            let _configured_diagnostic =
-                                diagnostic.primary_message($message).help($help);
+                            let _configured_diagnostic = diagnostic.primary_message($message);
+                            // Offer the derive only where it is known to compile.
+                            if let Some((span, attribute)) = derive {
+                                let _suggested = diagnostic.span_suggestion_verbose(
+                                    span,
+                                    $help,
+                                    attribute,
+                                    rustc_errors::Applicability::MachineApplicable,
+                                );
+                            } else {
+                                let _helped = diagnostic.help($help);
+                            }
                         }),
                     );
                 }
@@ -1653,42 +1755,156 @@ macro_rules! declare_missing_unit_component_trait_lint {
     };
 }
 
-/// Return a function signature for a free function, method, or closure.
-fn function_signature<'tcx>(
+/// Return indexed parameter types for a function whose signature
+/// the author controls.
+///
+/// Trait implementation methods yield nothing because traits fix their
+/// parameter types.
+fn adjustable_inputs<'tcx>(
     cx: &LateContext<'tcx>,
     kind: FnKind<'tcx>,
     local_def_id: LocalDefId,
-) -> ty::PolyFnSig<'tcx> {
-    match kind {
+) -> Vec<(usize, Ty<'tcx>)> {
+    // A trait implementation cannot change the parameter types the trait declares.
+    if cx
+        .tcx
+        .trait_impl_of_assoc(local_def_id.to_def_id())
+        .is_some()
+    {
+        return Vec::new();
+    }
+    let signature = match kind {
         FnKind::Closure => cx.tcx.closure_user_provided_sig(local_def_id).value,
         FnKind::ItemFn(..) | FnKind::Method(..) => cx
             .tcx
             .fn_sig(local_def_id)
             .instantiate_identity()
             .skip_norm_wip(),
-    }
+    };
+    signature
+        .skip_binder()
+        .inputs()
+        .iter()
+        .copied()
+        .enumerate()
+        .collect()
+}
+
+/// Map parameter indexes to the spans of their declared types.
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |declaration, indexes: Vec<usize>| {
+///     let _ = bevy_support::parameter_spans(declaration, indexes);
+/// };
+/// ```
+pub fn parameter_spans<'hir>(
+    declaration: &'hir FnDecl<'hir>,
+    indexes: impl IntoIterator<Item = usize>,
+) -> impl Iterator<Item = Span> {
+    parameter_types(declaration, indexes).map(|input| input.span)
+}
+
+/// Map parameter indexes to their declared HIR types.
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |declaration, indexes: Vec<usize>| {
+///     let _ = bevy_support::parameter_types(declaration, indexes);
+/// };
+/// ```
+pub fn parameter_types<'hir>(
+    declaration: &'hir FnDecl<'hir>,
+    indexes: impl IntoIterator<Item = usize>,
+) -> impl Iterator<Item = &'hir rustc_hir::Ty<'hir>> {
+    indexes
+        .into_iter()
+        .filter_map(|index| declaration.inputs.get(index))
+}
+
+/// Return the closure or coroutine body behind a nested body identifier.
+///
+/// Visitors use it to analyze closures with the enclosing function while
+/// skipping constant bodies, which have separate type-check results.
+fn closure_body<'tcx>(
+    cx: &LateContext<'tcx>,
+    body_id: rustc_hir::BodyId,
+) -> Option<&'tcx Body<'tcx>> {
+    let owner = cx.tcx.hir_body_owner_def_id(body_id);
+    matches!(
+        cx.tcx.hir_body_owner_kind(owner),
+        rustc_hir::BodyOwnerKind::Closure
+    )
+    .then(|| cx.tcx.hir_body(body_id))
 }
 
 /// Return query data from an instantiated `Query` type.
 fn query_data_type<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    let ty::Adt(definition, arguments) = ty.peel_refs().kind() else {
-        return None;
-    };
-    (cx.tcx.crate_name(definition.did().krate).as_str() == "bevy_ecs"
-        && cx.tcx.item_name(definition.did()).as_str() == "Query")
-        .then(|| arguments.types().next())
+    type_is_named(cx, ty, "bevy_ecs", "Query")
+        .then(|| query_type_arguments(ty).next())
         .flatten()
 }
 
 /// Return query filters from an instantiated `Query` type.
 fn query_filter_type<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    let ty::Adt(definition, arguments) = ty.peel_refs().kind() else {
+    type_is_named(cx, ty, "bevy_ecs", "Query")
+        .then(|| query_type_arguments(ty).nth(1))
+        .flatten()
+}
+
+/// Return the type arguments of an ADT after peeling references.
+fn query_type_arguments(ty: Ty<'_>) -> impl Iterator<Item = Ty<'_>> {
+    let arguments = if let ty::Adt(_, arguments) = ty.peel_refs().kind() {
+        arguments.types().collect()
+    } else {
+        Vec::new()
+    };
+    arguments.into_iter()
+}
+
+/// Return the binding introduced by a plain identifier parameter.
+fn parameter_binding(body: &Body<'_>, index: usize) -> Option<rustc_hir::HirId> {
+    let parameter = body.params.get(index)?;
+    let PatKind::Binding(_, binding_id, _, None) = parameter.pat.kind else {
         return None;
     };
-    (cx.tcx.crate_name(definition.did().krate).as_str() == "bevy_ecs"
-        && cx.tcx.item_name(definition.did()).as_str() == "Query")
-        .then(|| arguments.types().nth(1))
-        .flatten()
+    Some(binding_id)
+}
+
+/// Collect `&mut` prefix replacements from HIR query data made of references and tuples.
+fn collect_shared_reference_replacements(
+    cx: &LateContext<'_>,
+    data: &rustc_hir::Ty<'_>,
+    replacements: &mut Vec<(Span, String)>,
+) {
+    if let rustc_hir::TyKind::Ref(_, mutable) = data.kind
+        && mutable.mutbl == Mutability::Mut
+    {
+        // Rebuild the prefix from its tokens so an explicit lifetime survives.
+        let prefix = data.span.until(mutable.ty.span);
+        let Ok(text) = cx.tcx.sess.source_map().span_to_snippet(prefix) else {
+            return;
+        };
+        let mut tokens = text.trim_start_matches('&').split_whitespace();
+        let replacement = match (tokens.next(), tokens.next(), tokens.next()) {
+            (Some("mut"), None, None) => String::from("&"),
+            (Some(lifetime), Some("mut"), None) if lifetime.starts_with('\'') => {
+                format!("&{lifetime} ")
+            }
+            _ => return,
+        };
+        replacements.push((prefix, replacement));
+        return;
+    }
+    if let rustc_hir::TyKind::Tup(elements) = data.kind {
+        for element in elements {
+            collect_shared_reference_replacements(cx, element, replacements);
+        }
+    }
 }
 
 /// Return direct reference leaves from tuple query data.
@@ -1711,19 +1927,6 @@ fn collect_direct_query_refs<'tcx>(ty: Ty<'tcx>, references: &mut Vec<Ty<'tcx>>)
             collect_direct_query_refs(element, references);
         }
     }
-}
-
-/// Return whether query data includes a mutable reference to one exact component.
-fn query_data_has_mut_component<'tcx>(
-    cx: &LateContext<'tcx>,
-    query_ty: Ty<'tcx>,
-    component_crate: &str,
-    component_name: &str,
-) -> bool {
-    query_data_type(cx, query_ty).is_some_and(|data| {
-        query_data_mut_components(data)
-            .any(|component| type_is_named(cx, component, component_crate, component_name))
-    })
 }
 
 /// Return mutable reference leaves from tuple query data.
@@ -1750,14 +1953,7 @@ fn collect_query_data_mut_components<'tcx>(ty: Ty<'tcx>, components: &mut Vec<Ty
 
 /// Return whether query data includes any mutable reference.
 fn query_data_has_any_mut_ref(ty: Ty<'_>) -> bool {
-    // Short-circuit on a mutable leaf before searching tuple elements.
-    if let ty::Ref(_, _, Mutability::Mut) = ty.kind() {
-        return true;
-    }
-    if let ty::Tuple(elements) = ty.kind() {
-        return elements.iter().any(query_data_has_any_mut_ref);
-    }
-    false
+    query_data_mut_components(ty).next().is_some()
 }
 
 /// Return whether a query filter includes `With<Camera>`.
@@ -1768,14 +1964,9 @@ fn query_filter_has_camera(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
             .iter()
             .any(|element| query_filter_has_camera(cx, element));
     }
-    if let ty::Adt(definition, arguments) = ty.kind() {
-        return cx.tcx.crate_name(definition.did().krate).as_str() == "bevy_ecs"
-            && cx.tcx.item_name(definition.did()).as_str() == "With"
-            && arguments
-                .types()
-                .any(|argument| type_is_named(cx, argument, "bevy_camera", "Camera"));
-    }
-    false
+    type_is_named(cx, ty, "bevy_ecs", "With")
+        && query_type_arguments(ty)
+            .any(|argument| type_is_named(cx, argument, "bevy_camera", "Camera"))
 }
 
 /// Return the local ADT definition represented by a type.
@@ -1786,15 +1977,11 @@ fn local_adt_id(ty: Ty<'_>) -> Option<LocalDefId> {
     definition.did().as_local()
 }
 
-/// Return the number of named fields on a local struct.
-fn local_named_field_count(cx: &LateContext<'_>, local_def_id: LocalDefId) -> usize {
-    local_named_fields(cx, local_def_id).len()
-}
-
 /// Return the names of fields on a local named-field struct.
 fn local_named_fields(cx: &LateContext<'_>, local_def_id: LocalDefId) -> Vec<Symbol> {
-    let item = cx.tcx.hir_expect_item(local_def_id);
-    let ItemKind::Struct(_, _, VariantData::Struct { fields, .. }) = item.kind else {
+    let ItemKind::Struct(_, _, VariantData::Struct { fields, .. }) =
+        cx.tcx.hir_expect_item(local_def_id).kind
+    else {
         return Vec::new();
     };
     fields.iter().map(|field| field.ident.name).collect()
@@ -1828,24 +2015,23 @@ fn query_access_width<'tcx>(
             (total + element_total, mutable + element_mutable)
         });
     }
-    if let ty::Adt(definition, arguments) = ty.kind() {
-        let is_query_data = definition
+    if let ty::Adt(definition, arguments) = ty.kind()
+        && definition
             .did()
             .as_local()
-            .is_some_and(|target| query_data_targets.contains(&target));
-        if is_query_data {
-            return definition.non_enum_variant().fields.iter().fold(
-                (0, 0),
-                |(total, mutable), field| {
-                    let (field_total, field_mutable) = query_access_width(
-                        cx,
-                        field.ty(cx.tcx, arguments).skip_norm_wip(),
-                        query_data_targets,
-                    );
-                    (total + field_total, mutable + field_mutable)
-                },
-            );
-        }
+            .is_some_and(|target| query_data_targets.contains(&target))
+    {
+        return definition.non_enum_variant().fields.iter().fold(
+            (0, 0),
+            |(total, mutable), field| {
+                let (field_total, field_mutable) = query_access_width(
+                    cx,
+                    field.ty(cx.tcx, arguments).skip_norm_wip(),
+                    query_data_targets,
+                );
+                (total + field_total, mutable + field_mutable)
+            },
+        );
     }
     (0, 0)
 }
@@ -1862,15 +2048,66 @@ fn query_filter_tracked_component(
             .iter()
             .find_map(|element| query_filter_tracked_component(cx, element, components));
     }
-    if let ty::Adt(definition, arguments) = ty.kind()
-        && cx.tcx.crate_name(definition.did().krate).as_str() == "bevy_ecs"
-        && cx.tcx.item_name(definition.did()).as_str() == "Changed"
-    {
-        return arguments.types().find_map(|argument| {
-            local_adt_id(argument).filter(|target| components.contains(target))
-        });
+    if !type_is_named(cx, ty, "bevy_ecs", "Changed") {
+        return None;
     }
-    None
+    query_type_arguments(ty)
+        .find_map(|argument| local_adt_id(argument).filter(|target| components.contains(target)))
+}
+
+/// Return item structs yielded by a local `QueryData` type and its read-only form.
+fn query_data_item_types(cx: &LateContext<'_>, target: LocalDefId) -> Vec<DefId> {
+    let mut items = Vec::new();
+    let mut pending = vec![target.to_def_id()];
+    // Follow `ReadOnly` to its own implementation so both item structs count.
+    while let Some(query_data) = pending.pop() {
+        let Some(implementation) = local_trait_implementations(cx, "bevy_ecs", "QueryData")
+            .into_iter()
+            .find(|(_, self_def_id)| *self_def_id == query_data)
+        else {
+            continue;
+        };
+        for item in cx
+            .tcx
+            .associated_items(implementation.0)
+            .in_definition_order()
+        {
+            if !matches!(item.kind, ty::AssocKind::Type { .. }) {
+                continue;
+            }
+            let ty::Adt(definition, _) = cx
+                .tcx
+                .type_of(item.def_id)
+                .instantiate_identity()
+                .skip_norm_wip()
+                .kind()
+            else {
+                continue;
+            };
+            let def_id = definition.did();
+            match item.name().as_str() {
+                "Item" if !items.contains(&def_id) => items.push(def_id),
+                "ReadOnly" if def_id != query_data => pending.push(def_id),
+                _ => {}
+            }
+        }
+    }
+    items
+}
+
+/// Return names of fields read from values whose type is one of `owners`.
+fn used_field_names<'tcx>(
+    cx: &LateContext<'tcx>,
+    body: &Body<'tcx>,
+    owners: &[DefId],
+) -> Vec<Symbol> {
+    let mut visitor = FieldUseVisitor {
+        cx,
+        owners,
+        names: Vec::new(),
+    };
+    visitor.visit_expr(body.value);
+    visitor.names
 }
 
 /// Return whether a body performs a fixed typed access through an entity view.
@@ -1883,16 +2120,42 @@ fn body_contains_fixed_entity_access<'tcx>(cx: &LateContext<'tcx>, body: &Body<'
     visitor.is_found
 }
 
-/// Yield direct system expressions, flattening only a tuple literal.
-fn direct_system_expressions<'hir>(
-    expr: &'hir Expr<'hir>,
-) -> impl Iterator<Item = &'hir Expr<'hir>> {
-    let systems = if let ExprKind::Tup(elements) = expr.kind {
-        elements.iter().collect()
-    } else {
-        vec![expr]
+/// Return the system expressions inside an `add_systems` argument.
+///
+/// Tuples are flattened, and schedule configuration methods such as `run_if`,
+/// `chain`, or `after` are looked through to the systems they configure.
+fn system_expressions<'hir>(cx: &LateContext<'_>, expr: &'hir Expr<'hir>) -> Vec<&'hir Expr<'hir>> {
+    if let ExprKind::Tup(elements) = expr.kind {
+        return elements
+            .iter()
+            .flat_map(|element| system_expressions(cx, element))
+            .collect();
+    }
+    if let ExprKind::MethodCall(_, receiver, _, _) = expr.kind {
+        let is_schedule_config_method = cx
+            .typeck_results()
+            .type_dependent_def_id(expr.hir_id)
+            .and_then(|def_id| cx.tcx.trait_of_assoc(def_id))
+            .is_some_and(|def_id| trait_is_named(cx, def_id, "bevy_ecs", "IntoScheduleConfigs"));
+        if is_schedule_config_method {
+            return system_expressions(cx, receiver);
+        }
+    }
+    vec![expr]
+}
+
+/// Return the function a system path expression names.
+fn system_function(cx: &LateContext<'_>, system: &Expr<'_>) -> Option<DefId> {
+    let ExprKind::Path(ref path) = system.kind else {
+        return None;
     };
-    systems.into_iter()
+    if let Res::Def(rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn, def_id) =
+        cx.typeck_results().qpath_res(path, system.hir_id)
+    {
+        Some(def_id)
+    } else {
+        None
+    }
 }
 
 /// Resolve an exact `App` or `SubApp` method.
@@ -1901,26 +2164,8 @@ fn app_method_call<'hir>(
     expr: &'hir Expr<'hir>,
     method_name: &str,
 ) -> Option<BevyMethodCall<'hir>> {
-    // Resolve the call before comparing its defining crate and receiver type.
-    let ExprKind::MethodCall(segment, receiver, arguments, _) = expr.kind else {
-        return None;
-    };
-    let def_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
-    let receiver_ty = cx.typeck_results().expr_ty_adjusted(receiver).peel_refs();
-    // Accept only the exact Bevy app APIs used by the lint suite.
-    if cx.tcx.crate_name(def_id.krate).as_str() != "bevy_app"
-        || cx.tcx.item_name(def_id).as_str() != method_name
-        || !adt_name(cx, receiver_ty).is_some_and(|name| matches!(name.as_str(), "App" | "SubApp"))
-    {
-        return None;
-    }
-
-    Some(BevyMethodCall {
-        receiver,
-        arguments,
-        method_span: segment.ident.span,
-        def_id,
-    })
+    bevy_method_call(cx, expr, "bevy_app", "App", method_name)
+        .or_else(|| bevy_method_call(cx, expr, "bevy_app", "SubApp", method_name))
 }
 
 /// Return an ADT's item name.
@@ -1929,6 +2174,25 @@ fn adt_name(cx: &LateContext<'_>, ty: Ty<'_>) -> Option<Symbol> {
         return None;
     };
     Some(cx.tcx.item_name(definition.did()))
+}
+
+/// Return the name of a method call resolved to a `bevy_ecs` definition.
+fn bevy_ecs_method_name(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Symbol> {
+    let def_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
+    (cx.tcx.crate_name(def_id.krate).as_str() == "bevy_ecs").then(|| cx.tcx.item_name(def_id))
+}
+
+/// Return whether a callee path resolves to a method of one diagnostic-item trait.
+fn resolved_trait_method(cx: &LateContext<'_>, callee: &Expr<'_>, trait_item: Symbol) -> bool {
+    let ExprKind::Path(ref path) = callee.kind else {
+        return false;
+    };
+    let Res::Def(_, def_id) = cx.typeck_results().qpath_res(path, callee.hir_id) else {
+        return false;
+    };
+    cx.tcx
+        .trait_of_assoc(def_id)
+        .is_some_and(|trait_def_id| cx.tcx.is_diagnostic_item(trait_item, trait_def_id))
 }
 
 /// Return whether a type has a zero-sized layout.
@@ -1948,11 +2212,9 @@ fn reborrowable_type(cx: &LateContext<'_>, ty: Ty<'_>) -> Option<Reborrowable> {
     let def_id = definition.did();
     let crate_symbol = cx.tcx.crate_name(def_id.krate);
     let type_symbol = cx.tcx.item_name(def_id);
-    let crate_name = crate_symbol.as_str();
-    let type_name = type_symbol.as_str();
 
     // Keep the allowlist closed so unrelated names cannot gain reborrow semantics.
-    match (crate_name, type_name) {
+    match (crate_symbol.as_str(), type_symbol.as_str()) {
         ("bevy_ecs", "Commands") => Some(Reborrowable::Commands),
         ("bevy_ecs", "Deferred") => Some(Reborrowable::Deferred),
         ("bevy_ecs", "DeferredWorld") => Some(Reborrowable::DeferredWorld),
@@ -1969,26 +2231,93 @@ fn reborrowable_type(cx: &LateContext<'_>, ty: Ty<'_>) -> Option<Reborrowable> {
     }
 }
 
+/// Suggestion message for deleting a unit value from a bundle tuple.
+const REMOVE_UNIT_VALUE: &str = "remove the unit value";
+
+/// Return whether an expression is the unit literal `()`.
+const fn is_unit_literal(expr: &Expr<'_>) -> bool {
+    matches!(expr.kind, ExprKind::Tup([]))
+}
+
 /// Collect unit leaves and align them with tuple expressions when possible.
-fn collect_unit_expression_spans(ty: Ty<'_>, expr: &Expr<'_>, spans: &mut Vec<Span>) {
+fn collect_unit_bundle_values(ty: Ty<'_>, expr: &Expr<'_>, values: &mut Vec<UnitBundleValue>) {
     // Unit values can occur only in tuple-shaped bundle types.
     let ty::Tuple(elements) = ty.kind() else {
         return;
     };
     if elements.is_empty() {
-        spans.push(expr.span);
+        values.push(UnitBundleValue {
+            span: expr.span,
+            replacements: Vec::new(),
+            suggestion: REMOVE_UNIT_VALUE,
+        });
         return;
     }
 
     // Recurse into aligned tuple literals to retain precise source spans.
-    if let ExprKind::Tup(expressions) = expr.kind
-        && expressions.len() == elements.len()
-    {
-        for (element, expression) in elements.iter().zip(expressions) {
-            collect_unit_expression_spans(element, expression, spans);
+    let ExprKind::Tup(expressions) = expr.kind else {
+        if tuple_type_contains_unit(ty) {
+            values.push(UnitBundleValue {
+                span: expr.span,
+                replacements: Vec::new(),
+                suggestion: REMOVE_UNIT_VALUE,
+            });
         }
-    } else if tuple_type_contains_unit(ty) {
-        spans.push(expr.span);
+        return;
+    };
+    for (index, (element, expression)) in elements.iter().zip(expressions).enumerate() {
+        if is_unit_literal(expression) {
+            values.push(UnitBundleValue {
+                span: expression.span,
+                replacements: unit_element_removal(expr, expressions, index),
+                suggestion: REMOVE_UNIT_VALUE,
+            });
+        } else {
+            collect_unit_bundle_values(element, expression, values);
+        }
+    }
+}
+
+/// Return replacements that delete one unit element from a tuple literal.
+///
+/// Deletions never overlap: an element after the first deletes its preceding
+/// separator, and the first element deletes the separator after it only when
+/// the next element stays.
+fn unit_element_removal(
+    tuple: &Expr<'_>,
+    elements: &[Expr<'_>],
+    index: usize,
+) -> Vec<(Span, String)> {
+    let is_unit = |position: usize| elements.get(position).is_some_and(is_unit_literal);
+    // An all-unit tuple has no remaining component to keep.
+    if tuple.span.from_expansion() || (0..elements.len()).all(is_unit) {
+        return Vec::new();
+    }
+    let Some(unit) = elements.get(index) else {
+        return Vec::new();
+    };
+    let unit = unit.span;
+    // A pair keeps a one-element tuple, which needs a trailing comma.
+    let is_pair = elements.len() == 2;
+    if let Some(previous) = index
+        .checked_sub(1)
+        .and_then(|position| elements.get(position))
+    {
+        let replacement = if is_pair { "," } else { "" };
+        return vec![(
+            previous.span.between(unit).to(unit),
+            String::from(replacement),
+        )];
+    }
+    match elements.get(1) {
+        Some(next) if !is_unit(1) => {
+            let mut replacements = vec![(unit.until(next.span), String::new())];
+            if is_pair {
+                replacements.push((next.span.shrink_to_hi(), String::from(",")));
+            }
+            replacements
+        }
+        _ => Vec::new(),
     }
 }
 
@@ -2000,87 +2329,78 @@ fn tuple_type_contains_unit(ty: Ty<'_>) -> bool {
     elements.is_empty() || elements.iter().any(tuple_type_contains_unit)
 }
 
+/// Return local trait implementations matching a predicate and their local
+/// ADT self types.
+fn local_implementations(
+    cx: &LateContext<'_>,
+    is_trait: impl Fn(DefId) -> bool,
+) -> Vec<(DefId, DefId)> {
+    // Walk resolved local implementations instead of relying on trait spelling.
+    let mut implementations = Vec::new();
+
+    for (&trait_def_id, impl_def_ids) in cx.tcx.all_local_trait_impls(()) {
+        if !is_trait(trait_def_id) {
+            continue;
+        }
+        for &impl_def_id in impl_def_ids {
+            let self_ty = cx
+                .tcx
+                .type_of(impl_def_id)
+                .instantiate_identity()
+                .skip_norm_wip();
+            if let ty::Adt(definition, _) = self_ty.kind()
+                && definition.did().is_local()
+            {
+                implementations.push((impl_def_id.to_def_id(), definition.did()));
+            }
+        }
+    }
+
+    implementations
+}
+
+/// Return local implementations of one exact trait with their local ADT self types.
+fn local_trait_implementations(
+    cx: &LateContext<'_>,
+    trait_crate: &str,
+    trait_name: &str,
+) -> Vec<(DefId, DefId)> {
+    local_implementations(cx, |def_id| {
+        trait_is_named(cx, def_id, trait_crate, trait_name)
+    })
+}
+
+/// Return each local ADT once from a list of implementations.
+fn unique_local_targets(implementations: Vec<(DefId, DefId)>) -> Vec<LocalDefId> {
+    let mut targets = Vec::new();
+    for (_, self_def_id) in implementations {
+        if let Some(local_def_id) = self_def_id.as_local()
+            && !targets.contains(&local_def_id)
+        {
+            targets.push(local_def_id);
+        }
+    }
+    targets
+}
+
 /// Return local ADT targets implementing one exact trait.
 fn local_trait_targets(
     cx: &LateContext<'_>,
     trait_crate: &str,
     trait_name: &str,
 ) -> Vec<LocalDefId> {
-    // Walk resolved local implementations instead of relying on trait spelling.
-    let mut targets = Vec::new();
-
-    for (&trait_def_id, impl_def_ids) in cx.tcx.all_local_trait_impls(()) {
-        // Discard implementations of traits outside the target crate boundary.
-        if !trait_is_named(cx, trait_def_id, trait_crate, trait_name) {
-            continue;
-        }
-        // Retain each local ADT once even when duplicate impl metadata is present.
-        for &impl_def_id in impl_def_ids {
-            if !matches!(
-                cx.tcx.def_kind(impl_def_id),
-                rustc_hir::def::DefKind::Impl { .. }
-            ) {
-                continue;
-            }
-            let self_ty = cx
-                .tcx
-                .type_of(impl_def_id)
-                .instantiate_identity()
-                .skip_norm_wip();
-            let ty::Adt(definition, _) = self_ty.kind() else {
-                continue;
-            };
-            if let Some(local_def_id) = definition.did().as_local()
-                && !targets.contains(&local_def_id)
-            {
-                targets.push(local_def_id);
-            }
-        }
-    }
-
-    targets
+    unique_local_targets(local_trait_implementations(cx, trait_crate, trait_name))
 }
 
-/// Return local ADT targets implementing one standard-library trait.
-fn local_standard_trait_targets(cx: &LateContext<'_>, trait_name: &str) -> Vec<LocalDefId> {
-    // Search only resolved traits from the standard library crates.
-    let mut targets = Vec::new();
-
-    for (&trait_def_id, impl_def_ids) in cx.tcx.all_local_trait_impls(()) {
-        // Name and crate checks jointly exclude unrelated traits with the same spelling.
-        if cx.tcx.item_name(trait_def_id).as_str() != trait_name
-            || !matches!(
-                cx.tcx.crate_name(trait_def_id.krate).as_str(),
-                "core" | "std"
-            )
-        {
-            continue;
-        }
-        // Normalize implementation targets to unique local ADT identifiers.
-        for &impl_def_id in impl_def_ids {
-            if !matches!(
-                cx.tcx.def_kind(impl_def_id),
-                rustc_hir::def::DefKind::Impl { .. }
-            ) {
-                continue;
-            }
-            let self_ty = cx
-                .tcx
-                .type_of(impl_def_id)
-                .instantiate_identity()
-                .skip_norm_wip();
-            let ty::Adt(definition, _) = self_ty.kind() else {
-                continue;
-            };
-            if let Some(local_def_id) = definition.did().as_local()
-                && !targets.contains(&local_def_id)
-            {
-                targets.push(local_def_id);
-            }
-        }
-    }
-
-    targets
+/// Return local ADT targets implementing one standard marker trait.
+fn local_standard_trait_targets(
+    cx: &LateContext<'_>,
+    marker_trait: MarkerTrait,
+) -> Vec<LocalDefId> {
+    unique_local_targets(local_implementations(cx, |def_id| {
+        cx.tcx
+            .is_diagnostic_item(marker_trait.diagnostic_item(), def_id)
+    }))
 }
 
 /// Return whether a local item is a unit struct.
@@ -2097,45 +2417,17 @@ fn local_plugin_uses_default_uniqueness(cx: &LateContext<'_>, ty: Ty<'_>) -> boo
     let ty::Adt(definition, _) = ty.kind() else {
         return false;
     };
-    let Some(local_target) = definition.did().as_local() else {
-        return false;
-    };
 
-    // Find the exact Bevy `Plugin` implementation for this local type.
-    for (&trait_def_id, impl_def_ids) in cx.tcx.all_local_trait_impls(()) {
-        if !trait_is_named(cx, trait_def_id, "bevy_app", "Plugin") {
-            continue;
-        }
-        // Ignore implementations for every other local plugin type.
-        for &impl_def_id in impl_def_ids {
-            if !matches!(
-                cx.tcx.def_kind(impl_def_id),
-                rustc_hir::def::DefKind::Impl { .. }
-            ) {
-                continue;
-            }
-            let impl_ty = cx
-                .tcx
-                .type_of(impl_def_id)
-                .instantiate_identity()
-                .skip_norm_wip();
-            let ty::Adt(impl_definition, _) = impl_ty.kind() else {
-                continue;
-            };
-            if impl_definition.did().as_local() != Some(local_target) {
-                continue;
-            }
-
-            // Any explicit `is_unique` method replaces the trait's default behavior.
-            return !cx
-                .tcx
+    // Any explicit `is_unique` method replaces the trait's default behavior.
+    local_trait_implementations(cx, "bevy_app", "Plugin")
+        .into_iter()
+        .find(|(_, self_def_id)| *self_def_id == definition.did())
+        .is_some_and(|(impl_def_id, _)| {
+            !cx.tcx
                 .associated_items(impl_def_id)
                 .in_definition_order()
-                .any(|item| item.name().as_str() == "is_unique");
-        }
-    }
-
-    false
+                .any(|item| item.name().as_str() == "is_unique")
+        })
 }
 
 /// Visitor that finds discarded `App::run` expression statements.
@@ -2172,6 +2464,20 @@ impl<'tcx> TypeVisitor<TyCtxt<'tcx>> for ContainsRegion<'tcx> {
     }
 }
 
+/// Query methods that read query data without mutable access.
+const READ_ONLY_QUERY_METHODS: &[&str] = &[
+    "as_readonly",
+    "contains",
+    "get",
+    "get_many",
+    "is_empty",
+    "iter",
+    "iter_combinations",
+    "iter_many",
+    "par_iter",
+    "single",
+];
+
 /// Visitor that classifies one query parameter's method uses.
 struct QueryBindingUseVisitor<'a, 'tcx> {
     /// Lint context used to resolve local paths and receiver types.
@@ -2185,41 +2491,22 @@ struct QueryBindingUseVisitor<'a, 'tcx> {
 }
 
 impl<'tcx> Visitor<'tcx> for QueryBindingUseVisitor<'_, 'tcx> {
+    fn visit_nested_body(&mut self, body_id: rustc_hir::BodyId) {
+        if let Some(body) = closure_body(self.cx, body_id) {
+            self.visit_body(body);
+        }
+    }
+
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
         // Classify resolved methods called directly on the tracked query binding.
-        if let ExprKind::MethodCall(segment, receiver, arguments, _) = expr.kind
+        if let ExprKind::MethodCall(_, receiver, arguments, _) = expr.kind
             && local_path_id(self.cx, receiver) == Some(self.binding_id)
-            && expression_has_type(self.cx, receiver, "bevy_ecs", "Query")
         {
             // The supported method set observes query data without mutable access.
-            self.saw_read |= matches!(
-                segment.ident.name.as_str(),
-                "as_readonly"
-                    | "contains"
-                    | "get"
-                    | "get_many"
-                    | "is_empty"
-                    | "iter"
-                    | "iter_combinations"
-                    | "iter_many"
-                    | "many"
-                    | "par_iter"
-                    | "single"
-            );
-            self.saw_other_use |= !matches!(
-                segment.ident.name.as_str(),
-                "as_readonly"
-                    | "contains"
-                    | "get"
-                    | "get_many"
-                    | "is_empty"
-                    | "iter"
-                    | "iter_combinations"
-                    | "iter_many"
-                    | "many"
-                    | "par_iter"
-                    | "single"
-            );
+            let is_read = bevy_ecs_method_name(self.cx, expr)
+                .is_some_and(|name| READ_ONLY_QUERY_METHODS.contains(&name.as_str()));
+            self.saw_read |= is_read;
+            self.saw_other_use |= !is_read;
             // Visit arguments while avoiding a second classification of the receiver.
             for argument in arguments {
                 self.visit_expr(argument);
@@ -2243,36 +2530,68 @@ struct FixedEntityAccessVisitor<'a, 'tcx> {
 }
 
 impl<'tcx> Visitor<'tcx> for FixedEntityAccessVisitor<'_, 'tcx> {
-    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        // Stop traversal after the first qualifying access has established the result.
-        if self.is_found {
-            return;
+    fn visit_nested_body(&mut self, body_id: rustc_hir::BodyId) {
+        if let Some(body) = closure_body(self.cx, body_id) {
+            self.visit_body(body);
         }
+    }
+
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
         // Match only fixed typed access methods on the two supported entity proxies.
-        if let ExprKind::MethodCall(segment, receiver, _, _) = expr.kind
+        if let ExprKind::MethodCall(_, receiver, _, _) = expr.kind
             && (expression_has_type(self.cx, receiver, "bevy_ecs", "EntityRef")
                 || expression_has_type(self.cx, receiver, "bevy_ecs", "EntityMut"))
-            && matches!(
-                segment.ident.name.as_str(),
-                "contains"
-                    | "get"
-                    | "get_components"
-                    | "get_components_mut"
-                    | "get_mut"
-                    | "get_ref"
-            )
+            && bevy_ecs_method_name(self.cx, expr).is_some_and(|name| {
+                matches!(
+                    name.as_str(),
+                    "contains"
+                        | "get"
+                        | "get_components"
+                        | "get_components_mut"
+                        | "get_mut"
+                        | "get_ref"
+                )
+            })
         {
             self.is_found = true;
-            return;
         }
         rustc_hir::intravisit::walk_expr(self, expr);
     }
 }
 
-/// Visitor that records every named field access in a function body.
-struct FieldNameVisitor {
-    /// Unique field names used by field expressions.
+/// Visitor that records named field reads on values of selected types.
+struct FieldUseVisitor<'a, 'tcx> {
+    /// Lint context used to inspect adjusted receiver types.
+    cx: &'a LateContext<'tcx>,
+    /// ADT definitions whose field reads count.
+    owners: &'a [DefId],
+    /// Unique field names read from the selected types.
     names: Vec<Symbol>,
+}
+
+impl<'tcx> Visitor<'tcx> for FieldUseVisitor<'_, 'tcx> {
+    fn visit_nested_body(&mut self, body_id: rustc_hir::BodyId) {
+        if let Some(body) = closure_body(self.cx, body_id) {
+            self.visit_body(body);
+        }
+    }
+
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+        // Compare the receiver after auto-deref so `Mut<T>` and `&T` count as `T`.
+        if let ExprKind::Field(receiver, identifier) = expr.kind
+            && let ty::Adt(definition, _) = self
+                .cx
+                .typeck_results()
+                .expr_ty_adjusted(receiver)
+                .peel_refs()
+                .kind()
+            && self.owners.contains(&definition.did())
+            && !self.names.contains(&identifier.name)
+        {
+            self.names.push(identifier.name);
+        }
+        rustc_hir::intravisit::walk_expr(self, expr);
+    }
 }
 
 /// Visitor that distinguishes direct field reads from opaque whole-component uses.
@@ -2288,6 +2607,12 @@ struct ComponentFieldUseVisitor<'a, 'tcx> {
 }
 
 impl<'tcx> Visitor<'tcx> for ComponentFieldUseVisitor<'_, 'tcx> {
+    fn visit_nested_body(&mut self, body_id: rustc_hir::BodyId) {
+        if let Some(body) = closure_body(self.cx, body_id) {
+            self.visit_body(body);
+        }
+    }
+
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
         // Record direct named-field access without treating its receiver as an escape.
         if let ExprKind::Field(receiver, identifier) = expr.kind
@@ -2316,17 +2641,6 @@ impl<'tcx> Visitor<'tcx> for ComponentFieldUseVisitor<'_, 'tcx> {
     }
 }
 
-impl<'tcx> Visitor<'tcx> for FieldNameVisitor {
-    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        if let ExprKind::Field(_, identifier) = expr.kind
-            && !self.names.contains(&identifier.name)
-        {
-            self.names.push(identifier.name);
-        }
-        rustc_hir::intravisit::walk_expr(self, expr);
-    }
-}
-
 /// Visitor that classifies presence-only uses of one query binding.
 struct PresenceQueryUseVisitor<'a, 'tcx> {
     /// Lint context used to resolve local paths and receiver types.
@@ -2340,40 +2654,59 @@ struct PresenceQueryUseVisitor<'a, 'tcx> {
 }
 
 impl<'tcx> Visitor<'tcx> for PresenceQueryUseVisitor<'_, 'tcx> {
-    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        // Classify direct methods on the tracked query before visiting nested arguments.
-        if let ExprKind::MethodCall(segment, receiver, arguments, _) = expr.kind {
-            if local_path_id(self.cx, receiver) == Some(self.binding_id)
-                && expression_has_type(self.cx, receiver, "bevy_ecs", "Query")
-            {
-                // `is_empty` observes presence; every other direct method exceeds that scope.
-                if segment.ident.name.as_str() == "is_empty" {
-                    self.saw_presence_use = true;
-                } else {
-                    self.saw_other_use = true;
-                }
-                // Skip the receiver to prevent its path from becoming an opaque use.
-                for argument in arguments {
-                    self.visit_expr(argument);
-                }
-                return;
-            }
-            // Treat `query.iter().count()` as another presence-only operation.
-            if segment.ident.name.as_str() == "count"
-                && let ExprKind::MethodCall(iter_segment, query, iter_arguments, _) = receiver.kind
-                && iter_segment.ident.name.as_str() == "iter"
-                && local_path_id(self.cx, query) == Some(self.binding_id)
-                && expression_has_type(self.cx, query, "bevy_ecs", "Query")
-            {
-                self.saw_presence_use = true;
-                for argument in iter_arguments.iter().chain(arguments) {
-                    self.visit_expr(argument);
-                }
-                return;
-            }
+    fn visit_nested_body(&mut self, body_id: rustc_hir::BodyId) {
+        if let Some(body) = closure_body(self.cx, body_id) {
+            self.visit_body(body);
         }
-        if local_path_id(self.cx, expr) == Some(self.binding_id) {
-            self.saw_other_use = true;
+    }
+
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+        let ExprKind::MethodCall(_, receiver, arguments, _) = expr.kind else {
+            if local_path_id(self.cx, expr) == Some(self.binding_id) {
+                self.saw_other_use = true;
+                return;
+            }
+            rustc_hir::intravisit::walk_expr(self, expr);
+            return;
+        };
+        // Classify direct methods on the tracked query before visiting nested arguments.
+        if local_path_id(self.cx, receiver) == Some(self.binding_id) {
+            // `is_empty` observes presence; every other direct method exceeds that scope.
+            let is_presence =
+                bevy_ecs_method_name(self.cx, expr).is_some_and(|name| name.as_str() == "is_empty");
+            self.saw_presence_use |= is_presence;
+            self.saw_other_use |= !is_presence;
+            for argument in arguments {
+                self.visit_expr(argument);
+            }
+            return;
+        }
+        // Treat `query.iter().count()` as another presence-only operation.
+        let is_iterator_count = self
+            .cx
+            .typeck_results()
+            .type_dependent_def_id(expr.hir_id)
+            .is_some_and(|def_id| {
+                self.cx.tcx.item_name(def_id).as_str() == "count"
+                    && self
+                        .cx
+                        .tcx
+                        .trait_of_assoc(def_id)
+                        .is_some_and(|trait_def_id| {
+                            self.cx
+                                .tcx
+                                .is_diagnostic_item(rustc_span::sym::Iterator, trait_def_id)
+                        })
+            });
+        if is_iterator_count
+            && let ExprKind::MethodCall(_, query, [], _) = receiver.kind
+            && local_path_id(self.cx, query) == Some(self.binding_id)
+            && bevy_ecs_method_name(self.cx, receiver).is_some_and(|name| name.as_str() == "iter")
+        {
+            self.saw_presence_use = true;
+            for argument in arguments {
+                self.visit_expr(argument);
+            }
             return;
         }
         rustc_hir::intravisit::walk_expr(self, expr);
@@ -2393,57 +2726,134 @@ struct WorldBindingUseVisitor<'a, 'tcx> {
 }
 
 impl<'tcx> Visitor<'tcx> for WorldBindingUseVisitor<'_, 'tcx> {
+    fn visit_nested_body(&mut self, body_id: rustc_hir::BodyId) {
+        if let Some(body) = closure_body(self.cx, body_id) {
+            self.visit_body(body);
+        }
+    }
+
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        // Recognize query-state methods that receive the tracked world as an argument.
-        if let ExprKind::MethodCall(_, receiver, arguments, _) = expr.kind {
-            let is_query_state = expression_has_type(self.cx, receiver, "bevy_ecs", "QueryState");
-            if is_query_state {
-                // Separate the world argument from nested expressions that still need traversal.
-                let has_world_argument = arguments
-                    .iter()
-                    .any(|argument| local_path_id(self.cx, argument) == Some(self.binding_id));
-                if has_world_argument {
-                    self.saw_narrow_access = true;
-                    self.visit_expr(receiver);
-                    let cx = self.cx;
-                    let binding_id = self.binding_id;
-                    arguments
-                        .iter()
-                        .filter(|argument| local_path_id(cx, argument) != Some(binding_id))
-                        .for_each(|argument| self.visit_expr(argument));
-                    return;
-                }
+        let ExprKind::MethodCall(_, receiver, arguments, _) = expr.kind else {
+            if local_path_id(self.cx, expr) == Some(self.binding_id) {
+                self.saw_other_use = true;
+                return;
             }
+            rustc_hir::intravisit::walk_expr(self, expr);
+            return;
+        };
+        let cx = self.cx;
+        let binding_id = self.binding_id;
+        let is_world = |argument: &Expr<'_>| local_path_id(cx, argument) == Some(binding_id);
+        // A `QueryState` method that receives the world reads only the query's access.
+        if expression_has_type(cx, receiver, "bevy_ecs", "QueryState")
+            && arguments.iter().any(is_world)
+        {
+            self.saw_narrow_access = true;
+            self.visit_expr(receiver);
+            for argument in arguments.iter().filter(|argument| !is_world(argument)) {
+                self.visit_expr(argument);
+            }
+            return;
         }
         // Classify methods called directly on the tracked world binding.
-        if let ExprKind::MethodCall(segment, receiver, arguments, _) = expr.kind
-            && local_path_id(self.cx, receiver) == Some(self.binding_id)
-            && expression_has_type(self.cx, receiver, "bevy_ecs", "World")
-        {
+        if is_world(receiver) {
             // The closed method set exposes narrow resource or entity access.
-            let is_narrow = matches!(
-                segment.ident.name.as_str(),
-                "entities"
-                    | "get"
-                    | "get_mut"
-                    | "get_resource"
-                    | "get_resource_mut"
-                    | "query"
-                    | "query_filtered"
-                    | "resource"
-                    | "resource_mut"
-            );
+            let is_narrow = bevy_ecs_method_name(cx, expr).is_some_and(|name| {
+                matches!(
+                    name.as_str(),
+                    "entities"
+                        | "get"
+                        | "get_mut"
+                        | "get_resource"
+                        | "get_resource_mut"
+                        | "query"
+                        | "query_filtered"
+                        | "resource"
+                        | "resource_mut"
+                )
+            });
             self.saw_narrow_access |= is_narrow;
             self.saw_other_use |= !is_narrow;
-            // Visit call arguments without reclassifying the receiver path.
             for argument in arguments {
                 self.visit_expr(argument);
             }
             return;
         }
-        if local_path_id(self.cx, expr) == Some(self.binding_id) {
-            self.saw_other_use = true;
+        rustc_hir::intravisit::walk_expr(self, expr);
+    }
+}
+
+/// Visitor that separates `Children` reordering from other mutable `Children` uses.
+struct ChildrenMutationVisitor<'a, 'tcx> {
+    /// Lint context used to resolve methods and adjusted receiver types.
+    cx: &'a LateContext<'tcx>,
+    /// Whether an inherent `Children` method reordered the entries.
+    saw_reorder: bool,
+    /// Whether a mutable `Children` handle was used in any other way.
+    saw_other_mutation: bool,
+}
+
+impl ChildrenMutationVisitor<'_, '_> {
+    /// Return whether an expression is a `Mut<Children>` or `&mut Children` handle.
+    fn is_mutable_children(&self, expr: &Expr<'_>) -> bool {
+        let ty = self.cx.typeck_results().expr_ty(expr);
+        if let ty::Ref(_, inner, Mutability::Mut) = ty.kind() {
+            return type_is_named(self.cx, *inner, "bevy_ecs", "Children");
+        }
+        if let ty::Adt(..) = ty.kind()
+            && type_is_named(self.cx, ty, "bevy_ecs", "Mut")
+        {
+            return query_type_arguments(ty)
+                .any(|inner| type_is_named(self.cx, inner, "bevy_ecs", "Children"));
+        }
+        false
+    }
+}
+
+impl<'tcx> Visitor<'tcx> for ChildrenMutationVisitor<'_, 'tcx> {
+    fn visit_nested_body(&mut self, body_id: rustc_hir::BodyId) {
+        if let Some(body) = closure_body(self.cx, body_id) {
+            self.visit_body(body);
+        }
+    }
+
+    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+        if let ExprKind::MethodCall(_, receiver, arguments, _) = expr.kind
+            && self.is_mutable_children(receiver)
+        {
+            // Inherent `Children` methods only reorder; shared receivers only read.
+            let is_reorder = self
+                .cx
+                .typeck_results()
+                .type_dependent_def_id(expr.hir_id)
+                .and_then(|def_id| self.cx.tcx.inherent_impl_of_assoc(def_id))
+                .is_some_and(|impl_def_id| {
+                    type_is_named(
+                        self.cx,
+                        self.cx
+                            .tcx
+                            .type_of(impl_def_id)
+                            .instantiate_identity()
+                            .skip_norm_wip(),
+                        "bevy_ecs",
+                        "Children",
+                    )
+                });
+            let is_shared = matches!(
+                self.cx.typeck_results().expr_ty_adjusted(receiver).kind(),
+                ty::Ref(_, _, Mutability::Not)
+            );
+            self.saw_reorder |= is_reorder;
+            self.saw_other_mutation |= !is_reorder && !is_shared;
+            // Visit the receiver's parts and the arguments without reclassifying the receiver.
+            rustc_hir::intravisit::walk_expr(self, receiver);
+            for argument in arguments {
+                self.visit_expr(argument);
+            }
             return;
+        }
+        if self.is_mutable_children(expr) {
+            self.saw_other_mutation = true;
         }
         rustc_hir::intravisit::walk_expr(self, expr);
     }

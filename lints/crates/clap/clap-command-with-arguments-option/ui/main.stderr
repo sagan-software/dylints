@@ -15,5 +15,13 @@ LL |         .value_hint(ValueHint::CommandWithArguments)
    |
    = help: remove the long and short names, or use a value hint that is valid for options
 
-warning: 2 warnings emitted
+warning: `ValueHint::CommandWithArguments` is only valid on a positional argument
+  --> $DIR/main.rs:28:10
+   |
+LL |         .value_hint(ValueHint::CommandWithArguments);
+   |          ^^^^^^^^^^
+   |
+   = help: remove the long and short names, or use a value hint that is valid for options
+
+warning: 3 warnings emitted
 

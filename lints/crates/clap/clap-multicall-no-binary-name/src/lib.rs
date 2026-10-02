@@ -8,18 +8,17 @@
 //! UI fixtures cover triggering, non-triggering, and boundary forms so callers
 //! can adopt the diagnostic without changing unrelated code.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
-extern crate rustc_span;
 
 #[cfg(test)]
 use clap as _;
 
-use clap_support::{BuilderType, bool_argument, builder_calls, is_outermost_builder_call};
-use rustc_errors::DiagDecorator;
+use clap_support::{
+    BuilderCall, BuilderType, bool_argument, builder_calls, emit_lint_with_help,
+    is_outermost_builder_call,
+};
 use rustc_hir::Expr;
-use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
-use rustc_span::Span;
+use rustc_lint::{LateContext, LateLintPass};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -36,55 +35,35 @@ impl<'tcx> LateLintPass<'tcx> for ClapMulticallNoBinaryName {
         if !is_outermost_builder_call(cx, expr) {
             return;
         }
+        let calls = builder_calls(cx, expr, BuilderType::Command);
 
-        // Read calls in source order so later boolean settings replace earlier ones.
-        let mut multicall = None;
-        let mut no_binary_name = None;
-        for call in builder_calls(cx, expr, BuilderType::Command) {
-            match call.method.as_str() {
-                "multicall" => {
-                    if let Some(value) = bool_argument(call) {
-                        multicall = Some((value, call.span));
-                    }
-                }
-                "no_binary_name" => {
-                    if let Some(value) = bool_argument(call) {
-                        no_binary_name = Some((value, call.span));
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        // Require both final literal settings to remain enabled.
-        let (Some((true, _)), Some((true, span))) = (multicall, no_binary_name) else {
+        // Require both final settings to be the literal `true`.
+        let (Some(true), Some(no_binary_name)) = (
+            final_call(&calls, "multicall").and_then(bool_argument),
+            final_call(&calls, "no_binary_name"),
+        ) else {
             return;
         };
-        emit_span_lint_with_help(
+        if bool_argument(no_binary_name) != Some(true) {
+            return;
+        }
+        emit_lint_with_help(
             cx,
             CLAP_MULTICALL_NO_BINARY_NAME,
-            span,
+            no_binary_name.span,
             "`multicall(true)` cannot be combined with `no_binary_name(true)`",
             "remove `no_binary_name(true)`; multicall mode already controls binary-name parsing",
         );
     }
 }
 
-/// Emit the lint with a focused remediation.
-fn emit_span_lint_with_help(
-    cx: &LateContext<'_>,
-    lint: &'static Lint,
-    span: Span,
-    message: &'static str,
-    help: &'static str,
-) {
-    cx.emit_span_lint(
-        lint,
-        span,
-        DiagDecorator(|diagnostic| {
-            let _configured_diagnostic = diagnostic.primary_message(message).help(help);
-        }),
-    );
+/// Return the final call to one builder method, which replaces earlier calls.
+fn final_call<'hir>(calls: &[BuilderCall<'hir>], name: &str) -> Option<BuilderCall<'hir>> {
+    calls
+        .iter()
+        .rev()
+        .find(|call| call.method.as_str() == name)
+        .copied()
 }
 
 /// Run the UI fixture.

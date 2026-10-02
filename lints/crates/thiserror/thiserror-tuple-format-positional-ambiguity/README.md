@@ -4,7 +4,7 @@
 
 Checks for an `#[error(...)]` attribute on a tuple struct or tuple variant
 that derives `thiserror::Error` when the format string has a numeric
-placeholder such as `{0}` and the first extra format argument is positional.
+placeholder such as `{0}` and any extra format argument is unnamed.
 
 ## Why is this bad?
 
@@ -15,18 +15,9 @@ removes the ambiguity in both versions.
 
 ## Known problems
 
-With thiserror 2, an active item with this pattern already fails to compile,
-so the lint is most useful during a migration from thiserror 1.
-
-The lint reads the attributes written directly above the item. A comment or
-doc comment between the derive and the `#[error(...)]` attribute hides the
-derive, and the lint does not warn. It checks only the first extra argument,
-so a named first argument followed by a positional one does not trigger it.
-It gives help text but no automatic fix.
-
-The lint recognizes the derive only as `thiserror::Error` or through a
-`use thiserror::Error` or `use thiserror::Error as Name` import. A glob import
-such as `use thiserror::*` hides the derive from the lint.
+With thiserror 2, an active item with this pattern already fails to compile
+with thiserror's own error, so the lint is most useful on thiserror 1 code
+before a migration. It gives help text but no automatic fix.
 
 ## Example
 

@@ -16,17 +16,8 @@ change behavior, and the author may have meant to derive the other direction.
 
 ## Known problems
 
-The lint matches attribute keys as words, so a string value counts too. For
-example, `#[serde(rename = "default")]` on a `Serialize`-only type triggers
-the lint.
-
-The lint misses a derive added through `cfg_attr` when the other derive is
-written directly. A type with `#[derive(Serialize)]` and
-`#[cfg_attr(feature = "de", derive(Deserialize))]` counts as
-`Serialize`-only.
-
-The lint matches derives to types by name, so two types with the same name in
-one crate can share the same derive result.
+The lint checks only the keys listed above. It does not report a directional
+form such as `rename(deserialize = "name")` on a `Serialize`-only type.
 
 ## Example
 

@@ -16,9 +16,6 @@ returns. The case cannot detect a change in the result.
 The lint checks only a pattern that is `_` or `(_)`. Other patterns that match
 every value, such as a binding `value` or `Ok(_) | Err(_)`, do not trigger it.
 
-The lint reads only the first test-case attribute on a function. The same
-problem in a later attribute on that function is not reported.
-
 ## Example
 
 ```rust

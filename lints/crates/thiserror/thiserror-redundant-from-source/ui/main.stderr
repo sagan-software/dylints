@@ -1,22 +1,36 @@
 warning: `#[from]` already marks this field as the error source
   --> $DIR/main.rs:10:9
    |
-LL |         #[source]
-   |         ^^^^^^^^^ help: remove the redundant `#[source]` attribute
+LL |           #[source]
+   |  _________-^^^^^^^^
+LL | |         std::io::Error,
+   | |________- help: remove the redundant `#[source]` attribute
    |
    = note: `#[warn(thiserror_redundant_from_source)]` on by default
 
 warning: `#[from]` already marks this field as the error source
-  --> $DIR/main.rs:20:9
+  --> $DIR/main.rs:19:9
    |
-LL |         #[source]
-   |         ^^^^^^^^^ help: remove the redundant `#[source]` attribute
+LL |           #[source]
+   |  _________-^^^^^^^^
+LL | |         #[from]
+   | |________- help: remove the redundant `#[source]` attribute
 
 warning: `#[from]` already marks this field as the error source
-  --> $DIR/main.rs:30:9
+  --> $DIR/main.rs:29:5
    |
-LL |         #[source]
-   |         ^^^^^^^^^ help: remove the redundant `#[source]` attribute
+LL |       #[source]
+   |  _____-^^^^^^^^
+LL | |     inner: std::io::Error,
+   | |____- help: remove the redundant `#[source]` attribute
 
-warning: 3 warnings emitted
+warning: `#[from]` already marks this field as the error source
+  --> $DIR/main.rs:41:13
+   |
+LL |               #[source]
+   |  _____________-^^^^^^^^
+LL | |             std::io::Error,
+   | |____________- help: remove the redundant `#[source]` attribute
+
+warning: 4 warnings emitted
 

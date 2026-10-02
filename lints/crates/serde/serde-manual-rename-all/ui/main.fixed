@@ -1,0 +1,81 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#![allow(dead_code)]
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BothDirections {
+    first_name: String,
+    last_name: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "kebab-case"))]
+struct SerializeOnly {
+    user_id: String,
+    team_id: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all(deserialize = "SCREAMING-KEBAB-CASE"))]
+struct DifferentDirections {
+    first_name: String,
+    last_name: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct MultiEntry {
+    #[serde(rename = "firstName", default)]
+    first_name: String,
+    #[serde(rename = "lastName")]
+    last_name: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "SCREAMING_SNAKE_CASE"))]
+struct RawIdentifier {
+    r#type: String,
+    user_id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct OneDirectionMissing {
+    #[serde(rename(serialize = "firstName"))]
+    first_name: String,
+    #[serde(rename(serialize = "lastName"))]
+    last_name: String,
+}
+
+#[derive(Serialize)]
+struct PartialRename {
+    #[serde(rename = "firstName")]
+    first_name: String,
+    last_name: String,
+}
+
+#[derive(Serialize)]
+struct MixedConventions {
+    #[serde(rename = "firstName")]
+    first_name: String,
+    #[serde(rename = "LAST_NAME")]
+    last_name: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExistingContainerRule {
+    #[serde(rename = "firstName")]
+    first_name: String,
+    #[serde(rename = "lastName")]
+    last_name: String,
+}
+
+#[derive(Serialize)]
+struct OneField {
+    #[serde(rename = "userId")]
+    user_id: String,
+}
+
+fn main() {}

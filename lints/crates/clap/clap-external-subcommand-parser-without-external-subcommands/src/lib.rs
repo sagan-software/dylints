@@ -7,21 +7,22 @@
 //! leaves unrelated code unchanged. Its README defines the checked boundary,
 //! the recommended replacement, and the UI fixture that protects behavior.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
 
 #[cfg(test)]
 use clap as _;
-use rustc_lint::LintContext as _;
 
 clap_support::declare_builder_requirement_lint! {
     CLAP_EXTERNAL_SUBCOMMAND_PARSER_WITHOUT_EXTERNAL_SUBCOMMANDS,
     ClapExternalSubcommandParserWithoutExternalSubcommands,
-    Command,
-    "external_subcommand_value_parser",
-    false,
-    "allow_external_subcommands",
-    true,
+    clap_support::BuilderRequirement {
+        builder: clap_support::BuilderType::Command,
+        trigger: "external_subcommand_value_parser",
+        is_trigger_true_required: false,
+        required: "allow_external_subcommands",
+        is_requirement_true_required: true,
+        satisfying_actions: &[],
+    },
     "a clap external-subcommand parser is inactive",
     "this parser is ignored unless external subcommands are enabled",
     "add `.allow_external_subcommands(true)`"

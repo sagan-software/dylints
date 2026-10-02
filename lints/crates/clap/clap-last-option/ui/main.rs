@@ -29,4 +29,10 @@ fn similarly_named_user_methods() {
     let _ = OtherArg.long("input").last(true);
 }
 
+fn computed_or_removed_names(name: &'static str, enabled: bool) {
+    let _ = Arg::new("input").long("input").last(enabled);
+    let _ = Arg::new("input").long(name).last(true);
+    let _ = Arg::new("input").long("input").long(None).last(true);
+}
+
 fn main() {}

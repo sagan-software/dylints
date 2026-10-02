@@ -11,10 +11,8 @@
 //! This Dylint library resolves test-case panic attributes, reports cases
 //! without an expected message, and recommends adding the asserted message.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
 
-use rustc_lint::LintContext as _;
 #[cfg(test)]
 extern crate test_case as _;
 

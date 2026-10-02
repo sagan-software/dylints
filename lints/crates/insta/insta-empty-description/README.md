@@ -12,8 +12,9 @@ description shows nothing, and it often means a value was left out by mistake.
 
 ## Known problems
 
-The lint checks only a string literal passed directly as the argument. It does
-not check values held in constants or variables, or built at runtime. It does
+The lint checks a string literal passed directly as the argument, or
+a `const` defined in the same crate and initialized with a string literal. It does not check values held in variables or built at
+runtime. It does
 not check a description that contains only whitespace.
 
 ## Example

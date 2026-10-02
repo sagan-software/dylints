@@ -3,12 +3,10 @@
 use test_case::test_case;
 
 #[test_case(1 => panics "" ; "empty message")]
-fn empty(_value: u8) {
-    panic!("expected");
-}
-
-#[test_case(2 => panics "expected" ; "documented")]
-fn documented(_value: u8) {
+#[test_case(2 => panics r"" ; "raw empty message")]
+#[test_case(3 => panics " " ; "whitespace message")]
+#[test_case(4 => panics "expected" ; "documented")]
+fn panicking(_value: u8) {
     panic!("expected");
 }
 

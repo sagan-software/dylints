@@ -7,5 +7,13 @@ LL |     deserializer.deserialize_any(AnyVisitor)
    = help: use a typed `deserialize_*` method unless dynamic input is intentional
    = note: `#[warn(serde_deserialize_any_portability)]` on by default
 
-warning: 1 warning emitted
+warning: `deserialize_any` restricts this code to self-describing formats
+  --> $DIR/main.rs:43:5
+   |
+LL |     Deserializer::deserialize_any(deserializer, AnyVisitor)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a typed `deserialize_*` method unless dynamic input is intentional
+
+warning: 2 warnings emitted
 

@@ -7,10 +7,8 @@
 //! leaves unrelated code unchanged. Its README defines the checked boundary,
 //! the recommended replacement, and the UI fixture that protects behavior.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
 
-use rustc_lint::LintContext as _;
 #[cfg(test)]
 extern crate test_case as _;
 #[cfg(test)]

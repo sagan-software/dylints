@@ -1,11 +1,59 @@
 warning: this mutable query is used only for reading
-  --> $DIR/main.rs:15:15
+  --> $DIR/main.rs:20:15
    |
 LL | fn bad(query: Query<&mut Position>) {
    |               ^^^^^^^^^^^^^^^^^^^^
    |
-   = help: request shared component references in this query
    = note: `#[warn(bevy_readonly_system_access)]` on by default
+help: request shared component references in this query
+   |
+LL - fn bad(query: Query<&mut Position>) {
+LL + fn bad(query: Query<&Position>) {
+   |
 
-warning: 1 warning emitted
+warning: this mutable query is used only for reading
+  --> $DIR/main.rs:24:21
+   |
+LL | fn bad_tuple(query: Query<(&mut Position, &'static mut Velocity)>, entity: Entity) {
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: request shared component references in this query
+   |
+LL - fn bad_tuple(query: Query<(&mut Position, &'static mut Velocity)>, entity: Entity) {
+LL + fn bad_tuple(query: Query<(&Position, &'static Velocity)>, entity: Entity) {
+   |
+
+warning: this mutable query is used only for reading
+  --> $DIR/main.rs:28:25
+   |
+LL | fn bad_reference(query: &Query<&mut Position>) {
+   |                         ^^^^^^^^^^^^^^^^^^^^^
+   |
+help: request shared component references in this query
+   |
+LL - fn bad_reference(query: &Query<&mut Position>) {
+LL + fn bad_reference(query: &Query<&Position>) {
+   |
+
+warning: this mutable query is used only for reading
+  --> $DIR/main.rs:32:21
+   |
+LL | fn bad_alias(query: PositionQuery) {
+   |                     ^^^^^^^^^^^^^
+   |
+   = help: request shared component references in this query
+
+warning: this mutable query is used only for reading
+  --> $DIR/main.rs:36:26
+   |
+LL | fn bad_in_closure(query: Query<&mut Position>) {
+   |                          ^^^^^^^^^^^^^^^^^^^^
+   |
+help: request shared component references in this query
+   |
+LL - fn bad_in_closure(query: Query<&mut Position>) {
+LL + fn bad_in_closure(query: Query<&Position>) {
+   |
+
+warning: 5 warnings emitted
 

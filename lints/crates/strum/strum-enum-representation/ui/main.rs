@@ -76,6 +76,31 @@ enum SerdeOnly {
     HTTPResponse,
 }
 
+#[derive(Serialize, strum::IntoStaticStr)]
+#[serde(rename_all = "lowercase")]
+enum StaticNames {
+    Ready,
+}
+
+#[derive(Serialize)]
+#[cfg_attr(all(), derive(strum::AsRefStr))]
+#[strum(serialize_all = "UPPERCASE")]
+enum CfgAttrNames {
+    Ready,
+}
+
+mod shadow {
+    use serde::Serialize;
+
+    // Shares a name with the Serde-only enum above but also derives a Strum output.
+    #[derive(Serialize, strum::Display)]
+    #[serde(rename_all = "snake_case")]
+    #[strum(serialize_all = "snake_case")]
+    pub enum SerdeOnly {
+        Ready,
+    }
+}
+
 fn main() {
     // Keep every fixture type reachable without changing its lint contract.
     let _ = ManualStatus::Ready.to_string();

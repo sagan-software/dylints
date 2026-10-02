@@ -1,11 +1,30 @@
 warning: this matrix dimension wraps one constant value in a collection
-  --> $DIR/main.rs:5:1
+  --> $DIR/main.rs:7:15
    |
 LL | #[test_matrix([1_u8], [true, false])]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |               ^^^^^^ help: write the constant as a scalar matrix argument: `1_u8`
    |
-   = help: write the constant as a scalar matrix argument
    = note: `#[warn(test_case_singleton_matrix_dimension)]` on by default
 
-warning: 1 warning emitted
+warning: this matrix dimension wraps one constant value in a collection
+  --> $DIR/main.rs:10:15
+   |
+LL | #[test_matrix(("label",), [true, false])]
+   |               ^^^^^^^^^^ help: write the constant as a scalar matrix argument: `"label"`
+
+warning: this matrix dimension wraps one constant value in a collection
+  --> $DIR/main.rs:13:15
+   |
+LL | #[test_matrix([[1_u8, 2]], [true, false])]
+   |               ^^^^^^^^^^^
+   |
+   = help: write the constant as a scalar matrix argument
+
+warning: this matrix dimension wraps one constant value in a collection
+  --> $DIR/main.rs:17:15
+   |
+LL | #[test_matrix([3_u8], [true, false] ; "second")]
+   |               ^^^^^^ help: write the constant as a scalar matrix argument: `3_u8`
+
+warning: 4 warnings emitted
 

@@ -1,11 +1,28 @@
 warning: this filter replaces matched text with itself
-  --> $DIR/main.rs:3:5
+  --> $DIR/main.rs:7:5
    |
 LL |     settings.add_filter("token", "token");
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-
+   |     |
+   |     help: remove the filter
    |
-   = help: remove the filter or provide a stable replacement
    = note: `#[warn(insta_noop_filter)]` on by default
 
-warning: 1 warning emitted
+warning: this filter replaces matched text with itself
+  --> $DIR/main.rs:8:5
+   |
+LL |     settings.add_filter(TOKEN, "token");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-
+   |     |
+   |     help: remove the filter
+
+warning: this filter replaces matched text with itself
+  --> $DIR/main.rs:9:14
+   |
+LL |     let () = settings.add_filter("token", "token");
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the filter or provide a stable replacement
+
+warning: 3 warnings emitted
 

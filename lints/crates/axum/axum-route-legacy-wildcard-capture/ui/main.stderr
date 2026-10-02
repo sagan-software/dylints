@@ -6,5 +6,11 @@ LL |     let _: Router = Router::new().route("/assets/*path", get(|| async {}));
    |
    = note: `#[warn(axum_route_legacy_wildcard_capture)]` on by default
 
-warning: 1 warning emitted
+warning: Axum 0.8 rejects this legacy `*name` capture
+  --> $DIR/main.rs:10:49
+   |
+LL |     let _: Router = Router::new().route_service("/files/*rest", get(|| async {}));
+   |                                                 ^^^^^^^^^^^^^^ help: write the wildcard as `{*name}`: `"/files/{*rest}"`
+
+warning: 2 warnings emitted
 

@@ -1,15 +1,43 @@
 warning: this unit component does not implement `Default`
-  --> $DIR/main.rs:14:1
+  --> $DIR/main.rs:23:1
    |
 LL | struct Missing;
    | ^^^^^^^^^^^^^^
    |
-   = help: derive or implement `Default`
 note: the lint level is defined here
-  --> $DIR/main.rs:9:9
+  --> $DIR/main.rs:11:9
    |
 LL | #![warn(bevy_missing_default_for_unit_component)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: derive or implement `Default`
+   |
+LL + #[derive(Default)]
+LL | struct Missing;
+   |
 
-warning: 1 warning emitted
+warning: this unit component does not implement `Default`
+  --> $DIR/main.rs:27:1
+   |
+LL | pub struct DocumentedMissing;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: derive or implement `Default`
+   |
+LL + #[derive(Default)]
+LL | pub struct DocumentedMissing;
+   |
+
+warning: this unit component does not implement `Default`
+  --> $DIR/main.rs:18:9
+   |
+LL |         struct $name;
+   |         ^^^^^^^^^^^^^
+...
+LL | marker!(GeneratedMissing);
+   | ------------------------- in this macro invocation
+   |
+   = help: derive or implement `Default`
+   = note: this warning originates in the macro `marker` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: 3 warnings emitted
 

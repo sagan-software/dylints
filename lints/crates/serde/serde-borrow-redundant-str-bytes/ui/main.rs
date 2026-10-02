@@ -24,16 +24,31 @@ struct User<'a> {
     name: &'a str,
     #[serde(borrow)]
     raw: &'a [u8],
+    // Serde does not borrow through an alias, so the attribute is required here.
     #[serde(borrow)]
     aliased_name: BorrowedStr<'a>,
     #[serde(borrow)]
     aliased_raw: BorrowedBytes<'a>,
+    #[serde(borrow)]
+    optional_name: Option<&'a str>,
     #[serde(borrow)]
     path: BorrowedPath<'a>,
     #[serde(borrow)]
     inline_name: &'a str,
     #[serde(borrow, rename = "renamed")]
     renamed_name: &'a str,
+}
+
+#[derive(Deserialize)]
+enum Message<'a> {
+    Text(#[serde(borrow)] &'a str),
+    Owned(String),
+}
+
+#[derive(serde::Serialize)]
+struct SerializeOnly<'a> {
+    #[serde(borrow)]
+    name: &'a str,
 }
 
 #[derive(Deserialize)]

@@ -35,6 +35,36 @@ enum DeserializeOnlyEnum {
     Hidden,
 }
 
+#[derive(Serialize)]
+struct RenamedToKeyword {
+    #[serde(rename = "default")]
+    value: String,
+}
+
+#[derive(Serialize)]
+#[cfg_attr(all(), derive(Deserialize))]
+struct CfgAttrBothDirections {
+    #[serde(default)]
+    value: String,
+}
+
+#[derive(Serialize)]
+struct MultiEntry {
+    #[serde(rename = "v", default)]
+    value: String,
+}
+
+mod other {
+    use serde::Deserialize;
+
+    // Shares a name with the serialize-only struct above but derives both directions.
+    #[derive(serde::Serialize, Deserialize)]
+    struct SerializeOnly {
+        #[serde(alias = "old_value")]
+        value: String,
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 struct BothDirections {
     #[serde(default, skip_serializing_if = "String::is_empty")]

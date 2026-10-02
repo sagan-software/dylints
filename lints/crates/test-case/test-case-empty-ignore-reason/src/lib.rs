@@ -11,10 +11,8 @@
 //! This Dylint library resolves test-case ignore attributes, reports empty
 //! reasons, and recommends describing why the case is intentionally ignored.
 
-extern crate rustc_errors;
 extern crate rustc_hir;
 
-use rustc_lint::LintContext as _;
 #[cfg(test)]
 extern crate test_case as _;
 

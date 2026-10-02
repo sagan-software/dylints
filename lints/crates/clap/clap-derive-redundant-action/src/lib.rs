@@ -14,7 +14,7 @@ extern crate rustc_errors;
 use clap as _;
 
 use clap_support::{
-    ast_clap_attr, ast_clap_attr_entry_source, ast_clap_attr_single_entry,
+    ast_clap_attr, ast_clap_attr_entry_removal, ast_clap_attr_entry_source,
     ast_is_special_clap_field, clap_arg_fields, clap_ast_items, clap_field_type, compact_source,
 };
 use rustc_ast::Crate;
@@ -57,8 +57,7 @@ impl EarlyLintPass for ClapDeriveRedundantAction {
                 let Some(action) = ast_clap_attr(cx, field.attrs, "arg", "action") else {
                     continue;
                 };
-                let fix_span = ast_clap_attr_single_entry(cx, field.attrs, "arg", "action")
-                    .map(|attr| attr.span);
+                let fix_span = ast_clap_attr_entry_removal(cx, field.attrs, "arg", "action");
 
                 // Point at the resolved attribute entry that the user can remove.
                 cx.emit_span_lint(

@@ -4,7 +4,9 @@
 
 Checks for a `#[serde(skip_serializing)]` field in a type that derives both
 `Serialize` and `Deserialize` when the field has no `skip`,
-`skip_deserializing`, or `default`, and the container has no `default`.
+`skip_deserializing`, or `default`, and the container has no `default`. An
+`Option` field is not checked unless it has `with` or `deserialize_with`,
+because Serde fills a missing `Option` field with `None`.
 
 ## Why is this bad?
 
@@ -14,12 +16,7 @@ output fails with a missing field error.
 
 ## Known problems
 
-Serde fills a missing `Option` field with `None`, so an `Option` field
-round-trips without a default but still triggers the lint. A field that other
-input always supplies also triggers the lint.
-
-The lint matches derives to types by name, so two types with the same name in
-one crate can share the same derive result.
+A field that other input always supplies also triggers the lint.
 
 ## Example
 

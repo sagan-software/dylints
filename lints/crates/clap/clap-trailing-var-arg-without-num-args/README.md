@@ -15,9 +15,10 @@ the command is built.
 ## Known problems
 
 The lint checks only one method chain. It warns when `num_args` is called on the
-same `Arg` in a later statement. It warns when `.action(ArgAction::Append)`
-already lets the argument take multiple values. It does not check a call whose
-argument is not the literal `true`.
+same `Arg` in a later statement. It does not warn when the final `action` call
+is `ArgAction::Append`, because that action already lets the argument take
+multiple values. It checks only the final `trailing_var_arg` call, and only when
+its argument is the literal `true`.
 
 ## Example
 

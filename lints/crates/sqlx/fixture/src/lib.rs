@@ -85,6 +85,34 @@ pub trait Row {
     fn try_get_unchecked<T: Default, I>(&self, _index: I) -> Result<T, Error> {
         Ok(T::default())
     }
+
+    /// Return column metadata, panicking when the column is absent.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use sqlx::{Row, TestRow};
+    ///
+    /// TestRow.column(0);
+    /// ```
+    fn column<I>(&self, _index: I) {}
+
+    /// Return column metadata without panicking.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the column is absent.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use sqlx::{Row, TestRow};
+    ///
+    /// assert!(TestRow.try_column(0).is_ok());
+    /// ```
+    fn try_column<I>(&self, _index: I) -> Result<(), Error> {
+        Ok(())
+    }
 }
 
 /// A concrete row for UI examples.
