@@ -54,8 +54,8 @@ cargo clippy --workspace --lib --bins --tests -- -D warnings
 cargo test --workspace --lib --bins --tests
 ```
 
-The README code blocks are lint examples, not complete programs, so the test
-command skips doctests.
+The command runs unit, UI, and integration tests. Some lint README examples
+depend on application types, so the command skips doctests.
 UI tests marked `// run-rustfix` apply machine-applicable suggestions and
 compile the resulting program. Their `.fixed` files record the expected rewrite.
 
@@ -101,21 +101,24 @@ nix run .#site
 ```
 
 The generator reads each lint's `README.md` and takes default levels from
-`sagan-lints --list-private-lints`. A lint is listed as `MachineApplicable` when
+`sagan-lints --list-private-lints`. The catalog labels a lint
+`MachineApplicable` when
 its source, or a support macro it invokes, emits a machine-applicable
-suggestion and its UI tests render one. Every other lint is listed as
-`NotMachineApplicable`. The CI workflow deploys the catalog to GitHub Pages
+suggestion and its UI tests render one. It labels every other lint
+`NotMachineApplicable`. Category tests and nested auxiliary fixtures do not
+create catalog entries. The CI workflow deploys the catalog to GitHub Pages
 from `main`.
 
 ## CI
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs formatting, Clippy,
-and the test suite on every push and pull request. It also builds the catalog
+and tests for pushes to `main`, `pull_request` events, and manual runs. It also
+builds the catalog
 and runs the bundled lints against this repository. The self-lint job does not
 block merges until the repository passes its own lints.
 
 ## License notes
 
-`web/static/` and `web/templates/index.html` adapt the Clippy lint list, which
-is licensed under MIT or Apache-2.0. See
+`web/static/` and `web/templates/index.html` adapt the Clippy lint list.
+Clippy releases these assets under MIT or Apache-2.0. See
 [`web/static/LICENSE-CLIPPY-MIT`](web/static/LICENSE-CLIPPY-MIT).

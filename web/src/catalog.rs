@@ -103,7 +103,18 @@ pub(crate) fn read_lints(
 
 /// Find each lint crate's `ui` fixture directory, rejecting an empty tree.
 fn lint_ui_directories(lints_root: &Path) -> Result<Vec<PathBuf>, SiteError> {
-    let ui_directories = directories_named(lints_root, "ui")?;
+    let mut ui_directories = directories_named(lints_root, "ui")?;
+    let crates_root = lints_root.join("crates");
+    // Leaf lints use category/name/ui or crates/family/name/ui below `lints`.
+    ui_directories.retain(|directory| {
+        let root_depth = if directory.starts_with(&crates_root) {
+            4
+        } else {
+            3
+        };
+        directory.ancestors().nth(root_depth) == Some(lints_root)
+    });
+    // Group fixtures and nested auxiliary fixtures cannot populate the catalog.
     if ui_directories.is_empty() {
         return Err(SiteError::NoLints {
             path: lints_root.to_path_buf(),
@@ -399,6 +410,43 @@ pub(crate) mod tests {
         fs::create_dir_all(root.path().join("lints")).expect("lint tree should be writable");
 
         // Discovery must refuse to render an empty catalog.
+        let result = read_lints(root.path(), &RegisteredLints::default());
+        assert!(
+            matches!(result, Err(SiteError::NoLints { .. })),
+            "{result:?}"
+        );
+    }
+
+    /// Group tests and nested fixtures do not describe individual lints.
+    #[test]
+    fn group_and_nested_ui_directories_are_ignored() {
+        // Add group-level and nested test fixtures beside two real lint crates.
+        let root = fixture_repository();
+        [
+            "restriction/ui",
+            "crates/serde/ui",
+            "style/fixable_style/ui/auxiliary/ui",
+        ]
+        .into_iter()
+        .try_for_each(|directory| fs::create_dir_all(root.path().join("lints").join(directory)))
+        .expect("fixture UI directories should be writable");
+
+        // Only leaf lint crates contribute catalog entries.
+        let lints = read_lints(root.path(), &fixture_registry())
+            .expect("group and nested UI directories should be ignored");
+        let names: Vec<_> = lints.iter().map(|lint| lint.name.as_str()).collect();
+        assert_eq!(names, ["fixable_style", "serde_unregistered"]);
+    }
+
+    /// A tree containing only a category test still has no lint crates.
+    #[test]
+    fn group_only_tree_is_rejected() {
+        // A category can test registration without declaring a lint itself.
+        let root = tempfile::tempdir().expect("temporary directory should be available");
+        fs::create_dir_all(root.path().join("lints/restriction/ui"))
+            .expect("fixture UI directory should be writable");
+
+        // Group fixtures must not bypass the empty-catalog guard.
         let result = read_lints(root.path(), &RegisteredLints::default());
         assert!(
             matches!(result, Err(SiteError::NoLints { .. })),
