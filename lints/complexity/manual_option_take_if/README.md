@@ -8,7 +8,7 @@ binding, a field of one, or a `*` projection of one.
 
 ## Why is this bad?
 
-The receiver is written twice, so a later edit can test one `Option` and take
+The code writes the receiver twice. A later edit can test one `Option` and take
 another. `Option::take_if` tests and takes the value in one call.
 
 ## Known problems
@@ -16,9 +16,9 @@ another. `Option::take_if` tests and takes the value in one call.
 - Only the `as_ref().is_some_and(..)` condition and a literal `None` in the
   `else` branch trigger. Conditions such as `matches!(option, Some(..))` are
   ignored.
-- A receiver that is not a local place, such as `holder().slot`, is ignored.
-- A receiver that uses an overloaded `Deref` or `DerefMut` adjustment is
-  ignored because evaluating it twice can run user code twice.
+- The lint ignores a receiver outside a local place, such as `holder().slot`.
+- The lint ignores a receiver that uses an overloaded `Deref` or `DerefMut`
+  adjustment. Repeating that receiver can run user code twice.
 - The `take_if` predicate receives `&mut T` instead of `&T`, so the closure can
   need changes. The lint emits help without an automatic fix.
 

@@ -15,12 +15,13 @@ statements hide that the value passes through unchanged. `inspect` and
 ## Known problems
 
 - The block must contain exactly the `let`, the `if let`, and the returned
-  binding. A block with any other statement is ignored.
+  binding. The lint ignores a block with any other statement.
 - The observation must borrow the binding as `&name`, have no `else`, and hold
   one action. The lint skips it when it contains `?`, `.await`, `break`,
   `continue`, or `return` outside a closure.
-- The variant payload pattern must accept every payload. Partial patterns such
-  as `Some(0)` are ignored because `inspect` would observe all `Some` values.
+- The variant payload pattern must be `_` or a binding without a subpattern.
+  The lint ignores tuple patterns, `x @ _`, and partial patterns such as
+  `Some(0)`. `inspect` would observe all `Some` values.
 - With `inspect`, temporaries in the initial value can drop at a different time.
   The lint emits help without an automatic fix.
 

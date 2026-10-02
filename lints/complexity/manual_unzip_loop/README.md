@@ -2,10 +2,10 @@
 
 ## What it does
 
-Checks for two empty mutable collections declared just before a
-`for (first, second) in ...` loop whose body pushes or inserts `first` into the
-first collection and `second` into the second, when the block returns both
-collections as a tuple.
+Checks for two empty mutable collections declared just before a loop.
+The loop must use the pattern `for (first, second) in ...`.
+Its body must push or insert each binding into the matching collection.
+The block must return both collections as a tuple.
 
 ## Why is this bad?
 
@@ -17,13 +17,13 @@ pair split in one call.
 
 - The collections must be standard `Vec`, `VecDeque`, `HashSet`, `BTreeSet`,
   `HashMap`, or `BTreeMap` values created by an argument-free `new` or
-  `default` call owned by that collection. Lookalike associated functions on
-  other types, `vec![]`, and `Vec::with_capacity(n)` are ignored.
+  `default` call owned by that collection. The lint ignores lookalike
+  associated functions on other types, `vec![]`, and `Vec::with_capacity(n)`.
 - The loop pattern must be a two-name tuple, and the body must insert the names
-  unchanged in pattern order with `push`, `push_back`, or `insert`. Swapped or
-  transformed items are ignored.
+  unchanged in pattern order with `push`, `push_back`, or `insert`. The lint
+  ignores swapped or transformed items.
 - The block must end with the tuple of both collections in declaration order.
-  A loop whose results are used another way is ignored.
+  The lint ignores a loop when another expression consumes its results.
 - The lint emits help without an automatic fix.
 
 ## Example

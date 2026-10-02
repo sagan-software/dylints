@@ -18,11 +18,11 @@ separate steps.
   `return` outside a closure.
 - The lint skips `if let Some(..) = result.ok()`, which reads better as
   `if let Ok(..) = result`.
-- The `Some` payload pattern must accept every payload. Partial patterns such as
-  `Some(0)` are ignored because `filter_map` would run the action for all
-  `Some` values.
-- Compound assignments such as `total += value` do not count as an action, so
-  those loops are ignored.
+- The `Some` payload pattern must be `_` or a binding without a subpattern.
+  The lint ignores tuple patterns, `x @ _`, and partial patterns such as
+  `Some(0)`. `filter_map` would run the action for all `Some` values.
+- Compound assignments such as `total += value` do not count as an action.
+  The lint ignores those loops.
 - The lint emits help without an automatic fix because closure arguments can
   need adjustment.
 
