@@ -52,7 +52,7 @@ fn collect_can_change_values_when_size_hint_has_side_effects() {
     for value in side_effecting_items() {
         Vec::push(&mut original, value * 2);
     }
-    // collect queries size_hint before next, changing the remaining values.
+    // collect queries size_hint after its first next call and changes later yielded values.
     let rewritten: Vec<_> = side_effecting_items().map(|value| value * 2).collect();
 
     // The differing vectors prove that the collection rewrite changes behavior.
