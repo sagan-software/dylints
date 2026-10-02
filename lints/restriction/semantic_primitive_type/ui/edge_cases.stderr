@@ -8,7 +8,7 @@ LL |     fn load(&self, account_id: u64) -> Option<u64>;
    = note: `#[warn(semantic_primitive_type)]` on by default
 
 warning: string match encodes a closed vocabulary with primitive strings
-  --> $DIR/edge_cases.rs:54:5
+  --> $DIR/edge_cases.rs:55:5
    |
 LL |     match state.as_str() { "queued" => 0, "running" | "paused" => 1, "complete" => 2, other => other.len() as u8 }
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL |     match state.as_str() { "queued" => 0, "running" | "paused" => 1, "compl
    = help: parse the input into a closed enum and match on its variants
 
 warning: string match encodes a closed vocabulary with primitive strings
-  --> $DIR/edge_cases.rs:58:5
+  --> $DIR/edge_cases.rs:59:5
    |
 LL | /     match state {
 LL | |         "queued" => 0,

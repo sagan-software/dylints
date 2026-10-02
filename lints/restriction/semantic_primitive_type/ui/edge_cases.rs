@@ -50,6 +50,7 @@ impl Store for Memory {
     }
 }
 
+#[rustfmt::skip]
 fn one_line_arms(state: String) -> u8 {
     match state.as_str() { "queued" => 0, "running" | "paused" => 1, "complete" => 2, other => other.len() as u8 }
 }

@@ -1,5 +1,5 @@
 warning: adjacent index loop can use `slice::windows(2)`
-  --> $DIR/main.rs:11:5
+  --> $DIR/main.rs:8:5
    |
 LL | /     for index in 0..values.len().saturating_sub(1) {
 LL | |         println!(
@@ -21,7 +21,7 @@ LL ~             next = window[1]
    |
 
 warning: adjacent index loop can use `slice::windows(2)`
-  --> $DIR/main.rs:23:5
+  --> $DIR/main.rs:20:5
    |
 LL | /     for index in 0..values.len().saturating_sub(1) {
 LL | |         total += values[index + 1] - values[index];
@@ -35,7 +35,7 @@ LL ~         total += window[1] - window[0];
    |
 
 warning: adjacent index loop can use `slice::windows(2)`
-  --> $DIR/main.rs:32:5
+  --> $DIR/main.rs:29:5
    |
 LL | /     for index in 0..values.len().saturating_sub(1) {
 LL | |         let sum = || values[index] + values[index + 1];
@@ -50,7 +50,7 @@ LL ~         let sum = || window[0] + window[1];
    |
 
 warning: adjacent index loop can use `slice::windows(2)`
-  --> $DIR/main.rs:41:5
+  --> $DIR/main.rs:38:5
    |
 LL | /     for index in 0..(*values).len().saturating_sub(1) {
 LL | |         println!("{} {}", (*values)[index], (*values)[index + 1]);

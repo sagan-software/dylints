@@ -14,6 +14,7 @@ fn too_nested(a: bool, b: bool, c: bool, d: bool, e: bool, f: bool) {
     }
 }
 
+#[rustfmt::skip]
 fn nesting_in_macro_arguments(a: [bool; 5]) {
     println!(
         "{}",

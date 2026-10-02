@@ -12,6 +12,7 @@ fn too_many_paths(values: [bool; 9]) {
     if values[8] {}
 }
 
+#[rustfmt::skip]
 fn paths_in_macro_arguments(f: [bool; 8]) {
     println!(
         "{}{}{}{}{}{}{}{}",

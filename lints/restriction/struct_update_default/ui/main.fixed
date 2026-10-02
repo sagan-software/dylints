@@ -64,8 +64,12 @@ fn main() {
         retries: 2,
         name: String::new(),
     };
+    #[rustfmt::skip]
     let _one_line = Request { timeout: 1, retries: Default::default(), name: Default::default() };
-    let _tuple = Pair { 0: 1, 1: Default::default() };
+    let _tuple = Pair {
+        0: 1,
+        1: Default::default()
+    };
     let _generic = Wrapper::<String> {
         count: 1,
         value: Default::default()

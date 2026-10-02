@@ -13,7 +13,7 @@ LL | | }
    = note: `#[warn(source_cognitive_complexity)]` on by default
 
 warning: function has source Cognitive Complexity 15, which exceeds 14
-  --> $DIR/main.rs:17:1
+  --> $DIR/main.rs:18:1
    |
 LL | / fn nesting_in_macro_arguments(a: [bool; 5]) {
 LL | |     println!(

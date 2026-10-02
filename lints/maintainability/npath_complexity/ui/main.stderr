@@ -14,7 +14,7 @@ LL | | }
    = note: `#[warn(npath_complexity)]` on by default
 
 warning: function has NPath complexity 256, which exceeds 200
-  --> $DIR/main.rs:15:1
+  --> $DIR/main.rs:16:1
    |
 LL | / fn paths_in_macro_arguments(f: [bool; 8]) {
 LL | |     println!(
@@ -27,7 +27,7 @@ LL | | }
    = help: split independent branching stages into separate functions
 
 warning: function has NPath complexity 256, which exceeds 200
-  --> $DIR/main.rs:22:1
+  --> $DIR/main.rs:23:1
    |
 LL | / fn try_operators_double(values: [Option<u8>; 8]) -> Option<u8> {
 LL | |     let _v0 = values[0]?;

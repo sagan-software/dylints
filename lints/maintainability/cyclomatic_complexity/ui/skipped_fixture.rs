@@ -28,6 +28,7 @@ fn exceeds_limit(a: bool, b: bool, c: bool, d: bool, e: bool, f: bool) -> usize 
     score
 }
 
+#[rustfmt::skip]
 fn decisions_in_macro_arguments(flags: [bool; 10]) {
     println!("{}", flags[0] && flags[1] && flags[2] && flags[3] && flags[4] && flags[5] && flags[6] && flags[7] && flags[8] && flags[9]);
 }

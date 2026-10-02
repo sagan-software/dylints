@@ -20,6 +20,7 @@ mod attributes {
     fn fifth() {} /* A block comment stays with the previous item. */ fn sixth() {}
 }
 
+#[rustfmt::skip]
 macro_rules! generated_module {
     () => {
         mod generated { fn first() {} fn second() {} }

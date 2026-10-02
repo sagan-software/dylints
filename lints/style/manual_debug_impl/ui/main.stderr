@@ -54,8 +54,9 @@ warning: manual `Debug` implementation looks derivable
    |
 LL | / impl Debug for Documented {
 LL | |     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-LL | |         f.debug_struct("Documented").field("value", &self.value).finish()
-LL | |     }
+LL | |         f.debug_struct("Documented")
+LL | |             .field("value", &self.value)
+...  |
 LL | | }
    | |_^
    |

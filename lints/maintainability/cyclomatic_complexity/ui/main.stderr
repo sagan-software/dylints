@@ -14,7 +14,7 @@ LL | | }
    = note: `#[warn(cyclomatic_complexity)]` on by default
 
 warning: function has Cyclomatic Complexity 10, which exceeds 9
-  --> $DIR/main.rs:31:1
+  --> $DIR/main.rs:32:1
    |
 LL | / fn decisions_in_macro_arguments(flags: [bool; 10]) {
 LL | |     println!("{}", flags[0] && flags[1] && flags[2] && flags[3] && flags[4] && flags[5] && flags[6] && flags[7] && flags[8] && fla...

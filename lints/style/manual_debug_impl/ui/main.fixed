@@ -91,7 +91,9 @@ struct Documented {
 /// The documentation stays with this impl, so the lint offers no fix.
 impl Debug for Documented {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        f.debug_struct("Documented").field("value", &self.value).finish()
+        f.debug_struct("Documented")
+            .field("value", &self.value)
+            .finish()
     }
 }
 

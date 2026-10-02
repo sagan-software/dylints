@@ -1,32 +1,31 @@
 warning: internal import should start with `self::`
-  --> $DIR/edge_cases.rs:59:5
-   |
-LL | use local::AliasItem as RenamedItem;
-   |     ^^^^^^^^^^^^^^^^ help: add `self::` to this import path: `self::local::AliasItem`
-   |
-   = note: `#[warn(internal_import_self)]` on by default
-
-warning: internal import should start with `self::`
-  --> $DIR/edge_cases.rs:60:5
-   |
-LL | use local::Item;
-   |     ^^^^^^^^^^^ help: add `self::` to this import path: `self::local::Item`
-
-warning: internal import should start with `self::`
-  --> $DIR/edge_cases.rs:61:15
+  --> $DIR/edge_cases.rs:59:15
    |
 LL | use grouped::{Shallow, nested::Deep};
    |               ^^^^^^^
    |
    = help: add `self::` to this import path
+   = note: `#[warn(internal_import_self)]` on by default
 
 warning: internal import should start with `self::`
-  --> $DIR/edge_cases.rs:61:24
+  --> $DIR/edge_cases.rs:59:24
    |
 LL | use grouped::{Shallow, nested::Deep};
    |                        ^^^^^^^^^^^^
    |
    = help: add `self::` to this import path
+
+warning: internal import should start with `self::`
+  --> $DIR/edge_cases.rs:60:5
+   |
+LL | use local::AliasItem as RenamedItem;
+   |     ^^^^^^^^^^^^^^^^ help: add `self::` to this import path: `self::local::AliasItem`
+
+warning: internal import should start with `self::`
+  --> $DIR/edge_cases.rs:61:5
+   |
+LL | use local::Item;
+   |     ^^^^^^^^^^^ help: add `self::` to this import path: `self::local::Item`
 
 warning: internal import should start with `self::`
   --> $DIR/edge_cases.rs:62:13

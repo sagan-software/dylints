@@ -91,6 +91,7 @@ fn too_many_conditions(values: [bool; 26]) {
     if values[25] {}
 }
 
+#[rustfmt::skip]
 fn calls_in_macro_arguments() {
     println!("{:?}", [call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call(), call()]);
 }

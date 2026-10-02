@@ -32,7 +32,7 @@ LL |         ..Default::default()
    | help: set the remaining fields explicitly
 
 warning: struct update syntax hides fields behind `Default::default()`
-  --> $DIR/main.rs:66:45
+  --> $DIR/main.rs:67:45
    |
 LL |     let _one_line = Request { timeout: 1, ..Default::default() };
    |                                           --^^^^^^^^^^^^^^^^^^
@@ -40,28 +40,20 @@ LL |     let _one_line = Request { timeout: 1, ..Default::default() };
    |                                           help: set the remaining fields explicitly: `retries: Default::default(), name: Default::default()`
 
 warning: struct update syntax hides fields behind `Default::default()`
-  --> $DIR/main.rs:67:33
-   |
-LL |     let _tuple = Pair { 0: 1, ..Default::default() };
-   |                               --^^^^^^^^^^^^^^^^^^
-   |                               |
-   |                               help: set the remaining fields explicitly: `1: Default::default()`
-
-warning: struct update syntax hides fields behind `Default::default()`
   --> $DIR/main.rs:70:11
    |
 LL |         ..Default::default()
    |         --^^^^^^^^^^^^^^^^^^
    |         |
-   |         help: set the remaining fields explicitly: `value: Default::default()`
+   |         help: set the remaining fields explicitly: `1: Default::default()`
 
 warning: struct update syntax hides fields behind `Default::default()`
-  --> $DIR/main.rs:76:11
+  --> $DIR/main.rs:74:11
    |
 LL |         ..Default::default()
-   |           ^^^^^^^^^^^^^^^^^^
-   |
-   = help: set every field explicitly at the construction boundary
+   |         --^^^^^^^^^^^^^^^^^^
+   |         |
+   |         help: set the remaining fields explicitly: `value: Default::default()`
 
 warning: struct update syntax hides fields behind `Default::default()`
   --> $DIR/main.rs:80:11
@@ -72,7 +64,15 @@ LL |         ..Default::default()
    = help: set every field explicitly at the construction boundary
 
 warning: struct update syntax hides fields behind `Default::default()`
-  --> $DIR/main.rs:85:9
+  --> $DIR/main.rs:84:11
+   |
+LL |         ..Default::default()
+   |           ^^^^^^^^^^^^^^^^^^
+   |
+   = help: set every field explicitly at the construction boundary
+
+warning: struct update syntax hides fields behind `Default::default()`
+  --> $DIR/main.rs:89:9
    |
 LL |         Default::default()
    |         ^^^^^^^^^^^^^^^^^^

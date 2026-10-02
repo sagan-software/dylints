@@ -1,10 +1,7 @@
 // run-rustfix
 // rustfix-only-machine-applicable
 
-use std::{
-    cell::Cell,
-    ops::Deref,
-};
+use std::{cell::Cell, ops::Deref};
 
 fn adjacent(values: &[i32]) {
     // Trigger for the non-panicking range with two adjacent slice indexes.
