@@ -5984,6 +5984,7 @@ dependencies = [
  "clap 4.6.4",
  "insta 1.48.0",
  "pulldown-cmark",
+ "strum 0.28.0",
  "tempfile",
  "thiserror 2.0.19",
  "walkdir",

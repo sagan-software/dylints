@@ -1,0 +1,31 @@
+warning: function body has 0 intent comments but needs at least 1 for 5 statements
+  --> $DIR/macro_expansion.rs:11:1
+   |
+LL | / fn five_prints_without_comments(value: u64) {
+LL | |     println!("{value}");
+LL | |     println!("{value}");
+LL | |     println!("{value}");
+LL | |     println!("{value}");
+LL | |     println!("{value}");
+LL | | }
+   | |_^
+   |
+   = help: add a short `//` comment explaining ordering, invariants, or side effects
+   = note: `#[warn(missing_intent_comments)]` on by default
+
+warning: function body has 0 intent comments but needs at least 2 for 6 statements
+  --> $DIR/macro_expansion.rs:20:1
+   |
+LL | / fn statements_inside_macro_argument(value: u64) -> Vec<u64> {
+LL | |     vec![{
+LL | |         let first = value + 1;
+LL | |         let second = first + 1;
+...  |
+LL | |     }]
+LL | | }
+   | |_^
+   |
+   = help: add a short `//` comment explaining ordering, invariants, or side effects
+
+warning: 2 warnings emitted
+

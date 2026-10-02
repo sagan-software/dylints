@@ -208,6 +208,10 @@ mod tests {
 
     #[test]
     fn unknown_category_is_rejected() {
-        assert!(Category::from_str("unknown").is_err());
+        let error = Category::from_str("unknown").err();
+        assert_eq!(
+            error.map(|error| error.to_string()),
+            Some("unknown embedded lint category `unknown`".to_owned())
+        );
     }
 }

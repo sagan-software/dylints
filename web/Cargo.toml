@@ -9,6 +9,7 @@ publish.workspace = true
 askama.workspace = true
 clap.workspace = true
 pulldown-cmark.workspace = true
+strum.workspace = true
 thiserror = { workspace = true, features = ["std"] }
 walkdir.workspace = true
 

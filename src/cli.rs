@@ -193,7 +193,11 @@ mod tests {
 
     #[test]
     fn fast_mode_conflicts_with_all_targets() {
-        assert!(Cli::try_parse_from(["sagan-lints", "--fast", "--all-targets"]).is_err());
+        let error = Cli::try_parse_from(["sagan-lints", "--fast", "--all-targets"]).err();
+        assert_eq!(
+            error.map(|error| error.kind()),
+            Some(clap::error::ErrorKind::ArgumentConflict)
+        );
     }
 
     #[test]

@@ -175,10 +175,10 @@ MIT OR Apache-2.0; see LICENSE-CLIPPY-MIT.
                             <a href="https://doc.rust-lang.org/nightly/nightly-rustc/rustc_lint_defs/enum.Applicability.html#variants">(?)</a> {# #}
                         </div>
                         {# Open related issues #}
-                        <a href="{{ repository_url }}/issues?q=is%3Aissue+{{ lint.name }}">Related Issues</a>
+                        <a href="{{ crate::catalog::REPOSITORY_URL }}/issues?q=is%3Aissue+{{ lint.name }}">Related Issues</a>
 
                         {# Jump to source #}
-                        <a href="{{ repository_url }}/blob/main/{{ lint.source_path }}">View Source</a>
+                        <a href="{{ crate::catalog::REPOSITORY_URL }}/blob/main/{{ lint.source_href() }}">View Source</a>
                     </div> {# #}
                 </div> {# #}
             </article>
@@ -188,7 +188,7 @@ MIT OR Apache-2.0; see LICENSE-CLIPPY-MIT.
     <a {#+ #}
         aria-label="View source on GitHub" {#+ #}
         class="github-corner" {#+ #}
-        href="{{ repository_url }}" {#+ #}
+        href="{{ crate::catalog::REPOSITORY_URL }}" {#+ #}
         rel="noopener noreferrer" {#+ #}
         target="_blank" {# #}
     > {# #}

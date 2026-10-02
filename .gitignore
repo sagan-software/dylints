@@ -4,3 +4,4 @@
 /.direnv/
 /.rustup-dylint/
 /.envrc.local
+/.claude/worktrees/

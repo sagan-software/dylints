@@ -5,7 +5,9 @@
 Checks for functions and methods whose body has five or more statements and
 fewer `//` comments than one per five statements, rounded up. A body with 11
 statements needs 3 comments. Trailing expressions of blocks count as
-statements, including those in nested `if`, `match`, and loop blocks.
+statements, including those in nested `if`, `match`, and loop blocks. A macro
+call counts as one statement no matter how many statements it expands to, and
+statements written inside macro arguments count normally.
 
 ## Why is this bad?
 
