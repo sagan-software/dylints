@@ -27,6 +27,10 @@ use rustc_hir::{
     intravisit::{Visitor, walk_expr},
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_middle::ty::{
+    self,
+    adjustment::{Adjust, DerefAdjustKind},
+};
 use rustc_span::Span;
 
 dylint_support::documented_late_lint! {
@@ -85,7 +89,7 @@ fn extend_candidate<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Opt
         .then(|| support::for_loop(cx, expr))
         .flatten()
         .filter(|loop_info| !loop_info.body.span.from_expansion())?;
-    let (receiver, argument) = sequence_insertion(cx, loop_info.body)?;
+    let (receiver, argument) = sequence_insertion(cx, loop_info.body, loop_info.source)?;
     // Offer the exact rewrite only when `extend` receives the unchanged loop items.
     let suggestion = is_unchanged_item(cx, &loop_info, argument)
         .then(|| exact_rewrite(cx, expr, &loop_info, receiver))
@@ -100,6 +104,7 @@ fn extend_candidate<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Opt
 fn sequence_insertion<'tcx>(
     cx: &LateContext<'tcx>,
     body: &'tcx Block<'tcx>,
+    source: &'tcx Expr<'tcx>,
 ) -> Option<(&'tcx Expr<'tcx>, &'tcx Expr<'tcx>)> {
     // Require one resolved `Vec::push` or `VecDeque::push_back` call.
     let action = support::peel_drop_temps(support::block_only_expr(body)?);
@@ -114,8 +119,10 @@ fn sequence_insertion<'tcx>(
             )
         });
     // Moving the insertions into one call must not skip an exit or reorder a target read.
-    let is_independent =
-        place_root(cx, receiver).is_some_and(|root| !contains_local(cx, argument, root));
+    // The source is evaluated while `extend` holds the target borrow, so it cannot read the target.
+    let is_independent = place_root(cx, receiver).is_some_and(|root| {
+        !contains_local(cx, argument, root) && !contains_local(cx, source, root)
+    });
     let has_exit = support::contains_control_flow(action);
     (is_insertion && is_independent && !has_exit).then_some((receiver, argument))
 }
@@ -148,14 +155,64 @@ fn exact_rewrite(
     Some(format!("{target}.extend({source}){terminator}"))
 }
 
-/// Returns the local binding at the root of a field or dereference place.
+/// Returns the local binding at the root of a safe field or dereference place.
 ///
-/// Calls and indexing are rejected because the loop evaluates them once per item.
+/// Calls and indexing are rejected because the loop evaluates them once per item. Custom
+/// dereference adjustments are rejected because `extend` evaluates the receiver once.
 fn place_root(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<HirId> {
+    if !is_builtin_collection_receiver(cx, expr) {
+        return None;
+    }
+    place_root_shape(cx, expr)
+}
+
+/// Returns the root of a place after checking every implicit adjustment in its path.
+fn place_root_shape(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<HirId> {
+    if !has_only_builtin_adjustments(cx, expr) {
+        return None;
+    }
+
     match expr.kind {
-        ExprKind::Field(base, _) | ExprKind::Unary(UnOp::Deref, base) => place_root(cx, base),
+        ExprKind::Field(base, _) => place_root_shape(cx, base),
+        ExprKind::Unary(UnOp::Deref, base) if is_builtin_reference(cx, base) => {
+            place_root_shape(cx, base)
+        }
         _ => support::local_binding(cx, expr),
     }
+}
+
+/// Returns whether a type is `Vec`, `VecDeque`, or a reference to one.
+fn is_builtin_collection_receiver(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    fn is_collection(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> bool {
+        match ty.kind() {
+            ty::Adt(adt, _) => cx
+                .tcx
+                .get_diagnostic_name(adt.did())
+                .is_some_and(|name| matches!(name.as_str(), "Vec" | "VecDeque")),
+            ty::Ref(_, inner, _) => is_collection(cx, *inner),
+            _ => false,
+        }
+    }
+
+    is_collection(cx, cx.typeck_results().expr_ty(expr)) && has_only_builtin_adjustments(cx, expr)
+}
+
+/// Returns whether an expression's implicit adjustments use only built-in operations.
+fn has_only_builtin_adjustments(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    cx.typeck_results()
+        .expr_adjustments(expr)
+        .iter()
+        .all(|adjustment| {
+            matches!(
+                adjustment.kind,
+                Adjust::Deref(DerefAdjustKind::Builtin) | Adjust::Borrow(_) | Adjust::Pointer(_)
+            )
+        })
+}
+
+/// Returns whether an expression is a reference whose dereference is built in.
+fn is_builtin_reference(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    matches!(cx.typeck_results().expr_ty(expr).kind(), ty::Ref(..))
 }
 
 /// Returns the text that must follow the replacement for its parent context.

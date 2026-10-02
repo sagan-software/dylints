@@ -26,14 +26,17 @@ use rustc_ast::LitKind;
 use rustc_errors::{Applicability, DiagDecorator};
 use rustc_hir::{
     BinOpKind, BindingMode, Expr, ExprKind, HirId, LangItem, Mutability, Node, Pat, PatKind,
-    StructTailExpr,
+    StructTailExpr, UnOp,
     def::Res,
     intravisit::{Visitor, walk_expr, walk_pat},
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::{
     hir::nested_filter,
-    ty::{self, TyCtxt},
+    ty::{
+        self, TyCtxt,
+        adjustment::{Adjust, DerefAdjustKind},
+    },
 };
 use rustc_span::{Ident, Span, sym};
 
@@ -214,8 +217,13 @@ fn matches_owner(
 
 /// Returns a local binding that cannot be mutated through its name or type.
 fn immutable_local(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<(HirId, Ident)> {
-    // Resolve the receiver to a local binding pattern.
-    let id = local_id(cx, expr)?;
+    // Keep the receiver on built-in slices, arrays, and vectors with no overloaded adjustment.
+    if !is_builtin_sequence_receiver(cx, expr) {
+        return None;
+    }
+
+    // Resolve the receiver, including explicit dereferences, to a local binding pattern.
+    let id = receiver_local_id(cx, expr)?;
     let Node::Pat(Pat {
         kind: PatKind::Binding(BindingMode(_, Mutability::Not), _, name, None),
         ..
@@ -230,6 +238,53 @@ fn immutable_local(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<(HirId, Iden
         ty::Ref(_, _, Mutability::Mut)
     );
     (!mutable_ref).then_some((id, *name))
+}
+
+/// Returns whether a receiver is a built-in sequence with only compiler adjustments.
+fn is_builtin_sequence_receiver(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    is_builtin_sequence_type(cx, cx.typeck_results().expr_ty(expr))
+        && has_only_builtin_adjustments(cx, expr)
+}
+
+/// Returns whether a type is a slice, array, vector, or immutable reference to one.
+fn is_builtin_sequence_type(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> bool {
+    match ty.kind() {
+        ty::Slice(_) | ty::Array(..) => true,
+        ty::Adt(adt, _) => cx.tcx.is_diagnostic_item(sym::Vec, adt.did()),
+        ty::Ref(_, inner, Mutability::Not) => is_builtin_sequence_type(cx, *inner),
+        _ => false,
+    }
+}
+
+/// Returns whether an expression's implicit adjustments use only built-in operations.
+fn has_only_builtin_adjustments(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    cx.typeck_results()
+        .expr_adjustments(expr)
+        .iter()
+        .all(|adjustment| {
+            matches!(
+                adjustment.kind,
+                Adjust::Deref(DerefAdjustKind::Builtin) | Adjust::Borrow(_) | Adjust::Pointer(_)
+            )
+        })
+}
+
+/// Returns whether an expression is an immutable built-in reference.
+fn is_builtin_reference(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    matches!(
+        cx.typeck_results().expr_ty(expr).kind(),
+        ty::Ref(_, _, Mutability::Not)
+    )
+}
+
+/// Returns the local binding reached through explicit built-in dereferences.
+fn receiver_local_id(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<HirId> {
+    match expr.kind {
+        ExprKind::Unary(UnOp::Deref, base) if is_builtin_reference(cx, base) => {
+            receiver_local_id(cx, base)
+        }
+        _ => local_id(cx, expr),
+    }
 }
 
 /// Returns the local binding resolved by a path expression.
@@ -277,6 +332,11 @@ impl IndexUses<'_, '_> {
         local_id(self.cx, expr) == Some(id)
     }
 
+    /// Returns whether an index base resolves to the same safe sequence local.
+    fn is_slice_receiver(&self, expr: &Expr<'_>) -> bool {
+        immutable_local(self.cx, expr).is_some_and(|(id, _)| id == self.slice)
+    }
+
     /// Returns both index spans when the index has no other use.
     fn adjacent_spans(&self) -> Option<(Span, Span)> {
         let is_exact = self.binding_uses == 2 && self.slice_indexes == 2 && !self.uses_window_name;
@@ -313,7 +373,7 @@ impl<'tcx> Visitor<'tcx> for IndexUses<'_, 'tcx> {
                     .any(|segment| segment.ident.name.as_str() == WINDOW);
                 self.binding_uses += usize::from(self.is_local(expr, self.index));
             }
-            ExprKind::Index(base, position, _) if self.is_local(base, self.slice) => {
+            ExprKind::Index(base, position, _) if self.is_slice_receiver(base) => {
                 // Keep only user-written spans so the replacement lands in the source.
                 self.slice_indexes += 1;
                 let user_span = (!expr.span.from_expansion()).then_some(expr.span);

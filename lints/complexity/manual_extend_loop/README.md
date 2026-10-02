@@ -19,8 +19,13 @@ in one place.
 - Only the standard `Vec::push` and `VecDeque::push_back` trigger. Other
   collections, such as `HashSet::insert`, and local types with a `push` method
   are ignored.
+- The target must be a built-in `Vec` or `VecDeque` reached from a local place
+  through only built-in references. Custom `Deref` or `DerefMut` receivers are
+  ignored.
 - The lint skips bodies that contain `?`, `.await`, `break`, `continue`, or
   `return`, and pushed values that read the target collection.
+- A source expression that reads the target collection is ignored because
+  `extend` holds the target borrow while it evaluates the source.
 - A target produced by a call or an index, such as `target().push(value)`, is
   ignored because the loop evaluates it once per item.
 - The automatic fix applies only when the pushed value is the loop variable

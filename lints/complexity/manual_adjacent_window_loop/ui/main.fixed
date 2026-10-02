@@ -1,6 +1,11 @@
 // run-rustfix
 // rustfix-only-machine-applicable
 
+use std::{
+    cell::Cell,
+    ops::Deref,
+};
+
 fn adjacent(values: &[i32]) {
     // Trigger for the non-panicking range with two adjacent slice indexes.
     for window in values.windows(2) {
@@ -29,6 +34,27 @@ fn array(values: [i32; 3]) -> i32 {
         total += sum();
     }
     total
+}
+
+struct SideEffectDeref {
+    values: Vec<i32>,
+    calls: Cell<usize>,
+}
+
+impl Deref for SideEffectDeref {
+    type Target = [i32];
+
+    fn deref(&self) -> &Self::Target {
+        self.calls.set(self.calls.get() + 1);
+        &self.values
+    }
+}
+
+fn custom_deref(values: SideEffectDeref) {
+    // Keep quiet when a custom dereference supplies the slice methods and indexes.
+    for index in 0..values.len().saturating_sub(1) {
+        println!("{} {}", values[index], values[index + 1]);
+    }
 }
 
 fn unsafe_bound(values: &[i32]) {
@@ -215,6 +241,10 @@ fn main() {
     adjacent(&[1, 2]);
     let _ = owned(vec![1, 2]);
     let _ = array([1, 2, 3]);
+    custom_deref(SideEffectDeref {
+        values: vec![1, 2],
+        calls: Cell::new(0),
+    });
     unsafe_bound(&[1, 2]);
     uses_index(&[1, 2]);
     different_slices(&[1, 2], &[3, 4]);

@@ -2,7 +2,11 @@
 // rustfix-only-machine-applicable
 #![allow(dead_code)]
 
-use std::collections::VecDeque;
+use std::{
+    cell::Cell,
+    collections::VecDeque,
+    ops::{Deref, DerefMut},
+};
 
 fn extend_vec(output: &mut Vec<i32>, values: Vec<i32>) {
     output.extend(values)
@@ -34,6 +38,34 @@ fn reference_items<'a>(output: &mut Vec<&'a i32>, values: &'a [i32]) {
 
 fn dereferenced_target(output: &mut Vec<i32>, values: Vec<i32>) {
     (*output).extend(values)
+}
+
+struct SideEffectDerefMut {
+    values: Vec<i32>,
+    calls: Cell<usize>,
+}
+
+impl Deref for SideEffectDerefMut {
+    type Target = Vec<i32>;
+
+    fn deref(&self) -> &Self::Target {
+        self.calls.set(self.calls.get() + 1);
+        &self.values
+    }
+}
+
+impl DerefMut for SideEffectDerefMut {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.calls.set(self.calls.get() + 1);
+        &mut self.values
+    }
+}
+
+fn custom_deref_mut(output: &mut SideEffectDerefMut, values: Vec<i32>) {
+    // Keep quiet when a custom dereference supplies the standard `push` method.
+    for value in values {
+        (*output).push(value);
+    }
 }
 
 struct Holder {
@@ -113,6 +145,16 @@ fn reads_target_in_closure(output: &mut Vec<usize>, values: Vec<usize>) {
     }
 }
 
+fn source_reads_target(output: &mut Vec<i32>) {
+    // Keep quiet when the loop source mutates the target before each insertion.
+    for value in {
+        output.clear();
+        [1, 2]
+    } {
+        output.push(value);
+    }
+}
+
 fn target(outputs: &mut [Vec<i32>; 2]) -> &mut Vec<i32> {
     &mut outputs[0]
 }
@@ -140,4 +182,12 @@ fn main() {
     extend_vec(&mut Vec::new(), vec![1]);
     extend_deque(&mut VecDeque::new(), vec![1]);
     custom(&mut Custom(Vec::new()), vec![1]);
+    custom_deref_mut(
+        &mut SideEffectDerefMut {
+            values: Vec::new(),
+            calls: Cell::new(0),
+        },
+        vec![1],
+    );
+    source_reads_target(&mut Vec::new());
 }
