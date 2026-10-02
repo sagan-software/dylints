@@ -20,6 +20,12 @@ fn extend_array(output: &mut Vec<i32>) {
     }
 }
 
+fn extend_vecdeque_source(output: &mut Vec<i32>, values: VecDeque<i32>) {
+    for value in values {
+        output.push(value);
+    }
+}
+
 fn extend_deque(output: &mut VecDeque<i32>, values: Vec<i32>) {
     // Transformed items keep help-only output.
     for value in values {
@@ -251,6 +257,19 @@ fn custom_size_hint_transformed(output: &mut Vec<i32>) {
     }
 }
 
+fn opaque_size_hint() -> impl Iterator<Item = i32> {
+    SizeHintItems {
+        hinted: Cell::new(false),
+        remaining: 3,
+    }
+}
+
+fn opaque_size_hint_loop(output: &mut Vec<i32>) {
+    for value in opaque_size_hint() {
+        output.push(value);
+    }
+}
+
 fn target(outputs: &mut [Vec<i32>; 2]) -> &mut Vec<i32> {
     &mut outputs[0]
 }
@@ -277,6 +296,7 @@ fn macro_loop(output: &mut Vec<i32>, values: Vec<i32>) {
 fn main() {
     extend_vec(&mut Vec::new(), vec![1]);
     extend_array(&mut Vec::new());
+    extend_vecdeque_source(&mut Vec::new(), VecDeque::from(vec![1]));
     extend_deque(&mut VecDeque::new(), vec![1]);
     custom(&mut Custom(Vec::new()), vec![1]);
     custom_deref_mut(
@@ -303,4 +323,5 @@ fn main() {
     source_reads_target(&mut Vec::new());
     custom_size_hint(&mut Vec::new());
     custom_size_hint_transformed(&mut Vec::new());
+    opaque_size_hint_loop(&mut Vec::new());
 }
