@@ -321,60 +321,62 @@ mod tests {
         assert_eq!(test_line_count(source, 2), 0);
     }
 
+    /// Source that exercises every item kind and nesting site in the collector.
+    const TEST_ITEMS_SOURCE: &str = r#"const C: u8 = 0;
+enum E { A }
+extern crate alloc;
+fn f() {}
+extern "C" {
+    fn ext();
+    static S: u8;
+    type Opaque;
+    m!();
+    fn with_body() {}
+    #[cfg(test)] fn test_ext(); // test-only
+}
+impl E {
+    const C: u8 = 0;
+    fn g() {}
+    type T = u8;
+    m!();
+    fn no_body();
+    #[test] fn t() {} // test-only
+}
+m!();
+mod inner {
+    #[cfg(test)] fn helper() {} // test-only
+}
+static ST: u8 = 0;
+struct St;
+trait Tr {
+    const C: u8;
+    fn h();
+    type T;
+    m!();
+    #[cfg(test)] fn only_test() {} // test-only
+}
+trait Alias = Tr;
+type Ty = u8;
+union U { a: u8 }
+use std::fmt;
+fn verbatim();
+#[cfg(any(test, all(test, unix)))] fn any_test() {} // test-only
+#[cfg(not(test))] fn not_test() {}
+#[cfg(feature = "x")] fn feature() {}
+#[cfg(all())] fn empty_all() {}
+#[cfg(any())] fn empty_any() {}
+#[cfg(all(,))] fn malformed_children() {}
+#[cfg(1)] fn malformed_predicate() {}
+#[cfg] fn bare_cfg() {}"#;
+
     /// Every item kind and nesting site is classified, and only `// test-only` lines count.
     #[test]
     fn counts_test_items_in_every_nesting_site() {
-        let source = [
-            "const C: u8 = 0;",
-            "enum E { A }",
-            "extern crate alloc;",
-            "fn f() {}",
-            "extern \"C\" {",
-            "    fn ext();",
-            "    static S: u8;",
-            "    type Opaque;",
-            "    m!();",
-            "    fn with_body() {}",
-            "    #[cfg(test)] fn test_ext(); // test-only",
-            "}",
-            "impl E {",
-            "    const C: u8 = 0;",
-            "    fn g() {}",
-            "    type T = u8;",
-            "    m!();",
-            "    fn no_body();",
-            "    #[test] fn t() {} // test-only",
-            "}",
-            "m!();",
-            "mod inner {",
-            "    #[cfg(test)] fn helper() {} // test-only",
-            "}",
-            "static ST: u8 = 0;",
-            "struct St;",
-            "trait Tr {",
-            "    const C: u8;",
-            "    fn h();",
-            "    type T;",
-            "    m!();",
-            "    #[cfg(test)] fn only_test() {} // test-only",
-            "}",
-            "trait Alias = Tr;",
-            "type Ty = u8;",
-            "union U { a: u8 }",
-            "use std::fmt;",
-            "fn verbatim();",
-            "#[cfg(any(test, all(test, unix)))] fn any_test() {} // test-only",
-            "#[cfg(not(test))] fn not_test() {}",
-            "#[cfg(feature = \"x\")] fn feature() {}",
-            "#[cfg(all())] fn empty_all() {}",
-            "#[cfg(any())] fn empty_any() {}",
-            "#[cfg(all(,))] fn malformed_children() {}",
-            "#[cfg(1)] fn malformed_predicate() {}",
-            "#[cfg] fn bare_cfg() {}",
-        ]
-        .join("\n");
-        let expected = source.matches("// test-only").count();
+        let expected = TEST_ITEMS_SOURCE.matches("// test-only").count();
 
-        assert_eq!(test_line_count(&source, source.lines().count()), expected);
+        assert_eq!(
+            test_line_count(TEST_ITEMS_SOURCE, TEST_ITEMS_SOURCE.lines().count()),
+            expected
+        );
     }
 }

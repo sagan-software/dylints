@@ -1,0 +1,11 @@
+warning: panicking `unreachable` in `main`
+  --> $DIR/lookalikes.rs:36:9
+   |
+LL |         unreachable!("standard macro");
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: change `fn main()` to `fn main() -> Result<(), Error>` and propagate startup errors with `?`
+   = note: `#[warn(panic_in_main)]` on by default
+
+warning: 1 warning emitted
+

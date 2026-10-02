@@ -1,0 +1,67 @@
+warning: return type pairs a collection with an independent boolean
+  --> $DIR/edge_cases.rs:9:20
+   |
+LL | fn bool_first() -> (bool, Vec<Action>) {
+   |                    ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use an enum or a result type that cannot represent contradictory states
+   = note: `#[warn(collection_bool_result)]` on by default
+
+warning: return type pairs a collection with an independent boolean
+  --> $DIR/edge_cases.rs:13:24
+   |
+LL | fn optional_queue() -> Option<(VecDeque<Action>, bool)> {
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use an enum or a result type that cannot represent contradictory states
+
+warning: return type pairs a collection with an independent boolean
+  --> $DIR/edge_cases.rs:17:20
+   |
+LL | fn array_pair() -> ([u8; 4], bool) {
+   |                    ^^^^^^^^^^^^^^^
+   |
+   = help: use an enum or a result type that cannot represent contradictory states
+
+warning: return type pairs a collection with an independent boolean
+  --> $DIR/edge_cases.rs:21:18
+   |
+LL | fn hash_map() -> Result<(HashMap<u8, u8>, bool), Error> {
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use an enum or a result type that cannot represent contradictory states
+
+warning: return type pairs a collection with an independent boolean
+  --> $DIR/edge_cases.rs:25:18
+   |
+LL | fn hash_set() -> Result<(HashSet<u8>, bool), Error> {
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use an enum or a result type that cannot represent contradictory states
+
+warning: return type pairs a collection with an independent boolean
+  --> $DIR/edge_cases.rs:29:19
+   |
+LL | fn btree_map() -> Result<(BTreeMap<u8, u8>, bool), Error> {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use an enum or a result type that cannot represent contradictory states
+
+warning: return type pairs a collection with an independent boolean
+  --> $DIR/edge_cases.rs:33:19
+   |
+LL | fn btree_set() -> Result<(BTreeSet<u8>, bool), Error> {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use an enum or a result type that cannot represent contradictory states
+
+warning: return type pairs a collection with an independent boolean
+  --> $DIR/edge_cases.rs:37:26
+   |
+LL | async fn async_pair() -> (Vec<Action>, bool) {
+   |                          ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use an enum or a result type that cannot represent contradictory states
+
+warning: 8 warnings emitted
+

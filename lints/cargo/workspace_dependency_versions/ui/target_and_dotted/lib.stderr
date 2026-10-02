@@ -24,15 +24,15 @@ LL | hash_dep = { package = "bad_dep", path = "../bad_dep/#/..", version = "0.1.
    = help: move the version for `hash_dep` into `[workspace.dependencies]` and use `hash_dep.workspace = true` here
 
 warning: dependency `multiline_dep` specifies an explicit version instead of inheriting from `[workspace.dependencies]`
-  --> $DIR/Cargo.toml:17:13
+  --> $DIR/Cargo.toml:16:14
    |
-LL |   version = "0.1.0",
-   |             ^^^^^^^
+LL | ], version = "0.1.0" }
+   |              ^^^^^^^
    |
    = help: move the version for `multiline_dep` into `[workspace.dependencies]` and use `multiline_dep.workspace = true` here
 
 warning: dependency `target_bad` specifies an explicit version instead of inheriting from `[workspace.dependencies]`
-  --> $DIR/Cargo.toml:22:68
+  --> $DIR/Cargo.toml:20:68
    |
 LL | target_bad = { package = "bad_dep", path = "../bad_dep", version = "0.1.0" }
    |                                                                    ^^^^^^^

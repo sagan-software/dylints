@@ -1,0 +1,11 @@
+warning: this parameter takes owned `String` but the function only borrows it
+  --> $DIR/ergonomic_clones.rs:7:22
+   |
+LL | pub fn shares(value: String, shared: Arc<u8>) -> usize {
+   |                      ^^^^^^
+   |
+   = help: take `&str` instead
+   = note: `#[warn(ownership_at_boundaries)]` on by default
+
+warning: 1 warning emitted
+

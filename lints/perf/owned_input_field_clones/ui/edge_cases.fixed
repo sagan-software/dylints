@@ -1,0 +1,119 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#![allow(dead_code)]
+
+struct Request {
+    id: String,
+    label: String,
+    owner: String,
+    count: usize,
+}
+
+struct Response {
+    id: String,
+    label: String,
+    owner: String,
+}
+
+struct Counted {
+    id: String,
+    count: usize,
+}
+
+struct Guarded {
+    id: String,
+    label: String,
+}
+
+impl Drop for Guarded {
+    fn drop(&mut self) {}
+}
+
+fn clones_three_fields(request: Request) -> Response {
+    Response {
+        id: request.id,
+        label: request.label,
+        owner: request.owner,
+    }
+}
+
+fn consumes_fields(request: Request) -> Response {
+    Response {
+        id: request.id,
+        label: request.label,
+        owner: request.owner,
+    }
+}
+
+// A `Drop` impl forbids moving fields out, so cloning is required.
+fn clones_from_drop_type(guarded: Guarded) -> Response {
+    Response {
+        id: guarded.id.clone(),
+        label: guarded.label.clone(),
+        owner: String::new(),
+    }
+}
+
+// Cloning a `Copy` field does not count toward the two clones.
+fn clones_copy_field(request: Request) -> Counted {
+    Counted {
+        id: request.id.clone(),
+        count: request.count.clone(),
+    }
+}
+
+// The lint warns, but moving would break the borrow held by `owner`.
+fn statements_before_tail(request: Request) -> Response {
+    let owner = &request.owner;
+    Response {
+        id: request.id.clone(),
+        label: request.label.clone(),
+        owner: owner.to_uppercase(),
+    }
+}
+
+// The lint warns, but moving would break the later use of `request`.
+fn other_field_uses_input(request: Request) -> Response {
+    Response {
+        id: request.id.clone(),
+        label: request.label.clone(),
+        owner: describe(&request),
+    }
+}
+
+// The lint warns, but the same field cannot move twice.
+fn clones_one_field_twice(request: Request) -> Response {
+    Response {
+        id: request.id.clone(),
+        label: request.id.clone(),
+        owner: String::new(),
+    }
+}
+
+// The lint warns, but the closure still uses `request` after the moves.
+fn closure_uses_input(request: Request) -> Response {
+    Response {
+        id: request.id.clone(),
+        label: request.label.clone(),
+        owner: (|| request.owner.to_uppercase())(),
+    }
+}
+
+// Other trait methods, such as `to_owned`, are not clones.
+fn to_owned_fields(request: Request) -> Response {
+    Response {
+        id: request.id.to_owned(),
+        label: request.label.to_owned(),
+        owner: request.owner,
+    }
+}
+
+fn not_a_struct_literal(request: Request) -> (String, String) {
+    (request.id.clone(), request.label.clone())
+}
+
+fn describe(request: &Request) -> String {
+    format!("{} items", request.count)
+}
+
+fn main() {}
