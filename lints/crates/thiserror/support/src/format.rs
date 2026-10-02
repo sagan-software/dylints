@@ -327,23 +327,24 @@ mod tests {
     }
 
     #[test]
-    fn parses_attribute_shapes() {
-        assert!(matches!(
-            ErrorAttr::parse("#[error(transparent)]").unwrap().kind,
-            ErrorAttrKind::Transparent
-        ));
+    fn parses_transparent_attribute() {
+        let attribute = ErrorAttr::parse("#[error(transparent)]").unwrap();
+        assert!(matches!(attribute.kind, ErrorAttrKind::Transparent));
+        assert!(attribute.format().is_none());
+    }
+
+    #[test]
+    fn rejects_non_error_attributes() {
         assert!(ErrorAttr::parse("#[error(fmt = path)]").is_none());
         assert!(ErrorAttr::parse("#[error = \"x\"]").is_none());
         assert!(ErrorAttr::parse("#[source]").is_none());
+    }
+
+    #[test]
+    fn rejects_invalid_error_shapes() {
         assert!(ErrorAttr::parse("#[error(\"x\" y)]").is_none());
         assert!(ErrorAttr::parse("#[error(1)]").is_none());
         assert!(ErrorAttr::parse("not an attribute").is_none());
-        assert!(
-            ErrorAttr::parse("#[error(transparent)]")
-                .unwrap()
-                .format()
-                .is_none()
-        );
     }
 
     #[test]
@@ -354,11 +355,10 @@ mod tests {
             .args
             .iter()
             .map(|arg| {
-                (
-                    arg.name.clone(),
-                    arg.ident.clone(),
-                    &text[arg.range.clone()],
-                )
+                let source = text
+                    .get(arg.range.clone())
+                    .expect("format argument range must be valid");
+                (arg.name.clone(), arg.ident.clone(), source)
             })
             .collect::<Vec<_>>();
         assert_eq!(
@@ -370,24 +370,40 @@ mod tests {
             ]
         );
         assert_eq!(parsed.positional_args().count(), 2);
-        assert_eq!(
-            &text[parsed.args[2].previous_end..parsed.args[2].range.end],
-            ", source"
-        );
+        let third = parsed.args.get(2).expect("three arguments were parsed");
+        let separator = text
+            .get(third.previous_end..third.range.end)
+            .expect("argument separator range must be valid");
+        assert_eq!(separator, ", source");
     }
 
     #[test]
-    fn maps_body_offsets() {
+    fn maps_string_body_offsets() {
         assert_eq!(body_offset("\"a\""), Some(1));
         assert_eq!(body_offset("\"a\\n\""), None);
         assert_eq!(body_offset("r##\"a\"##"), Some(4));
+    }
+
+    #[test]
+    fn rejects_non_string_body_offsets() {
         assert_eq!(body_offset("b\"a\""), None);
+    }
+
+    #[test]
+    fn maps_placeholder_to_source() {
         let text = "#[error(r#\"{x}\"#)]";
         let parsed = format(text);
-        let range = parsed
-            .source_range(&parsed.placeholders()[0].range)
-            .unwrap();
-        assert_eq!(&text[range], "{x}");
+        let placeholders = parsed.placeholders();
+        let placeholder = placeholders.first().expect("one placeholder was parsed");
+        let range = parsed.source_range(&placeholder.range).unwrap();
+        let source = text
+            .get(range)
+            .expect("placeholder source range must be valid");
+        assert_eq!(source, "{x}");
+    }
+
+    #[test]
+    fn rejects_escaped_source_mapping() {
         assert!(
             format("#[error(\"\\t{x}\")]")
                 .source_range(&(0..1))
@@ -427,10 +443,14 @@ mod tests {
     }
 
     #[test]
-    fn classifies_display_specs() {
+    fn recognizes_display_specs() {
         assert!(is_display_spec(""));
         assert!(is_display_spec(":"));
         assert!(is_display_spec(":>10"));
+    }
+
+    #[test]
+    fn recognizes_non_display_specs() {
         assert!(!is_display_spec(":?"));
         assert!(!is_display_spec(":#x"));
     }
