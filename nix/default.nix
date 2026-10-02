@@ -111,6 +111,7 @@ let
   sourceRoots = [
     "lints"
     "profiles"
+    "scripts"
     "support"
     "tests"
     "web"
@@ -519,6 +520,21 @@ let
     '';
   };
 
+  runCoverage = pkgs.writeShellApplication {
+    name = "run-coverage";
+    runtimeInputs = dylintRuntimeInputs ++ [
+      pkgs.cargo-llvm-cov
+      pkgs.findutils
+      pkgs.git
+      pkgs.gnused
+      pkgs.jq
+    ];
+    text = withRepoSetup ''
+      cd "$PRIVATE_LINTS_ROOT"
+      exec bash ${root}/scripts/coverage.sh "$@"
+    '';
+  };
+
   listLints = pkgs.writeShellApplication {
     name = "list-rust-lints";
     runtimeInputs = dylintRuntimeInputs;
@@ -608,6 +624,7 @@ in
       site = mkApp { drv = generateSite; };
       test = mkApp { drv = runTests; };
       check = mkApp { drv = runChecks; };
+      coverage = mkApp { drv = runCoverage; };
     };
 
     checks = {
