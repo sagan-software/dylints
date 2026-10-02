@@ -205,8 +205,8 @@ while IFS= read -r record || [[ -n "$record" ]]; do
 		fi
 		;;
 	DA:*)
-		# LLVM 22.1.8 llvm-cov export --format=lcov emits DA:<line>,<count>[,<checksum>].
-		# Line coverage uses the first two fields; an optional checksum is ignored.
+		# LLVM 22.1.8 llvm-cov export --format=lcov emits SF:<source> and DA:<line>,<count>[,<checksum>].
+		# SF is normalized above; line coverage uses the first two DA fields and ignores an optional checksum.
 		if [[ -z "$current_source" ]]; then
 			continue
 		fi
