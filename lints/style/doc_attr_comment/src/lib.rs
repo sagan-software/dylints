@@ -31,34 +31,38 @@ dylint_support::documented_early_lint! {
 impl EarlyLintPass for DocAttrComment {
     /// Check attribute for this lint.
     fn check_attribute(&mut self, cx: &EarlyContext<'_>, attr: &Attribute) {
-        // Rustc keeps doc comments separate from normal attributes, so reject all
-        // generated or non-doc forms before reading the source spelling.
-        if attr.span.from_expansion()
-            || !matches!(attr.kind, AttrKind::Normal(_))
-            || !attr.has_name(sym::doc)
-        {
-            return;
-        }
-        let Some(doc) = attr.value_str() else {
+        let Some(replacement) = simple_doc_comment_replacement(cx, attr) else {
             return;
         };
-        let doc = doc.as_str();
-        if !is_simple_line_doc_text(doc) {
-            return;
-        }
-        let Some(source) = cx.sess().source_map().span_to_snippet(attr.span).ok() else {
-            return;
-        };
-        if !is_direct_doc_attr_source(&source, attr.style) {
-            return;
-        }
-        let replacement = doc_comment_replacement(attr.style, doc);
         // A line comment runs to the end of the line, so code after the attribute
         // would become doc text. Those attributes get help without a rewrite.
         let replacement = is_at_line_end(cx, attr.span).then_some(replacement);
 
         emit_span_lint_with_suggestion(cx, DOC_ATTR_COMMENT, attr.span, attr.style, replacement);
     }
+}
+
+/// Return a replacement for a direct, simple string-valued documentation attribute.
+fn simple_doc_comment_replacement(cx: &EarlyContext<'_>, attr: &Attribute) -> Option<String> {
+    // Rustc keeps doc comments separate from normal attributes, so reject generated or
+    // non-doc forms before reading the source spelling.
+    let is_candidate = !attr.span.from_expansion()
+        && matches!(attr.kind, AttrKind::Normal(_))
+        && attr.has_name(sym::doc);
+    let source = cx.sess().source_map().span_to_snippet(attr.span).ok();
+    if !is_candidate {
+        return None;
+    }
+    attr.value_str()
+        .map(|doc| doc.as_str().to_owned())
+        .filter(|doc| is_simple_line_doc_text(doc))
+        .and_then(|doc| {
+            source
+                .as_deref()
+                .filter(|source| is_direct_doc_attr_source(source, attr.style))
+                .map(|_| doc)
+        })
+        .map(|doc| doc_comment_replacement(attr.style, &doc))
 }
 
 /// Return whether only whitespace follows `span` on its line.
