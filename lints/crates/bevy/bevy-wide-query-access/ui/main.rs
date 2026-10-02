@@ -33,6 +33,28 @@ struct WideQuery {
     i: &'static I,
 }
 
+#[derive(QueryData)]
+struct EightQuery {
+    a: &'static A,
+    b: &'static B,
+    c: &'static C,
+    d: &'static D,
+    e: &'static E,
+    f: &'static F,
+    g: &'static G,
+    h: &'static H,
+}
+
+#[derive(QueryData)]
+#[query_data(mutable)]
+struct MutableQuery {
+    a: &'static mut A,
+    b: &'static mut B,
+    c: &'static mut C,
+    d: &'static mut D,
+    e: &'static mut E,
+}
+
 fn bad(query: Query<(&A, &B, &C, &D, &E, &F)>) {
     let _ = query.iter().count();
 }
@@ -45,8 +67,18 @@ fn bad_custom(query: Query<WideQuery>) {
     let _ = query.iter().count();
 }
 
+fn good_custom(query: Query<EightQuery>) {
+    let _ = query.iter().count();
+}
+
+fn bad_custom_mutable(mut query: Query<MutableQuery>) {
+    let _ = query.iter_mut().count();
+}
+
 fn main() {
     let _bad = bad;
     let _good = good;
     let _bad_custom = bad_custom;
+    let _good_custom = good_custom;
+    let _bad_custom_mutable = bad_custom_mutable;
 }
