@@ -7,7 +7,7 @@ source document, and finds package and workspace dependency tables.
 The dependency iterators borrow the parsed document. Package tables precede
 target tables. Within each package or target, table kinds follow
 `dependencies`, `dev-dependencies`, `dev_dependencies`, `build-dependencies`,
-then `build_dependencies`. Targets and entries within each table retain
+then `build_dependencies`. Targets and entries within each table keep
 manifest order:
 
 ```rust
