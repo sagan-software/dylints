@@ -100,6 +100,16 @@ fn explicit_fields_suggestion<'tcx>(
 
     // Replace `..Default::default()` and keep the indentation of the `..` line.
     let span = dot_dot_span(cx, expr.span, base.span)?;
+    let span = if remaining.is_empty() && line_indent(cx, span).is_some() {
+        // Remove the indentation with an empty update so rustfix cannot leave whitespace behind.
+        let line_start =
+            cx.sess()
+                .source_map()
+                .span_extend_to_prev_char(span.shrink_to_lo(), '\n', true);
+        line_start.with_hi(span.hi())
+    } else {
+        span
+    };
     let separator =
         line_indent(cx, span).map_or_else(|| ", ".to_owned(), |indent| format!(",\n{indent}"));
     let replacement = remaining

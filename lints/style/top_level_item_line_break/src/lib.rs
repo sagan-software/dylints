@@ -15,7 +15,7 @@ extern crate rustc_span;
 use rustc_ast::{AttrStyle, Crate, Item, ItemKind, ModKind};
 use rustc_errors::{Applicability, DiagDecorator};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
-use rustc_span::{BytePos, Span, source_map::SourceMap};
+use rustc_span::{BytePos, Pos, Span, source_map::SourceMap};
 
 dylint_support::documented_early_lint! {
     #[doc = include_str!("../README.md")]
@@ -107,7 +107,11 @@ fn line_break_fix(cx: &EarlyContext<'_>, previous: Span, current_start: BytePos)
     let replaced = if is_whitespace_gap(source_map, gap) {
         gap
     } else {
-        gap.shrink_to_hi()
+        // Keep comments on the previous item while consuming the separator's trailing whitespace.
+        let trailing_whitespace = source_map
+            .span_to_snippet(gap)
+            .map_or(0, |snippet| snippet.len() - snippet.trim_end().len());
+        gap.with_lo(gap.hi() - BytePos::from_usize(trailing_whitespace))
     };
     (replaced, format!("\n{indentation}"))
 }

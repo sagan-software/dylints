@@ -27,9 +27,9 @@ warning: struct update syntax hides fields behind `Default::default()`
   --> $DIR/main.rs:64:11
    |
 LL |         ..Default::default()
-   |         --^^^^^^^^^^^^^^^^^^
-   |         |
-   |         help: set the remaining fields explicitly
+   | ----------^^^^^^^^^^^^^^^^^^
+   | |
+   | help: set the remaining fields explicitly
 
 warning: struct update syntax hides fields behind `Default::default()`
   --> $DIR/main.rs:66:45

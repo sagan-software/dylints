@@ -63,7 +63,6 @@ fn main() {
         timeout: 5,
         retries: 2,
         name: String::new(),
-        
     };
     let _one_line = Request { timeout: 1, retries: Default::default(), name: Default::default() };
     let _tuple = Pair { 0: 1, 1: Default::default() };

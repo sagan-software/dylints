@@ -55,7 +55,7 @@ LL |     fn fifth() {} /* A block comment stays with the previous item. */ fn si
    |
 help: put this item on a new line
    |
-LL ~     fn fifth() {} /* A block comment stays with the previous item. */ 
+LL ~     fn fifth() {} /* A block comment stays with the previous item. */
 LL ~     fn sixth() {}
    |
 

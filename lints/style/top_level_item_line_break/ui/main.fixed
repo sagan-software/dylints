@@ -21,7 +21,7 @@ mod attributes {
     fn third() {}
     /// Documented fourth.
     fn fourth() {}
-    fn fifth() {} /* A block comment stays with the previous item. */ 
+    fn fifth() {} /* A block comment stays with the previous item. */
     fn sixth() {}
 }
 
