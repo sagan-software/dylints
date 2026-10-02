@@ -93,7 +93,7 @@ fn infallible_main(
         return false;
     };
     if ident.name != sym::main
-        || !crate_entry_main(cx, local_def_id)
+        || !is_crate_entry_main(cx, local_def_id)
         || test_function(cx, local_def_id)
         || build_script_main(cx, span)
     {
@@ -103,8 +103,8 @@ fn infallible_main(
     !returns_result(cx, local_def_id)
 }
 
-/// Helper for crate entry main analysis.
-fn crate_entry_main(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+/// Return whether this function is the compiler-selected crate entry point.
+fn is_crate_entry_main(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
     cx.tcx
         .entry_fn(())
         .is_some_and(|(def_id, _entry_type)| def_id == local_def_id.to_def_id())
@@ -213,7 +213,19 @@ fn panicking_operation(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Panickin
         return Some(operation);
     }
 
-    panicking_macro_call(cx, expr.span)
+    // The backtrace runs from the innermost expansion outward, so the last match is the
+    // user's macro call rather than a nested panic implementation.
+    expr.span
+        .macro_backtrace()
+        .filter(|expn_data| matches!(expn_data.kind, ExpnKind::Macro(MacroKind::Bang, _)))
+        .filter_map(|expn_data| {
+            let name = panicking_macro_name(cx, expn_data.macro_def_id?)?;
+            Some(PanickingOperation {
+                name,
+                span: expn_data.call_site,
+            })
+        })
+        .last()
 }
 
 /// Return an `Option` or `Result` `unwrap` or `expect` call.
@@ -243,22 +255,6 @@ fn panicking_method_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Panick
         name,
         span: segment.ident.span,
     })
-}
-
-/// Return the outermost panicking standard macro call that produced the span.
-fn panicking_macro_call(cx: &LateContext<'_>, span: Span) -> Option<PanickingOperation> {
-    // The backtrace runs from the innermost expansion outward, so the last match is the
-    // user's macro call rather than a nested panic implementation.
-    span.macro_backtrace()
-        .filter(|expn_data| matches!(expn_data.kind, ExpnKind::Macro(MacroKind::Bang, _)))
-        .filter_map(|expn_data| {
-            let name = panicking_macro_name(cx, expn_data.macro_def_id?)?;
-            Some(PanickingOperation {
-                name,
-                span: expn_data.call_site,
-            })
-        })
-        .last()
 }
 
 /// Return the reported name of a standard panicking macro, matched by diagnostic item.

@@ -28,7 +28,7 @@ use rustc_ast::{AttrVec, Attribute, Crate, Item, ItemKind, visit::Visitor, visit
 use rustc_errors::DiagDecorator;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
 use rustc_span::{
-    SourceFile, Span,
+    Span,
     symbol::{Symbol, sym},
 };
 
@@ -46,7 +46,13 @@ impl EarlyLintPass for UnnecessaryPublicType {
         let crate_root_span = krate.spans.inner_span;
 
         // Anchor manifest and source discovery to the crate root that rustc is compiling.
-        let Some(crate_root) = crate_root_path(cx, crate_root_span) else {
+        // Virtual or path-remapped inputs may not have a readable local path, so skip them.
+        let Some(crate_root) = cx
+            .sess()
+            .source_map()
+            .span_to_filename(crate_root_span)
+            .into_local_path()
+        else {
             return;
         };
         let Some(manifest_path) = nearest_manifest(&crate_root) else {
@@ -193,7 +199,10 @@ fn local_crate_rust_files(cx: &EarlyContext<'_>, crate_root: &Path) -> BTreeSet<
     let files = source_map.files();
     let candidates = files
         .iter()
-        .filter_map(|source_file| source_file_path(source_file))
+        .filter_map(|source_file| {
+            // Virtual, remapped, and imported paths may not be readable on the local host.
+            source_file.name.clone().into_local_path()
+        })
         .filter(|path| path.starts_with(crate_dir) && is_rust_file(path))
         .collect();
 
@@ -479,25 +488,9 @@ fn value_is_true(value: &str) -> bool {
     value.trim() == "true"
 }
 
-/// Helper for source file path analysis.
-fn source_file_path(source_file: &SourceFile) -> Option<PathBuf> {
-    // Virtual, remapped, and imported paths may not be readable on the local host.
-    source_file.name.clone().into_local_path()
-}
-
 /// Return whether rust file.
 fn is_rust_file(path: &Path) -> bool {
     path.extension().is_some_and(|extension| extension == "rs")
-}
-
-/// Helper for crate root path analysis.
-fn crate_root_path(cx: &EarlyContext<'_>, span: Span) -> Option<PathBuf> {
-    // Virtual or path-remapped inputs may not have a readable local path, so skip those rather
-    // than guessing from the process working directory.
-    cx.sess()
-        .source_map()
-        .span_to_filename(span)
-        .into_local_path()
 }
 
 /// Helper for nearest manifest analysis.

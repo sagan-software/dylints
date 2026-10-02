@@ -218,11 +218,12 @@ fn exact_doc_comment_source(cx: &LateContext<'_>, attrs: &[Attribute]) -> Option
 
     // Only exact line-doc-comment source is safe to replace. Attribute and block forms still lint
     // through the normalized fallback because rumdl cannot restore those Rust syntaxes here.
-    if doc_spans.iter().any(|span| {
+    let has_non_line_doc_span = doc_spans.iter().any(|span| {
         source_map.span_to_snippet(*span).map_or(true, |source| {
             !matches!(source.trim_start().get(..3), Some("///" | "//!"))
         })
-    }) {
+    });
+    if has_non_line_doc_span {
         return None;
     }
 

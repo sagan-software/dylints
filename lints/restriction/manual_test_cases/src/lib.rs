@@ -130,8 +130,33 @@ impl<'tcx> Visitor<'tcx> for ManualCaseLoopFinder<'_, 'tcx> {
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
         if self.offense.is_none() {
             // Match compiler-resolved iteration shapes before tracing their case source.
-            let manual_iteration =
-                for_loop_source(self.cx, expr).or_else(|| iterator_for_each_source(self.cx, expr));
+            let manual_iteration = for_loop_source(self.cx, expr).or_else(|| {
+                // Resolve the associated trait item so custom same-named methods stay excluded.
+                match expr.kind {
+                    ExprKind::MethodCall(segment, receiver, _, _) => Some((segment, receiver)),
+                    _ => None,
+                }
+                .and_then(|(segment, receiver)| {
+                    self.cx
+                        .typeck_results()
+                        .type_dependent_def_id(expr.hir_id)
+                        .map(|def_id| (segment, receiver, def_id))
+                })
+                .and_then(|(segment, receiver, def_id)| {
+                    self.cx
+                        .tcx
+                        .opt_associated_item(def_id)
+                        .and_then(|associated_item| associated_item.trait_item_or_self().ok())
+                        .and_then(|trait_item| self.cx.tcx.trait_of_assoc(trait_item))
+                        .map(|trait_def_id| (segment, receiver, def_id, trait_def_id))
+                })
+                // Trace the associated item back to the standard Iterator diagnostic item.
+                .filter(|(_, _, def_id, trait_def_id)| {
+                    self.cx.tcx.item_name(*def_id).as_str() == "for_each"
+                        && self.cx.tcx.is_diagnostic_item(sym::Iterator, *trait_def_id)
+                })
+                .map(|(segment, receiver, _, _)| (receiver, segment.ident.span))
+            });
             if let Some((source, span)) = manual_iteration
                 && literal_case_source(self.cx, source, &self.case_list_bindings)
             {
@@ -284,36 +309,6 @@ fn for_loop_source<'tcx>(
     })
 }
 
-/// Recover the receiver and method span from standard `Iterator::for_each`.
-fn iterator_for_each_source<'tcx>(
-    cx: &LateContext<'tcx>,
-    expr: &'tcx Expr<'tcx>,
-) -> Option<(&'tcx Expr<'tcx>, Span)> {
-    // Resolve the associated trait item so custom same-named methods stay excluded.
-    match expr.kind {
-        ExprKind::MethodCall(segment, receiver, _, _) => Some((segment, receiver)),
-        _ => None,
-    }
-    .and_then(|(segment, receiver)| {
-        cx.typeck_results()
-            .type_dependent_def_id(expr.hir_id)
-            .map(|def_id| (segment, receiver, def_id))
-    })
-    .and_then(|(segment, receiver, def_id)| {
-        cx.tcx
-            .opt_associated_item(def_id)
-            .and_then(|associated_item| associated_item.trait_item_or_self().ok())
-            .and_then(|trait_item| cx.tcx.trait_of_assoc(trait_item))
-            .map(|trait_def_id| (segment, receiver, def_id, trait_def_id))
-    })
-    // Trace the associated item back to the standard Iterator diagnostic item.
-    .filter(|(_, _, def_id, trait_def_id)| {
-        cx.tcx.item_name(*def_id).as_str() == "for_each"
-            && cx.tcx.is_diagnostic_item(sym::Iterator, *trait_def_id)
-    })
-    .map(|(segment, receiver, _, _)| (receiver, segment.ident.span))
-}
-
 /// Return whether an expression ultimately comes from a literal case table.
 fn literal_case_source(
     cx: &LateContext<'_>,
@@ -322,7 +317,7 @@ fn literal_case_source(
 ) -> bool {
     // Peel compiler wrappers before following only resolved local and constant origins.
     let expr = peel_drop_temps(expr);
-    if array_or_slice_literal(expr) || vec_macro_literal(cx, expr.span) {
+    if array_or_slice_literal(expr) || is_vec_macro_literal(cx, expr.span) {
         return true;
     }
 
@@ -350,7 +345,7 @@ fn literal_case_source(
 }
 
 /// Return whether this expression is the expansion of the standard `vec!` macro.
-fn vec_macro_literal(cx: &LateContext<'_>, span: Span) -> bool {
+fn is_vec_macro_literal(cx: &LateContext<'_>, span: Span) -> bool {
     // `vec![a, b]` lowers to a call whose span records the resolved macro definition.
     span.ctxt()
         .outer_expn_data()

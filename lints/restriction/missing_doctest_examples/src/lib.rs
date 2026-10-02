@@ -18,7 +18,7 @@ use rustc_hir::{
     attrs::AttributeKind,
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
-use rustc_span::{Span, Symbol, def_id::LocalDefId, sym};
+use rustc_span::{Span, def_id::LocalDefId, sym};
 use serde::Deserialize;
 
 dylint_support::documented_late_lint_with_pass! {
@@ -119,7 +119,18 @@ fn check_definition(cx: &LateContext<'_>, scope: Scope, local_def_id: LocalDefId
 
     // Parse normalized attributes so all supported doc-comment forms behave alike.
     let hir_id = cx.tcx.local_def_id_to_hir_id(local_def_id);
-    let docs = normalized_docs(cx.tcx.hir_attrs(hir_id));
+    // Keep attribute order because Markdown section boundaries depend on it.
+    let docs = cx
+        .tcx
+        .hir_attrs(hir_id)
+        .iter()
+        .filter_map(|attr| {
+            attr.doc_str()
+                .or_else(|| attr.has_name(sym::doc).then(|| attr.value_str()).flatten())
+        })
+        .map(|text| text.as_str().to_owned())
+        .collect::<Vec<_>>()
+        .join("\n");
     if !has_doctest_example(&docs) {
         emit_missing_example(cx, span);
     }
@@ -160,23 +171,6 @@ fn is_test_function(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
                 .iter()
                 .any(|attr| matches!(attr, Attribute::Parsed(AttributeKind::RustcTestMarker(_))))
     })
-}
-
-/// Join rustc's normalized doc attributes into Markdown source.
-fn normalized_docs(attrs: &[Attribute]) -> String {
-    // Keep attribute order because Markdown section boundaries depend on it.
-    attrs
-        .iter()
-        .filter_map(doc_attr_text)
-        .map(|text| text.as_str().to_owned())
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-/// Return the text carried by a normalized doc attribute.
-fn doc_attr_text(attr: &Attribute) -> Option<Symbol> {
-    attr.doc_str()
-        .or_else(|| attr.has_name(sym::doc).then(|| attr.value_str()).flatten())
 }
 
 /// Return whether `# Examples` contains a non-empty Rust doctest block.

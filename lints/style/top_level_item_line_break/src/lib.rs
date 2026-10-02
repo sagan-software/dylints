@@ -40,7 +40,13 @@ fn check_module_items(cx: &EarlyContext<'_>, items: &[Box<Item>]) {
             continue;
         };
 
-        let current_start = item_start(current);
+        // Include outer attributes and doc comments when locating the item's source start.
+        let current_start = current
+            .attrs
+            .iter()
+            .filter(|attr| attr.style == AttrStyle::Outer && !attr.span.from_expansion())
+            .map(|attr| attr.span.lo())
+            .fold(current.span.lo(), BytePos::min);
         // Build one machine-applicable edit for each missing separator.
         if is_missing_line_break(cx, previous.span, current.span, current_start) {
             let (replaced, replacement) = line_break_fix(cx, previous.span, current_start);
@@ -58,15 +64,6 @@ fn check_module_items(cx: &EarlyContext<'_>, items: &[Box<Item>]) {
             check_module_items(cx, child_items);
         }
     }
-}
-
-/// Return the start of an item's source, including its outer attributes and doc comments.
-fn item_start(item: &Item) -> BytePos {
-    item.attrs
-        .iter()
-        .filter(|attr| attr.style == AttrStyle::Outer && !attr.span.from_expansion())
-        .map(|attr| attr.span.lo())
-        .fold(item.span.lo(), BytePos::min)
 }
 
 /// Return whether the previous item ends on the line where the current item starts.

@@ -9,8 +9,6 @@
 
 extern crate rustc_ast;
 
-use std::path::{Path, PathBuf};
-
 use cargo_support::{crate_root_path, emit_with_help, file_start_span};
 use rustc_ast::Crate;
 use rustc_lint::{EarlyContext, EarlyLintPass};
@@ -26,9 +24,14 @@ dylint_support::documented_early_lint! {
 impl EarlyLintPass for RustToolchainToml {
     /// Check the crate root's ancestors for a bare `rust-toolchain` file.
     fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &Crate) {
-        if let Some(toolchain) =
-            crate_root_path(cx, krate).and_then(|crate_root| find_bare_toolchain(&crate_root))
-        {
+        if let Some(toolchain) = crate_root_path(cx, krate).and_then(|crate_root| {
+            // A toolchain file applies to every descendant directory.
+            crate_root
+                .ancestors()
+                .skip(1)
+                .map(|directory| directory.join("rust-toolchain"))
+                .find(|candidate| candidate.is_file())
+        }) {
             // A file that is not valid UTF-8 cannot be shown, so report at the crate root instead.
             let span = file_start_span(cx, &toolchain).unwrap_or(krate.spans.inner_span);
 
@@ -41,16 +44,6 @@ impl EarlyLintPass for RustToolchainToml {
             );
         }
     }
-}
-
-/// Return the nearest bare `rust-toolchain` file above the crate root file.
-fn find_bare_toolchain(crate_root: &Path) -> Option<PathBuf> {
-    // A toolchain file applies to every descendant directory.
-    crate_root
-        .ancestors()
-        .skip(1)
-        .map(|directory| directory.join("rust-toolchain"))
-        .find(|candidate| candidate.is_file())
 }
 
 /// Run the UI tests.

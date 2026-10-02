@@ -95,7 +95,7 @@ fn parser_signature<'tcx>(
     local_def_id: LocalDefId,
 ) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
     // Reject names outside parser vocabulary before resolving the signature.
-    if !parser_name(name.as_str()) {
+    if !is_parser_name(name.as_str()) {
         return None;
     }
     let fn_sig = cx.tcx.instantiate_bound_regions_with_erased(
@@ -122,7 +122,7 @@ fn is_valid_from_str_conversion<'tcx>(cx: &LateContext<'tcx>, target: Ty<'tcx>) 
 }
 
 /// Return whether the name reads as a canonical parser without a policy marker.
-fn parser_name(name: &str) -> bool {
+fn is_parser_name(name: &str) -> bool {
     (name.starts_with("parse_") || name.starts_with("from_str"))
         && ![
             "_and_",

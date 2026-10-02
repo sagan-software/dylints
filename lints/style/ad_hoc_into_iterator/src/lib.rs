@@ -42,7 +42,7 @@ impl<'tcx> LateLintPass<'tcx> for AdHocIntoIterator {
         let def_id = item.owner_id.def_id;
         if !matches!(item.kind, ImplItemKind::Fn(..))
             || !matches!(item.impl_kind, ImplItemImplKind::Inherent { .. })
-            || !iteration_name(item.ident.name.as_str())
+            || !is_iteration_name(item.ident.name.as_str())
             || !cx.tcx.associated_item(def_id).is_method()
         {
             return;
@@ -92,7 +92,7 @@ fn has_trait_impl<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>, trait_item: Symbol
 }
 
 /// Return whether the name reads as an iteration view without a domain-policy word.
-fn iteration_name(name: &str) -> bool {
+fn is_iteration_name(name: &str) -> bool {
     (name.starts_with("into_") || name.starts_with("iter_") || name == "items")
         && !domain_policy_name(name)
 }

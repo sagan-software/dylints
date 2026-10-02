@@ -64,7 +64,7 @@ fn iterator_candidate<'tcx>(
     // Trait methods have names fixed by their trait, so only inherent methods are candidates.
     if !matches!(item.kind, ImplItemKind::Fn(..))
         || !matches!(item.impl_kind, ImplItemImplKind::Inherent { .. })
-        || !next_name(item.ident.name.as_str())
+        || !is_next_name(item.ident.name.as_str())
     {
         return None;
     }
@@ -114,7 +114,7 @@ fn has_iterator_impl<'tcx>(cx: &LateContext<'tcx>, self_ty: ty::Ty<'tcx>) -> boo
 }
 
 /// Return whether the name reads as a `next` step without a domain-policy word.
-fn next_name(name: &str) -> bool {
+fn is_next_name(name: &str) -> bool {
     (name == "next" || name.starts_with("next_")) && !domain_policy_name(name)
 }
 
