@@ -4,8 +4,6 @@ const TOKEN: &str = "token";
 
 fn main() {
     let mut settings = insta::Settings::clone_current();
-
-
     let () = settings.add_filter("token", "token");
     settings.add_filter("token", "[token]");
     settings.add_filter("a.b", "a.b");

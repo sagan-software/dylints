@@ -1,8 +1,10 @@
 warning: this Schemars attribute duplicates Serde
   --> $DIR/main.rs:9:5
    |
-LL |     #[schemars(default)]
-   |     ^^^^^^^^^^^^^^^^^^^^ help: remove the redundant Schemars attribute
+LL |       #[schemars(default)]
+   |  _____-^^^^^^^^^^^^^^^^^^^
+LL | |     bad: String,
+   | |____- help: remove the redundant Schemars attribute
    |
    = note: `#[warn(schemars_redundant_serde_default)]` on by default
 

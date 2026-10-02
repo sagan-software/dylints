@@ -1,16 +1,20 @@
 warning: this Schemars attribute duplicates Serde
   --> $DIR/main.rs:9:5
    |
-LL |     #[schemars(skip)]
-   |     ^^^^^^^^^^^^^^^^^ help: remove the redundant Schemars attribute
+LL |       #[schemars(skip)]
+   |  _____-^^^^^^^^^^^^^^^^
+LL | |     bad: String,
+   | |____- help: remove the redundant Schemars attribute
    |
    = note: `#[warn(schemars_redundant_serde_skip)]` on by default
 
 warning: this Schemars attribute duplicates Serde
   --> $DIR/main.rs:14:5
    |
-LL |     #[schemars(skip_serializing)]
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove the redundant Schemars attribute
+LL |       #[schemars(skip_serializing)]
+   |  _____-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL | |     bad_skip_serializing: String,
+   | |____- help: remove the redundant Schemars attribute
 
 warning: 2 warnings emitted
 

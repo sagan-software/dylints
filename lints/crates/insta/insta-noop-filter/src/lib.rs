@@ -82,8 +82,22 @@ fn statement_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Span> {
     let (_, Node::Stmt(statement)) = cx.tcx.hir_parent_iter(expr.hir_id).next()? else {
         return None;
     };
-    (matches!(statement.kind, StmtKind::Semi(_)) && !statement.span.from_expansion())
-        .then_some(statement.span)
+    // Preserve help-only diagnostics for compiler-generated statements.
+    if !matches!(statement.kind, StmtKind::Semi(_)) || statement.span.from_expansion() {
+        return None;
+    }
+    // Include indentation only when it is the complete source prefix on this line.
+    let source_map = cx.sess().source_map();
+    let line_start = source_map
+        .lookup_source_file(statement.span.lo())
+        .line_begin_pos(statement.span.lo());
+    let line_prefix = statement.span.with_lo(line_start);
+    let leading_whitespace = line_prefix.with_hi(statement.span.lo());
+    source_map
+        .span_to_snippet(leading_whitespace)
+        .ok()
+        .filter(|prefix| prefix.chars().all(char::is_whitespace))
+        .map_or(Some(statement.span), |_| Some(line_prefix))
 }
 
 #[test]

@@ -150,14 +150,23 @@ macro_rules! declare_redundant_serde_attribute_lint {
                         $lint,
                         span,
                         rustc_errors::DiagDecorator(|diagnostic| {
-                            let _configured_diagnostic = diagnostic
-                                .primary_message("this Schemars attribute duplicates Serde")
-                                .span_suggestion(
-                                    span,
+                            let diagnostic = diagnostic
+                                .primary_message("this Schemars attribute duplicates Serde");
+                            if span.from_expansion() {
+                                let _configured_help =
+                                    diagnostic.help("remove the redundant Schemars attribute");
+                            } else {
+                                let fix_span = cx
+                                    .sess()
+                                    .source_map()
+                                    .span_extend_while_whitespace(span);
+                                let _configured_suggestion = diagnostic.span_suggestion(
+                                    fix_span,
                                     "remove the redundant Schemars attribute",
                                     String::new(),
                                     rustc_errors::Applicability::MachineApplicable,
                                 );
+                            }
                         }),
                     );
                 }

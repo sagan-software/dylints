@@ -1,8 +1,10 @@
 warning: this Schemars attribute duplicates Serde
   --> $DIR/main.rs:9:5
    |
-LL |     #[schemars(rename = "id")]
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove the redundant Schemars attribute
+LL |       #[schemars(rename = "id")]
+   |  _____-^^^^^^^^^^^^^^^^^^^^^^^^^
+LL | |     bad: String,
+   | |____- help: remove the redundant Schemars attribute
    |
    = note: `#[warn(schemars_redundant_serde_rename)]` on by default
 

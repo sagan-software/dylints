@@ -1,8 +1,10 @@
 warning: this Schemars attribute duplicates Serde
   --> $DIR/main.rs:8:1
    |
-LL | #[schemars(tag = "kind")]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove the redundant Schemars attribute
+LL |   #[schemars(tag = "kind")]
+   |  _-^^^^^^^^^^^^^^^^^^^^^^^^
+LL | | enum Example {
+   | |_- help: remove the redundant Schemars attribute
    |
    = note: `#[warn(schemars_redundant_serde_tag)]` on by default
 

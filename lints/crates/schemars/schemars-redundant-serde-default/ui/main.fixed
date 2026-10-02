@@ -6,7 +6,6 @@ use serde::Serialize;
 #[derive(JsonSchema, Serialize)]
 struct Example {
     #[serde(default)]
-    
     bad: String,
     #[serde(default)]
     good: String,
