@@ -17,7 +17,9 @@ expression.
 
 - The collection must be a standard `Vec`, `VecDeque`, `HashSet`, `BTreeSet`,
   `HashMap`, or `BTreeMap` created by an argument-free `new` or `default` call.
-  `vec![]` and `Vec::with_capacity(n)` are ignored.
+  The constructor must resolve to that collection's own method or its standard
+  `Default` implementation. Lookalike associated functions, `vec![]`, and
+  `Vec::with_capacity(n)` are ignored.
 - The loop body must be one `push`, `push_back`, or single-argument `insert`
   call. A body with any other statement is ignored, and so is a two-argument
   `HashMap::insert`.

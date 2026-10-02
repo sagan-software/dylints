@@ -17,7 +17,8 @@ pair split in one call.
 
 - The collections must be standard `Vec`, `VecDeque`, `HashSet`, `BTreeSet`,
   `HashMap`, or `BTreeMap` values created by an argument-free `new` or
-  `default` call. `vec![]` and `Vec::with_capacity(n)` are ignored.
+  `default` call owned by that collection. Lookalike associated functions on
+  other types, `vec![]`, and `Vec::with_capacity(n)` are ignored.
 - The loop pattern must be a two-name tuple, and the body must insert the names
   unchanged in pattern order with `push`, `push_back`, or `insert`. Swapped or
   transformed items are ignored.

@@ -19,7 +19,9 @@ statements hide that the value passes through unchanged. `inspect` and
 - The observation must borrow the binding as `&name`, have no `else`, and hold
   one action. The lint skips it when it contains `?`, `.await`, `break`,
   `continue`, or `return` outside a closure.
-- With `inspect`, temporaries in the initializer can drop at a different time.
+- The variant payload pattern must accept every payload. Partial patterns such
+  as `Some(0)` are ignored because `inspect` would observe all `Some` values.
+- With `inspect`, temporaries in the initial value can drop at a different time.
   The lint emits help without an automatic fix.
 
 ## Example
