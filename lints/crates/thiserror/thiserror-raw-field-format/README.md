@@ -15,7 +15,8 @@ refers to the same `r#type` field.
 
 With thiserror 2, an active item with this pattern already fails to compile
 with thiserror's own error. The lint is most useful on thiserror 1 code before
-a migration.
+a migration. The UI fixture uses thiserror 1 to preserve that pre-migration
+behavior.
 
 thiserror 1 cannot format a keyword field such as `r#type` as `{type}`, so the
 lint offers that rewrite as help but does not apply it automatically. A rewrite
