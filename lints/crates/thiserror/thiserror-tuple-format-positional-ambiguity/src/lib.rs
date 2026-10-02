@@ -13,7 +13,7 @@
 extern crate rustc_hir;
 
 #[cfg(test)]
-use thiserror as _;
+use thiserror_v1 as _;
 
 use rustc_hir::Item;
 use rustc_lint::{LateContext, LateLintPass};

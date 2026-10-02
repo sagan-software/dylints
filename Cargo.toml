@@ -395,6 +395,7 @@ syn            = "2.0.117"
 tempfile       = "3.27.0"
 "test-case"    = "3.3.1"
 thiserror      = { version = "2.0.18", default-features = false }
+thiserror_v1   = { package = "thiserror", version = "1.0.69" }
 tokio          = { version = "1.53.1", features = ["macros", "rt-multi-thread", "sync", "time"] }
 toml           = "1.1.3"
 toml_edit      = "0.25.13"

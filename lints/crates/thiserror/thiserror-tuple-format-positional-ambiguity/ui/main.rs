@@ -1,4 +1,5 @@
 use thiserror::{Error, Error as ThisError};
+use thiserror_v1 as thiserror;
 
 const fn expected() -> &'static str {
     "expected"
@@ -17,7 +18,7 @@ pub struct NamedFirstTuple(String);
 pub struct RenamedTuple(String);
 
 mod glob {
-    use super::expected;
+    use super::{expected, thiserror};
     use thiserror::*;
 
     #[derive(Error, Debug)]

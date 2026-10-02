@@ -1,5 +1,5 @@
 warning: `thiserror` tuple format mixes numeric fields and positional arguments
-  --> $DIR/main.rs:8:1
+  --> $DIR/main.rs:9:1
    |
 LL | #[error("qualified {0} {}", expected())]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL | #[error("qualified {0} {}", expected())]
    = note: `#[warn(thiserror_tuple_format_positional_ambiguity)]` on by default
 
 warning: `thiserror` tuple format mixes numeric fields and positional arguments
-  --> $DIR/main.rs:12:1
+  --> $DIR/main.rs:13:1
    |
 LL | #[error("named first {0} {named} {}", expected(), named = 1)]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL | #[error("named first {0} {named} {}", expected(), named = 1)]
    = help: give the extra format argument a name, such as `value = value()`
 
 warning: `thiserror` tuple format mixes numeric fields and positional arguments
-  --> $DIR/main.rs:16:1
+  --> $DIR/main.rs:17:1
    |
 LL | #[error("renamed {0:?} {}", expected())]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -24,7 +24,7 @@ LL | #[error("renamed {0:?} {}", expected())]
    = help: give the extra format argument a name, such as `value = value()`
 
 warning: `thiserror` tuple format mixes numeric fields and positional arguments
-  --> $DIR/main.rs:25:9
+  --> $DIR/main.rs:26:9
    |
 LL |         #[error("variant {0} {}", expected())]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
