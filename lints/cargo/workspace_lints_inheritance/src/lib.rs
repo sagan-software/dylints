@@ -10,9 +10,7 @@
 extern crate rustc_ast;
 extern crate rustc_span;
 
-use cargo_support::{
-    emit_with_help, has_workspace_entry, is_true, package_manifest, toml_edit::Item,
-};
+use cargo_support::{emit_with_help, has_workspace_entry, is_true, package_manifest};
 use rustc_ast::Crate;
 use rustc_lint::{EarlyContext, EarlyLintPass};
 use rustc_span::Span;
@@ -46,7 +44,10 @@ fn non_inheriting_lints(cx: &EarlyContext<'_>, krate: &Crate) -> Option<Span> {
     let lints = package.root().get("lints")?;
 
     // A `workspace = true` entry already inherits the workspace lints.
-    if inherits_workspace(lints) {
+    if lints
+        .as_table_like()
+        .is_some_and(|table| is_true(table.get("workspace")))
+    {
         return None;
     }
 
@@ -56,16 +57,6 @@ fn non_inheriting_lints(cx: &EarlyContext<'_>, krate: &Crate) -> Option<Span> {
     }
 
     package.entry_span("lints")
-}
-
-/// Return whether a `lints` entry sets `workspace = true`.
-///
-/// Cargo rejects a `lints` table in a virtual manifest, so a manifest that
-/// reaches this check is a package manifest.
-fn inherits_workspace(lints: &Item) -> bool {
-    lints
-        .as_table_like()
-        .is_some_and(|table| is_true(table.get("workspace")))
 }
 
 /// Run the UI tests.

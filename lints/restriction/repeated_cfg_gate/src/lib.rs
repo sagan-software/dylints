@@ -309,7 +309,28 @@ fn loaded_rust_source_files(cx: &EarlyContext<'_>) -> Vec<SourceCandidate> {
     // Resolve source-map paths against the package that owns the crate root.
     let source_map = cx.sess().source_map();
     let files = source_map.files();
-    let Some(crate_root) = crate_package_root(cx) else {
+    // Anchor package discovery at the source file rustc compiled as the crate root.
+    let Some(crate_root) = cx
+        .sess()
+        .local_crate_source_file()
+        .and_then(rustc_span::RealFileName::into_local_path)
+        .and_then(|path| {
+            if path.is_absolute() {
+                Some(path)
+            } else {
+                std::env::current_dir()
+                    .ok()
+                    .map(|directory| directory.join(path))
+            }
+        })
+        // Stop at the nearest manifest so sibling workspace packages remain excluded.
+        .and_then(|path| {
+            path.parent()?
+                .ancestors()
+                .find(|directory| directory.join("Cargo.toml").is_file())
+                .map(Path::to_path_buf)
+        })
+    else {
         return Vec::new();
     };
     let mut seen = BTreeSet::new();
@@ -343,30 +364,6 @@ fn loaded_rust_source_files(cx: &EarlyContext<'_>) -> Vec<SourceCandidate> {
     drop(files);
 
     candidates
-}
-
-/// Find the Cargo package root that owns the compiler's crate-root source file.
-fn crate_package_root(cx: &EarlyContext<'_>) -> Option<PathBuf> {
-    // Anchor package discovery at the source file rustc compiled as the crate root.
-    cx.sess()
-        .local_crate_source_file()
-        .and_then(rustc_span::RealFileName::into_local_path)
-        .and_then(|path| {
-            if path.is_absolute() {
-                Some(path)
-            } else {
-                std::env::current_dir()
-                    .ok()
-                    .map(|directory| directory.join(path))
-            }
-        })
-        // Stop at the nearest manifest so sibling workspace packages remain excluded.
-        .and_then(|path| {
-            path.parent()?
-                .ancestors()
-                .find(|directory| directory.join("Cargo.toml").is_file())
-                .map(Path::to_path_buf)
-        })
 }
 
 /// Resolve one source-map file to a local path inside the target crate.

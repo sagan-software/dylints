@@ -32,7 +32,6 @@ use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_span::{
     Span, Symbol,
     def_id::{CRATE_DEF_ID, LocalDefId},
-    source_map::SourceMap,
     sym,
 };
 
@@ -219,7 +218,11 @@ fn exact_doc_comment_source(cx: &LateContext<'_>, attrs: &[Attribute]) -> Option
 
     // Only exact line-doc-comment source is safe to replace. Attribute and block forms still lint
     // through the normalized fallback because rumdl cannot restore those Rust syntaxes here.
-    if contains_non_line_doc_span(source_map, &doc_spans) {
+    if doc_spans.iter().any(|span| {
+        source_map.span_to_snippet(*span).map_or(true, |source| {
+            !matches!(source.trim_start().get(..3), Some("///" | "//!"))
+        })
+    }) {
         return None;
     }
 
@@ -233,15 +236,6 @@ fn exact_doc_comment_source(cx: &LateContext<'_>, attrs: &[Attribute]) -> Option
     }
 
     Some((span, source))
-}
-
-/// Return whether any documentation span is not a direct line-doc comment.
-fn contains_non_line_doc_span(source_map: &SourceMap, spans: &[Span]) -> bool {
-    spans.iter().any(|span| {
-        source_map.span_to_snippet(*span).map_or(true, |source| {
-            !matches!(source.trim_start().get(..3), Some("///" | "//!"))
-        })
-    })
 }
 
 /// Return the normalized doc comment source.
@@ -343,13 +337,12 @@ fn suggested_doc_comment_source(
     let remaining_warnings = check_doc_comment_blocks(&formatted, rules, config);
     remaining_warnings
         .iter()
-        .all(|remaining| !same_warning_location(warning, remaining))
+        .all(|remaining| {
+            !(warning.rule_name == remaining.rule_name
+                && warning.line == remaining.line
+                && warning.column == remaining.column)
+        })
         .then_some(formatted)
-}
-
-/// Return whether warning location match.
-fn same_warning_location(left: &LintWarning, right: &LintWarning) -> bool {
-    left.rule_name == right.rule_name && left.line == right.line && left.column == right.column
 }
 
 /// Helper for restore doc comment block analysis.

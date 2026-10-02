@@ -78,7 +78,10 @@ fn misplaced_representative_type(
     items: &[Box<Item>],
 ) -> Option<RepresentativeType> {
     let expected_name = pascal_case_module_name(module_name)?;
-    let first_definition = first_non_import_item(items)?;
+    let first_definition = items
+        .iter()
+        .map(Box::as_ref)
+        .find(|item| is_source_order_item(item))?;
 
     // If the representative type already heads the module body, the local order is correct.
     if is_type_named(first_definition, &expected_name) {
@@ -89,14 +92,6 @@ fn misplaced_representative_type(
         .iter()
         .map(Box::as_ref)
         .find_map(|item| matching_type_definition(item, &expected_name))
-}
-
-/// Return the first non import item.
-fn first_non_import_item(items: &[Box<Item>]) -> Option<&Item> {
-    items
-        .iter()
-        .map(Box::as_ref)
-        .find(|item| is_source_order_item(item))
 }
 
 /// Return whether import item.

@@ -107,7 +107,8 @@ fn contains_collection_bool_pair(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     }
 }
 
-/// Return whether the type is an array or a standard collection, matched by diagnostic item.
+/// Return whether the type is an array or a standard collection matched by a
+/// diagnostic item.
 fn is_collection(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
     match ty.kind() {
         ty::Array(..) | ty::Slice(_) => true,

@@ -27,11 +27,7 @@ use rustc_hir::{
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::{
-    Span,
-    def_id::{DefId, LocalDefId},
-    sym,
-};
+use rustc_span::{Span, def_id::LocalDefId, sym};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -70,7 +66,11 @@ impl<'tcx> LateLintPass<'tcx> for SemanticPrimitiveType {
         let (FnKind::ItemFn(ident, ..) | FnKind::Method(ident, ..)) = kind else {
             return;
         };
-        if implements_trait_item(cx, local_def_id.to_def_id()) {
+        if cx
+            .tcx
+            .impl_of_assoc(local_def_id.to_def_id())
+            .is_some_and(|impl_def_id| cx.tcx.impl_opt_trait_id(impl_def_id).is_some())
+        {
             return;
         }
 
@@ -193,13 +193,6 @@ fn in_parsing_impl(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
             .is_some_and(|trait_def_id| cx.tcx.is_diagnostic_item(sym::TryFrom, trait_def_id))
 }
 
-/// Return whether a function implements an item of a trait impl.
-fn implements_trait_item(cx: &LateContext<'_>, def_id: DefId) -> bool {
-    cx.tcx
-        .impl_of_assoc(def_id)
-        .is_some_and(|impl_def_id| cx.tcx.impl_opt_trait_id(impl_def_id).is_some())
-}
-
 /// Check an explicit return type against the function name.
 fn check_return(cx: &LateContext<'_>, decl: &FnDecl<'_>, local_def_id: LocalDefId, name: &str) {
     let FnRetTy::Return(output) = decl.output else {
@@ -226,11 +219,15 @@ fn check_named_type<'tcx>(
     // Peel transparent wrappers before classifying the semantic value.
     let base = peel_wrappers(cx, ty);
     // Pair recognized boundary names with their disallowed primitive families.
-    let finding = if identity_name(name) && is_integer(base) {
+    let finding = if name.ends_with("_id") && is_integer(base) {
         Some(("identity data", primitive_name(base)))
-    } else if http_status_name(name) && is_integer(base) {
+    } else if (name == "http_status" || name.ends_with("_http_status")) && is_integer(base) {
         Some(("an HTTP status", primitive_name(base)))
-    } else if reason_name(name) && is_string(cx, base) {
+    } else if (matches!(name, "reason" | "reasons" | "reason_code" | "reason_codes")
+        || name.ends_with("_reason_code")
+        || name.ends_with("_reason_codes"))
+        && is_string(cx, base)
+    {
         Some(("a reason code", primitive_name(base)))
     } else {
         None
@@ -284,23 +281,6 @@ fn primitive_name(ty: Ty<'_>) -> String {
     ty.to_string()
         .replace("std::string::", "")
         .replace("alloc::string::", "")
-}
-
-/// Return whether the name denotes an identity.
-fn identity_name(name: &str) -> bool {
-    name.ends_with("_id")
-}
-
-/// Return whether the name denotes an HTTP status.
-fn http_status_name(name: &str) -> bool {
-    name == "http_status" || name.ends_with("_http_status")
-}
-
-/// Return whether the name denotes a closed reason code.
-fn reason_name(name: &str) -> bool {
-    matches!(name, "reason" | "reasons" | "reason_code" | "reason_codes")
-        || name.ends_with("_reason_code")
-        || name.ends_with("_reason_codes")
 }
 
 /// Return a simple parameter name.

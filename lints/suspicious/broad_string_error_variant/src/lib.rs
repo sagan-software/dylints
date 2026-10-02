@@ -42,7 +42,7 @@ impl<'tcx> LateLintPass<'tcx> for BroadStringErrorVariant {
             return;
         }
         let enum_name = enum_name.name.to_ident_string();
-        if !error_like_enum_name(&enum_name) {
+        if !(enum_name.ends_with("Error") || enum_name.ends_with("Errors")) {
             return;
         }
 
@@ -143,11 +143,6 @@ fn emit_span_lint_with_help(
             let _ = diag.help(help);
         }),
     );
-}
-
-/// Return the error like enum name.
-fn error_like_enum_name(name: &str) -> bool {
-    name.ends_with("Error") || name.ends_with("Errors")
 }
 
 /// Return the broad payload name.

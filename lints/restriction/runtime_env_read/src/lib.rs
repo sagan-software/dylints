@@ -54,7 +54,12 @@ impl<'tcx> LateLintPass<'tcx> for RuntimeEnvRead {
     ) {
         // A closure body is visited on its own, so judge it by the item that owns it.
         let owner = cx.tcx.typeck_root_def_id_local(local_def_id);
-        if allowed_context(cx, owner) {
+        // Allow entrypoints and named boundaries before scanning the body for environment reads.
+        if cx.tcx.opt_item_name(owner.to_def_id()) == Some(sym::main)
+            || in_test_code(cx, owner)
+            || allowed_def_path(cx, owner)
+            || allowed_source_path(cx, cx.tcx.def_span(owner))
+        {
             return;
         }
 
@@ -100,15 +105,6 @@ fn env_read_name(cx: &LateContext<'_>, callee: &Expr<'_>) -> Option<&'static str
         },
         _ => None,
     }
-}
-
-/// Return whether an item is a configuration, entry point, build-script, or test context.
-fn allowed_context(cx: &LateContext<'_>, owner: LocalDefId) -> bool {
-    // Allow entrypoints and named boundaries before scanning the body for environment reads.
-    cx.tcx.opt_item_name(owner.to_def_id()) == Some(sym::main)
-        || in_test_code(cx, owner)
-        || allowed_def_path(cx, owner)
-        || allowed_source_path(cx, cx.tcx.def_span(owner))
 }
 
 /// Return whether an item or one of its ancestors is test-only code.
@@ -182,16 +178,12 @@ fn allowed_def_path(cx: &LateContext<'_>, owner: LocalDefId) -> bool {
         if has_allowed_def_name(cx, def_id) {
             return true;
         }
-        current = parent_def_id(cx, def_id);
+        current = cx
+            .tcx
+            .opt_parent(def_id)
+            .filter(|parent| !parent.is_crate_root());
     }
     false
-}
-
-/// Return the parent of a definition, stopping at the crate root.
-fn parent_def_id(cx: &LateContext<'_>, def_id: DefId) -> Option<DefId> {
-    cx.tcx
-        .opt_parent(def_id)
-        .filter(|parent| !parent.is_crate_root())
 }
 
 /// Return whether the item's file is a build script or a configuration source file.

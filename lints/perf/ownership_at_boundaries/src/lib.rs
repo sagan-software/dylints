@@ -46,6 +46,7 @@ impl<'tcx> LateLintPass<'tcx> for OwnershipAtBoundaries {
         span: Span,
         local_def_id: LocalDefId,
     ) {
+        // Filter out closures, generated code, trait methods, and async functions before analysis.
         if matches!(kind, FnKind::Closure)
             || span.from_expansion()
             || !is_free_public_signature(cx, local_def_id)
@@ -101,8 +102,10 @@ impl<'tcx> LateLintPass<'tcx> for OwnershipAtBoundaries {
 ///
 /// An `async fn` moves every parameter into its future, which hides its uses.
 fn is_free_public_signature(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+    // Public visibility defines the API boundary this lint evaluates.
     let def_id = local_def_id.to_def_id();
     let is_public = cx.tcx.visibility(local_def_id).is_public();
+    // Trait methods and async functions have ownership semantics outside this check.
     let is_trait_item = cx.tcx.trait_of_assoc(def_id).is_some();
     let is_trait_impl_item = cx.tcx.trait_impl_of_assoc(def_id).is_some();
     let is_async = cx.tcx.asyncness(local_def_id).is_async();

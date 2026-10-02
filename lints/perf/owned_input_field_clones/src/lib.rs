@@ -274,7 +274,7 @@ fn can_move_clones<'tcx>(
     clones: &[FieldClone<'tcx>],
     param_hir_id: HirId,
 ) -> bool {
-    let are_clones_direct = clones.iter().all(|clone| is_direct_clone(cx, clone));
+    let has_only_direct_clones = clones.iter().all(|clone| is_direct_clone(cx, clone));
     let has_unique_fields = clones
         .iter()
         .enumerate()
@@ -283,7 +283,7 @@ fn can_move_clones<'tcx>(
         .iter()
         .any(|field| is_other_param_use(cx, clones, field, param_hir_id));
 
-    are_clones_direct && has_unique_fields && !has_other_use
+    has_only_direct_clones && has_unique_fields && !has_other_use
 }
 
 /// Return whether moving the cloned field yields the same type without auto-deref.

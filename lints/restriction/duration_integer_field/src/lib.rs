@@ -36,15 +36,44 @@ impl<'tcx> LateLintPass<'tcx> for DurationIntegerField {
         // Resolve the field type only when its name includes a duration unit.
         let field_name = field.ident.name.to_ident_string();
 
+        // Match snake_case tokens so both prefix and suffix forms are covered without flagging
+        // unrelated substrings such as `weekday` or `timestamp`. Singular `second`, `minute`,
+        // `hour`, `day`, and `week` usually name a calendar component, and `min` a minimum.
         // Report raw integers at the field type span with a typed replacement.
-        if duration_unit_token(&field_name).is_some()
-            && let Some(integer_ty) = integer_ty(
-                cx.tcx
-                    .type_of(field.def_id)
-                    .instantiate_identity()
-                    .skip_norm_wip(),
+        if field_name.split('_').any(|token| {
+            matches!(
+                token,
+                "ns" | "nano"
+                    | "nanos"
+                    | "nanosecond"
+                    | "nanoseconds"
+                    | "us"
+                    | "micro"
+                    | "micros"
+                    | "microsecond"
+                    | "microseconds"
+                    | "ms"
+                    | "milli"
+                    | "millis"
+                    | "millisecond"
+                    | "milliseconds"
+                    | "sec"
+                    | "secs"
+                    | "seconds"
+                    | "mins"
+                    | "minutes"
+                    | "hr"
+                    | "hrs"
+                    | "hours"
+                    | "days"
+                    | "weeks"
             )
-        {
+        }) && let Some(integer_ty) = integer_ty(
+            cx.tcx
+                .type_of(field.def_id)
+                .instantiate_identity()
+                .skip_norm_wip(),
+        ) {
             emit_span_lint_with_help(
                 cx,
                 DURATION_INTEGER_FIELD,
@@ -75,42 +104,6 @@ fn emit_span_lint_with_help(
             let _ = diag.help(help);
         }),
     );
-}
-
-/// Helper for duration unit token analysis.
-fn duration_unit_token(name: &str) -> Option<&str> {
-    // Match snake_case tokens so both prefix and suffix forms are covered without flagging
-    // unrelated substrings such as `weekday` or `timestamp`. Singular `second`, `minute`,
-    // `hour`, `day`, and `week` usually name a calendar component, and `min` a minimum.
-    name.split('_').find(|token| {
-        matches!(
-            *token,
-            "ns" | "nano"
-                | "nanos"
-                | "nanosecond"
-                | "nanoseconds"
-                | "us"
-                | "micro"
-                | "micros"
-                | "microsecond"
-                | "microseconds"
-                | "ms"
-                | "milli"
-                | "millis"
-                | "millisecond"
-                | "milliseconds"
-                | "sec"
-                | "secs"
-                | "seconds"
-                | "mins"
-                | "minutes"
-                | "hr"
-                | "hrs"
-                | "hours"
-                | "days"
-                | "weeks"
-        )
-    })
 }
 
 /// Return type information for integer.
