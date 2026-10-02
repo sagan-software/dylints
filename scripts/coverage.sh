@@ -20,17 +20,69 @@ set -euo pipefail
 min_lines=0
 test_args=(--workspace --tests)
 paths=()
+
+usage() {
+	echo "usage: coverage.sh [--min-lines PERCENT] [--path DIR]... [-- CARGO_TEST_ARGS...]" >&2
+	exit 2
+}
+
+require_argument() {
+	local option="$1"
+	local value="${2-}"
+	if [[ -z "$value" ]]; then
+		printf '%s requires a value\n' "$option" >&2
+		exit 2
+	fi
+}
+
+validate_min_lines() {
+	local value="$1"
+	if [[ ! "$value" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+		printf '%s must be a decimal percentage from 0 through 100\n' \
+			"--min-lines" >&2
+		exit 2
+	fi
+	if ! LC_ALL=C awk -v value="$value" \
+		'BEGIN { exit !(value >= 0 && value <= 100) }'; then
+		printf '%s must be a decimal percentage from 0 through 100\n' \
+			"--min-lines" >&2
+		exit 2
+	fi
+}
+
+append_path_sources() {
+	local requested_path="$1"
+	local canonical_path
+	local source_count=0
+	if [[ ! -d "$requested_path" ]]; then
+		printf '%s must name an existing directory: %s\n' \
+			"--path" "$requested_path" >&2
+		exit 2
+	fi
+	canonical_path="$(realpath -- "$requested_path")"
+	while IFS= read -r -d '' source; do
+		paths+=("$source")
+		source_count=$((source_count + 1))
+	done < <(find "$canonical_path" -type f -name '*.rs' ! -path '*/ui/*' ! -path '*/fixtures/*' -print0)
+	if ((source_count == 0)); then
+		printf '%s must contain at least one selected Rust source file: %s\n' \
+			"--path" "$requested_path" >&2
+		exit 2
+	fi
+}
+
 while (($# > 0)); do
 	case "$1" in
 	--min-lines)
+		require_argument "$1" "${2-}"
 		min_lines="$2"
+		validate_min_lines "$min_lines"
 		shift 2
 		;;
 	--path)
+		require_argument "$1" "${2-}"
 		# llvm-cov takes source files, so expand the directory to its Rust sources.
-		while IFS= read -r -d '' source; do
-			paths+=("$source")
-		done < <(find "$(realpath "$2")" -name '*.rs' ! -path '*/ui/*' ! -path '*/fixtures/*' -print0)
+		append_path_sources "$2"
 		shift 2
 		;;
 	--)
@@ -39,8 +91,7 @@ while (($# > 0)); do
 		break
 		;;
 	*)
-		echo "usage: coverage.sh [--min-lines PERCENT] [--path DIR]... [-- CARGO_TEST_ARGS...]" >&2
-		exit 2
+		usage
 		;;
 	esac
 done

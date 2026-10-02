@@ -33,7 +33,7 @@ export COVERAGE_TARGET_DIR="$coverage_target"
 export FAKE_REPOSITORY_ROOT="$repository_root"
 
 coverage_output="$test_root/coverage-output.log"
-bash "$repository_root/scripts/coverage.sh" --min-lines 60 \
+bash "$repository_root/scripts/coverage.sh" --min-lines 60.5 \
 	--path "$repository_root/lints/complexity" \
 	-- -p coverage-test --tests >"$coverage_output" 2>&1
 
@@ -150,3 +150,53 @@ if ! rg -F -q 'must name a dedicated coverage directory' "$test_root/unsafe-targ
 	printf 'coverage did not reject an unsafe target\n' >&2
 	exit 1
 fi
+
+assert_cli_rejects_before_run() {
+	local name="$1"
+	local expected="$2"
+	shift 2
+	local coverage_target="$test_root/$name-target"
+	local output="$test_root/$name-output.log"
+	mkdir -p "$coverage_target/debug"
+	printf 'sentinel\n' >"$coverage_target/debug/sentinel"
+	: >"$FAKE_CARGO_LOG"
+	if COVERAGE_TARGET_DIR="$coverage_target" bash "$repository_root/scripts/coverage.sh" \
+		"$@" >"$output" 2>&1; then
+		printf '%s accepted invalid arguments\n' "$name" >&2
+		exit 1
+	fi
+	if [[ -s "$FAKE_CARGO_LOG" ]]; then
+		printf '%s ran Cargo before rejecting arguments\n' "$name" >&2
+		exit 1
+	fi
+	if [[ ! -e "$coverage_target/debug/sentinel" ]]; then
+		printf '%s cleaned the target before rejecting arguments\n' "$name" >&2
+		exit 1
+	fi
+	if ! rg -F -q -- "$expected" "$output"; then
+		printf '%s emitted an unexpected diagnostic\n' "$name" >&2
+		cat "$output" >&2
+		exit 1
+	fi
+}
+
+assert_cli_rejects_before_run invalid-min-lines \
+	'--min-lines must be a decimal percentage from 0 through 100' \
+	--min-lines 0junk
+assert_cli_rejects_before_run out-of-range-min-lines \
+	'--min-lines must be a decimal percentage from 0 through 100' \
+	--min-lines 100.1
+assert_cli_rejects_before_run missing-min-lines \
+	'--min-lines requires a value' \
+	--min-lines
+assert_cli_rejects_before_run missing-path \
+	'--path must name an existing directory' \
+	--path "$test_root/does-not-exist"
+empty_path="$test_root/empty-path"
+mkdir -p "$empty_path"
+assert_cli_rejects_before_run empty-path \
+	'--path must contain at least one selected Rust source file' \
+	--path "$empty_path"
+assert_cli_rejects_before_run missing-path-value \
+	'--path requires a value' \
+	--path
