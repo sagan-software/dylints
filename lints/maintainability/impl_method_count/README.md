@@ -10,10 +10,7 @@ The limit of 20 follows the Rust `nom = 20` override in the
 
 ## Why is this bad?
 
-Each inherent method is part of the type's interface. A type with many methods
-usually owns several responsibilities, so a change to one of them can break
-callers of another, and readers must scan a long list to find the method they
-need.
+Each inherent method is part of the type's interface. A type with many methods usually owns several responsibilities. A change to one method can break callers of another. Readers must scan a long list to find the method they need.
 
 ## Known problems
 

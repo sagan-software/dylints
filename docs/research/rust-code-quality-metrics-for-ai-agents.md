@@ -14,8 +14,7 @@ set for this Rust lint suite is:
    Complexity, NPath, ABC, and exit-count gates.
 3. Add `cargo-crap` after the coverage run represents the complete relevant test
    suite.
-4. Reject module dependency cycles. Use the implemented fan-out and reachable
-   public-surface gates, then calibrate their limits from accepted code.
+4. Reject cycles in module dependencies. Use the implemented fan-out and reachable public-surface gates. Calibrate their limits from accepted code.
 5. Rank complexity-weighted churn and change coupling for review. Do not fail a
    build from their absolute values until the history window and generated-file
    policy are stable.
@@ -27,7 +26,7 @@ of `15`. Clippy's current documentation says this lint does not calculate true
 Cognitive Complexity and recommends `excessive_nesting` and `too_many_lines`
 instead. Its default threshold is `25`. Keep the current `15` temporarily as a
 secondary heuristic if policy stability matters, but do not label it a verified
-Cognitive Complexity measurement. Replace its role with a tested AST metric
+Cognitive Complexity measurement. Replace that lint's role with a tested AST metric
 before treating that number as a quality contract.
 
 Sources:
@@ -59,7 +58,7 @@ profiles in the
 [big-code-analysis threshold guide](https://dekobon.github.io/big-code-analysis/recipes/thresholds.html).
 The public-surface limit is a local policy because its unit is a Rust module.
 
-`field_usage_cohesion` was kept only after its positive and negative fixtures
+The project kept `field_usage_cohesion` only after its positive and negative fixtures
 passed and calibration scans completed on `codex-claw`, `mdchat`, and `krustllm`
 without candidates. The sampled code includes facades, adapters, builders, and
 state types. This result found no false positives in the sample. It does not
@@ -124,8 +123,7 @@ Cyclomatic Complexity can understate. A function with several independent
 two-way decisions can have modest Cyclomatic Complexity and a large NPath value.
 
 NPath is useful for testing burden and branch-combination risk. Its original
-language rules have known edge cases, and no mature Rust compiler lint currently
-implements it. A Rust implementation must define `match`, guards, `if let`,
+language rules have known edge cases, and no Rust compiler lint with mature support currently implements it. A Rust implementation must define `match`, guards, `if let`,
 `while let`, `let else`, `?`, short-circuit operators, closures, and macro
 expansions before its number is comparable across projects.
 
@@ -150,8 +148,7 @@ Chidamber and Kemerer defined six object-oriented design metrics:
   message to the class.
 - Lack of Cohesion of Methods, or LCOM, measures how little methods share state.
 
-WMC, coupling, response-set size, and cohesion have Rust analogues, but the unit
-must be chosen. A struct plus its inherent and trait `impl` blocks is one possible
+WMC, coupling, response-set size, and cohesion have Rust analogues, but the implementation must choose the unit. A struct plus its inherent and trait `impl` blocks is one possible
 unit. A module is often more useful because Rust permits free functions and
 separates data from behavior. DIT and NOC do not transfer cleanly because trait
 implementation and supertrait relationships are not class inheritance.
@@ -229,7 +226,7 @@ and
 
 The substantive comment thread adds three architecture metrics:
 
-- Dependency cycle count. The desired count is `0` for production modules.
+- Dependency cycle count. Production modules should have a dependency cycle count of `0`.
   `cargo modules dependencies --lib --acyclic` can fail when a Rust crate's
   internal dependency graph contains a cycle.
 - Module fan-out. Count outgoing dependencies per module. A high value can
@@ -253,7 +250,7 @@ Sources:
 
 ### CRAP
 
-The Change Risk Anti-Patterns metric combines per-function Cyclomatic Complexity
+The Change Risk Anti-Patterns metric combines each function's Cyclomatic Complexity score
 and coverage:
 
 ```text
@@ -275,8 +272,7 @@ Line coverage proves that execution reached a line. Branch coverage shows which
 control-flow outcomes ran. Mutation testing changes program behavior and checks
 whether tests fail, so it measures assertion sensitivity that coverage cannot.
 
-Use `cargo-llvm-cov` for line, region, and function coverage. Its branch coverage
-still requires nightly Rust and is documented as unstable. Use `cargo-mutants`
+Use `cargo-llvm-cov` for line, region, and function coverage. Its branch coverage still requires nightly Rust, and its documentation calls the feature unstable. Use `cargo-mutants`
 on changed packages or files in the fast loop, then run a broader scheduled job.
 Track surviving mutants as a count and mutation score as a percentage. Never let
 coverage compensate for surviving meaningful mutants.
@@ -286,8 +282,7 @@ Sources: [`cargo-llvm-cov`](https://github.com/taiki-e/cargo-llvm-cov) and
 
 ### Maintainability Index and ABC
 
-Maintainability Index combines Halstead Volume, Cyclomatic Complexity, lines of
-code, and sometimes comment density. It is useful for trends but double-counts
+The Maintainability Index uses four inputs: Halstead Volume, Cyclomatic Complexity, lines of code, and sometimes comment density. It is useful for trends but double-counts
 correlated size and complexity inputs. Multiple incompatible formulas exist.
 
 ABC counts Assignments, Branches as calls, and Conditions. It detects long,
@@ -317,7 +312,7 @@ code. Validate any language-agnostic detector against macros and `impl` blocks.
 Track new unsafe blocks, unsafe functions, unsafe traits, unsafe impls, and unsafe
 expressions. Also track undocumented unsafe blocks. `cargo-geiger` supplies
 statistics for a crate and its dependencies, while Clippy can require safety
-comments. These counts measure audit surface rather than actual unsafety.
+comments. These counts measure the audit surface. They do not measure actual unsafety.
 
 Set the default change budget to zero new unsafe units. Allow additions only with
 an explicit reviewed reason and focused safety tests.
@@ -334,8 +329,7 @@ because each added unit is reviewable.
 
 The current suite already rejects unreasoned Clippy allowances. Extend that
 principle to every metrics exemption: require the metric name, reason, owner or
-scope, and a condition for removal. A baseline should ratchet downward and must
-not be regenerated automatically by an agent to make CI pass.
+scope, and a condition for removal. A baseline should ratchet downward. Do not let an agent regenerate it automatically to make CI pass.
 
 Rustdoc can report documented public-item and example percentages with
 `-Z unstable-options --show-coverage`. Treat missing public documentation as a
@@ -349,8 +343,7 @@ Source:
 
 ### Best broad pilot: big-code-analysis
 
-`big-code-analysis` is an active fork of Mozilla's `rust-code-analysis`. Release
-`2.1.0` was published on 2026-08-07. Its `bca check` command supports per-function
+`big-code-analysis` is an active fork of Mozilla's `rust-code-analysis`. The `big-code-analysis` project published release `2.1.0` on 2026-08-07. Its `bca check` command supports per-function
 thresholds, committed baselines, suppression auditing, CI exit codes, reports,
 and Git-history metrics. It calculates Cyclomatic Complexity, Cognitive
 Complexity, Halstead, ABC, Maintainability Index, LOC variants, argument and exit
@@ -369,8 +362,7 @@ Sources: [`big-code-analysis`](https://github.com/dekobon/big-code-analysis),
 
 Mozilla's `rust-code-analysis` supports Rust and exports Cyclomatic Complexity,
 Cognitive Complexity, Halstead, Maintainability Index, ABC, LOC, argument,
-exit, method, public-item, and WMC data. Its latest release is `0.0.25` from
-2023-01-13. It is a metrics engine, so this repository would need to own threshold
+exit, method, public-item, and WMC data. The latest `rust-code-analysis` release, `0.0.25`, dates from 2023-01-13. It is a metrics engine, so this repository would need to own threshold
 policy, baselines, changed-function identity, output normalization, and CI
 diagnostics.
 
@@ -378,9 +370,7 @@ Source: [`rust-code-analysis`](https://github.com/mozilla/rust-code-analysis).
 
 ### Original Reddit tool: slop
 
-The post's `slop` tool reports Rust support for complexity, hotspots, package
-metrics, and class metrics, but not Rust dependency analysis. Its repository was
-created in April 2026 and had 38 stars when inspected. It is useful as a source
+The post's `slop` tool reports that it supports Rust complexity, hotspots, package metrics, and class metrics, but not Rust dependency analysis. The repository dates from April 2026, and it had 38 stars when inspected. It is useful as a source
 of ideas and fixtures. Its Rust CK and package projections need the semantic
 validation described above before this lint suite relies on them.
 
@@ -394,8 +384,7 @@ Source: [`agent-slop-lint`](https://github.com/JordanGunn/agent-slop-lint).
 2. Pilot pinned `bca check` on Rust production paths. Start with Cyclomatic
    Complexity `10`, Cognitive Complexity `15`, and the existing function-length
    and argument limits. Write a reviewed baseline for existing offenders.
-3. Add Rust grammar fixtures for `match`, guards, `?`, `let else`, async blocks,
-   closures, labeled flow, macro calls, and generated code. Do not promote the
+3. Add fixtures for Rust grammar forms: `match`, guards, `?`, `let else`, async blocks, closures, labeled flow, macro calls, and generated code. Do not promote the
    gate until each expected score is stable.
 4. Add `cargo-crap` with threshold `30` after a representative coverage run.
    Fail new offenders and score regressions. Keep partial focused runs advisory.
@@ -407,6 +396,4 @@ Source: [`agent-slop-lint`](https://github.com/JordanGunn/agent-slop-lint).
 7. Add changed-package mutation testing, unsafe-surface budgets, and exemption
    counts. Make every new exemption a visible reviewed change.
 
-This order gives agents fast deterministic feedback while preserving separate
-signals for readability, test burden, architecture, history, test quality, and
-Rust safety. A low value in one category must not cancel a failure in another.
+This order gives agents fast deterministic feedback while keeping readability, test burden, architecture, history, test quality, and Rust safety as separate signals. A low value in one category must not cancel a failure in another.

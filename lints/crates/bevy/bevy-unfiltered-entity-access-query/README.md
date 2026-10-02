@@ -15,8 +15,7 @@ uses a fixed set.
 ## Known problems
 
 The lint does not link the typed call to the query. A typed call on an `EntityRef` from another
-source in the same function also triggers it. Calls inside closures are not seen. Tuple query data
-such as `(Entity, EntityRef)` is not checked.
+source in the same function also triggers it. The lint does not inspect calls inside closures. The lint does not check tuple query data such as `(Entity, EntityRef)`.
 
 ## Example
 

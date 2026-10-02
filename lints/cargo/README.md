@@ -15,8 +15,7 @@ Rust review lints for Cargo and Rust project metadata.
   without a `rust-toolchain.toml` file in the crate directory or workspace root.
 - [`package_lints_section`](package_lints_section): flags package manifests
   that define `[package]` without a package-level `[lints]` table.
-- [`rust_toolchain_toml`](rust_toolchain_toml): flags bare `rust-toolchain`
-  files that should be named `rust-toolchain.toml`.
+- [`rust_toolchain_toml`](rust_toolchain_toml): flags bare `rust-toolchain` files; the expected name is `rust-toolchain.toml`.
 - [`workspace_dependency_versions`](workspace_dependency_versions): flags
   workspace package dependencies that set a `version` instead of inheriting it
   from `[workspace.dependencies]`.

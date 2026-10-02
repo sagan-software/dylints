@@ -15,9 +15,7 @@ external subcommands that the command does not have.
 
 ## Known problems
 
-The lint checks only one method chain. It warns when
-`allow_external_subcommands(true)` is called on the same `Command` in a later
-statement. It also warns when `allow_external_subcommands` gets a value other
+The lint checks only one method chain. It warns when code calls `allow_external_subcommands(true)` on the same `Command` in a later statement. It also warns when `allow_external_subcommands` gets a value other
 than the literal `true`, even if that value is `true` at runtime.
 
 ## Example

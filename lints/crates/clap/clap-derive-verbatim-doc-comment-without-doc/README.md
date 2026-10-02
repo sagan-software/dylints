@@ -9,7 +9,7 @@ attribute on a Clap-derived type, variant, or field that has no doc comment.
 
 `verbatim_doc_comment` changes only how Clap turns a doc comment into `about`
 or `help` text. With no doc comment, the setting does nothing. It can also hide
-a help message that was deleted by mistake.
+a help message that code deleted by mistake.
 
 ## Known problems
 
@@ -31,8 +31,7 @@ struct Cli {
 
 ## Use instead
 
-Add the doc comment whose formatting must be kept, or remove
-`verbatim_doc_comment`.
+Add the doc comment so Clap preserves its formatting, or remove `verbatim_doc_comment`.
 
 ```rust
 use clap::Parser;

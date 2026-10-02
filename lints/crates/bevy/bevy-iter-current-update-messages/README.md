@@ -6,8 +6,7 @@ Checks for calls to `Messages::iter_current_update_messages`.
 
 ## Why is this bad?
 
-The method only returns messages written since the last `Messages::update` call. Messages written
-after the call and before the next update are dropped without being read.
+The method only returns messages written since the last `Messages::update` call. The next update drops messages that code writes after the call and before the update, without reading them.
 
 ## Known problems
 

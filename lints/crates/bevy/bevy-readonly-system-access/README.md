@@ -13,8 +13,7 @@ system that reads or writes `T`, even though this system only reads.
 
 ## Known problems
 
-Any other use of the query prevents the warning, including `&query` in a `for` loop. Uses inside
-closures are not seen, so a query that a closure mutates can be reported. The lint only checks
+Any other use of the query prevents the warning, including `&query` in a `for` loop. The lint does not inspect uses inside closures, so it can report a query that a closure mutates. The lint only checks
 references directly in the query data or in tuples.
 
 ## Example

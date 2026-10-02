@@ -16,7 +16,7 @@ The lint only sees free functions passed to `App::add_systems` as a plain path o
 paths. It skips systems with ordering or run conditions, such as `(move_x, move_y).chain()`.
 
 It skips a function when its queries mutate more than one local component, or when the function
-uses the component as a whole value. Field accesses inside closures are not seen.
+uses the component as a whole value. The lint does not inspect field accesses inside closures.
 
 ## Example
 

@@ -10,13 +10,11 @@ A large component has at least eight named fields and a size over 64 bytes, as i
 
 ## Why is this bad?
 
-Bevy tracks changes per component. A write to any field of `T` marks all of `T` as changed, so the
-filter matches entities where none of the fields this system reads have changed.
+Bevy tracks changes per component. A write to any field of `T` marks all of `T` as changed. The filter therefore matches entities even when none of the fields this system reads have changed.
 
 ## Known problems
 
-Fields are matched by name anywhere in the function body, so a field with the same name on another
-type counts as a use. Field accesses inside closures and in destructuring patterns are not counted.
+The lint matches fields by name anywhere in the function body, so a field with the same name on another type counts as a use. The lint does not count field accesses inside closures or in destructuring patterns.
 
 ## Example
 

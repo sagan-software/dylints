@@ -3,9 +3,7 @@
 ## What it does
 
 Checks for test functions that loop over a literal list of cases with `for` or
-`Iterator::for_each`. A case list is an array, slice, repeated array, or
-`vec![...]` literal, or a local variable, `const`, or `static` in the same crate
-that holds one, including after calls such as `.iter()` or `.into_iter()`.
+`Iterator::for_each`. A case list is an array, slice, repeated array, or `vec![...]` literal. It can also be a local variable, `const`, or `static` in the same crate that holds one, including after calls such as `.iter()` or `.into_iter()`.
 
 ## Why is this bad?
 
@@ -19,10 +17,7 @@ A function counts as a test when it has `#[test]` or its name starts with
 `test_`. The lint skips functions that already use `#[test_case(...)]` or
 `#[test_case::test_case(...)]`.
 
-It warns on any loop over a literal list in a test, including setup loops that
-are not cases, such as pushing fixed bytes into a buffer. It does not flag case
-lists built by a helper function, taken from another crate, or iterated with
-`while let`. It does not flag test attributes from other crates, such as
+It warns on any loop over a literal list in a test, including setup loops that are not cases. For example, setup code pushes fixed bytes into a buffer. It does not flag case lists returned by a helper, taken from another crate, or iterated with `while let`. It does not flag test attributes from other crates, such as
 `#[tokio::test]`, unless the name starts with `test_`. It reports only the first
 loop in each test.
 

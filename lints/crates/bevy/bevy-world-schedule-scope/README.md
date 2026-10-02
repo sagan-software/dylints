@@ -6,8 +6,7 @@ Checks for calls to `World::schedule_scope`.
 
 ## Why is this bad?
 
-`World::schedule_scope` panics when no schedule with that label exists. A label that was never
-added then stops the whole app instead of taking an error path.
+`World::schedule_scope` panics when no schedule with that label exists. When code never adds the label, `World::schedule_scope` stops the whole app instead of taking an error path.
 
 ## Known problems
 

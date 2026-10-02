@@ -6,8 +6,7 @@ Checks for calls to `World::run_schedule`.
 
 ## Why is this bad?
 
-`World::run_schedule` panics when no schedule with that label exists. A label that was never added
-then stops the whole app instead of taking an error path.
+`World::run_schedule` panics when no schedule with that label exists. When code never adds the label, `World::run_schedule` stops the whole app instead of taking an error path.
 
 ## Known problems
 

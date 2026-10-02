@@ -8,9 +8,7 @@ Checks for a `bool` field in a Clap-derived type that uses the
 
 ## Why is this bad?
 
-`ArgAction::SetTrue` sets the field to `true` when the flag is present. With a
-default of `true`, the field is `true` whether or not the flag is present, so
-the flag does nothing and users cannot turn the behavior off.
+`ArgAction::SetTrue` sets the field to `true` when the flag is present. With a default of `true`, the field is `true` whether or not the flag is present. The flag then does nothing, and users cannot turn the behavior off.
 
 ## Known problems
 

@@ -7,15 +7,14 @@ when `T` is the field type with any `Option` and `Vec` wrappers removed.
 
 ## Why is this bad?
 
-Clap's derive already calls `value_parser!(T)` for the field type when no
-parser is set. The setting does not change parsing, and it can go stale when
+Clap's derive already calls `value_parser!(T)` for the field type when the field has no parser setting. The setting does not change parsing, and it can go stale when
 the field type changes.
 
 ## Known problems
 
 The lint compares source text. It does not report `value_parser!(u16)` on a
 field whose type is an alias of `u16`, or a parser reached through a constant
-or a re-export. Fields marked `value_enum` are skipped.
+or a re-export. The lint skips fields with the `value_enum` marker.
 
 ## Example
 

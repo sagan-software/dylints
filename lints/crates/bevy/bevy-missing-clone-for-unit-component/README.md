@@ -6,7 +6,7 @@ Checks for unit structs, such as `struct Player;`, that implement `Component` bu
 
 ## Why is this bad?
 
-Bevy's entity cloning copies a component through `Clone` when it is implemented. Without `Clone`,
+Bevy's entity cloning copies a component through `Clone` when the type implements it. Without `Clone`,
 the marker depends on the world's default clone handler, which can skip it, so a cloned entity can
 lose the marker. A unit struct has no state, so `Clone` costs nothing.
 

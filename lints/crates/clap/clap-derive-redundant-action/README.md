@@ -12,7 +12,7 @@ the one Clap already infers from the field type:
 
 ## Why is this bad?
 
-The setting does not change how the field is parsed. It makes the field look
+The setting does not change field parsing. It makes the field look
 like it has special behavior, and it can go stale when the field type changes.
 
 ## Known problems

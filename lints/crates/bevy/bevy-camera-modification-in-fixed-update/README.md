@@ -14,7 +14,7 @@ fixed steps that do not line up with frames, so the view stutters.
 
 The lint only checks systems passed as a plain function path or in a tuple of paths. It skips
 systems with ordering or run conditions, such as `move_camera.after(input)`. It only recognizes the
-`With<Camera>` filter, so queries filtered on `Camera2d` or `Camera3d` are not reported.
+`With<Camera>` filter, so the lint does not report queries filtered on `Camera2d` or `Camera3d`.
 
 ## Example
 

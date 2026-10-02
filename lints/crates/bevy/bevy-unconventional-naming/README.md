@@ -12,7 +12,7 @@ Bevy and its ecosystem use these suffixes. Without them, readers cannot tell at 
 
 ## Known problems
 
-Plugins written as functions that take `&mut App` are not checked.
+The lint does not check plugins written as functions that take `&mut App`.
 
 ## Example
 

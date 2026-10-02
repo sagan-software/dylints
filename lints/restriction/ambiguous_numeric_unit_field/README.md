@@ -2,9 +2,7 @@
 
 ## What it does
 
-Checks for named fields whose type is a primitive integer and whose name ends in
-`_size`, `_length`, or `_offset`, when neither the field name nor the field's
-doc comment names a unit.
+Checks named fields whose type is a primitive integer and whose name ends in `_size`, `_length`, or `_offset`. It reports a field when neither the field name nor the field's doc comment names a unit.
 
 ## Why is this bad?
 
@@ -14,9 +12,7 @@ example when slicing a UTF-8 string by a character count.
 
 ## Known problems
 
-The lint recognizes a fixed unit vocabulary: bits, bytes, `KiB` through `TiB`
-and `KB` through `TB`, characters, code points, elements, entries, items,
-records, rows, columns, pixels, samples, frames, pages, and words. It warns when
+The lint recognizes a fixed unit vocabulary. It includes bits, bytes, `KiB` through `TiB` and `KB` through `TB`, characters, code points, elements, entries, items, records, rows, columns, pixels, samples, frames, pages, and words. It warns when
 the doc comment uses another unit, such as "kilobytes" or "lines".
 
 It reads only the field's own doc comment, so a unit stated on the containing

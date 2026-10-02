@@ -30,8 +30,7 @@ package directory.
 
 A line is a test line only when it belongs to an item marked with a test
 attribute, such as `#[test]`, or a `#[cfg(...)]` that requires `test`. If `syn`
-cannot parse a file, every line counts as non-test. When both limits are
-exceeded, the lint reports only the total-line violation.
+cannot parse a file, every line counts as non-test. When code exceeds both limits, the lint reports only the total-line violation.
 
 ## Example
 

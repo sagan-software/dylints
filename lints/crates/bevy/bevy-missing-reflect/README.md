@@ -13,8 +13,7 @@ remote protocol cannot read it, and inspectors do not show it.
 ## Known problems
 
 The lint reports every such type, including internal types that no tool needs to inspect. Deriving
-`Reflect` also requires every field type to implement `Reflect`, or the field must be marked
-`#[reflect(ignore)]`.
+`Reflect` also requires every field type to implement `Reflect`, or the code must mark the field `#[reflect(ignore)]`.
 
 ## Example
 

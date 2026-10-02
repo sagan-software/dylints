@@ -55,7 +55,7 @@ The earlier experiment deliberately ran only three `rust-lints-web` tests. Its 0
 
 The original CRAP formula used Java method complexity and basis-path coverage. `cargo-crap` applies the same formula to Rust functions using its Rust complexity analysis and LCOV input. The Rust score is therefore an implementation of the original heuristic, not a direct measurement from the original Java tooling.
 
-The scope of coverage must match the scope of analysis. In version 0.4.3, `cargo-crap` documents that a function can lack coverage data because instrumentation omitted it or because coverage covered only part of a workspace. Its default `pessimistic` policy treats missing coverage data as 0%; `optimistic` treats it as 100%; `skip` removes the function. The tool recommends comparing a current report with a baseline so teams can catch regressions even when an absolute threshold is not yet practical.
+The scope of coverage must match the scope of analysis. In version 0.4.3, `cargo-crap` documents that a function can lack coverage data when instrumentation omits it or coverage covers only part of a workspace. By default, `pessimistic` treats missing coverage data as 0%; `optimistic` treats it as 100%; `skip` removes the function. The tool recommends comparing a current report with a baseline so teams can catch regressions even when an absolute threshold is not yet practical.
 
 Source: [`cargo-crap` 0.4.3 coverage, missing-data, and baseline behavior](https://github.com/minikin/cargo-crap/blob/v0.4.3/README.md#the---missing-policy).
 

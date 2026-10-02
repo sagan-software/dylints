@@ -6,8 +6,7 @@ Rust review lints for idiomatic style.
 
 - [`ad_hoc_as_ref`](ad_hoc_as_ref): flags `as_*` and `get_*` accessors that
   could be `AsRef`.
-- [`ad_hoc_borrow`](ad_hoc_borrow): flags `borrow_*` accessors that could be
-  `Borrow`.
+- [`ad_hoc_borrow`](ad_hoc_borrow): flags `borrow_*` accessors that could use `Borrow`.
 - [`ad_hoc_default`](ad_hoc_default): flags zero-argument constructors that
   could be `Default`.
 - [`ad_hoc_display`](ad_hoc_display): flags string-formatting methods that

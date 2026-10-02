@@ -14,7 +14,7 @@ compile time and binary size.
 ## Known problems
 
 The lint only counts crates named `bevy`. It does not report duplicate versions of subcrates such
-as `bevy_ecs` when only one `bevy` facade is loaded. It reports the whole crate, not the dependency
+as `bevy_ecs` when code loads only one `bevy` facade. It reports the whole crate, not the dependency
 entry in `Cargo.toml`.
 
 ## Example

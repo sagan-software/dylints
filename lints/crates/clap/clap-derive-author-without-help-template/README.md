@@ -15,8 +15,7 @@ author in help does nothing.
 
 ## Known problems
 
-The lint warns when the template is set later through the builder API, such as
-`Cli::command().help_template(...)`. It does not check whether the template
+The lint warns when code sets the template later through the builder API, such as `Cli::command().help_template(...)`. It does not check whether the template
 contains an author placeholder.
 
 ## Example

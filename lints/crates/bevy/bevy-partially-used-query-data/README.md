@@ -2,8 +2,7 @@
 
 ## What it does
 
-Checks for query parameters whose data is a local custom `QueryData` type with more than eight
-named fields when the function uses at most half of those fields.
+Checks query parameters whose data is a local custom `QueryData` type with more than eight named fields. It warns when the function uses at most half of those fields.
 
 ## Why is this bad?
 
@@ -12,8 +11,7 @@ Unused `&mut` fields still stop other systems that use those components from run
 
 ## Known problems
 
-Fields are matched by name anywhere in the function body, so a field with the same name on another
-type counts as a use. Field accesses inside closures and in destructuring patterns are not counted.
+The lint matches fields by name anywhere in the function body, so a field with the same name on another type counts as a use. The lint does not count field accesses inside closures or in destructuring patterns.
 
 ## Example
 

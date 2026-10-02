@@ -8,8 +8,7 @@ Checks for a `clap::Command` method chain whose final `multicall` and
 ## Why is this bad?
 
 Clap cannot combine `multicall` with `no_binary_name` because the two settings
-read the first command-line token in different ways. Clap panics in debug
-builds when the command is built.
+read the first command-line token in different ways. Clap panics in debug builds when code builds the command.
 
 ## Known problems
 

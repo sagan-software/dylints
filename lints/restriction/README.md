@@ -18,8 +18,7 @@ Rust review lints for local policy restrictions.
   names carry a time unit instead of using `std::time::Duration`.
 - [`hardcoded_path`](hardcoded_path): flags string literals that hold absolute,
   home-relative, Windows drive, or UNC paths.
-- [`http_method_string`](http_method_string): flags HTTP method fields,
-  parameters, and return types stored as `String` or `&str`.
+- [`http_method_string`](http_method_string): flags fields, parameters, and return types that store HTTP methods as `String` or `&str`.
 - [`insufficient_public_documentation`](insufficient_public_documentation):
   flags doc comments on exported definitions below a prose-word minimum.
 - [`interpolated_logging`](interpolated_logging): flags logging and output

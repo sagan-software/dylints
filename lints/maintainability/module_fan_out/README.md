@@ -13,9 +13,9 @@ do not count. The limit of 7 is a local policy.
 
 ## Why is this bad?
 
-Each outgoing dependency is one more reason the module may need to change. A
+Each outgoing dependency is one more reason for a module to change. A
 module that calls into parsing, storage, networking, formatting, and telemetry
-breaks when any of them changes, and its tests need setup for all of them.
+breaks when any of them changes. Its tests need setup for all of them.
 
 ## Known problems
 
@@ -23,9 +23,7 @@ A composition root or `main` module can legitimately coordinate many modules.
 A `pub use` facade does not lower the count, because paths resolve to the
 original definition. A method call counts toward the module that defines the
 method, which for a trait method is the module that defines the trait.
-References inside macro invocations and dependencies created at run time, such
-as trait objects or registration, are not counted. Coupling between nested
-modules under one top-level module is not measured.
+The lint does not count references inside macro invocations or dependencies created at run time, such as trait objects or registration. The lint does not measure coupling between nested modules under one top-level module.
 
 ## Example
 

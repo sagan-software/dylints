@@ -5,12 +5,9 @@
 Adds up the Cyclomatic Complexity of every method in one `impl` block and warns
 when the sum exceeds 40.
 
-Inherent and trait `impl` blocks are checked separately, and each block gets
+The lint checks inherent and trait `impl` blocks separately, and each block gets
 its own diagnostic. A method without branches contributes 1. Associated
-functions without `self` count as methods. The diagnostic reports the sum and
-the method count. The limit of 40 is half of the class-level default in
-[PMD's Cyclomatic Complexity rule](https://docs.pmd-code.org/latest/pmd_rules_java_design.html#cyclomaticcomplexity),
-because one Rust `impl` block is usually smaller than a Java class.
+functions without `self` count as methods. The diagnostic reports the sum and the method count. The limit of 40 is half of the class-level default in [PMD's Cyclomatic Complexity rule](https://docs.pmd-code.org/latest/pmd_rules_java_design.html#cyclomaticcomplexity). One Rust `impl` block is usually smaller than a Java class.
 
 ## Why is this bad?
 

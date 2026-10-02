@@ -7,8 +7,7 @@ Checks for `App::insert_resource` and `App::init_resource` calls that add a `Mes
 ## Why is this bad?
 
 `App::add_message` adds the `Messages<M>` resource and the system that clears old messages each
-frame. A manually added resource lacks that system, so messages are never dropped and the buffer
-grows without bound.
+frame. A manually added resource lacks that system, so no system drops old messages and the buffer grows without bound.
 
 ## Known problems
 

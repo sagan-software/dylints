@@ -7,8 +7,7 @@ Checks for `()` values in the bundle passed to `spawn`, `insert`, or `insert_if_
 
 ## Why is this bad?
 
-A `()` in a bundle adds no component. It often comes from a call whose result was dropped by
-mistake, such as a helper that returns `()` or a block that ends with a semicolon.
+A `()` in a bundle adds no component. It often comes from code that drops a call's result by mistake. Examples include a helper that returns `()` or a block that ends with a semicolon.
 
 ## Known problems
 

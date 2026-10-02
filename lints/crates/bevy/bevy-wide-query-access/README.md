@@ -4,8 +4,7 @@
 
 Checks for query parameters whose data contains more than five component references, or more than
 four `&mut` references. References inside local custom `QueryData` types count toward the total.
-When the query data is itself a local custom `QueryData` type, the total limit is eight references
-instead of five, because a named type already groups related access. The `&mut` limit stays at four.
+For a local custom `QueryData` type, the total limit is eight references instead of five because a named type already groups related access. The `&mut` limit stays at four.
 
 ## Why is this bad?
 
@@ -14,7 +13,7 @@ execution. A wide query also often means one system combines several independent
 
 ## Known problems
 
-The limits are fixed. The lint counts only `&T` and `&mut T` directly in the query data, in tuples,
+The lint uses fixed limits. The lint counts only `&T` and `&mut T` directly in the query data, in tuples,
 and in fields of local `QueryData` types. It does not count `Option<&T>`, `Has<T>`, `Ref<T>`, or
 `QueryData` types from other crates.
 

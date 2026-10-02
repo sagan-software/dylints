@@ -12,7 +12,7 @@ field also marks the whole component as changed.
 
 ## Known problems
 
-The thresholds are fixed. Some cohesive components are larger and are still reported.
+The lint uses fixed thresholds. It still reports some cohesive components that exceed them.
 
 The lint skips resources, tuple structs, enums, and generic components.
 
