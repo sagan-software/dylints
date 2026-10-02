@@ -17,7 +17,8 @@ removes the ambiguity in both versions.
 
 With thiserror 2, an active item with this pattern already fails to compile
 with thiserror's own error. The lint is most useful on thiserror 1 code before
-a migration. It gives help text but no automatic fix.
+a migration. The UI fixture uses thiserror 1 to preserve that pre-migration
+behavior. It gives help text but no automatic fix.
 
 ## Example
 
