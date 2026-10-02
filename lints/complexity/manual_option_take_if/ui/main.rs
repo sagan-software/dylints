@@ -168,3 +168,43 @@ fn main() {
     let _ = is_some(&mut first);
     let _ = lookalike(&mut Slot(Some(1)));
 }
+
+use std::cell::Cell;
+use std::ops::{Deref, DerefMut};
+
+struct DerefSlot {
+    value: Option<i32>,
+}
+
+struct SwitchingOption {
+    toggle: Cell<bool>,
+    first: DerefSlot,
+    second: DerefSlot,
+}
+
+impl Deref for SwitchingOption {
+    type Target = DerefSlot;
+
+    fn deref(&self) -> &Self::Target {
+        let use_second = self.toggle.get();
+        self.toggle.set(!use_second);
+        if use_second { &self.second } else { &self.first }
+    }
+}
+
+impl DerefMut for SwitchingOption {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        let use_second = self.toggle.get();
+        self.toggle.set(!use_second);
+        if use_second { &mut self.second } else { &mut self.first }
+    }
+}
+
+fn overloaded_deref(option: &mut SwitchingOption) -> Option<i32> {
+    // Keep quiet because the custom dereference can select a different slot each time.
+    if (*option).value.as_ref().is_some_and(|value| *value > 0) {
+        (*option).value.take()
+    } else {
+        None
+    }
+}

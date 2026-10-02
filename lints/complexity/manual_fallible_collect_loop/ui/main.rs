@@ -167,3 +167,20 @@ fn main() {
     let _ = converted_error(&["1"]);
     let _ = parse_optional(&["1"]);
 }
+
+struct ForeignFactory;
+
+impl ForeignFactory {
+    fn new() -> Vec<i32> {
+        vec![99]
+    }
+}
+
+fn foreign_constructor(values: &[&str]) -> Option<Vec<i32>> {
+    // Keep quiet because `collect` would drop the existing item from this collection.
+    let mut output: Vec<i32> = ForeignFactory::new();
+    for value in values {
+        output.push(value.parse::<i32>().ok()?);
+    }
+    Some(output)
+}

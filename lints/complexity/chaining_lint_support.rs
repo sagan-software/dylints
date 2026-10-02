@@ -257,7 +257,32 @@ pub(crate) fn is_empty_constructor(cx: &LateContext<'_>, expr: &Expr<'_>) -> boo
     let Res::Def(DefKind::AssocFn, def_id) = cx.qpath_res(&qpath, callee.hir_id) else {
         return false;
     };
-    matches!(cx.tcx.item_name(def_id).as_str(), "new" | "default")
+    let name = cx.tcx.item_name(def_id);
+    let Some(owner_id) = cx.tcx.opt_parent(def_id) else {
+        return false;
+    };
+    let result_is_standard =
+        standard_collection_name(cx, cx.typeck_results().expr_ty(expr)).is_some();
+    let owner_is_standard = matches!(cx.tcx.def_kind(owner_id), DefKind::Impl { .. })
+        && standard_collection_name(
+            cx,
+            cx.tcx
+                .type_of(owner_id)
+                .instantiate_identity()
+                .skip_normalization(),
+        )
+        .is_some();
+    let owner_is_default_trait = match cx.tcx.def_kind(owner_id) {
+        DefKind::Impl { .. } => cx
+            .tcx
+            .impl_opt_trait_id(owner_id)
+            .is_some_and(|trait_id| cx.tcx.get_diagnostic_name(trait_id) == Some(sym::Default)),
+        DefKind::Trait => cx.tcx.get_diagnostic_name(owner_id) == Some(sym::Default),
+        _ => false,
+    };
+    // `Default::default` resolves through the trait definition, so use its result type.
+    (name.as_str() == "default" && owner_is_default_trait && result_is_standard)
+        || (name.as_str() == "new" && owner_is_standard)
 }
 
 /// Early exits found in one expression, excluding nested closure and async bodies.

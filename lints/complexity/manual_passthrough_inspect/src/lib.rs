@@ -104,7 +104,15 @@ fn is_variant_pattern(cx: &LateContext<'_>, pat: &Pat<'_>) -> bool {
         LangItem::ResultErr,
     ]
     .into_iter()
-    .any(|item| support::lang_ctor_pat(cx, pat, item).is_some())
+    .any(|item| support::lang_ctor_pat(cx, pat, item).is_some_and(is_exhaustive_payload))
+}
+
+/// Returns whether a variant payload pattern accepts every payload value.
+const fn is_exhaustive_payload(pat: &Pat<'_>) -> bool {
+    matches!(
+        pat.kind,
+        rustc_hir::PatKind::Wild | rustc_hir::PatKind::Binding(_, _, _, None)
+    )
 }
 
 /// Runs the UI fixture.

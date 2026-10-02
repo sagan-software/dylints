@@ -119,3 +119,12 @@ fn main() {
     conditional(&["1"]);
     result_conversion(&["1"]);
 }
+
+fn non_exhaustive_payload(values: &[Option<i32>]) {
+    // Keep quiet because `filter_map` would run the action for every `Some` value.
+    for value in values {
+        if let Some(0) = value {
+            consume(0);
+        }
+    }
+}

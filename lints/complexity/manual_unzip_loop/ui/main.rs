@@ -169,3 +169,26 @@ fn main() {
     let _ = unzip(vec![(1, String::from("a"))]);
     let _ = swapped(vec![(1, 2)]);
 }
+
+struct ForeignFactory;
+
+impl ForeignFactory {
+    fn new() -> Vec<i32> {
+        vec![99]
+    }
+
+    fn default() -> Vec<i32> {
+        vec![77]
+    }
+}
+
+fn foreign_constructor(pairs: Vec<(i32, i32)>) -> (Vec<i32>, Vec<i32>) {
+    // Keep quiet because both associated functions belong to a non-collection owner.
+    let mut left: Vec<i32> = ForeignFactory::new();
+    let mut right: Vec<i32> = ForeignFactory::default();
+    for (first, second) in pairs {
+        left.push(first);
+        right.push(second);
+    }
+    (left, right)
+}

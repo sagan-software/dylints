@@ -22,6 +22,7 @@ use rustc_hir::{
     def::{CtorOf, DefKind, Res},
 };
 use rustc_lint::{LateContext, LateLintPass};
+use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -107,6 +108,10 @@ fn is_none(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 
 /// Returns whether two receivers name the same local place.
 fn same_place(cx: &LateContext<'_>, left: &Expr<'_>, right: &Expr<'_>) -> bool {
+    // A custom dereference can run different code for the condition and the take.
+    if !has_only_builtin_adjustments(cx, left) || !has_only_builtin_adjustments(cx, right) {
+        return false;
+    }
     // Accept a local binding, then field projections and dereferences of the same place.
     match (left.kind, right.kind) {
         (ExprKind::Path(left_path), ExprKind::Path(right_path)) => matches!(
@@ -124,6 +129,19 @@ fn same_place(cx: &LateContext<'_>, left: &Expr<'_>, right: &Expr<'_>) -> bool {
         }
         _ => false,
     }
+}
+
+/// Returns whether an expression's implicit adjustments use only built-in operations.
+fn has_only_builtin_adjustments(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    cx.typeck_results()
+        .expr_adjustments(expr)
+        .iter()
+        .all(|adjustment| {
+            matches!(
+                adjustment.kind,
+                Adjust::Deref(DerefAdjustKind::Builtin) | Adjust::Borrow(_) | Adjust::Pointer(_)
+            )
+        })
 }
 
 /// Returns the one expression inside a branch block.

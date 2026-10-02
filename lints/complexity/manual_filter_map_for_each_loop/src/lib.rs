@@ -78,9 +78,18 @@ fn is_option_mapping(cx: &LateContext<'_>, condition: &Expr<'_>) -> bool {
     let ExprKind::Let(let_expr) = condition.kind else {
         return false;
     };
-    let is_some_pattern = support::lang_ctor_pat(cx, let_expr.pat, LangItem::OptionSome).is_some();
+    let is_some_pattern = support::lang_ctor_pat(cx, let_expr.pat, LangItem::OptionSome)
+        .is_some_and(is_exhaustive_payload);
     let is_option = support::is_option(cx, cx.typeck_results().expr_ty(let_expr.init));
     is_some_pattern && is_option && !is_result_ok(cx, let_expr.init)
+}
+
+/// Returns whether an `Option` payload pattern accepts every payload value.
+const fn is_exhaustive_payload(pat: &rustc_hir::Pat<'_>) -> bool {
+    matches!(
+        pat.kind,
+        rustc_hir::PatKind::Wild | rustc_hir::PatKind::Binding(_, _, _, None)
+    )
 }
 
 /// Returns whether an expression calls `Result::ok`.

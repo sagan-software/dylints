@@ -149,3 +149,12 @@ fn main() {
     let _ = inspect_error(false);
     let _ = replace_error(false);
 }
+
+fn non_exhaustive_payload(value: Option<i32>) -> Option<i32> {
+    let result = Some(value?);
+    // Keep quiet because `inspect` would observe every `Some`, not only `Some(0)`.
+    if let Some(0) = &result {
+        println!("matched");
+    }
+    result
+}
