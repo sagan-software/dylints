@@ -36,6 +36,13 @@ fn array(values: [i32; 3]) -> i32 {
     total
 }
 
+fn dereferenced(values: &[i32]) {
+    // Trigger through an explicit built-in dereference of the slice reference.
+    for index in 0..(*values).len().saturating_sub(1) {
+        println!("{} {}", (*values)[index], (*values)[index + 1]);
+    }
+}
+
 struct SideEffectDeref {
     values: Vec<i32>,
     calls: Cell<usize>,
@@ -241,6 +248,7 @@ fn main() {
     adjacent(&[1, 2]);
     let _ = owned(vec![1, 2]);
     let _ = array([1, 2, 3]);
+    dereferenced(&[1, 2]);
     custom_deref(SideEffectDeref {
         values: vec![1, 2],
         calls: Cell::new(0),

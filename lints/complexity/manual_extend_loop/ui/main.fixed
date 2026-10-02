@@ -68,8 +68,43 @@ fn custom_deref_mut(output: &mut SideEffectDerefMut, values: Vec<i32>) {
     }
 }
 
+fn custom_deref_mut_implicit(output: &mut SideEffectDerefMut, values: Vec<i32>) {
+    // Keep quiet when implicit dereference supplies the standard `push` method.
+    for value in values {
+        output.push(value);
+    }
+}
+
 struct Holder {
     items: Vec<i32>,
+}
+
+struct DerefHolder {
+    holder: Holder,
+    calls: Cell<usize>,
+}
+
+impl Deref for DerefHolder {
+    type Target = Holder;
+
+    fn deref(&self) -> &Self::Target {
+        self.calls.set(self.calls.get() + 1);
+        &self.holder
+    }
+}
+
+impl DerefMut for DerefHolder {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.calls.set(self.calls.get() + 1);
+        &mut self.holder
+    }
+}
+
+fn custom_field_deref(output: &mut DerefHolder, values: Vec<i32>) {
+    // Keep quiet when a custom field dereference supplies the standard `push` method.
+    for value in values {
+        output.items.push(value);
+    }
 }
 
 impl Holder {
@@ -185,6 +220,20 @@ fn main() {
     custom_deref_mut(
         &mut SideEffectDerefMut {
             values: Vec::new(),
+            calls: Cell::new(0),
+        },
+        vec![1],
+    );
+    custom_deref_mut_implicit(
+        &mut SideEffectDerefMut {
+            values: Vec::new(),
+            calls: Cell::new(0),
+        },
+        vec![1],
+    );
+    custom_field_deref(
+        &mut DerefHolder {
+            holder: Holder { items: Vec::new() },
             calls: Cell::new(0),
         },
         vec![1],

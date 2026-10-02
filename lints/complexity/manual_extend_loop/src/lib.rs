@@ -160,7 +160,7 @@ fn exact_rewrite(
 /// Calls and indexing are rejected because the loop evaluates them once per item. Custom
 /// dereference adjustments are rejected because `extend` evaluates the receiver once.
 fn place_root(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<HirId> {
-    if !is_builtin_collection_receiver(cx, expr) {
+    if !is_builtin_collection_type(cx, expr) {
         return None;
     }
     place_root_shape(cx, expr)
@@ -181,8 +181,8 @@ fn place_root_shape(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<HirId> {
     }
 }
 
-/// Returns whether a type is `Vec`, `VecDeque`, or a reference to one.
-fn is_builtin_collection_receiver(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+/// Returns whether an expression has a `Vec`, `VecDeque`, or reference-to-one type.
+fn is_builtin_collection_type(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     fn is_collection(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> bool {
         match ty.kind() {
             ty::Adt(adt, _) => cx
@@ -194,7 +194,7 @@ fn is_builtin_collection_receiver(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool
         }
     }
 
-    is_collection(cx, cx.typeck_results().expr_ty(expr)) && has_only_builtin_adjustments(cx, expr)
+    is_collection(cx, cx.typeck_results().expr_ty(expr))
 }
 
 /// Returns whether an expression's implicit adjustments use only built-in operations.

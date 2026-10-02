@@ -59,7 +59,7 @@ LL | |     }
    | |_____^ help: use `Extend::extend`: `(*output).extend(values)`
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:89:9
+  --> $DIR/main.rs:124:9
    |
 LL | /         for value in values {
 LL | |             self.items.push(value);
@@ -67,7 +67,7 @@ LL | |         }
    | |_________^ help: use `Extend::extend`: `self.items.extend(values)`
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:99:17
+  --> $DIR/main.rs:134:17
    |
 LL |           true => for value in values {
    |  _________________^
@@ -78,7 +78,7 @@ LL | |         },
    = help: use `Extend::extend`, with `map` when the inserted value is transformed
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:108:5
+  --> $DIR/main.rs:143:5
    |
 LL | /     for &value in values {
 LL | |         output.push(value);
@@ -88,7 +88,7 @@ LL | |     }
    = help: use `Extend::extend`, with `map` when the inserted value is transformed
 
 warning: collection insertion loop can use `Extend::extend`
-  --> $DIR/main.rs:115:5
+  --> $DIR/main.rs:150:5
    |
 LL | /     for value in values {
 LL | |         output.push(value);
