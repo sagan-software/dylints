@@ -550,13 +550,16 @@ let
     runtimeInputs = dylintRuntimeInputs;
     text = withRepoSetup ''
       cd "$PRIVATE_LINTS_ROOT"
-      exec cargo dylint \
-        --no-metadata \
-        --no-build \
-        ${defaultDylintLibraryArgs} \
-        -- \
-        --workspace \
-        --lib
+      # Lint library, binary, and test targets; UI example targets are lint fixtures.
+      exec cargo run --quiet --bin sagan-lints -- \
+        --repo . \
+        --heartbeat-seconds 0 \
+        --use-repo-clippy-config \
+        --no-all-targets \
+        --extra-cargo-arg=--lib \
+        --extra-cargo-arg=--bins \
+        --extra-cargo-arg=--tests \
+        "$@"
     '';
   };
 
