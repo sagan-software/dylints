@@ -33,9 +33,16 @@ fn adjust_event(event: Event<'_>) -> Event<'_> {
             attrs,
         }),
         Event::End(TagEnd::Heading(level)) => Event::End(TagEnd::Heading(demote(level))),
-        Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(info))) => Event::Start(Tag::CodeBlock(
-            CodeBlockKind::Fenced(CowStr::from(first_info_token(&info).to_owned())),
-        )),
+        Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(info))) => {
+            // Keep only the language token for client-side syntax highlighting.
+            let language = info
+                .split(|character: char| character == ',' || character.is_whitespace())
+                .next()
+                .unwrap_or_default();
+            Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(CowStr::from(
+                language.to_owned(),
+            ))))
+        }
         other @ (Event::Start(_)
         | Event::End(_)
         | Event::Text(_)
@@ -50,13 +57,6 @@ fn adjust_event(event: Event<'_>) -> Event<'_> {
         | Event::Rule
         | Event::TaskListMarker(_)) => other,
     }
-}
-
-/// Keep the language token of a fenced-code info string.
-fn first_info_token(info: &str) -> &str {
-    info.split(|character: char| character == ',' || character.is_whitespace())
-        .next()
-        .unwrap_or_default()
 }
 
 /// Lower a heading by one level, keeping level six unchanged.

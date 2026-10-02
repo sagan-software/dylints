@@ -56,6 +56,8 @@ cargo test --workspace --lib --bins --tests
 
 The README code blocks are lint examples, not complete programs, so the test
 command skips doctests.
+UI tests marked `// run-rustfix` apply machine-applicable suggestions and
+compile the resulting program. Their `.fixed` files record the expected rewrite.
 
 Run one lint's UI tests:
 

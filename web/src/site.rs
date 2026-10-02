@@ -52,15 +52,10 @@ fn render_site(
 fn write_site(out_dir: &Path, rendered_html: &str) -> Result<(), SiteError> {
     // Write the page last so a partial run never leaves a page without its assets.
     fs::create_dir_all(out_dir).map_err(|source| io_error(out_dir, source))?;
-    write_assets(out_dir)?;
-    write_file(&out_dir.join("index.html"), rendered_html)
-}
-
-/// Write every static asset into `out_dir`.
-fn write_assets(out_dir: &Path) -> Result<(), SiteError> {
     STATIC_ASSETS
         .iter()
-        .try_for_each(|(name, contents)| write_file(&out_dir.join(name), contents))
+        .try_for_each(|(name, contents)| write_file(&out_dir.join(name), contents))?;
+    write_file(&out_dir.join("index.html"), rendered_html)
 }
 
 /// Write one output file with path-aware diagnostics.
