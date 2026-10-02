@@ -1,51 +1,51 @@
-warning: boolean constant `READY_FLAG` does not start with `IS_`
+warning: boolean constant `READY_FLAG` does not read as a predicate
   --> $DIR/edge_cases.rs:5:7
    |
 LL | const READY_FLAG: bool = true;
    |       ^^^^^^^^^^
    |
-   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+   = help: rename it to start with `IS_` or `HAS_`, such as `IS_READY` or `HAS_ITEMS`
    = note: `#[warn(bool_name_prefix)]` on by default
 
-warning: boolean field `enabled` does not start with `is_`
+warning: boolean field `enabled` does not read as a predicate
   --> $DIR/edge_cases.rs:9:5
    |
 LL |     enabled: bool,
    |     ^^^^^^^
    |
-   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+   = help: rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`
 
-warning: boolean method `available` does not start with `is_`
+warning: boolean method `available` does not read as a predicate
   --> $DIR/edge_cases.rs:15:8
    |
 LL |     fn available(&self) -> bool;
    |        ^^^^^^^^^
    |
-   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+   = help: rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`
 
-warning: boolean function `active` does not start with `is_`
+warning: boolean function `active` does not read as a predicate
   --> $DIR/edge_cases.rs:19:4
    |
 LL | fn active() -> bool {
    |    ^^^^^^
    |
-   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+   = help: rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`
 
-warning: boolean parameter `visible` does not start with `is_`
+warning: boolean parameter `visible` does not read as a predicate
   --> $DIR/edge_cases.rs:23:17
    |
 LL | fn accepts_flag(visible: bool, is_visible: bool) {
    |                 ^^^^^^^
    |
-   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+   = help: rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`
 
-warning: boolean local variable `ready` does not start with `is_`
+warning: boolean local variable `ready` does not read as a predicate
   --> $DIR/edge_cases.rs:24:9
    |
 LL |     let ready = visible && is_visible;
    |         ^^^^^
    |
-   = help: rename boolean values to read as predicates, such as `is_ready`, `has_items`, or `IS_READY`
+   = help: rename it to read as a predicate, such as `is_ready`, `has_items`, or `can_retry`
 
 warning: 6 warnings emitted
 
