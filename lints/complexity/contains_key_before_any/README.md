@@ -4,7 +4,8 @@
 
 Checks for `map.contains_key("literal") || [..].iter().any(|key| map.contains_key(*key))`,
 where the array holds only string literals and both calls use the same local
-receiver and the same `contains_key` method.
+receiver and the same resolved `contains_key` method. A differently named
+method such as `has_key` is ignored.
 
 ## Why is this bad?
 

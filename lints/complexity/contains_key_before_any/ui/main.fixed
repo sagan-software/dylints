@@ -133,3 +133,14 @@ fn computed_receiver() -> bool {
             .iter()
             .any(|key| document().contains_key(*key))
 }
+
+// A different one-argument method cannot be folded into the key search.
+fn different_method_name(document: &Document) -> bool {
+    document.has_key("address") || ["full_name"].iter().any(|key| document.contains_key(*key))
+}
+
+impl Document {
+    fn has_key(&self, _key: &str) -> bool {
+        true
+    }
+}
