@@ -18,7 +18,7 @@ use dylint_linting as _;
 use rustc_ast::LitKind;
 use rustc_hir::{ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, Node, def::Res};
 use rustc_lint::{LateContext, LintContext};
-use rustc_span::{ExpnKind, MacroKind, Span, SyntaxContext, def_id::DefId};
+use rustc_span::{ExpnData, ExpnKind, MacroKind, Span, SyntaxContext, def_id::DefId};
 
 /// Public Insta snapshot assertion macros.
 const SNAPSHOT_MACROS: &[&str] = &[
@@ -237,12 +237,13 @@ pub fn source_string_literal(source: &str) -> Option<String> {
     if !is_raw_prefix {
         return None;
     }
-    let has_only_hashes = prefix.get(1..)?.bytes().all(|byte| byte == b'#');
+    let hashes = prefix.get(1..)?;
+    let has_only_hashes = hashes.bytes().all(|byte| byte == b'#');
     if !has_only_hashes {
         return None;
     }
     // Remove the closing quote and the exact opening hash sequence.
-    let suffix = format!("\"{}", prefix.get(1..)?);
+    let suffix = format!("\"{hashes}");
     source
         .get(prefix_end + 1..)?
         .strip_suffix(&suffix)
@@ -795,13 +796,8 @@ fn insta_macro_expansion(
     while context != SyntaxContext::root() {
         // Accept only requested macro names whose resolved definition belongs to Insta.
         let expansion = context.outer_expn_data();
-        if let (ExpnKind::Macro(MacroKind::Bang, macro_name), Some(def_id)) =
-            (expansion.kind, expansion.macro_def_id)
-            && let Some(public_name) = macro_name.as_str().rsplit("::").next()
-            && cx.tcx.crate_name(def_id.krate).as_str() == "insta"
-            && expected_names.contains(&public_name)
-        {
-            return Some((public_name.to_owned(), expansion.call_site));
+        if let Some(public_name) = insta_public_macro_name(cx, &expansion, expected_names) {
+            return Some((public_name, expansion.call_site));
         }
 
         // Stop when malformed hygiene points back to the same context.
@@ -812,6 +808,25 @@ fn insta_macro_expansion(
         context = next;
     }
     None
+}
+
+/// Return the public name of a requested bang macro defined by Insta.
+fn insta_public_macro_name(
+    cx: &LateContext<'_>,
+    expansion: &ExpnData,
+    expected_names: &[&str],
+) -> Option<String> {
+    // Only bang macros with a resolved definition can be public Insta assertions.
+    let (ExpnKind::Macro(MacroKind::Bang, macro_name), Some(def_id)) =
+        (&expansion.kind, expansion.macro_def_id)
+    else {
+        return None;
+    };
+    let public_name = macro_name.as_str().rsplit("::").next()?;
+    // Reject same-named macros from other crates and names outside the request.
+    let is_insta_macro = cx.tcx.crate_name(def_id.krate).as_str() == "insta";
+    let is_expected_name = expected_names.contains(&public_name);
+    (is_insta_macro && is_expected_name).then(|| public_name.to_owned())
 }
 
 /// Split a complete macro invocation into top-level comma-separated arguments.
@@ -996,15 +1011,21 @@ fn raw_literal_end(bytes: &[u8], raw_prefix: usize) -> Option<usize> {
     let mut index = quote + 1;
     while index < bytes.len() {
         // Accept a quote only when every required closing hash follows it.
-        if bytes.get(index) == Some(&b'"')
-            && bytes.get(index + 1..index + 1 + hashes) == Some(expected_hashes)
-        {
+        if is_raw_string_close(bytes, index, expected_hashes) {
             return Some(index + 1 + hashes);
         }
         index += 1;
     }
     // Treat unterminated raw source as extending through the available bytes.
     Some(bytes.len())
+}
+
+/// Return whether a quote at `index` is followed by the expected closing hashes.
+fn is_raw_string_close(bytes: &[u8], index: usize, expected_hashes: &[u8]) -> bool {
+    let is_quote = bytes.get(index) == Some(&b'"');
+    let hashes_start = index + 1;
+    let hashes_end = hashes_start + expected_hashes.len();
+    is_quote && bytes.get(hashes_start..hashes_end) == Some(expected_hashes)
 }
 
 /// Public assertion macro names used by loop-related lints.

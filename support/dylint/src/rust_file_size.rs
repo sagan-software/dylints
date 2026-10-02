@@ -213,11 +213,8 @@ fn foreign_item_attributes(item: &ForeignItem) -> &[Attribute] {
 /// Return whether one attribute makes its item test-only.
 fn test_only_attribute(attr: &Attribute) -> bool {
     // Framework-qualified test attributes share the same final `test` path segment.
-    let is_test_attribute = attr
-        .path()
-        .segments
-        .last()
-        .is_some_and(|segment| segment.ident == "test");
+    let last_segment = attr.path().segments.last();
+    let is_test_attribute = last_segment.is_some_and(|segment| segment.ident == "test");
 
     is_test_attribute || cfg_attribute_requires_test(attr)
 }
@@ -267,9 +264,9 @@ mod tests {
         test_line_count,
     };
 
-    /// Build a source file with one physical comment per requested line.
+    /// Build a source file with one production item per requested line.
     fn non_test_source(line_count: usize) -> String {
-        std::iter::repeat_n("// non-test", line_count)
+        std::iter::repeat_n("const _: () = ();", line_count)
             .collect::<Vec<_>>()
             .join("\n")
     }
@@ -292,15 +289,16 @@ mod tests {
         let at_total = test_heavy_source(TOTAL_LINE_LIMIT);
 
         // Assert the valid predecessor and inclusive violation at both independent limits.
-        assert_eq!(rust_file_size_violation(&below_non_test), None);
+        let violations = [below_non_test, at_non_test, below_total, at_total]
+            .map(|source| rust_file_size_violation(&source));
         assert_eq!(
-            rust_file_size_violation(&at_non_test),
-            Some(RustFileSizeViolation::NonTestLines(NON_TEST_LINE_LIMIT))
-        );
-        assert_eq!(rust_file_size_violation(&below_total), None);
-        assert_eq!(
-            rust_file_size_violation(&at_total),
-            Some(RustFileSizeViolation::TotalLines(TOTAL_LINE_LIMIT))
+            violations,
+            [
+                None,
+                Some(RustFileSizeViolation::NonTestLines(NON_TEST_LINE_LIMIT)),
+                None,
+                Some(RustFileSizeViolation::TotalLines(TOTAL_LINE_LIMIT)),
+            ]
         );
     }
 

@@ -294,48 +294,53 @@ fn ui() {
 
 #[cfg(test)]
 mod tests {
-    use std::{error::Error, fs, path::Path};
+    use std::{fs, path::Path};
 
     use super::{ModuleDirectoryRecommendation, is_only_file, recommendation_for_source};
 
     /// Empty nested directories do not satisfy the two-file requirement.
     #[test]
-    fn ignores_empty_nested_directories() -> Result<(), Box<dyn Error>> {
+    fn ignores_empty_nested_directories() {
         // Create one source file plus an empty descendant directory to isolate file counting.
-        let directory = tempfile::tempdir()?;
+        let directory = tempfile::tempdir().expect("create a temporary module directory");
         let mod_rs_path = directory.path().join("mod.rs");
-        fs::write(&mod_rs_path, "pub fn value() {}")?;
-        fs::create_dir(directory.path().join("empty"))?;
+        fs::write(&mod_rs_path, "pub fn value() {}").expect("write the module file");
+        fs::create_dir(directory.path().join("empty")).expect("create the empty child directory");
 
+        // The empty child directory must not count as a second module file.
         assert!(is_only_file(&mod_rs_path, directory.path()));
-        Ok(())
     }
 
     /// The shared file-size threshold changes the recommended restructuring action.
     #[test]
     fn recommends_splitting_an_oversized_single_file_module() {
-        let path = Path::new("/work/large_module/mod.rs");
+        // Build one small module and one module at the production-line threshold.
+        let path = Path::new("large_module/mod.rs");
         let small_source = "pub fn run() {}";
-        let large_source = std::iter::repeat_n("// production", 1500)
+        let large_source = std::iter::repeat_n("const _: () = ();", 1500)
             .collect::<Vec<_>>()
             .join("\n");
 
         // Cover both actions at the exact production-line threshold used by `large_rust_file`.
+        let recommendations = [small_source, large_source.as_str()]
+            .map(|source| recommendation_for_source(path, source));
+
+        // Small modules flatten into a sibling file, while oversized modules split.
         assert_eq!(
-            recommendation_for_source(path, small_source),
-            Some(ModuleDirectoryRecommendation::Flatten {
-                module_file_name: Path::new("large_module.rs").to_owned(),
-            })
-        );
-        assert_eq!(
-            recommendation_for_source(path, &large_source),
-            Some(ModuleDirectoryRecommendation::Split)
+            recommendations,
+            [
+                Some(ModuleDirectoryRecommendation::Flatten {
+                    module_file_name: Path::new("large_module.rs").to_owned(),
+                }),
+                Some(ModuleDirectoryRecommendation::Split),
+            ]
         );
     }
 
     /// The emitted help explains why an oversized module should retain its directory.
     #[test]
     fn renders_size_aware_split_guidance() {
+        // The help text must name the shared lint and the split action.
         assert_eq!(
             ModuleDirectoryRecommendation::Split.help(),
             "`mod.rs` exceeds the `large_rust_file` thresholds; split it into child modules instead of flattening the directory"

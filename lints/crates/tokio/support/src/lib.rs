@@ -311,44 +311,71 @@ fn is_tokio_def(cx: &LateContext<'_>, def_id: DefId, expected_path: &str) -> boo
 
 /// Prove that a definition is a supported Tokio public re-export.
 fn is_tokio_reexport(cx: &LateContext<'_>, def_id: DefId, expected_path: &str, path: &str) -> bool {
-    // Match each public spelling against the stable item name and enclosing private modules.
-    matches!(
-        expected_path,
-        "tokio::sync::mpsc::bounded::channel"
-            if cx.tcx.item_name(def_id).as_str() == "channel"
-                && path.contains("::sync::mpsc::")
-    ) || matches!(
-        expected_path,
-        "tokio::sync::mpsc::unbounded::unbounded_channel"
-            if cx.tcx.item_name(def_id).as_str() == "unbounded_channel"
-                && path.contains("::sync::mpsc::")
-    ) || matches!(
-        expected_path,
-        "tokio::task::blocking::spawn_blocking"
-            if cx.tcx.item_name(def_id).as_str() == "spawn_blocking"
-    ) || matches!(
-        expected_path,
-        "tokio::runtime::runtime::Runtime::new"
-            if cx.tcx.item_name(def_id).as_str() == "new"
-                && path.contains("::runtime::")
-                && path.contains("Runtime::new")
-    ) || matches!(
-        expected_path,
-        "tokio::time::sleep::sleep"
-            if cx.tcx.item_name(def_id).as_str() == "sleep"
-                && path.contains("::time::sleep")
-    ) || matches!(
-        expected_path,
-        "tokio::time::interval::interval"
-            if cx.tcx.item_name(def_id).as_str() == "interval"
-                && path.contains("::time::")
-    ) || matches!(
-        expected_path,
-        "tokio::time::interval::interval_at"
-            if cx.tcx.item_name(def_id).as_str() == "interval_at"
-                && path.contains("::time::")
-    )
+    // Select the re-export rule for the requested public spelling.
+    let Some(reexport) = TOKIO_REEXPORTS
+        .iter()
+        .find(|reexport| reexport.public_spelling == expected_path)
+    else {
+        return false;
+    };
+
+    // Require the stable item name and every private-module fragment in the displayed path.
+    let is_expected_item = cx.tcx.item_name(def_id).as_str() == reexport.item_name;
+    is_expected_item
+        && reexport
+            .path_fragments
+            .iter()
+            .all(|fragment| path.contains(fragment))
 }
+
+/// A public Tokio path whose displayed definition path can name private modules.
+struct TokioReexport {
+    /// Public definition-path spelling requested by lint callers.
+    public_spelling: &'static str,
+    /// Stable item name of the re-exported definition.
+    item_name: &'static str,
+    /// Fragments that the displayed definition path must contain.
+    path_fragments: &'static [&'static str],
+}
+
+/// Supported Tokio re-exports, keyed by their public path spelling.
+const TOKIO_REEXPORTS: &[TokioReexport] = &[
+    TokioReexport {
+        public_spelling: "tokio::sync::mpsc::bounded::channel",
+        item_name: "channel",
+        path_fragments: &["::sync::mpsc::"],
+    },
+    TokioReexport {
+        public_spelling: "tokio::sync::mpsc::unbounded::unbounded_channel",
+        item_name: "unbounded_channel",
+        path_fragments: &["::sync::mpsc::"],
+    },
+    TokioReexport {
+        public_spelling: "tokio::task::blocking::spawn_blocking",
+        item_name: "spawn_blocking",
+        path_fragments: &[],
+    },
+    TokioReexport {
+        public_spelling: "tokio::runtime::runtime::Runtime::new",
+        item_name: "new",
+        path_fragments: &["::runtime::", "Runtime::new"],
+    },
+    TokioReexport {
+        public_spelling: "tokio::time::sleep::sleep",
+        item_name: "sleep",
+        path_fragments: &["::time::sleep"],
+    },
+    TokioReexport {
+        public_spelling: "tokio::time::interval::interval",
+        item_name: "interval",
+        path_fragments: &["::time::"],
+    },
+    TokioReexport {
+        public_spelling: "tokio::time::interval::interval_at",
+        item_name: "interval_at",
+        path_fragments: &["::time::"],
+    },
+];
 
 /// Prove that a definition is one item on `core::time::Duration`.
 fn is_duration_def(cx: &LateContext<'_>, def_id: DefId, item_name: &str) -> bool {

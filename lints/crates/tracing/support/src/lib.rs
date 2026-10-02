@@ -16,7 +16,7 @@ extern crate rustc_span;
 
 use rustc_hir::{ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, def::Res};
 use rustc_lint::{LateContext, LintContext};
-use rustc_span::{ExpnKind, MacroKind, Span, SyntaxContext, def_id::DefId};
+use rustc_span::{ExpnData, ExpnKind, MacroKind, Span, SyntaxContext, def_id::DefId};
 
 use dylint_linting as _;
 
@@ -135,12 +135,7 @@ impl TracingMacroInvocation {
     pub fn redundant_field_assignment_replacement(&self) -> Option<String> {
         let (after_bang, contents) = macro_contents(&self.source)?;
         let parts = split_top_level(contents, b',');
-        if parts.len() != self.arguments.len()
-            || parts
-                .iter()
-                .zip(&self.arguments)
-                .any(|(part, argument)| part.trim() != argument)
-        {
+        if !is_exact_argument_split(&parts, &self.arguments) {
             return None;
         }
 
@@ -692,12 +687,8 @@ fn tracing_macro_expansion(cx: &LateContext<'_>, span: Span) -> Option<(String, 
     while context != SyntaxContext::root() {
         // Require a field macro whose resolved definition belongs to tracing.
         let expansion = context.outer_expn_data();
-        if let (ExpnKind::Macro(MacroKind::Bang, macro_name), Some(def_id)) =
-            (expansion.kind, expansion.macro_def_id)
-            && cx.tcx.crate_name(def_id.krate).as_str() == "tracing"
-            && FIELD_MACROS.contains(&macro_name.as_str())
-        {
-            return Some((macro_name.to_string(), expansion.call_site));
+        if let Some(macro_name) = tracing_field_macro_name(cx, &expansion) {
+            return Some((macro_name, expansion.call_site));
         }
 
         // Guard against expansion cycles before moving to the caller context.
@@ -708,6 +699,32 @@ fn tracing_macro_expansion(cx: &LateContext<'_>, span: Span) -> Option<(String, 
         context = next;
     }
     None
+}
+
+/// Return the name of a field macro expansion whose definition belongs to tracing.
+fn tracing_field_macro_name(cx: &LateContext<'_>, expansion: &ExpnData) -> Option<String> {
+    // Only bang macros with a resolved definition can be public tracing field macros.
+    let (ExpnKind::Macro(MacroKind::Bang, macro_name), Some(def_id)) =
+        (&expansion.kind, expansion.macro_def_id)
+    else {
+        return None;
+    };
+    // Reject same-named macros from other crates and tracing macros without fields.
+    let is_tracing_macro = cx.tcx.crate_name(def_id.krate).as_str() == "tracing";
+    let is_field_macro = FIELD_MACROS.contains(&macro_name.as_str());
+    (is_tracing_macro && is_field_macro).then(|| macro_name.to_string())
+}
+
+/// Return whether split source parts are exactly the parsed macro arguments.
+fn is_exact_argument_split(parts: &[&str], arguments: &[String]) -> bool {
+    // A different count means the split disagrees with the parsed invocation.
+    if parts.len() != arguments.len() {
+        return false;
+    }
+    parts
+        .iter()
+        .zip(arguments)
+        .all(|(part, argument)| part.trim() == argument)
 }
 
 /// Split a complete macro invocation into its top-level comma-separated arguments.
@@ -944,15 +961,21 @@ fn raw_literal_end(bytes: &[u8], raw_prefix: usize) -> Option<usize> {
     let mut index = quote + 1;
     while index < bytes.len() {
         // Accept a quote only when the complete opening hash count follows it.
-        if bytes.get(index) == Some(&b'"')
-            && bytes.get(index + 1..index + 1 + hashes) == Some(expected_hashes)
-        {
+        if is_raw_string_close(bytes, index, expected_hashes) {
             return Some(index + 1 + hashes);
         }
         index += 1;
     }
     // Treat an unterminated raw literal as extending through the available source.
     Some(bytes.len())
+}
+
+/// Return whether a quote at `index` is followed by the expected closing hashes.
+fn is_raw_string_close(bytes: &[u8], index: usize, expected_hashes: &[u8]) -> bool {
+    let is_quote = bytes.get(index) == Some(&b'"');
+    let hashes_start = index + 1;
+    let hashes_end = hashes_start + expected_hashes.len();
+    is_quote && bytes.get(hashes_start..hashes_end) == Some(expected_hashes)
 }
 
 /// Extract the contents of one complete cooked or raw string literal.
@@ -972,12 +995,13 @@ fn rust_string_contents(source: &str) -> Option<String> {
     if !is_raw_prefix {
         return None;
     }
-    let has_only_hashes = prefix.get(1..)?.bytes().all(|byte| byte == b'#');
+    let hashes = prefix.get(1..)?;
+    let has_only_hashes = hashes.bytes().all(|byte| byte == b'#');
     if !has_only_hashes {
         return None;
     }
     // Remove the closing quote and the same hash sequence used by the prefix.
-    let suffix = format!("\"{}", prefix.get(1..)?);
+    let suffix = format!("\"{hashes}");
     source
         .get(prefix_end + 1..)?
         .strip_suffix(&suffix)
@@ -1128,7 +1152,8 @@ mod tests {
     use super::{TracingMacroInvocation, macro_arguments};
     use rustc_span::DUMMY_SP;
 
-    fn make_invocation(source: &str) -> TracingMacroInvocation {
+    /// Parse a macro source fixture into an invocation, panicking on malformed fixtures.
+    fn invocation_fixture(source: &str) -> TracingMacroInvocation {
         TracingMacroInvocation {
             span: DUMMY_SP,
             macro_name: "info".to_owned(),
@@ -1139,7 +1164,7 @@ mod tests {
 
     #[test]
     fn rewrites_redundant_assignments_in_place() {
-        let invocation = make_invocation("info!(request_id = request_id, user.id = user.id);");
+        let invocation = invocation_fixture("info!(request_id = request_id, user.id = user.id);");
         assert_eq!(
             invocation.redundant_field_assignment_replacement(),
             Some("info!(request_id, user.id);".to_owned())
@@ -1148,13 +1173,13 @@ mod tests {
 
     #[test]
     fn preserves_sigil_and_rejects_comment_rewrites() {
-        let invocation = make_invocation("debug_span!(\"request\", request_id = %request_id);");
+        let invocation = invocation_fixture("debug_span!(\"request\", request_id = %request_id);");
         assert_eq!(
             invocation.redundant_field_assignment_replacement(),
             Some("debug_span!(\"request\", %request_id);".to_owned())
         );
 
-        let invocation = make_invocation("info!(request_id = request_id /* keep this */);");
+        let invocation = invocation_fixture("info!(request_id = request_id /* keep this */);");
         assert_eq!(invocation.redundant_field_assignment_replacement(), None);
     }
 }
