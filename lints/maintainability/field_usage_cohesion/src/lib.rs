@@ -136,32 +136,34 @@ fn method_usage<'tcx>(
     local_def_id: LocalDefId,
 ) -> Option<(LocalDefId, MethodUsage)> {
     // Keep only source-authored receiver methods from inherent implementations.
-    (!dylint_support::is_internal_support_crate(cx.tcx.crate_name(rustc_hir::def_id::LOCAL_CRATE))
-        && matches!(kind, FnKind::Method(..))
+    let eligible_method = (!dylint_support::is_internal_support_crate(
+        cx.tcx.crate_name(rustc_hir::def_id::LOCAL_CRATE),
+    ) && matches!(kind, FnKind::Method(..))
         && declaration.implicit_self().has_implicit_self()
         && !is_macro_expansion(span))
-    .then_some(())
-    .map(|()| cx.tcx.local_parent(local_def_id))
-    .filter(|impl_id| {
-        matches!(
-            cx.tcx.def_kind(*impl_id),
-            rustc_hir::def::DefKind::Impl { .. }
-        )
-    })
-    .filter(|impl_id| cx.tcx.impl_opt_trait_ref(*impl_id).is_none())
-    // Resolve the receiver type before walking expressions in the method body.
-    .and_then(|impl_id| inherent_impl_type(cx, impl_id))
-    .zip(self_binding(body))
-    .map(|(type_id, self_id)| {
-        // Resolve relationships while this method's type-checking context is active.
-        let mut visitor = MethodUsageVisitor {
-            cx,
-            self_id,
-            usage: MethodUsage::default(),
-        };
-        visitor.visit_expr(body.value);
-        (type_id, visitor.usage)
-    })
+    .then_some(());
+    eligible_method
+        .map(|()| cx.tcx.local_parent(local_def_id))
+        .filter(|impl_id| {
+            matches!(
+                cx.tcx.def_kind(*impl_id),
+                rustc_hir::def::DefKind::Impl { .. }
+            )
+        })
+        .filter(|impl_id| cx.tcx.impl_opt_trait_ref(*impl_id).is_none())
+        // Resolve the receiver type before walking expressions in the method body.
+        .and_then(|impl_id| inherent_impl_type(cx, impl_id))
+        .zip(self_binding(body))
+        .map(|(type_id, self_id)| {
+            // Resolve relationships while this method's type-checking context is active.
+            let mut visitor = MethodUsageVisitor {
+                cx,
+                self_id,
+                usage: MethodUsage::default(),
+            };
+            visitor.visit_expr(body.value);
+            (type_id, visitor.usage)
+        })
 }
 
 /// Visitor that records direct `self.field` and `self.method()` relationships.
@@ -280,7 +282,18 @@ fn cohesion_summary(methods: &HashMap<LocalDefId, MethodUsage>) -> Option<Cohesi
     let adjacency = method_adjacency(&measured);
     let components = connected_components(measured.len(), &adjacency);
     // Require two substantial components before producing a type-level finding.
-    let substantial_components = substantial_component_count(&components, &measured);
+    // Count components that contain enough methods and distinct fields to be meaningful.
+    let substantial_components = components
+        .iter()
+        .filter(|component| {
+            let fields: HashSet<_> = component
+                .iter()
+                .filter_map(|&index| measured.get(index))
+                .flat_map(|(_, usage)| usage.fields.iter().copied())
+                .collect();
+            component.len() >= MINIMUM_COMPONENT_METHODS && fields.len() >= MINIMUM_COMPONENT_FIELDS
+        })
+        .count();
     if substantial_components < 2 {
         return None;
     }
@@ -329,24 +342,6 @@ fn method_adjacency(measured: &[(&LocalDefId, &MethodUsage)]) -> HashMap<usize, 
         }
     }
     adjacency
-}
-
-/// Count components that contain enough methods and distinct fields to be meaningful.
-fn substantial_component_count(
-    components: &[Vec<usize>],
-    measured: &[(&LocalDefId, &MethodUsage)],
-) -> usize {
-    components
-        .iter()
-        .filter(|component| {
-            let fields: HashSet<_> = component
-                .iter()
-                .filter_map(|&index| measured.get(index))
-                .flat_map(|(_, usage)| usage.fields.iter().copied())
-                .collect();
-            component.len() >= MINIMUM_COMPONENT_METHODS && fields.len() >= MINIMUM_COMPONENT_FIELDS
-        })
-        .count()
 }
 
 /// Return connected components from an undirected adjacency list.

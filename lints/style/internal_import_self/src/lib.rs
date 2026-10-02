@@ -42,7 +42,14 @@ impl<'tcx> LateLintPass<'tcx> for InternalImportSelf {
 /// Check module items for this lint.
 fn check_module_items<'tcx>(cx: &LateContext<'tcx>, module: &'tcx Mod<'tcx>) {
     // Resolve direct child modules before classifying bare import roots.
-    let child_modules = child_module_def_ids(cx, module);
+    let child_modules = module
+        .item_ids
+        .iter()
+        .filter_map(|item_id| match cx.tcx.hir_item(*item_id).kind {
+            ItemKind::Mod(..) => Some(item_id.owner_id.to_def_id()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
 
     // Inspect only use items because other item paths do not express imports.
     for item_id in module.item_ids {
@@ -53,21 +60,12 @@ fn check_module_items<'tcx>(cx: &LateContext<'tcx>, module: &'tcx Mod<'tcx>) {
     }
 }
 
-/// Helper for child module def ids analysis.
-fn child_module_def_ids(cx: &LateContext<'_>, module: &Mod<'_>) -> Vec<DefId> {
-    module
-        .item_ids
-        .iter()
-        .filter_map(|item_id| match cx.tcx.hir_item(*item_id).kind {
-            ItemKind::Mod(..) => Some(item_id.owner_id.to_def_id()),
-            _ => None,
-        })
-        .collect()
-}
-
 /// Check use path for this lint.
 fn check_use_path(cx: &LateContext<'_>, path: &UsePath<'_>, child_modules: &[DefId]) {
-    let Some(first_segment) = first_segment_module(path) else {
+    let Some(first_segment) = path.segments.first().and_then(|segment| match segment.res {
+        Res::Def(DefKind::Mod, def_id) => Some(def_id),
+        _ => None,
+    }) else {
         return;
     };
 
@@ -99,14 +97,6 @@ fn check_use_path(cx: &LateContext<'_>, path: &UsePath<'_>, child_modules: &[Def
         "add `self::` to this import path",
         suggestion,
     );
-}
-
-/// Return the first segment module.
-fn first_segment_module(path: &UsePath<'_>) -> Option<DefId> {
-    path.segments.first().and_then(|segment| match segment.res {
-        Res::Def(DefKind::Mod, def_id) => Some(def_id),
-        _ => None,
-    })
 }
 
 /// Emit the span lint with help diagnostic.

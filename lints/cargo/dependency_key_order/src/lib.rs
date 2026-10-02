@@ -13,8 +13,7 @@ use std::{cmp::Ordering, ops::Range};
 
 use cargo_support::{
     Dependency, Manifest, dependencies, dependency_tables, emit_with_help, package_manifest,
-    toml_edit::{Item, TableLike},
-    workspace_dependency_table,
+    toml_edit::TableLike, workspace_dependency_table,
 };
 use rustc_ast::Crate;
 use rustc_lint::{EarlyContext, EarlyLintPass};
@@ -95,7 +94,12 @@ fn order_issues<'a>(text: &str, table: &'a dyn TableLike) -> Vec<OrderIssue<'a>>
         .zip(entries.iter().skip(1))
         .filter(|(previous, current)| {
             !starts_block(text, previous.end, current.key.start)
-                && compare_names(current.name, previous.name) == Ordering::Less
+                && current
+                    .name
+                    .bytes()
+                    .map(|byte| byte.to_ascii_lowercase())
+                    .cmp(previous.name.bytes().map(|byte| byte.to_ascii_lowercase()))
+                    == Ordering::Less
         })
         .map(|(previous, current)| OrderIssue {
             name: current.name,
@@ -121,26 +125,23 @@ fn entry(dependency: Dependency<'_>) -> Option<Entry<'_>> {
     Some(Entry {
         name: dependency.name,
         key: dependency.key.span()?,
-        end: entry_end(dependency.item)?,
+        // A dotted table's own span covers only its first key, so use its last value.
+        end: dependency
+            .item
+            .as_table_like()
+            .filter(|fields| fields.is_dotted())
+            .map_or_else(
+                || dependency.item.span().map(|span| span.end),
+                |fields| {
+                    fields
+                        .get_values()
+                        .into_iter()
+                        .filter_map(|(_, value)| value.span())
+                        .map(|span| span.end)
+                        .max()
+                },
+            )?,
     })
-}
-
-/// Return the byte offset just past an entry's value or its last dotted field.
-fn entry_end(item: &Item) -> Option<usize> {
-    // A dotted table's own span covers only its first key, so use its last value.
-    item.as_table_like()
-        .filter(|fields| fields.is_dotted())
-        .map_or_else(
-            || item.span().map(|span| span.end),
-            |fields| {
-                fields
-                    .get_values()
-                    .into_iter()
-                    .filter_map(|(_, value)| value.span())
-                    .map(|span| span.end)
-                    .max()
-            },
-        )
 }
 
 /// Return whether a blank or comment line separates two entries.
@@ -163,13 +164,6 @@ fn starts_block(text: &str, previous_end: usize, key_start: usize) -> bool {
         let line = line.trim();
         line.is_empty() || line.starts_with('#')
     })
-}
-
-/// Compare dependency names ignoring ASCII case.
-fn compare_names(left: &str, right: &str) -> Ordering {
-    left.bytes()
-        .map(|byte| byte.to_ascii_lowercase())
-        .cmp(right.bytes().map(|byte| byte.to_ascii_lowercase()))
 }
 
 #[cfg(test)]

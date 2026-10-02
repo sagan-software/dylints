@@ -114,9 +114,15 @@ impl<'tcx> Visitor<'tcx> for WorkVisitor<'_, 'tcx> {
     /// Break at the first expression that does work.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) -> ControlFlow<Work> {
         // Check macro output first so `format!` is reported at the user's call site.
-        if let Some(span) = format_macro_call(self.cx, expr.span) {
+        let is_format_macro = expr.span.macro_backtrace().any(|expn_data| {
+            matches!(expn_data.kind, ExpnKind::Macro(MacroKind::Bang, _))
+                && expn_data
+                    .macro_def_id
+                    .is_some_and(|def_id| self.cx.tcx.is_diagnostic_item(sym::format_macro, def_id))
+        });
+        if is_format_macro {
             return ControlFlow::Break(Work {
-                span,
+                span: expr.span.source_callsite(),
                 label: "this `format!` allocates a `String`",
             });
         }
@@ -136,18 +142,6 @@ impl<'tcx> Visitor<'tcx> for WorkVisitor<'_, 'tcx> {
         // Continue into operands, arguments, and closure bodies.
         walk_expr(self, expr)
     }
-}
-
-/// Return the outermost source call site when a `format!` expansion produced the span.
-fn format_macro_call(cx: &LateContext<'_>, span: Span) -> Option<Span> {
-    span.macro_backtrace()
-        .any(|expn_data| {
-            matches!(expn_data.kind, ExpnKind::Macro(MacroKind::Bang, _))
-                && expn_data
-                    .macro_def_id
-                    .is_some_and(|def_id| cx.tcx.is_diagnostic_item(sym::format_macro, def_id))
-        })
-        .then(|| span.source_callsite())
 }
 
 /// Return a label when the expression calls a function or method that does work.
@@ -190,16 +184,19 @@ fn trait_work_label<'tcx>(
     receiver_ty: Option<Ty<'tcx>>,
     result_ty: Ty<'tcx>,
 ) -> Option<&'static str> {
-    match trait_name.as_str() {
+    // These diagnostic names are not predeclared in the pinned compiler's symbol table.
+    let to_owned = Symbol::intern("ToOwned");
+    let to_string = Symbol::intern("ToString");
+    match trait_name {
         // Cloning a `Copy` value or a reference-counted pointer is cheap.
-        "Clone" => receiver_ty
+        sym::Clone => receiver_ty
             .is_some_and(|ty| !is_cheap_clone(cx, ty))
             .then_some("this clone copies owned data"),
-        "ToOwned" => receiver_ty
+        name if name == to_owned => receiver_ty
             .is_some_and(|ty| !cx.tcx.type_is_copy_modulo_regions(cx.typing_env(), ty))
             .then_some("this `to_owned` allocates owned data"),
-        "ToString" => Some("this `to_string` allocates a `String`"),
-        "From" | "Into" => {
+        name if name == to_string => Some("this `to_string` allocates a `String`"),
+        sym::From | sym::Into => {
             is_allocating_ty(cx, result_ty).then_some("this conversion allocates owned data")
         }
         _ => None,

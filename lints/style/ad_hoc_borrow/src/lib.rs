@@ -70,7 +70,7 @@ impl<'tcx> LateLintPass<'tcx> for AdHocBorrow {
         if cx
             .tcx
             .get_diagnostic_item(sym::Borrow)
-            .is_none_or(|borrow| implements_trait(cx, self_ty, borrow, *target))
+            .is_none_or(|borrow| has_trait_implementation(cx, self_ty, borrow, *target))
         {
             return;
         }
@@ -91,7 +91,7 @@ impl<'tcx> LateLintPass<'tcx> for AdHocBorrow {
 }
 
 /// Return whether `self_ty: Trait<target>` holds in the item's environment.
-fn implements_trait<'tcx>(
+fn has_trait_implementation<'tcx>(
     cx: &LateContext<'tcx>,
     self_ty: Ty<'tcx>,
     trait_def_id: DefId,

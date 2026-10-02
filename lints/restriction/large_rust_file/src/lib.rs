@@ -39,7 +39,17 @@ dylint_support::documented_early_lint! {
 impl EarlyLintPass for LargeRustFile {
     /// Check crate for this lint.
     fn check_crate(&mut self, cx: &EarlyContext<'_>, _krate: &Crate) {
-        for file in large_rust_files(cx) {
+        // Read each loaded local source file and retain only files over a configured limit.
+        for file in loaded_rust_source_files(cx)
+            .into_iter()
+            .filter_map(|candidate| {
+                let (first_line_len, violation) = file_violation(&candidate.path)?;
+                Some(LargeFile {
+                    span: first_line_span(candidate.start_pos, first_line_len),
+                    violation,
+                })
+            })
+        {
             emit_large_file_lint(cx, file.span, file.violation);
         }
     }
@@ -59,22 +69,6 @@ struct SourceCandidate {
     path: PathBuf,
     /// start pos stored for this lint's analysis.
     start_pos: BytePos,
-}
-
-/// Return every loaded local Rust file that exceeds either size limit.
-fn large_rust_files(cx: &EarlyContext<'_>) -> impl Iterator<Item = LargeFile> {
-    loaded_rust_source_files(cx)
-        .into_iter()
-        .filter_map(|candidate| {
-            // Read the local file instead of trusting in-memory text so the lint follows the
-            // file-system contract and skips unreadable paths.
-            let (first_line_len, violation) = file_violation(&candidate.path)?;
-
-            Some(LargeFile {
-                span: first_line_span(candidate.start_pos, first_line_len),
-                violation,
-            })
-        })
 }
 
 /// Helper for loaded rust source files analysis.

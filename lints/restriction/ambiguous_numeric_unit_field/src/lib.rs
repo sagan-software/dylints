@@ -54,7 +54,7 @@ impl<'tcx> LateLintPass<'tcx> for AmbiguousNumericUnitField {
         ) else {
             return;
         };
-        if documentation_has_unit(cx.tcx.hir_attrs(field.hir_id)) {
+        if has_documented_unit(cx.tcx.hir_attrs(field.hir_id)) {
             return;
         }
 
@@ -131,7 +131,7 @@ fn has_unit_token(text: &str) -> bool {
 }
 
 /// Return whether normalized field documentation states a recognized unit.
-fn documentation_has_unit(attrs: &[Attribute]) -> bool {
+fn has_documented_unit(attrs: &[Attribute]) -> bool {
     attrs
         .iter()
         .filter_map(doc_attr_text)

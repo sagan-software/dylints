@@ -33,7 +33,7 @@ impl<'tcx> LateLintPass<'tcx> for PublicSurfaceSize {
         let module_id = hir_id.owner.def_id;
         if dylint_support::is_internal_support_crate(
             cx.tcx.crate_name(rustc_hir::def_id::LOCAL_CRATE),
-        ) || crate_is_doc_hidden(cx)
+        ) || cx.tcx.is_doc_hidden(CRATE_DEF_ID)
         {
             return;
         }
@@ -68,11 +68,6 @@ impl<'tcx> LateLintPass<'tcx> for PublicSurfaceSize {
             }),
         );
     }
-}
-
-/// Return whether the crate explicitly hides its support-only API from documentation.
-fn crate_is_doc_hidden(cx: &LateContext<'_>) -> bool {
-    cx.tcx.is_doc_hidden(CRATE_DEF_ID)
 }
 
 #[test]

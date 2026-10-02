@@ -57,7 +57,7 @@ impl<'tcx> LateLintPass<'tcx> for AdHocAsRef {
         let is_already_implemented = cx
             .tcx
             .get_diagnostic_item(trait_item)
-            .is_none_or(|trait_def_id| implements_trait(cx, self_ty, trait_def_id, target));
+            .is_none_or(|trait_def_id| has_trait_implementation(cx, self_ty, trait_def_id, target));
         if is_already_implemented {
             return;
         }
@@ -86,7 +86,7 @@ fn accessor_candidate<'tcx>(
     // Trait methods have names fixed by their trait, so only inherent methods are candidates.
     if !matches!(item.kind, ImplItemKind::Fn(..))
         || !matches!(item.impl_kind, ImplItemImplKind::Inherent { .. })
-        || !accessor_name(item.ident.name.as_str())
+        || !is_accessor_name(item.ident.name.as_str())
     {
         return None;
     }
@@ -104,12 +104,12 @@ fn accessor_candidate<'tcx>(
 }
 
 /// Return whether the method name reads as a plain accessor.
-fn accessor_name(name: &str) -> bool {
+fn is_accessor_name(name: &str) -> bool {
     (name.starts_with("as_") || name.starts_with("get_")) && !name.starts_with("get_or_")
 }
 
 /// Return whether `self_ty: Trait<target>` holds in the item's environment.
-fn implements_trait<'tcx>(
+fn has_trait_implementation<'tcx>(
     cx: &LateContext<'tcx>,
     self_ty: Ty<'tcx>,
     trait_def_id: DefId,

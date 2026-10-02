@@ -19,7 +19,7 @@ use rustc_hir::{
     TraitItem, TraitItemKind, Variant,
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
-use rustc_span::{Span, Symbol, def_id::CRATE_DEF_ID, def_id::LocalDefId, sym};
+use rustc_span::{Span, def_id::CRATE_DEF_ID, def_id::LocalDefId, sym};
 
 /// Minimum prose words required for an ordinary public API item.
 const ITEM_MINIMUM_WORDS: usize = 20;
@@ -214,7 +214,10 @@ fn normalized_docs(attrs: &[Attribute]) -> String {
     let mut docs = String::new();
     // Concatenate only documentation attributes so unrelated attributes stay invisible.
     for attr in attrs {
-        let Some(text) = doc_attr_text(attr) else {
+        let Some(text) = attr
+            .doc_str()
+            .or_else(|| attr.has_name(sym::doc).then(|| attr.value_str()).flatten())
+        else {
             continue;
         };
 
@@ -224,12 +227,6 @@ fn normalized_docs(attrs: &[Attribute]) -> String {
         docs.push_str(text.as_str());
     }
     docs
-}
-
-/// Return the text carried by one normalized documentation attribute.
-fn doc_attr_text(attr: &Attribute) -> Option<Symbol> {
-    attr.doc_str()
-        .or_else(|| attr.has_name(sym::doc).then(|| attr.value_str()).flatten())
 }
 
 /// Count prose words while excluding fenced, indented, and inline code.
@@ -242,7 +239,12 @@ fn prose_word_count(markdown: &str) -> usize {
         match event {
             Event::Start(Tag::CodeBlock(_)) => code_block_depth += 1,
             Event::End(TagEnd::CodeBlock) => code_block_depth = code_block_depth.saturating_sub(1),
-            Event::Text(text) if code_block_depth == 0 => word_count += text_word_count(&text),
+            Event::Text(text) if code_block_depth == 0 => {
+                word_count += text
+                    .split_whitespace()
+                    .filter(|word| word.chars().any(char::is_alphanumeric))
+                    .count();
+            }
             Event::Start(_)
             | Event::End(_)
             | Event::Text(_)
@@ -259,13 +261,6 @@ fn prose_word_count(markdown: &str) -> usize {
         }
     }
     word_count
-}
-
-/// Count whitespace-delimited tokens that contain at least one alphanumeric character.
-fn text_word_count(text: &str) -> usize {
-    text.split_whitespace()
-        .filter(|word| word.chars().any(char::is_alphanumeric))
-        .count()
 }
 
 /// Emit a short-documentation diagnostic with definition-specific writing guidance.

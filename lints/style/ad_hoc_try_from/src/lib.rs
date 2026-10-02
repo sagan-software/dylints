@@ -99,7 +99,7 @@ fn conversion_signature<'tcx>(
     local_def_id: LocalDefId,
 ) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
     // Reject names outside the fallible-conversion vocabulary before resolving types.
-    if !conversion_name(name.as_str()) {
+    if !is_conversion_name(name.as_str()) {
         return None;
     }
     // Erase late-bound lifetimes so the trait solver sees closed types.
@@ -139,7 +139,7 @@ fn has_local_endpoint(input: Ty<'_>, target: Ty<'_>) -> bool {
 }
 
 /// Return whether the name uses fallible-conversion vocabulary.
-fn conversion_name(name: &str) -> bool {
+fn is_conversion_name(name: &str) -> bool {
     ["make_", "build_", "convert_", "map_", "try_", "validate_"]
         .iter()
         .any(|prefix| name.starts_with(prefix))

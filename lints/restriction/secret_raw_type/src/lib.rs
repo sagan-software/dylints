@@ -65,7 +65,7 @@ impl<'tcx> LateLintPass<'tcx> for SecretRawType {
         local_def_id: LocalDefId,
     ) {
         // Closures have no named boundary, and trait impls inherit their signature from the trait.
-        if matches!(kind, FnKind::Closure) || implements_trait_item(cx, local_def_id) {
+        if matches!(kind, FnKind::Closure) || is_trait_impl_method(cx, local_def_id) {
             return;
         }
 
@@ -154,7 +154,7 @@ fn check_trait_required_params(
 }
 
 /// Return whether a function implements an item of a trait impl.
-fn implements_trait_item(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
+fn is_trait_impl_method(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool {
     cx.tcx
         .impl_of_assoc(local_def_id.to_def_id())
         .is_some_and(|impl_def_id| cx.tcx.impl_opt_trait_id(impl_def_id).is_some())

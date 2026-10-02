@@ -129,8 +129,14 @@ impl<'tcx> Visitor<'tcx> for LoggingVisitor<'_, 'tcx> {
     /// Break with the user-visible span of the first logging call.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) -> ControlFlow<Span> {
         // Report a macro at its source call site and a function call at the call itself.
-        if let Some(span) = logging_macro_call(self.cx, expr.span) {
-            return ControlFlow::Break(span);
+        let is_logging_macro = expr.span.macro_backtrace().any(|expn_data| {
+            matches!(expn_data.kind, ExpnKind::Macro(MacroKind::Bang, _))
+                && expn_data
+                    .macro_def_id
+                    .is_some_and(|def_id| is_logging_macro(self.cx, def_id))
+        });
+        if is_logging_macro {
+            return ControlFlow::Break(expr.span.source_callsite());
         }
         if logging_function_call(self.cx, expr) {
             return ControlFlow::Break(expr.span);
@@ -140,20 +146,8 @@ impl<'tcx> Visitor<'tcx> for LoggingVisitor<'_, 'tcx> {
     }
 }
 
-/// Return the outermost source call site when a logging macro produced the span.
-fn logging_macro_call(cx: &LateContext<'_>, span: Span) -> Option<Span> {
-    span.macro_backtrace()
-        .any(|expn_data| {
-            matches!(expn_data.kind, ExpnKind::Macro(MacroKind::Bang, _))
-                && expn_data
-                    .macro_def_id
-                    .is_some_and(|def_id| logging_macro(cx, def_id))
-        })
-        .then(|| span.source_callsite())
-}
-
 /// Return whether a macro definition is `eprintln!` or a `log` or `tracing` event macro.
-fn logging_macro(cx: &LateContext<'_>, def_id: DefId) -> bool {
+fn is_logging_macro(cx: &LateContext<'_>, def_id: DefId) -> bool {
     cx.tcx
         .get_diagnostic_name(def_id)
         .is_some_and(|name| name.as_str() == "eprintln_macro")
