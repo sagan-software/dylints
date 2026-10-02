@@ -8,8 +8,8 @@ Checks for a field of a `thiserror::Error` type that has both `#[from]` and
 ## Why is this bad?
 
 Thiserror treats a `#[from]` field as the error source, so `#[source]` changes
-nothing. The extra attribute suggests the two attributes have different
-effects on this field.
+nothing. The extra attribute suggests that `#[source]` changes how thiserror
+treats the field, although `#[from]` already marks it as the source.
 
 ## Known problems
 
