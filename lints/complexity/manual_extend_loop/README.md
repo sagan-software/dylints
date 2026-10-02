@@ -11,26 +11,26 @@ loop with one `extend` call.
 
 The loop grows the collection one item at a time. `Extend::extend` adds the
 items in one call and can reserve capacity from the iterator size hint. When
-the pushed value is transformed, `extend` with `map` states the transformation
+code transforms the pushed value, `extend` with `map` states the transformation
 in one place.
 
 ## Known problems
 
-- Only the standard `Vec::push` and `VecDeque::push_back` trigger. Other
-  collections, such as `HashSet::insert`, and local types with a `push` method
-  are ignored.
+- Only the standard `Vec::push` and `VecDeque::push_back` trigger. The lint
+  ignores other collections, such as `HashSet::insert`, and local types with a
+  `push` method.
 - The target must be a built-in `Vec` or `VecDeque` reached from a local place
-  through only built-in references. Custom `Deref` or `DerefMut` receivers are
-  ignored.
+  through only built-in references. The lint ignores targets reached through
+  custom `Deref` or `DerefMut` receivers.
 - The lint skips bodies that contain `?`, `.await`, `break`, `continue`, or
   `return`, and pushed values that read the target collection.
-- A source expression that reads the target collection is ignored because
+- The lint ignores a source expression that reads the target collection because
   `extend` holds the target borrow while it evaluates the source.
 - A target produced by a call or an index, such as `target().push(value)`, is
   ignored because the loop evaluates it once per item.
-- The automatic fix applies only when the pushed value is the loop variable
-  without a coercion and the loop is a statement or a block tail. Other loops,
-  such as a loop in a match arm, get help without a fix. The fix removes
+- The automatic fix applies only when the loop pushes its variable without
+  coercion as a statement or block tail. Other loops, such as loops in match
+  arms, get help without a fix. The fix removes
   comments inside the loop.
 
 ## Example
