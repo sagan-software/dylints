@@ -33,7 +33,8 @@ export COVERAGE_TARGET_DIR="$coverage_target"
 export FAKE_REPOSITORY_ROOT="$repository_root"
 
 coverage_output="$test_root/coverage-output.log"
-bash "$repository_root/scripts/coverage.sh" --path "$repository_root/lints/complexity" \
+bash "$repository_root/scripts/coverage.sh" --min-lines 60 \
+	--path "$repository_root/lints/complexity" \
 	-- -p coverage-test --tests >"$coverage_output" 2>&1
 
 if [[ -e "$coverage_target/debug/stale-object" ]]; then
@@ -56,6 +57,10 @@ if rg -F -q 'example/src/../../chaining_lint_support.rs' "$LLVM_COV_LOG"; then
 	printf 'coverage excluded a selected lexical source alias\n' >&2
 	exit 1
 fi
+if ! rg -F -q '/examples/' "$LLVM_COV_LOG"; then
+	printf 'coverage did not exclude example targets\n' >&2
+	exit 1
+fi
 if [[ "$(jq '.data[0].files | length' "$coverage_target/report/summary.json")" != 2 ]]; then
 	printf 'coverage did not retain both selected source mappings\n' >&2
 	exit 1
@@ -71,6 +76,53 @@ if ! rg -F -q 'coverage note: 1 lexical #[path] aliases remain separate LLVM map
 	printf 'coverage did not report duplicated lexical mappings\n' >&2
 	exit 1
 fi
+if ! rg -F -q 'RAW LLVM REPORT functions regions' "$coverage_target/report/summary.txt" ||
+	! rg -F -q '44 functions have mismatched data' "$coverage_target/report/llvm-cov.stderr"; then
+	printf 'coverage did not preserve raw LLVM report diagnostics\n' >&2
+	exit 1
+fi
+if [[ "$(jq -r '.files | length' "$coverage_target/report/canonical_summary.json")" != 1 ]]; then
+	printf 'canonical coverage did not merge lexical aliases\n' >&2
+	exit 1
+fi
+canonical_count="$(jq -r '.totals.lines.count' "$coverage_target/report/canonical_summary.json")"
+canonical_covered="$(jq -r '.totals.lines.covered' "$coverage_target/report/canonical_summary.json")"
+if [[ "$canonical_count" != 3 || "$canonical_covered" != 2 ]]; then
+	printf 'canonical coverage did not union disjoint alias hits\n' >&2
+	exit 1
+fi
+if [[ "$(jq -c '.files[0].missing_lines' "$coverage_target/report/canonical_summary.json")" != '[30]' ]]; then
+	printf 'canonical coverage did not retain the zero-hit line\n' >&2
+	exit 1
+fi
+if jq -e --arg outside "$repository_root/src/runner.rs" \
+	'any(.files[]; .filename == $outside)' \
+	"$coverage_target/report/canonical_summary.json" >/dev/null; then
+	printf 'canonical coverage retained an unselected source file\n' >&2
+	exit 1
+fi
+if ! rg -F -q "$repository_root/lints/complexity/chaining_lint_support.rs:30" \
+	"$coverage_target/report/canonical_gaps.txt"; then
+	printf 'canonical coverage did not write a readable gap\n' >&2
+	exit 1
+fi
+if ! rg -F -q 'total line coverage: 66.67%' "$coverage_output" ||
+	! rg -F -q 'raw LLVM line coverage: 50.00%' "$coverage_output"; then
+	printf 'coverage did not report canonical and raw line totals\n' >&2
+	exit 1
+fi
+
+threshold_output="$test_root/threshold-output.log"
+if bash "$repository_root/scripts/coverage.sh" --min-lines 67 \
+	--path "$repository_root/lints/complexity" \
+	-- -p coverage-test --tests >"$threshold_output" 2>&1; then
+	printf 'coverage accepted a threshold above canonical coverage\n' >&2
+	exit 1
+fi
+if ! rg -F -q 'line coverage 66.67% is below the 67% minimum' "$threshold_output"; then
+	printf 'coverage threshold did not use canonical lines\n' >&2
+	exit 1
+fi
 
 coverage_target_no_path="$test_root/no-path-coverage"
 mkdir -p "$coverage_target_no_path/debug"
@@ -79,8 +131,9 @@ export COVERAGE_TARGET_DIR="$coverage_target_no_path"
 coverage_output_no_path="$test_root/no-path-coverage-output.log"
 bash "$repository_root/scripts/coverage.sh" -- -p coverage-test --tests \
 	>"$coverage_output_no_path" 2>&1
-if ! rg -F -q 'total line coverage: 2.17%' "$coverage_output_no_path"; then
-	printf 'coverage did not consume a report with more than forty files\n' >&2
+if ! rg -F -q 'total line coverage: 75.00%' "$coverage_output_no_path" ||
+	! rg -F -q 'raw LLVM line coverage: 2.17%' "$coverage_output_no_path"; then
+	printf 'coverage did not report canonical lines beside the large raw report\n' >&2
 	exit 1
 fi
 if [[ -e "$coverage_target_no_path/debug/stale-object" ]]; then

@@ -78,7 +78,9 @@ llvm_bin="$(rustc --print sysroot)/lib/rustlib/$(rustc -vV | sed -n 's/^host: //
 find "$target_dir/profiles" -name '*.profraw' >"$target_dir/profiles.txt"
 "$llvm_bin/llvm-profdata" merge -sparse --input-files="$target_dir/profiles.txt" -o "$target_dir/coverage.profdata"
 
-# Report against every instrumented executable and shared library.
+# Report against every instrumented executable and shared library. Reports include
+# executable lines from production and test targets, including `cfg(test)` modules;
+# they are not production-only. Example targets and test fixtures are excluded.
 # llvm-cov reads its first positional argument as a binary, so only later ones use --object.
 objects=()
 while IFS= read -r -d '' object; do
@@ -90,12 +92,15 @@ while IFS= read -r -d '' object; do
 done < <(find "$target_dir/debug" -maxdepth 2 -type f \( -name '*.so' -o -perm -u+x \) \
 	! -name '*.d' ! -name 'build-script-*' -print0)
 
-ignore='(/\.cargo/registry/|/rustc/|/nix/store/|/ui/|/tests/fixtures/|/target/)'
+ignore='(/\.cargo/registry/|/rustc/|/nix/store/|/examples/|/ui/|/tests/fixtures/|/target/)'
 common=(--instr-profile "$target_dir/coverage.profdata" --ignore-filename-regex "$ignore")
 
 # llvm-cov records #[path] modules with their lexical source paths, such as
 # `lint/src/../../shared.rs`. Normalize those paths before filtering the report.
+llvm_cov_diagnostics="$report_dir/llvm-cov.stderr"
+: >"$llvm_cov_diagnostics"
 allowed_filenames_file=''
+selected_sources_file=''
 lexical_alias_count=0
 if ((${#paths[@]} > 0)); then
 	selected_sources_file="$(mktemp "$target_dir/selected-sources.XXXXXX")"
@@ -110,7 +115,7 @@ if ((${#paths[@]} > 0)); then
 	# Build the candidate filename set before applying the scoped filter. This
 	# retains each lexical alias that resolves to a selected source file.
 	"$llvm_bin/llvm-cov" export --summary-only "${common[@]}" "${objects[@]}" \
-		>"$all_summary_file" 2>/dev/null
+		>"$all_summary_file" 2>>"$llvm_cov_diagnostics"
 	while IFS= read -r filename; do
 		filename_for_match="$filename"
 		if [[ "$filename_for_match" != /* ]]; then
@@ -145,9 +150,13 @@ if ((${#paths[@]} > 0)); then
 	fi
 fi
 
-"$llvm_bin/llvm-cov" report "${common[@]}" "${objects[@]}" >"$report_dir/summary.txt" 2>/dev/null
-"$llvm_bin/llvm-cov" export --format=lcov "${common[@]}" "${objects[@]}" >"$report_dir/lcov.info" 2>/dev/null
-"$llvm_bin/llvm-cov" export --summary-only "${common[@]}" "${objects[@]}" >"$report_dir/summary.json" 2>/dev/null
+{
+	"$llvm_bin/llvm-cov" report "${common[@]}" "${objects[@]}" >"$report_dir/summary.txt"
+	"$llvm_bin/llvm-cov" export --format=lcov "${common[@]}" "${objects[@]}" \
+		>"$report_dir/lcov.info"
+	"$llvm_bin/llvm-cov" export --summary-only "${common[@]}" "${objects[@]}" \
+		>"$report_dir/summary.json"
+} 2>>"$llvm_cov_diagnostics"
 
 if [[ -n "$allowed_filenames_file" ]]; then
 	filtered_summary_file="$(mktemp "$target_dir/filtered-summary.XXXXXX.json")"
@@ -172,18 +181,117 @@ if [[ -n "$allowed_filenames_file" ]]; then
 	mv "$filtered_summary_file" "$report_dir/summary.json"
 fi
 
+# Collapse duplicated lexical mappings to canonical source files for the line threshold.
+# LCOV DA records are executable lines; the maximum hit count wins when aliases overlap.
+canonical_lines_file="$report_dir/canonical-lines.tsv"
+canonical_summary_file="$report_dir/canonical_summary.json"
+canonical_gaps_file="$report_dir/canonical_gaps.txt"
+declare -A canonical_hits=()
+current_source=''
+while IFS= read -r record || [[ -n "$record" ]]; do
+	case "$record" in
+	SF:*)
+		raw_source="${record#SF:}"
+		source_for_match="$raw_source"
+		if [[ "$source_for_match" != /* ]]; then
+			source_for_match="$repository_root/$source_for_match"
+		fi
+		current_source="$(realpath -m -- "$source_for_match")"
+		if [[ -n "$selected_sources_file" ]] &&
+			! grep -F -x -q "$current_source" "$selected_sources_file"; then
+			current_source=''
+		fi
+		;;
+	DA:*)
+		if [[ -z "$current_source" ]]; then
+			continue
+		fi
+		data="${record#DA:}"
+		line_number="${data%%,*}"
+		hit_count="${data#*,}"
+		hit_count="${hit_count%%,*}"
+		if [[ "$line_number" =~ ^[0-9]+$ && "$hit_count" =~ ^[0-9]+$ ]]; then
+			line_number=$((10#$line_number))
+			key="$current_source"$'\034'"$line_number"
+			previous="${canonical_hits[$key]:-}"
+			if [[ -z "$previous" ]]; then
+				canonical_hits["$key"]="$hit_count"
+			elif ((10#$hit_count > 10#$previous)); then
+				canonical_hits["$key"]="$hit_count"
+			fi
+		fi
+		;;
+	end_of_record)
+		current_source=''
+		;;
+	esac
+done <"$report_dir/lcov.info"
+
+for key in "${!canonical_hits[@]}"; do
+	canonical_source="${key%$'\034'*}"
+	line_number="${key##*$'\034'}"
+	printf '%s\t%s\t%s\n' "$canonical_source" "$line_number" "${canonical_hits[$key]}"
+done | LC_ALL=C sort -t $'\t' -k1,1 -k2,2n >"$canonical_lines_file"
+
+jq -Rn '
+    def metric($count; $covered): {
+        count: $count,
+        covered: $covered,
+        notcovered: ($count - $covered),
+        percent: (if $count == 0 then 0 else 100 * $covered / $count end)
+    };
+    [inputs
+        | select(length > 0)
+        | split("\t")
+        | {
+            filename: .[0],
+            line: (.[1] | tonumber),
+            hits: (.[2] | tonumber)
+        }
+    ]
+    | group_by(.filename)
+    | map(
+        . as $entries
+        | ($entries | map(select(.hits > 0)) | length) as $covered
+        | {
+            filename: $entries[0].filename,
+            lines: metric(($entries | length); $covered),
+            missing_lines: ($entries | map(select(.hits == 0) | .line))
+        }
+    ) as $files
+    | {
+        scope: "canonical executable LCOV DA lines from production and test targets; cfg(test) modules included; examples and tests/fixtures excluded",
+        files: $files,
+        totals: {
+            lines: metric(
+                ($files | map(.lines.count) | add // 0);
+                ($files | map(.lines.covered) | add // 0)
+            )
+        }
+    }
+' "$canonical_lines_file" >"$canonical_summary_file"
+jq -r '.files[] as $file | $file.missing_lines[]? | "\($file.filename):\(.)"' \
+	"$canonical_summary_file" >"$canonical_gaps_file"
+
 # Print the least covered files and the totals, then enforce the threshold.
 jq -r '.data[0].files[]
     | [.summary.lines.percent, .summary.lines.count - .summary.lines.covered, .filename]
     | @tsv' "$report_dir/summary.json" | sort -n | sed -n '1,40p'
-lines="$(jq -r '.data[0].totals.lines.percent' "$report_dir/summary.json")"
+raw_lines="$(jq -r '.data[0].totals.lines.percent' "$report_dir/summary.json")"
 regions="$(jq -r '.data[0].totals.regions.percent' "$report_dir/summary.json")"
+lines="$(jq -r '.totals.lines.percent' "$canonical_summary_file")"
 printf 'total line coverage: %.2f%%\ntotal region coverage: %.2f%%\n' "$lines" "$regions"
+printf 'raw LLVM line coverage: %.2f%%\nraw LLVM region coverage: %.2f%%\n' \
+	"$raw_lines" "$regions"
 if ((lexical_alias_count > 0)); then
 	printf 'coverage note: %d lexical #[path] aliases remain separate LLVM mappings; totals count each compiled copy.\n' \
 		"$lexical_alias_count"
 fi
-printf 'reports: %s\n' "$report_dir"
+printf 'canonical gaps: %s\nraw LLVM diagnostics: %s\nreports: %s\n' \
+	"$canonical_gaps_file" "$llvm_cov_diagnostics" "$report_dir"
+if [[ -s "$llvm_cov_diagnostics" ]]; then
+	cat "$llvm_cov_diagnostics" >&2
+fi
 if ((test_status != 0)); then
 	echo "tests failed during the coverage run" >&2
 	exit "$test_status"
