@@ -76,7 +76,7 @@ cargo test -p ad_hoc_display --lib
 Measure the workspace through the Nix coverage app:
 
 ```sh
-nix run .#coverage
+nix run .#coverage -- -- --workspace --lib --bins --tests
 ```
 
 The command builds fresh instrumented binaries and runs every workspace test.
@@ -88,8 +88,10 @@ It writes reports to `target/coverage/report`.
 
 The line threshold uses canonical executable lines from production and test
 targets, including `cfg(test)` modules. Reports exclude examples, UI fixtures,
-and dependency sources. Region totals keep each compiled source mapping.
-These metrics do not measure branch coverage.
+the SQLx auxiliary fixture at `lints/crates/sqlx/fixture`, and dependency
+sources. Region totals keep each compiled source mapping.
+These metrics do not measure branch coverage. CI requires at least 97% canonical
+line coverage. The audit target remains 99–100%; the reports record remaining gaps.
 
 To measure a lint's coverage with a minimum of 99%, run:
 
@@ -130,6 +132,10 @@ cargo run --bin sagan-lints -- --list-private-lints
 The runner also supports `--fast`, `--fix`, `--target-dir PATH`, and
 `--changed-range REVISION_RANGE`. The `--fix` mode applies only compiler
 suggestions marked machine-applicable and reruns the selected checks.
+
+The fixer resolves repository paths before writing. If a repository path resolves
+outside the repository, the fixer fails before writing any edit. Internal symlink
+aliases share one source. Compatible edits combine; conflicting edits are deferred.
 
 The Nix package builds a self-contained runner:
 
