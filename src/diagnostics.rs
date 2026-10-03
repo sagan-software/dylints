@@ -691,7 +691,7 @@ fn relative_file(repo: &Path, file: &str) -> String {
 #[cfg(test)]
 mod tests {
     use std::{
-        fs,
+        fs, io,
         os::unix::fs::{PermissionsExt as _, symlink},
         path::{Path, PathBuf},
     };
@@ -723,6 +723,18 @@ mod tests {
         fs::create_dir_all(repo.path().join("src")).unwrap();
         fs::write(repo.path().join("src/lib.rs"), source).unwrap();
         repo
+    }
+
+    /// Build a repository symlink whose target is outside the repository.
+    fn external_symlink_fixture() -> (tempfile::TempDir, tempfile::TempDir, PathBuf) {
+        let repo = repository(b"abc");
+        let external = tempfile::tempdir().unwrap();
+        let external_file = external.path().join("outside.rs");
+        // Keep the external target readable so rejection depends on containment.
+        fs::write(&external_file, "abc").unwrap();
+        // Keep the alias inside the repository while resolving its target outside.
+        symlink(&external_file, repo.path().join("src/link.rs")).unwrap();
+        (repo, external, external_file)
     }
 
     /// Apply suggestions to a fresh `src/lib.rs` and return the summary and new source.
@@ -935,29 +947,47 @@ mod tests {
     /// Empty fix collections do not require a repository or source read.
     #[test]
     fn ignores_empty_fix_collections() {
-        let repo = repository(b"abc");
+        let parent = tempfile::tempdir().unwrap();
+        let repo = parent.path().join("missing-repository");
+        let existing = parent.path().join("untouched.rs");
+        fs::write(&existing, "abc").unwrap();
         // Cover both an absent suggestion list and a suggestion with no edits.
-        let no_fixes = apply_machine_fixes(repo.path(), &[]).unwrap();
-        let empty_fix =
-            apply_machine_fixes(repo.path(), &[MachineFix { edits: Vec::new() }]).unwrap();
+        let no_fixes = apply_machine_fixes(&repo, &[]).unwrap();
+        let empty_fix = apply_machine_fixes(&repo, &[MachineFix { edits: Vec::new() }]).unwrap();
 
         // Neither no-op input may create a source file or write the repository.
-        assert_eq!(no_fixes, AppliedFixes::default());
-        assert_eq!(empty_fix, AppliedFixes::default());
+        assert_eq!(fs::read_to_string(existing).unwrap(), "abc");
         assert_eq!(
-            fs::read_to_string(repo.path().join("src/lib.rs")).unwrap(),
-            "abc"
+            (no_fixes, empty_fix, repo.exists()),
+            (AppliedFixes::default(), AppliedFixes::default(), false)
         );
+    }
+
+    /// A nonempty fix for a missing repository preserves its source path and error kind.
+    #[test]
+    fn reports_missing_repository_source_path() {
+        let parent = tempfile::tempdir().unwrap();
+        let repo = parent.path().join("missing-repository");
+        let fixes = [MachineFix {
+            edits: vec![file_edit("src/lib.rs", 0, 1, "X")],
+        }];
+
+        // Canonical repository resolution must retain the compiler path context.
+        let error = apply_machine_fixes(&repo, &fixes).unwrap_err();
+
+        assert!(matches!(
+            error,
+            DiagnosticError::ReadSource { path, source }
+                if path == Path::new("src/lib.rs") && source.kind() == io::ErrorKind::NotFound
+        ));
+        // A failed canonicalization must not create the requested repository.
+        assert!(!repo.exists());
     }
 
     /// An external target behind a repository symlink is rejected without writing it.
     #[test]
     fn rejects_external_symlink_targets_before_writing() {
-        let repo = repository(b"abc");
-        let external = tempfile::tempdir().unwrap();
-        let external_file = external.path().join("outside.rs");
-        fs::write(&external_file, "abc").unwrap();
-        symlink(&external_file, repo.path().join("src/link.rs")).unwrap();
+        let (repo, _external, external_file) = external_symlink_fixture();
         // A valid internal edit must remain unwritten when a later target is rejected.
         let fixes = [
             MachineFix {
@@ -973,13 +1003,18 @@ mod tests {
 
         assert!(matches!(
             error,
-            DiagnosticError::ReadSource { path, .. } if path == Path::new("src/link.rs")
+            DiagnosticError::ReadSource { path, source }
+                if path == Path::new("src/link.rs")
+                    && source.kind() == io::ErrorKind::PermissionDenied
+                    && source.to_string() == "source resolves outside repository"
         ));
         assert_eq!(
-            fs::read_to_string(repo.path().join("src/lib.rs")).unwrap(),
-            "abc"
+            (
+                fs::read_to_string(repo.path().join("src/lib.rs")).unwrap(),
+                fs::read_to_string(external_file).unwrap()
+            ),
+            ("abc".to_owned(), "abc".to_owned())
         );
-        assert_eq!(fs::read_to_string(external_file).unwrap(), "abc");
     }
 
     /// Internal symlink aliases share one source identity and preserve both edits.
