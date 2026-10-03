@@ -1,0 +1,33 @@
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/type_shapes.rs:15:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(make_error);
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+   = note: `#[warn(let_some_return_err)]` on by default
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/type_shapes.rs:23:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err(ERROR_FACTORY());
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: `Option` mismatch returns `Err` manually
+  --> $DIR/type_shapes.rs:31:5
+   |
+LL | /     let Some(value) = value else {
+LL | |         return Err({ Error::Missing });
+LL | |     };
+   | |______^
+   |
+   = help: convert the initializer with `.ok_or(...)` or `.ok_or_else(...)` and use `?`
+
+warning: 3 warnings emitted
+
