@@ -18,12 +18,18 @@ extern crate rustc_span;
 
 use rustc_ast::LitKind;
 use rustc_errors::DiagDecorator;
-use rustc_hir::{ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, Node, def::Res};
+use rustc_hir::{
+    BinOpKind, ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, Node, UnOp,
+    def::{DefKind, Res},
+};
 use rustc_lint::{LateContext, Lint, LintContext};
 use rustc_middle::ty;
 use rustc_span::{Span, Symbol, def_id::DefId};
 
 use dylint_linting as _;
+
+/// Maximum number of boolean expression nodes inspected for one Reqwest argument.
+const MAX_BOOLEAN_EXPR_NODES: usize = 16;
 
 /// One semantically resolved Reqwest method call with its canonical definition.
 ///
@@ -211,6 +217,98 @@ pub fn is_in_async_body(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 /// ```
 pub const fn is_true_literal(expr: &Expr<'_>) -> bool {
     matches!(expr.kind, ExprKind::Lit(literal) if matches!(literal.node, LitKind::Bool(true)))
+}
+
+/// Return whether a bounded boolean expression is known to evaluate to `true`.
+///
+/// The analysis accepts boolean literals, local boolean `const` items, `!`,
+/// `&&`, and `||`. It follows short-circuit order and leaves runtime values,
+/// associated constants, external constants, and over-budget expressions unknown.
+#[must_use]
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, expr| {
+///     let _ = reqwest_support::is_true_boolean_expression(cx, expr);
+/// };
+/// ```
+pub fn is_true_boolean_expression(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    let mut remaining_nodes = MAX_BOOLEAN_EXPR_NODES;
+    known_boolean_value(cx, expr, &mut remaining_nodes) == Some(true)
+}
+
+/// Resolve a boolean literal, local constant, or supported boolean operation.
+fn known_boolean_value(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    remaining_nodes: &mut usize,
+) -> Option<bool> {
+    // Stop before traversing an expression whose analysis would exceed the fixed node budget.
+    if *remaining_nodes == 0 {
+        return None;
+    }
+    *remaining_nodes -= 1;
+
+    if let ExprKind::Lit(literal) = expr.kind {
+        if let LitKind::Bool(value) = literal.node {
+            return Some(value);
+        }
+        return None;
+    }
+    if let ExprKind::Path(path) = expr.kind {
+        return local_boolean_constant(cx, &path, expr.hir_id);
+    }
+    if let ExprKind::Unary(UnOp::Not, operand) = expr.kind {
+        return Some(!known_boolean_value(cx, operand, remaining_nodes)?);
+    }
+    if let ExprKind::Binary(operator, left, right) = expr.kind {
+        if operator.node == BinOpKind::And {
+            if known_boolean_value(cx, left, remaining_nodes)? {
+                return known_boolean_value(cx, right, remaining_nodes);
+            }
+            return Some(false);
+        }
+        if operator.node == BinOpKind::Or {
+            if known_boolean_value(cx, left, remaining_nodes)? {
+                return Some(true);
+            }
+            return known_boolean_value(cx, right, remaining_nodes);
+        }
+    }
+    None
+}
+
+/// Evaluate a resolved local boolean `const` item without following runtime values.
+fn local_boolean_constant(
+    cx: &LateContext<'_>,
+    path: &rustc_hir::QPath<'_>,
+    hir_id: rustc_hir::HirId,
+) -> Option<bool> {
+    // Reject locals, associated constants, and external constants before querying CTFE.
+    let Res::Def(DefKind::Const { .. }, definition) = cx.typeck_results().qpath_res(path, hir_id)
+    else {
+        return None;
+    };
+    if !definition.is_local() {
+        return None;
+    }
+
+    // A local const must have boolean type before its value can inform the setting.
+    let definition_type = cx.tcx.type_of(definition);
+    let instantiated_type = definition_type.instantiate_identity();
+    let normalized_type = instantiated_type.skip_norm_wip();
+    let is_boolean = normalized_type.is_bool();
+    if !is_boolean {
+        return None;
+    }
+
+    // Failed or non-boolean evaluation cannot establish that the setting is `true`.
+    cx.tcx
+        .const_eval_poly(definition)
+        .ok()
+        .and_then(|value| value.try_to_bool())
 }
 
 /// Return whether an expression has the asynchronous Reqwest `Client` type.

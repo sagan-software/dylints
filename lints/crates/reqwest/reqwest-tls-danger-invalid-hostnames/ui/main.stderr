@@ -1,5 +1,5 @@
 warning: this client accepts certificates issued for different hostnames
-  --> $DIR/main.rs:5:10
+  --> $DIR/main.rs:8:10
    |
 LL |         .tls_danger_accept_invalid_hostnames(true)
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -7,5 +7,69 @@ LL |         .tls_danger_accept_invalid_hostnames(true)
    = help: keep hostname verification enabled and use a certificate for the requested host
    = note: `#[warn(reqwest_tls_danger_invalid_hostnames)]` on by default
 
-warning: 1 warning emitted
+warning: this client accepts certificates issued for different hostnames
+  --> $DIR/main.rs:14:10
+   |
+LL |         .tls_danger_accept_invalid_hostnames(ACCEPT_INVALID)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep hostname verification enabled and use a certificate for the requested host
+
+warning: this client accepts certificates issued for different hostnames
+  --> $DIR/main.rs:21:10
+   |
+LL |         .danger_accept_invalid_hostnames(ACCEPT_INVALID)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep hostname verification enabled and use a certificate for the requested host
+
+warning: this client accepts certificates issued for different hostnames
+  --> $DIR/main.rs:49:10
+   |
+LL |         .tls_danger_accept_invalid_hostnames(!VALIDATION_ENABLED)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep hostname verification enabled and use a certificate for the requested host
+
+warning: this client accepts certificates issued for different hostnames
+  --> $DIR/main.rs:55:10
+   |
+LL |         .tls_danger_accept_invalid_hostnames(ACCEPT_INVALID && (true || runtime_flag()))
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep hostname verification enabled and use a certificate for the requested host
+
+warning: this client accepts certificates issued for different hostnames
+  --> $DIR/main.rs:61:10
+   |
+LL |         .tls_danger_accept_invalid_hostnames(VALIDATION_ENABLED || ACCEPT_INVALID)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep hostname verification enabled and use a certificate for the requested host
+
+warning: this client accepts certificates issued for different hostnames
+  --> $DIR/main.rs:67:10
+   |
+LL |         .tls_danger_accept_invalid_hostnames(true || runtime_flag())
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep hostname verification enabled and use a certificate for the requested host
+
+warning: this client accepts certificates issued for different hostnames
+  --> $DIR/main.rs:139:10
+   |
+LL |         .tls_danger_accept_invalid_hostnames(IMPORTED_ACCEPT_INVALID)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep hostname verification enabled and use a certificate for the requested host
+
+warning: this client accepts certificates issued for different hostnames
+  --> $DIR/main.rs:151:10
+   |
+LL |         .tls_danger_accept_invalid_hostnames(invalid_flag!())
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep hostname verification enabled and use a certificate for the requested host
+
+warning: 9 warnings emitted
 

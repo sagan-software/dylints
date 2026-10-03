@@ -2,8 +2,10 @@
 
 ## What it does
 
-Checks for a literal `true` passed to `tls_danger_accept_invalid_hostnames` or
-`danger_accept_invalid_hostnames` on a Reqwest `ClientBuilder`.
+Checks `tls_danger_accept_invalid_hostnames` and deprecated
+`danger_accept_invalid_hostnames` on a Reqwest `ClientBuilder`. It reports
+`true`, local boolean constants set to `true`, and bounded `!`, `&&`, and `||`
+expressions that resolve to `true`.
 
 ## Why is this bad?
 
@@ -13,9 +15,11 @@ change the traffic.
 
 ## Known problems
 
-The lint only checks the literal `true`. It misses a variable or constant set
-to `true`. Test code that talks to a local server with a mismatched certificate
-name also triggers the lint.
+Unknown runtime values remain unknown unless a known left operand of `&&` or
+`||` short-circuits to a result without inspecting the right operand.
+Associated and external constants, comparisons, and expressions over 16 visited
+nodes remain unknown. It can still report test code that intentionally accepts
+a mismatched certificate name from a local server.
 
 ## Example
 

@@ -16,7 +16,7 @@ extern crate rustc_hir;
 #[cfg(test)]
 use reqwest as _;
 
-use reqwest_support::{emit_span_lint_with_help, is_true_literal, reqwest_method_parts};
+use reqwest_support::{emit_span_lint_with_help, is_true_boolean_expression, reqwest_method_parts};
 use rustc_hir::Expr;
 use rustc_lint::{LateContext, LateLintPass};
 
@@ -37,8 +37,8 @@ impl<'tcx> LateLintPass<'tcx> for ReqwestTlsDangerInvalidHostnames {
         let Some((_receiver, [enabled], span)) = call else {
             return;
         };
-        // Report only the literal setting that disables hostname validation.
-        if !is_true_literal(enabled) {
+        // Report only a setting proven to disable hostname validation.
+        if !is_true_boolean_expression(cx, enabled) {
             return;
         }
 

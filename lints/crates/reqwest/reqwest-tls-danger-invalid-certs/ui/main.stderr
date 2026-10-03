@@ -1,5 +1,5 @@
 warning: this client trusts invalid certificates for every site
-  --> $DIR/main.rs:5:10
+  --> $DIR/main.rs:8:10
    |
 LL |         .tls_danger_accept_invalid_certs(true)
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -7,5 +7,69 @@ LL |         .tls_danger_accept_invalid_certs(true)
    = help: keep validation enabled and configure explicit certificate roots
    = note: `#[warn(reqwest_tls_danger_invalid_certs)]` on by default
 
-warning: 1 warning emitted
+warning: this client trusts invalid certificates for every site
+  --> $DIR/main.rs:14:10
+   |
+LL |         .tls_danger_accept_invalid_certs(ACCEPT_INVALID)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep validation enabled and configure explicit certificate roots
+
+warning: this client trusts invalid certificates for every site
+  --> $DIR/main.rs:21:10
+   |
+LL |         .danger_accept_invalid_certs(ACCEPT_INVALID)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep validation enabled and configure explicit certificate roots
+
+warning: this client trusts invalid certificates for every site
+  --> $DIR/main.rs:49:10
+   |
+LL |         .tls_danger_accept_invalid_certs(!VALIDATION_ENABLED)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep validation enabled and configure explicit certificate roots
+
+warning: this client trusts invalid certificates for every site
+  --> $DIR/main.rs:55:10
+   |
+LL |         .tls_danger_accept_invalid_certs(ACCEPT_INVALID && (true || runtime_flag()))
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep validation enabled and configure explicit certificate roots
+
+warning: this client trusts invalid certificates for every site
+  --> $DIR/main.rs:61:10
+   |
+LL |         .tls_danger_accept_invalid_certs(VALIDATION_ENABLED || ACCEPT_INVALID)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep validation enabled and configure explicit certificate roots
+
+warning: this client trusts invalid certificates for every site
+  --> $DIR/main.rs:67:10
+   |
+LL |         .tls_danger_accept_invalid_certs(true || runtime_flag())
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep validation enabled and configure explicit certificate roots
+
+warning: this client trusts invalid certificates for every site
+  --> $DIR/main.rs:139:10
+   |
+LL |         .tls_danger_accept_invalid_certs(IMPORTED_ACCEPT_INVALID)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep validation enabled and configure explicit certificate roots
+
+warning: this client trusts invalid certificates for every site
+  --> $DIR/main.rs:151:10
+   |
+LL |         .tls_danger_accept_invalid_certs(invalid_flag!())
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: keep validation enabled and configure explicit certificate roots
+
+warning: 9 warnings emitted
 
