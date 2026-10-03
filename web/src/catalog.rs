@@ -50,7 +50,7 @@ impl Lint {
 
 /// Askama context for the lint list page.
 #[derive(askama::Template)]
-#[template(path = "index.html")]
+#[template(path = "index.html.jinja", escape = "html")]
 pub(crate) struct SiteTemplate<'lint> {
     /// Lints in name order.
     lints: &'lint [Lint],
