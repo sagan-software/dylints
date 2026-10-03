@@ -5,7 +5,7 @@
 Checks hand-written `Debug` implementations for local structs without type or
 const parameters. Their `fmt` body must be one `debug_struct` or `debug_tuple`
 chain. The chain must use the struct's name, show every field in declaration
-order as `&self.field` under the field's own name, and end with `.finish()`.
+order as `&self.field`, and end with `.finish()`.
 That chain prints the same text as `#[derive(Debug)]`.
 
 When a struct has fields, its builder must match its field syntax. Named structs
