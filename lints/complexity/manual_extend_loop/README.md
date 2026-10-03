@@ -37,8 +37,9 @@ side effects.
   coercion from a `Vec`, `VecDeque`, array, or slice, as a statement or block
   tail. Other source types, including iterator adapters, get help without a
   machine-applicable fix because their `size_hint` can have side effects.
-  Other loops, such as loops in match arms, get help without a fix. The fix
-  removes comments inside the loop.
+  Other loops, such as loops in match arms, get help without a fix. Loops with
+  line or block comments retain the diagnostic and its help text but get no
+  automatic fix. Comment markers inside string literals do not suppress fixes.
 
 ## Example
 

@@ -15,6 +15,7 @@
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_lexer;
 extern crate rustc_middle;
 extern crate rustc_span;
 
@@ -26,6 +27,7 @@ use rustc_hir::{
     Block, Expr, ExprKind, HirId, Node, StmtKind, UnOp,
     intravisit::{Visitor, walk_expr},
 };
+use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty::{
     self,
@@ -98,7 +100,22 @@ fn extend_candidate<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Opt
     // Offer the exact rewrite only for unchanged items from a known standard source.
     let is_unchanged = is_unchanged_item(cx, &loop_info, argument);
     let is_safe_source = is_known_standard_source(cx, loop_info.source);
-    let suggestion = (is_unchanged && is_safe_source)
+    // Withhold deletion fixes when comments occur inside the loop or its source cannot be read.
+    let has_comments = cx
+        .sess()
+        .source_map()
+        .span_to_snippet(loop_info.span)
+        .ok()
+        .is_none_or(|source| {
+            // Lex the span so comment markers inside string literals stay literal.
+            tokenize(&source, FrontmatterAllowed::No).any(|token| {
+                matches!(
+                    token.kind,
+                    TokenKind::LineComment { .. } | TokenKind::BlockComment { .. }
+                )
+            })
+        });
+    let suggestion = (is_unchanged && is_safe_source && !has_comments)
         .then(|| exact_rewrite(cx, expr, &loop_info, receiver))
         .flatten();
     let help = if is_safe_source {

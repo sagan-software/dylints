@@ -1,0 +1,33 @@
+warning: collection insertion loop can use `Extend::extend`
+  --> $DIR/comments.rs:6:5
+   |
+LL | /     for value in values {
+LL | |         // Keep this explanation beside the per-item insertion.
+LL | |         output.push(value);
+LL | |     }
+   | |_____^
+   |
+   = help: use `Extend::extend`, with `map` when the inserted value is transformed
+   = note: `#[warn(manual_extend_loop)]` on by default
+
+warning: collection insertion loop can use `Extend::extend`
+  --> $DIR/comments.rs:13:5
+   |
+LL | /     for value in values {
+LL | |         /* Keep this explanation beside the per-item insertion. */
+LL | |         output.push(value);
+LL | |     }
+   | |_____^
+   |
+   = help: use `Extend::extend`, with `map` when the inserted value is transformed
+
+warning: collection insertion loop can use `Extend::extend`
+  --> $DIR/comments.rs:20:5
+   |
+LL | /     for value in ["// line marker", "/* block marker */"] {
+LL | |         output.push(value);
+LL | |     }
+   | |_____^ help: use `Extend::extend`: `output.extend(["// line marker", "/* block marker */"])`
+
+warning: 3 warnings emitted
+
