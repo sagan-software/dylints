@@ -18,4 +18,19 @@ struct RenameOnly {
     request_id: String,
 }
 
-fn main() {}
+fn local_rename_all() {
+    #[derive(JsonSchema, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    #[schemars(deny_unknown_fields, /* keep this policy */ rename_all = r#"camelCase"#)]
+    enum Local {
+        Created { request_id: String },
+    }
+
+    let _local = Local::Created {
+        request_id: String::new(),
+    };
+}
+
+fn main() {
+    local_rename_all();
+}

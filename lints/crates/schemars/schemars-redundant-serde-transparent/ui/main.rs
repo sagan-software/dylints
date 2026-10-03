@@ -8,4 +8,15 @@ use serde::Serialize;
 #[schemars(transparent)]
 struct Example(String);
 
-fn main() {}
+fn local_transparent() {
+    #[derive(JsonSchema, Serialize)]
+    #[serde(transparent, rename = "LocalId")]
+    #[schemars(rename = "SchemaId", /* keep this name */ transparent)]
+    struct Local(String);
+
+    let _local = Local(String::new());
+}
+
+fn main() {
+    local_transparent();
+}

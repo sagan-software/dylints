@@ -20,4 +20,42 @@ struct RenameAllOnly {
     request_id: String,
 }
 
-fn main() {}
+fn local_rename() {
+    #[derive(JsonSchema, Serialize)]
+    struct Local {
+        #[serde(
+            rename = r#"https://field,name"#,
+            skip_serializing_if = "Option::is_none"
+        )]
+        #[schemars(rename = "https://field,name", /* preserve this entry */ default)]
+        value: Option<String>,
+        #[serde(rename = "wire,name")]
+        #[schemars(rename(deserialize = r#"wire,name"#, serialize = r#"wire,name"#), /* preserve this entry */ default)]
+        directional: String,
+        #[serde(rename(serialize = "wire", deserialize = "read"))]
+        #[schemars(rename(deserialize = "read", serialize = "wire"))]
+        directional_order: String,
+        #[serde(rename(serialize = "outbound-name", deserialize = "inbound-name"))]
+        #[schemars(rename(serialize = "inbound-name", deserialize = "outbound-name"))]
+        direction_override: String,
+        #[serde(rename = "inside-comment")]
+        #[schemars(rename /* preserve comment inside matching entry */ = "inside-comment", default)]
+        commented: String,
+        #[serde(rename = "overlap", default)]
+        #[schemars(default, rename = "overlap")]
+        overlap: String,
+    }
+
+    let _local = Local {
+        value: None,
+        directional: String::new(),
+        directional_order: String::new(),
+        direction_override: String::new(),
+        commented: String::new(),
+        overlap: String::new(),
+    };
+}
+
+fn main() {
+    local_rename();
+}

@@ -8,5 +8,17 @@ LL | | struct Example {
    |
    = note: `#[warn(schemars_redundant_serde_rename_all)]` on by default
 
-warning: 1 warning emitted
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:24:5
+   |
+LL |     #[schemars(deny_unknown_fields, /* keep this policy */ rename_all = r#"camelCase"#)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the redundant Schemars entry
+   |
+LL -     #[schemars(deny_unknown_fields, /* keep this policy */ rename_all = r#"camelCase"#)]
+LL +     #[schemars(deny_unknown_fields /* keep this policy */ )]
+   |
+
+warning: 2 warnings emitted
 

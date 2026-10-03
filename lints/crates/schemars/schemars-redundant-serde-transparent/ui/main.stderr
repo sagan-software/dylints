@@ -8,5 +8,17 @@ LL | | struct Example(String);
    |
    = note: `#[warn(schemars_redundant_serde_transparent)]` on by default
 
-warning: 1 warning emitted
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:14:5
+   |
+LL |     #[schemars(rename = "SchemaId", /* keep this name */ transparent)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the redundant Schemars entry
+   |
+LL -     #[schemars(rename = "SchemaId", /* keep this name */ transparent)]
+LL +     #[schemars(rename = "SchemaId" /* keep this name */ )]
+   |
+
+warning: 2 warnings emitted
 

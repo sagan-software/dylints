@@ -14,9 +14,20 @@ a default that the deserializer does not apply.
 
 ## Known problems
 
-The lint compares source text after swapping `schemars` for `serde`. It misses a
-duplicate written with different spacing or quoting. It also misses an attribute
-that holds more than one key and a type declared inside a function body.
+The lint compares parsed Serde and Schemars entries on the same AST node. Keys
+must match exactly, and string values compare after Rust decodes literal
+escapes. The lint visits loaded modules, local items, variants, and fields.
+Unsupported or malformed keys and value forms do not trigger the lint.
+
+A fix removes the whole Schemars attribute when its only entry is redundant and
+comment-free. For one redundant entry in a mixed attribute, the fix deletes
+only that entry and one adjacent comma, including a legal trailing comma.
+Comments outside the entry remain. The lint warns without a fix when the
+matching entry contains a comment, multiple redundant entries share one
+attribute, or the matching Schemars attribute comes from macro expansion.
+
+A different default function or a bare `default` versus `default = "path"`
+remains an override and does not trigger the lint.
 
 ## Example
 

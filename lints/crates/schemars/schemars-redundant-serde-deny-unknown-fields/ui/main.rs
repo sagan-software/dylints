@@ -10,4 +10,26 @@ struct Example {
     field: String,
 }
 
-fn main() {}
+#[derive(JsonSchema, Serialize)]
+#[serde(deny_unknown_fields)]
+#[schemars(/* retain this comment */ deny_unknown_fields)]
+struct CommentedAttribute {
+    field: String,
+}
+
+fn local_deny_unknown_fields() {
+    #[derive(JsonSchema, Serialize)]
+    #[serde(deny_unknown_fields, rename_all = "snake_case")]
+    #[schemars(rename_all = "camelCase", /* keep this name rule */ deny_unknown_fields)]
+    struct Local {
+        field: String,
+    }
+
+    let _local = Local {
+        field: String::new(),
+    };
+}
+
+fn main() {
+    local_deny_unknown_fields();
+}

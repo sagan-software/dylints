@@ -13,9 +13,38 @@ struct Example {
     #[serde(skip_serializing)]
     #[schemars(skip_serializing)]
     bad_skip_serializing: String,
+    #[serde(skip_deserializing)]
+    #[schemars(skip_deserializing)]
+    bad_skip_deserializing: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(skip_serializing_if = r#"Option::is_none"#)]
+    bad_skip_serializing_if: Option<String>,
     #[serde(skip_serializing)]
     #[schemars(skip)]
     different_skip: String,
 }
 
-fn main() {}
+fn local_skip() {
+    #[derive(JsonSchema, Serialize)]
+    struct Local {
+        #[serde(skip, rename = "secret")]
+        #[schemars(rename = "schema-secret", /* keep this name */ skip)]
+        secret: String,
+    }
+
+    let _local = Local {
+        secret: String::new(),
+    };
+}
+
+fn main() {
+    let _example = Example {
+        bad: String::new(),
+        good: String::new(),
+        bad_skip_serializing: String::new(),
+        bad_skip_deserializing: String::new(),
+        bad_skip_serializing_if: None,
+        different_skip: String::new(),
+    };
+    local_skip();
+}

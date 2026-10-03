@@ -8,5 +8,17 @@ LL | | enum Example {
    |
    = note: `#[warn(schemars_redundant_serde_tag)]` on by default
 
-warning: 1 warning emitted
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:23:5
+   |
+LL |     #[schemars(content = "schema-payload", /* keep this content key */ tag = "https://kind,name",)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the redundant Schemars entry
+   |
+LL -     #[schemars(content = "schema-payload", /* keep this content key */ tag = "https://kind,name",)]
+LL +     #[schemars(content = "schema-payload", /* keep this content key */ )]
+   |
+
+warning: 2 warnings emitted
 

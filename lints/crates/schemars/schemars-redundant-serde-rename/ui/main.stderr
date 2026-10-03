@@ -8,5 +8,53 @@ LL | |     bad: String,
    |
    = note: `#[warn(schemars_redundant_serde_rename)]` on by default
 
-warning: 1 warning emitted
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:30:9
+   |
+LL |         #[schemars(rename = "https://field,name", /* preserve this entry */ default)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the redundant Schemars entry
+   |
+LL -         #[schemars(rename = "https://field,name", /* preserve this entry */ default)]
+LL +         #[schemars( /* preserve this entry */ default)]
+   |
+
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:33:9
+   |
+LL |         #[schemars(rename(deserialize = r#"wire,name"#, serialize = r#"wire,name"#), /* preserve this entry */ default)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the redundant Schemars entry
+   |
+LL -         #[schemars(rename(deserialize = r#"wire,name"#, serialize = r#"wire,name"#), /* preserve this entry */ default)]
+LL +         #[schemars( /* preserve this entry */ default)]
+   |
+
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:36:9
+   |
+LL |           #[schemars(rename(deserialize = "read", serialize = "wire"))]
+   |  _________-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL | |         directional_order: String,
+   | |________- help: remove the redundant Schemars attribute
+
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:42:9
+   |
+LL |         #[schemars(rename /* preserve comment inside matching entry */ = "inside-comment", default)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove only the matching Schemars entry
+
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:45:9
+   |
+LL |         #[schemars(default, rename = "overlap")]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove only the matching Schemars entry
+
+warning: 6 warnings emitted
 

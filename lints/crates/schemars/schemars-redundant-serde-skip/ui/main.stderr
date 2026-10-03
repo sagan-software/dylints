@@ -16,5 +16,33 @@ LL |       #[schemars(skip_serializing)]
 LL | |     bad_skip_serializing: String,
    | |____- help: remove the redundant Schemars attribute
 
-warning: 2 warnings emitted
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:17:5
+   |
+LL |       #[schemars(skip_deserializing)]
+   |  _____-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL | |     bad_skip_deserializing: String,
+   | |____- help: remove the redundant Schemars attribute
+
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:20:5
+   |
+LL |       #[schemars(skip_serializing_if = r#"Option::is_none"#)]
+   |  _____-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL | |     bad_skip_serializing_if: Option<String>,
+   | |____- help: remove the redundant Schemars attribute
+
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:31:9
+   |
+LL |         #[schemars(rename = "schema-secret", /* keep this name */ skip)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the redundant Schemars entry
+   |
+LL -         #[schemars(rename = "schema-secret", /* keep this name */ skip)]
+LL +         #[schemars(rename = "schema-secret" /* keep this name */ )]
+   |
+
+warning: 5 warnings emitted
 
