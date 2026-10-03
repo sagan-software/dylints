@@ -2,7 +2,9 @@
 
 ## What it does
 
-Checks for the integer literal `0` passed to `PoolOptions::max_connections`.
+Checks `PoolOptions::max_connections` calls whose limit is statically known to
+be zero, including values resolved from local constants and supported unsigned
+arithmetic.
 
 ## Why is this bad?
 
@@ -12,8 +14,12 @@ timeout and then fails.
 
 ## Known problems
 
-The lint only checks the literal `0`. It misses a constant, a computed value,
-or a value read from configuration.
+The lint resolves integer literals, local non-trait constants, and unsigned
+`+`, `-`, `*`, `/`, or `%` expressions through 16 nested steps. It reports
+only values it can prove are zero. Runtime configuration and other runtime
+locals remain unknown. Casts, statics, trait or external constants, unsupported
+operators, and arithmetic that overflows, underflows, or divides by zero also
+remain unknown.
 
 ## Example
 

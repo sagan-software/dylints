@@ -4,9 +4,9 @@
 //! A lint to check for zero Tokio runtime thread counts.
 //!
 //! The lint resolves `worker_threads` and `max_blocking_threads` calls on
-//! `tokio::runtime::Builder` and reports a literal zero count, which makes
-//! Tokio panic. A positive count gives the runtime an executable worker pool
-//! and keeps the configuration explicit.
+//! `tokio::runtime::Builder` and reports statically known zero counts, which
+//! make Tokio panic. A positive count gives the runtime an executable worker
+//! pool and keeps the configuration explicit.
 
 extern crate rustc_hir;
 
@@ -15,7 +15,7 @@ use tokio as _;
 
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass};
-use tokio_support::{emit, is_zero_integer, tokio_method};
+use tokio_support::{emit, is_zero_integer_constant, tokio_method};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -41,7 +41,7 @@ impl<'tcx> LateLintPass<'tcx> for TokioZeroRuntimeThreadCount {
             return;
         }
         if let ExprKind::MethodCall(_, _, [count], _) = expr.kind
-            && is_zero_integer(count)
+            && is_zero_integer_constant(cx, count)
         {
             emit(
                 cx,

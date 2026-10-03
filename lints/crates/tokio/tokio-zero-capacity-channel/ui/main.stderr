@@ -15,5 +15,57 @@ LL |     let _ = broadcast::channel::<u8>(0);
    |
    = help: use a positive capacity
 
-warning: 2 warnings emitted
+warning: Tokio channel capacity must be greater than zero
+  --> $DIR/main.rs:29:33
+   |
+LL |     let _ = mpsc::channel::<u8>(ZERO_CAPACITY);
+   |                                 ^^^^^^^^^^^^^
+   |
+   = help: use a positive capacity
+
+warning: Tokio channel capacity must be greater than zero
+  --> $DIR/main.rs:30:38
+   |
+LL |     let _ = broadcast::channel::<u8>(2 - 2);
+   |                                      ^^^^^
+   |
+   = help: use a positive capacity
+
+warning: Tokio channel capacity must be greater than zero
+  --> $DIR/main.rs:35:9
+   |
+LL |         ZERO_CAPACITY
+   |         ^^^^^^^^^^^^^
+...
+LL |     let _ = mpsc::channel::<u8>(macro_zero_capacity!());
+   |                                 ---------------------- in this macro invocation
+   |
+   = help: use a positive capacity
+   = note: this warning originates in the macro `macro_zero_capacity` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: Tokio channel capacity must be greater than zero
+  --> $DIR/main.rs:63:33
+   |
+LL |     let _ = mpsc::channel::<u8>(0 * 2);
+   |                                 ^^^^^
+   |
+   = help: use a positive capacity
+
+warning: Tokio channel capacity must be greater than zero
+  --> $DIR/main.rs:64:38
+   |
+LL |     let _ = broadcast::channel::<u8>(0 % 2);
+   |                                      ^^^^^
+   |
+   = help: use a positive capacity
+
+warning: Tokio channel capacity must be greater than zero
+  --> $DIR/main.rs:65:33
+   |
+LL |     let _ = mpsc::channel::<u8>(AssociatedCapacity::ZERO);
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a positive capacity
+
+warning: 8 warnings emitted
 

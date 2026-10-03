@@ -442,3 +442,142 @@ pub fn emit_span_lint_with_help(
 fn is_reqwest_def(cx: &LateContext<'_>, def_id: DefId) -> bool {
     cx.tcx.crate_name(def_id.krate).as_str() == "reqwest"
 }
+
+/// Evaluate a statically known `f32` without executing function calls.
+///
+/// The evaluator follows local non-trait constants and supports unary negation
+/// and `+`, `-`, `*`, `/`, and `%` to sixteen levels. It recognizes the core
+/// `f32::NAN`, `f32::INFINITY`, and `f32::NEG_INFINITY` constants. Calls, casts,
+/// runtime values, and other external constants remain unknown.
+#[must_use]
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, expr| {
+///     let _ = reqwest_support::reqwest_f32_constant(cx, expr);
+/// };
+/// ```
+pub fn reqwest_f32_constant(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<f32> {
+    constant_f32(cx, expr, 0)
+}
+
+/// Evaluate one supported f32 expression within the recursion bound.
+fn constant_f32(cx: &LateContext<'_>, expr: &Expr<'_>, depth: usize) -> Option<f32> {
+    // Bound recursion through arithmetic and local constant aliases.
+    if depth > 16 {
+        return None;
+    }
+
+    // Require f32 typing before interpreting literals, operators, or paths.
+    let expression_type = cx.tcx.typeck(expr.hir_id.owner.def_id).expr_ty(expr);
+    if !matches!(expression_type.kind(), ty::Float(ty::FloatTy::F32)) {
+        return None;
+    }
+
+    // Evaluate only explicitly supported pure syntax.
+    if let ExprKind::Lit(literal) = expr.kind {
+        if let LitKind::Float(value, _) = literal.node {
+            value.as_str().replace('_', "").parse::<f32>().ok()
+        } else {
+            None
+        }
+    } else if let ExprKind::Unary(UnOp::Neg, inner) = expr.kind {
+        constant_f32(cx, inner, depth + 1).map(|value| -value)
+    } else if let ExprKind::Binary(operator, left, right) = expr.kind {
+        binary_f32_constant(cx, expr, operator.node, left, right, depth)
+    } else if let ExprKind::Path(ref path) = expr.kind {
+        path_f32_constant(cx, expr, path, depth)
+    } else {
+        None
+    }
+}
+
+/// Evaluate one f32 arithmetic operation when all expression types match.
+fn binary_f32_constant(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    operator: BinOpKind,
+    left: &Expr<'_>,
+    right: &Expr<'_>,
+    depth: usize,
+) -> Option<f32> {
+    // Refuse mixed numeric types rather than approximating Rust conversions.
+    let result_type = cx.tcx.typeck(expr.hir_id.owner.def_id).expr_ty(expr);
+    let left_type = cx.tcx.typeck(left.hir_id.owner.def_id).expr_ty(left);
+    let right_type = cx.tcx.typeck(right.hir_id.owner.def_id).expr_ty(right);
+    if result_type != left_type || result_type != right_type {
+        return None;
+    }
+
+    // Evaluate operands at f32 precision before applying the operator.
+    let left = constant_f32(cx, left, depth + 1)?;
+    let right = constant_f32(cx, right, depth + 1)?;
+    match operator {
+        BinOpKind::Add => Some(left + right),
+        BinOpKind::Sub => Some(left - right),
+        BinOpKind::Mul => Some(left * right),
+        BinOpKind::Div => Some(left / right),
+        BinOpKind::Rem => Some(left % right),
+        BinOpKind::And
+        | BinOpKind::Or
+        | BinOpKind::BitXor
+        | BinOpKind::BitAnd
+        | BinOpKind::BitOr
+        | BinOpKind::Shl
+        | BinOpKind::Shr
+        | BinOpKind::Eq
+        | BinOpKind::Lt
+        | BinOpKind::Le
+        | BinOpKind::Ne
+        | BinOpKind::Ge
+        | BinOpKind::Gt => None,
+    }
+}
+
+/// Resolve a local f32 constant or one of core's non-finite f32 constants.
+fn path_f32_constant(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    path: &rustc_hir::QPath<'_>,
+    depth: usize,
+) -> Option<f32> {
+    // Resolve names in the body that owns this path, including const initializers.
+    let Res::Def(definition_kind, definition) = cx
+        .tcx
+        .typeck(expr.hir_id.owner.def_id)
+        .qpath_res(path, expr.hir_id)
+    else {
+        return None;
+    };
+
+    // Recognize only the documented non-finite f32 constants from core.
+    if cx.tcx.crate_name(definition.krate).as_str() == "core" {
+        let item_name = cx.tcx.item_name(definition);
+        if item_name == Symbol::intern("NAN") {
+            return Some(f32::NAN);
+        }
+        if item_name == Symbol::intern("INFINITY") {
+            return Some(f32::INFINITY);
+        }
+        if item_name == Symbol::intern("NEG_INFINITY") {
+            return Some(f32::NEG_INFINITY);
+        }
+        return None;
+    }
+
+    // Follow only local constants and skip trait defaults that implementations can override.
+    if !matches!(
+        definition_kind,
+        DefKind::Const { .. } | DefKind::AssocConst { .. }
+    ) || cx.tcx.def_kind(cx.tcx.parent(definition)) == DefKind::Trait
+    {
+        return None;
+    }
+    let local = definition.as_local()?;
+    let initializer = cx.tcx.hir_maybe_body_owned_by(local)?.value;
+
+    // Evaluate the initializer in its type-checking owner.
+    constant_f32(cx, initializer, depth + 1)
+}

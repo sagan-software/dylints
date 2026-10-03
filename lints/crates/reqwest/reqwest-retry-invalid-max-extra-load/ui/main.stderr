@@ -1,4 +1,4 @@
-warning: Reqwest panics when `max_extra_load` is below 0.0 or above 1000.0
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
   --> $DIR/main.rs:4:60
    |
 LL |     let negative = reqwest::retry::for_host("example.com").max_extra_load(-0.1);
@@ -7,7 +7,7 @@ LL |     let negative = reqwest::retry::for_host("example.com").max_extra_load(-
    = help: use a finite value in the inclusive range 0.0 through 1000.0
    = note: `#[warn(reqwest_retry_invalid_max_extra_load)]` on by default
 
-warning: Reqwest panics when `max_extra_load` is below 0.0 or above 1000.0
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
   --> $DIR/main.rs:7:61
    |
 LL |     let too_large = reqwest::retry::for_host("example.com").max_extra_load(1000.1);
@@ -15,5 +15,93 @@ LL |     let too_large = reqwest::retry::for_host("example.com").max_extra_load(
    |
    = help: use a finite value in the inclusive range 0.0 through 1000.0
 
-warning: 2 warnings emitted
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:51:53
+   |
+LL |     let _ = reqwest::retry::for_host("example.com").max_extra_load(BAD);
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:52:53
+   |
+LL |     let _ = reqwest::retry::for_host("example.com").max_extra_load(TOO_LARGE);
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:53:53
+   |
+LL |     let _ = reqwest::retry::for_host("example.com").max_extra_load(BAD_ARITHMETIC);
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:54:53
+   |
+LL |     let _ = reqwest::retry::for_host("example.com").max_extra_load(NAN);
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:55:53
+   |
+LL |     let _ = reqwest::retry::for_host("example.com").max_extra_load(INF);
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:56:53
+   |
+LL |     let _ = reqwest::retry::for_host("example.com").max_extra_load(NEG_INF);
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:57:53
+   |
+LL |     let _ = reqwest::retry::for_host("example.com").max_extra_load(BAD_MULTIPLICATION);
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:58:53
+   |
+LL |     let _ = reqwest::retry::for_host("example.com").max_extra_load(BAD_DIVISION);
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:59:53
+   |
+LL |     let _ = reqwest::retry::for_host("example.com").max_extra_load(BAD_REMAINDER);
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:61:10
+   |
+LL |         .max_extra_load(JUST_ABOVE_UPPER_BOUND_REMAINS_INVALID);
+   |          ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: Reqwest panics when `max_extra_load` is outside the inclusive 0.0 through 1000.0 range
+  --> $DIR/main.rs:71:53
+   |
+LL |     let _ = reqwest::retry::for_host("example.com").max_extra_load(macro_invalid_retry_budget!());
+   |                                                     ^^^^^^^^^^^^^^
+   |
+   = help: use a finite value in the inclusive range 0.0 through 1000.0
+
+warning: 13 warnings emitted
 

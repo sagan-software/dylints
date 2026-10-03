@@ -2,8 +2,9 @@
 
 ## What it does
 
-Checks for a literal argument to `reqwest::retry::Builder::max_extra_load` that
-is below `0.0` or above `1000.0`.
+Checks `reqwest::retry::Builder::max_extra_load` calls whose statically known
+`f32` value is below `0.0`, above `1000.0`, NaN, or infinite. It resolves local
+constants and supported `f32` arithmetic.
 
 ## Why is this bad?
 
@@ -13,8 +14,12 @@ the bad value.
 
 ## Known problems
 
-The lint only checks numeric literals, with or without a leading minus sign. It
-misses a named constant or a computed value.
+The lint resolves local non-trait `f32` constants, unary negation, and built-in
+`+`, `-`, `*`, `/`, or `%` expressions through 16 nested steps. It also
+recognizes `f32::NAN`, `f32::INFINITY`, and `f32::NEG_INFINITY`. The evaluator
+uses `f32` precision, so it follows the value after `f32` rounding. Runtime
+values, function calls, casts, statics, trait or other external constants,
+overloaded operators, control flow, and unsupported operators remain unknown.
 
 ## Example
 

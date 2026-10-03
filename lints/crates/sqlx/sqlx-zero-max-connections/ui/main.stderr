@@ -7,5 +7,53 @@ LL |     let _ = PoolOptions.max_connections(0);
    = help: configure at least one maximum connection
    = note: `#[warn(sqlx_zero_max_connections)]` on by default
 
-warning: 1 warning emitted
+warning: a zero-sized pool cannot acquire a connection
+  --> $DIR/main.rs:12:25
+   |
+LL |     let _ = PoolOptions.max_connections(ZERO_MAX_CONNECTIONS);
+   |                         ^^^^^^^^^^^^^^^
+   |
+   = help: configure at least one maximum connection
+
+warning: a zero-sized pool cannot acquire a connection
+  --> $DIR/main.rs:13:25
+   |
+LL |     let _ = PoolOptions.max_connections(1 / 2);
+   |                         ^^^^^^^^^^^^^^^
+   |
+   = help: configure at least one maximum connection
+
+warning: a zero-sized pool cannot acquire a connection
+  --> $DIR/main.rs:23:25
+   |
+LL |     let _ = PoolOptions.max_connections(macro_zero_connection_limit!());
+   |                         ^^^^^^^^^^^^^^^
+   |
+   = help: configure at least one maximum connection
+
+warning: a zero-sized pool cannot acquire a connection
+  --> $DIR/main.rs:46:25
+   |
+LL |     let _ = PoolOptions.max_connections(0_u32 * 2);
+   |                         ^^^^^^^^^^^^^^^
+   |
+   = help: configure at least one maximum connection
+
+warning: a zero-sized pool cannot acquire a connection
+  --> $DIR/main.rs:47:25
+   |
+LL |     let _ = PoolOptions.max_connections(0_u32 % 2);
+   |                         ^^^^^^^^^^^^^^^
+   |
+   = help: configure at least one maximum connection
+
+warning: a zero-sized pool cannot acquire a connection
+  --> $DIR/main.rs:48:25
+   |
+LL |     let _ = PoolOptions.max_connections(AssociatedConnectionLimit::ZERO);
+   |                         ^^^^^^^^^^^^^^^
+   |
+   = help: configure at least one maximum connection
+
+warning: 7 warnings emitted
 

@@ -15,12 +15,17 @@ extern crate rustc_driver as _;
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_lint;
+extern crate rustc_middle;
 extern crate rustc_span;
 
 use rustc_ast::LitKind;
 use rustc_errors::{Applicability, DiagDecorator};
-use rustc_hir::{ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, Node, def::Res};
+use rustc_hir::{
+    BinOpKind, ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, Node,
+    def::{DefKind, Res},
+};
 use rustc_lint::{LateContext, Lint, LintContext as _};
+use rustc_middle::ty::{self, UintTy};
 use rustc_span::{Span, Symbol, def_id::DefId};
 
 use dylint_linting as _;
@@ -303,4 +308,143 @@ pub fn emit(
             }
         }),
     );
+}
+
+/// Return whether an unsigned integer expression has a statically known zero value.
+///
+/// The evaluator follows local non-trait constants and supports `+`, `-`, `*`,
+/// `/`, and `%` to sixteen levels. It skips calls, casts, external constants,
+/// runtime values, and operations that overflow or underflow their integer type.
+#[must_use]
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, expr| {
+///     let _ = tokio_support::is_zero_integer_constant(cx, expr);
+/// };
+/// ```
+pub fn is_zero_integer_constant(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    integer_constant(cx, expr, 0) == Some(0)
+}
+
+/// Evaluate one supported unsigned integer expression without executing code.
+fn integer_constant(cx: &LateContext<'_>, expr: &Expr<'_>, depth: usize) -> Option<u128> {
+    // Bound recursion through arithmetic and nested constant definitions.
+    if depth > 16 {
+        return None;
+    }
+
+    // Resolve the expression's integer width before interpreting its syntax.
+    let integer_maximum = unsigned_integer_maximum(cx, expr)?;
+
+    // Evaluate only unsigned literals, supported arithmetic, and constant paths.
+    let value = if let ExprKind::Lit(literal) = expr.kind {
+        if let LitKind::Int(value, _) = literal.node {
+            Some(value.get())
+        } else {
+            None
+        }
+    } else if let ExprKind::Binary(operator, left, right) = expr.kind {
+        binary_integer_constant(cx, expr, operator.node, left, right, depth)
+    } else if let ExprKind::Path(ref path) = expr.kind {
+        path_integer_constant(cx, expr, path, depth)
+    } else {
+        None
+    }?;
+
+    // Refuse results outside the expression's unsigned type range.
+    (value <= integer_maximum).then_some(value)
+}
+
+/// Return the maximum value of an unsigned integer expression's type.
+fn unsigned_integer_maximum(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<u128> {
+    // Read type information from the body that owns this expression.
+    let expression_type = cx.tcx.typeck(expr.hir_id.owner.def_id).expr_ty(expr);
+    let ty::Uint(integer_type) = expression_type.kind() else {
+        return None;
+    };
+
+    // Use the target pointer width for `usize` and fixed widths for other types.
+    let width = match integer_type {
+        UintTy::U8 => 8,
+        UintTy::U16 => 16,
+        UintTy::U32 => 32,
+        UintTy::U64 => 64,
+        UintTy::U128 => 128,
+        UintTy::Usize => cx.tcx.data_layout.pointer_size().bits(),
+    };
+    if width == u64::from(u128::BITS) {
+        Some(u128::MAX)
+    } else {
+        Some((1_u128 << u32::try_from(width).ok()?) - 1)
+    }
+}
+
+/// Evaluate supported arithmetic after checking operand types and widths.
+fn binary_integer_constant(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    operator: BinOpKind,
+    left: &Expr<'_>,
+    right: &Expr<'_>,
+    depth: usize,
+) -> Option<u128> {
+    // Require matching unsigned expression types before applying an operator.
+    let result_type = cx.tcx.typeck(expr.hir_id.owner.def_id).expr_ty(expr);
+    let left_type = cx.tcx.typeck(left.hir_id.owner.def_id).expr_ty(left);
+    let right_type = cx.tcx.typeck(right.hir_id.owner.def_id).expr_ty(right);
+    if result_type != left_type || result_type != right_type {
+        return None;
+    }
+
+    // Evaluate operands before applying checked arithmetic.
+    let left = integer_constant(cx, left, depth + 1)?;
+    let right = integer_constant(cx, right, depth + 1)?;
+    match operator {
+        BinOpKind::Add => left.checked_add(right),
+        BinOpKind::Sub => left.checked_sub(right),
+        BinOpKind::Mul => left.checked_mul(right),
+        BinOpKind::Div => left.checked_div(right),
+        BinOpKind::Rem => left.checked_rem(right),
+        BinOpKind::And
+        | BinOpKind::Or
+        | BinOpKind::BitXor
+        | BinOpKind::BitAnd
+        | BinOpKind::BitOr
+        | BinOpKind::Shl
+        | BinOpKind::Shr
+        | BinOpKind::Eq
+        | BinOpKind::Lt
+        | BinOpKind::Le
+        | BinOpKind::Ne
+        | BinOpKind::Ge
+        | BinOpKind::Gt => None,
+    }
+}
+
+/// Resolve and evaluate a local non-trait integer constant path.
+fn path_integer_constant(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    path: &rustc_hir::QPath<'_>,
+    depth: usize,
+) -> Option<u128> {
+    // Accept only constant definitions and exclude trait defaults that can vary by implementation.
+    let Res::Def(DefKind::Const { .. } | DefKind::AssocConst { .. }, definition) = cx
+        .tcx
+        .typeck(expr.hir_id.owner.def_id)
+        .qpath_res(path, expr.hir_id)
+    else {
+        return None;
+    };
+    if cx.tcx.def_kind(cx.tcx.parent(definition)) == DefKind::Trait {
+        return None;
+    }
+    let local = definition.as_local()?;
+    let initializer = cx.tcx.hir_maybe_body_owned_by(local)?.value;
+
+    // Evaluate the initializer in its own body and type context.
+    integer_constant(cx, initializer, depth + 1)
 }

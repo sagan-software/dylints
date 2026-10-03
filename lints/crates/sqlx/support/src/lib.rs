@@ -17,7 +17,7 @@ extern crate rustc_span;
 
 use rustc_ast::LitKind;
 use rustc_hir::{
-    Expr, ExprKind,
+    BinOpKind, Expr, ExprKind,
     def::{CtorOf, DefKind, Res},
 };
 use rustc_lint::LateContext;
@@ -104,7 +104,7 @@ pub enum MethodArgumentViolation {
     FormattedSql,
     /// The first argument is an empty array or an empty `Vec`, possibly borrowed.
     EmptyCollection,
-    /// The first argument is integer zero, which represents an invalid bound value.
+    /// The first argument is statically known unsigned integer zero.
     Zero,
 }
 
@@ -139,7 +139,9 @@ pub fn sqlx_method_argument_violation<'hir>(
         MethodArgumentViolation::EmptyCollection => {
             argument.is_some_and(|argument| is_empty_collection(cx, argument))
         }
-        MethodArgumentViolation::Zero => argument.is_some_and(is_zero_literal),
+        MethodArgumentViolation::Zero => {
+            argument.is_some_and(|argument| is_zero_integer_constant(cx, argument, 0))
+        }
     };
     is_invalid.then_some(call)
 }
@@ -188,12 +190,129 @@ fn is_empty_collection(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     cx.tcx.get_diagnostic_name(def_id) == Some(Symbol::intern("vec_new"))
 }
 
-/// Return true for the integer literal zero.
-fn is_zero_literal(expr: &Expr<'_>) -> bool {
-    matches!(
-        expr.kind,
-        ExprKind::Lit(literal) if matches!(literal.node, LitKind::Int(value, _) if value.get() == 0)
-    )
+/// Return whether a bounded, statically evaluable unsigned integer is zero.
+fn is_zero_integer_constant(cx: &LateContext<'_>, expr: &Expr<'_>, depth: usize) -> bool {
+    integer_constant(cx, expr, depth) == Some(0)
+}
+
+/// Evaluate unsigned literals, local constants, and bounded pure arithmetic.
+fn integer_constant(cx: &LateContext<'_>, expr: &Expr<'_>, depth: usize) -> Option<u128> {
+    // Bound recursion through arithmetic expressions and nested constants.
+    if depth > 16 {
+        return None;
+    }
+
+    // Require an unsigned expression type before interpreting its syntax.
+    let integer_maximum = unsigned_integer_maximum(cx, expr)?;
+
+    // Evaluate only literals, selected arithmetic, and resolved constant paths.
+    let value = if let ExprKind::Lit(literal) = expr.kind {
+        if let LitKind::Int(value, _) = literal.node {
+            Some(value.get())
+        } else {
+            None
+        }
+    } else if let ExprKind::Binary(operator, left, right) = expr.kind {
+        binary_integer_constant(cx, expr, operator.node, left, right, depth)
+    } else if let ExprKind::Path(ref path) = expr.kind {
+        path_integer_constant(cx, expr, path, depth)
+    } else {
+        None
+    }?;
+
+    // Reject intermediate values outside their resolved unsigned type.
+    (value <= integer_maximum).then_some(value)
+}
+
+/// Return the maximum value of an unsigned integer expression's type.
+fn unsigned_integer_maximum(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<u128> {
+    // Use the expression body's type context, including for constant initializers.
+    let expression_type = cx.tcx.typeck(expr.hir_id.owner.def_id).expr_ty(expr);
+    let ty::Uint(integer_type) = expression_type.kind() else {
+        return None;
+    };
+
+    // Resolve `usize` from the compilation target and retain fixed integer widths.
+    let width = match integer_type {
+        ty::UintTy::U8 => 8,
+        ty::UintTy::U16 => 16,
+        ty::UintTy::U32 => 32,
+        ty::UintTy::U64 => 64,
+        ty::UintTy::U128 => 128,
+        ty::UintTy::Usize => cx.tcx.data_layout.pointer_size().bits(),
+    };
+    if width == u64::from(u128::BITS) {
+        Some(u128::MAX)
+    } else {
+        Some((1_u128 << u32::try_from(width).ok()?) - 1)
+    }
+}
+
+/// Evaluate checked arithmetic when both operands have the result's type.
+fn binary_integer_constant(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    operator: BinOpKind,
+    left: &Expr<'_>,
+    right: &Expr<'_>,
+    depth: usize,
+) -> Option<u128> {
+    // Refuse mixed-width operations instead of modeling coercions or casts.
+    let result_type = cx.tcx.typeck(expr.hir_id.owner.def_id).expr_ty(expr);
+    let left_type = cx.tcx.typeck(left.hir_id.owner.def_id).expr_ty(left);
+    let right_type = cx.tcx.typeck(right.hir_id.owner.def_id).expr_ty(right);
+    if result_type != left_type || result_type != right_type {
+        return None;
+    }
+
+    // Evaluate operands recursively before applying the selected operation.
+    let left = integer_constant(cx, left, depth + 1)?;
+    let right = integer_constant(cx, right, depth + 1)?;
+    match operator {
+        BinOpKind::Add => left.checked_add(right),
+        BinOpKind::Sub => left.checked_sub(right),
+        BinOpKind::Mul => left.checked_mul(right),
+        BinOpKind::Div => left.checked_div(right),
+        BinOpKind::Rem => left.checked_rem(right),
+        BinOpKind::And
+        | BinOpKind::Or
+        | BinOpKind::BitXor
+        | BinOpKind::BitAnd
+        | BinOpKind::BitOr
+        | BinOpKind::Shl
+        | BinOpKind::Shr
+        | BinOpKind::Eq
+        | BinOpKind::Lt
+        | BinOpKind::Le
+        | BinOpKind::Ne
+        | BinOpKind::Ge
+        | BinOpKind::Gt => None,
+    }
+}
+
+/// Resolve and evaluate a local non-trait constant initializer.
+fn path_integer_constant(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    path: &rustc_hir::QPath<'_>,
+    depth: usize,
+) -> Option<u128> {
+    // Accept constant paths and skip trait defaults that depend on an implementation.
+    let Res::Def(DefKind::Const { .. } | DefKind::AssocConst { .. }, definition) = cx
+        .tcx
+        .typeck(expr.hir_id.owner.def_id)
+        .qpath_res(path, expr.hir_id)
+    else {
+        return None;
+    };
+    if cx.tcx.def_kind(cx.tcx.parent(definition)) == DefKind::Trait {
+        return None;
+    }
+    let local = definition.as_local()?;
+    let initializer = cx.tcx.hir_maybe_body_owned_by(local)?.value;
+
+    // Evaluate the initializer under its own owner and resolved type.
+    integer_constant(cx, initializer, depth + 1)
 }
 
 /// Declare one `SQLx` method-argument lint.

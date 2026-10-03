@@ -15,5 +15,57 @@ LL |     let _ = Builder::new_multi_thread().max_blocking_threads(0).build();
    |
    = help: use a positive count, or remove this configuration to use Tokio's default
 
-warning: 2 warnings emitted
+warning: Tokio runtime thread count must be greater than zero
+  --> $DIR/main.rs:35:25
+   |
+LL |         .worker_threads(ZERO_THREAD_COUNT)
+   |                         ^^^^^^^^^^^^^^^^^
+   |
+   = help: use a positive count, or remove this configuration to use Tokio's default
+
+warning: Tokio runtime thread count must be greater than zero
+  --> $DIR/main.rs:38:31
+   |
+LL |         .max_blocking_threads(1 / 2)
+   |                               ^^^^^
+   |
+   = help: use a positive count, or remove this configuration to use Tokio's default
+
+warning: Tokio runtime thread count must be greater than zero
+  --> $DIR/main.rs:44:9
+   |
+LL |         ZERO_THREAD_COUNT
+   |         ^^^^^^^^^^^^^^^^^
+...
+LL |         .worker_threads(macro_zero_thread_count!())
+   |                         -------------------------- in this macro invocation
+   |
+   = help: use a positive count, or remove this configuration to use Tokio's default
+   = note: this warning originates in the macro `macro_zero_thread_count` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: Tokio runtime thread count must be greater than zero
+  --> $DIR/main.rs:70:56
+   |
+LL |     let _ = Builder::new_multi_thread().worker_threads(0 * 2).build();
+   |                                                        ^^^^^
+   |
+   = help: use a positive count, or remove this configuration to use Tokio's default
+
+warning: Tokio runtime thread count must be greater than zero
+  --> $DIR/main.rs:72:31
+   |
+LL |         .max_blocking_threads(0 % 2)
+   |                               ^^^^^
+   |
+   = help: use a positive count, or remove this configuration to use Tokio's default
+
+warning: Tokio runtime thread count must be greater than zero
+  --> $DIR/main.rs:75:25
+   |
+LL |         .worker_threads(AssociatedThreadCount::ZERO)
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a positive count, or remove this configuration to use Tokio's default
+
+warning: 8 warnings emitted
 

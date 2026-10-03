@@ -2,9 +2,10 @@
 
 ## What it does
 
-Checks for the integer literal `0` passed to
-`tokio::runtime::Builder::worker_threads` or
-`tokio::runtime::Builder::max_blocking_threads`.
+Checks `tokio::runtime::Builder::worker_threads` and
+`tokio::runtime::Builder::max_blocking_threads` calls whose thread count is
+statically known to be zero, including values resolved from local constants
+and supported unsigned arithmetic.
 
 ## Why is this bad?
 
@@ -13,8 +14,11 @@ mistake is visible in the source but fails only at runtime.
 
 ## Known problems
 
-The lint checks only the literal `0`. A constant, variable, or arithmetic
-expression whose value is zero does not trigger the lint.
+The lint resolves integer literals, local non-trait constants, and unsigned
+`+`, `-`, `*`, `/`, or `%` expressions through 16 nested steps. It reports
+only values it can prove are zero. Runtime locals and function calls remain
+unknown, as do casts, statics, trait or external constants, unsupported
+operators, and arithmetic that overflows, underflows, or divides by zero.
 
 ## Example
 

@@ -2,8 +2,10 @@
 
 ## What it does
 
-Checks for the integer literal `0` passed as the capacity to
-`tokio::sync::mpsc::channel` or `tokio::sync::broadcast::channel`.
+Checks `tokio::sync::mpsc::channel` and `tokio::sync::broadcast::channel`
+calls whose capacities are statically known to be zero. It follows local
+non-trait constants and same-type checked unsigned `+`, `-`, `*`, `/`, and `%`
+expressions through 16 nested steps.
 
 ## Why is this bad?
 
@@ -12,8 +14,10 @@ mistake is visible in the source but fails only at runtime.
 
 ## Known problems
 
-The lint checks only the literal `0`. A constant, variable, or arithmetic
-expression whose value is zero does not trigger the lint.
+The evaluator reports only values it can prove are zero. Runtime locals and
+function calls remain unknown. Casts, statics, trait or external constants,
+unsupported operators, and arithmetic that overflows, underflows, divides by
+zero, or takes remainder by zero also remain unknown.
 
 ## Example
 
