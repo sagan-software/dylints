@@ -63,7 +63,8 @@ append_path_sources() {
 	while IFS= read -r -d '' source; do
 		paths+=("$source")
 		source_count=$((source_count + 1))
-	done < <(find "$canonical_path" -name '*.rs' ! -path '*/ui/*' ! -path '*/fixtures/*' -print0)
+	done < <(find "$canonical_path" -name '*.rs' ! -path '*/ui/*' \
+		! -path '*/fixtures/*' ! -path '*/lints/crates/sqlx/fixture/*' -print0)
 	if ((source_count == 0)); then
 		printf '%s must contain at least one selected Rust source file: %s\n' \
 			"--path" "$requested_path" >&2
@@ -145,7 +146,7 @@ while IFS= read -r -d '' object; do
 done < <(find "$target_dir/debug" -maxdepth 2 -type f \( -name '*.so' -o -perm -u+x \) \
 	! -name '*.d' ! -name 'build-script-*' -print0)
 
-ignore='(/\.cargo/registry/|/rustc/|/nix/store/|/examples/|/ui/|/tests/fixtures/|/target/)'
+ignore='(/\.cargo/registry/|/rustc/|/nix/store/|/examples/|/ui/|/tests/fixtures/|/lints/crates/sqlx/fixture/|/target/)'
 common=(--instr-profile "$target_dir/coverage.profdata" --ignore-filename-regex "$ignore")
 
 # llvm-cov records #[path] modules with their lexical source paths, such as
@@ -315,7 +316,7 @@ jq -Rn '
         }
     ) as $files
     | {
-        scope: "canonical executable LCOV DA lines from production and test targets; cfg(test) modules included; examples and tests/fixtures excluded",
+        scope: "canonical executable LCOV DA lines from production and test targets; cfg(test) modules included; examples, tests/fixtures, and lints/crates/sqlx/fixture excluded",
         files: $files,
         totals: {
             lines: metric(

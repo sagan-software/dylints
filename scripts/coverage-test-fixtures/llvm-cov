@@ -1,15 +1,42 @@
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >>"$LLVM_COV_LOG"
+include_sqlx=0
+include_sqlx_fixture=0
+if [[ "${FAKE_SQLX_SCOPE:-0}" == 1 ]]; then
+	include_sqlx=1
+	if [[ "$*" != *'/lints/crates/sqlx/fixture/'* ]]; then
+		include_sqlx_fixture=1
+	fi
+fi
 if [[ "$*" == *'export --summary-only'* ]]; then
+	file_count=46
+	covered_count=1
+	percent='2.1739130435'
+	if ((include_sqlx == 1)); then
+		file_count=$((file_count + 1))
+		covered_count=$((covered_count + 1))
+		percent='4.2553191489'
+	fi
+	if ((include_sqlx_fixture == 1)); then
+		file_count=$((file_count + 1))
+		percent='4.1666666667'
+	fi
 	printf '{"data":[{"files":['
 	printf '{"filename":"%s/lints/complexity/chaining_lint_support.rs","summary":{"lines":{"count":1,"covered":1,"percent":100},"regions":{"count":1,"covered":1,"percent":100}}},' "$FAKE_REPOSITORY_ROOT"
 	printf '{"filename":"%s/lints/complexity/example/src/../../chaining_lint_support.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}},' "$FAKE_REPOSITORY_ROOT"
 	printf '{"filename":"%s/src/runner.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}}' "$FAKE_REPOSITORY_ROOT"
+	if ((include_sqlx == 1)); then
+		printf ',{"filename":"%s/lints/crates/sqlx/src/lib.rs","summary":{"lines":{"count":1,"covered":1,"percent":100},"regions":{"count":1,"covered":1,"percent":100}}}' "$FAKE_REPOSITORY_ROOT"
+	fi
+	if ((include_sqlx_fixture == 1)); then
+		printf ',{"filename":"%s/lints/crates/sqlx/fixture/src/lib.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}}' "$FAKE_REPOSITORY_ROOT"
+	fi
 	for index in {1..43}; do
 		printf ',{"filename":"%s/src/generated_%02d.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}}' "$FAKE_REPOSITORY_ROOT" "$index"
 	done
-	printf '],"totals":{"lines":{"count":46,"covered":1,"percent":2.1739130435},"regions":{"count":46,"covered":1,"percent":2.1739130435}}}]}\n'
+	printf '],"totals":{"lines":{"count":%d,"covered":%d,"percent":%s},"regions":{"count":%d,"covered":%d,"percent":%s}}}]}\n' \
+		"$file_count" "$covered_count" "$percent" "$file_count" "$covered_count" "$percent"
 elif [[ "$*" == *'export --format=lcov'* ]]; then
 	printf '44 functions have mismatched data\n' >&2
 	cat <<EOF
@@ -28,6 +55,22 @@ SF:$FAKE_REPOSITORY_ROOT/src/runner.rs
 DA:1,1
 end_of_record
 EOF
+	if ((include_sqlx == 1)); then
+		cat <<EOF
+TN:
+SF:$FAKE_REPOSITORY_ROOT/lints/crates/sqlx/src/lib.rs
+DA:1,1
+end_of_record
+EOF
+	fi
+	if ((include_sqlx_fixture == 1)); then
+		cat <<EOF
+TN:
+SF:$FAKE_REPOSITORY_ROOT/lints/crates/sqlx/fixture/src/lib.rs
+DA:1,0
+end_of_record
+EOF
+	fi
 elif [[ "${1:-}" == report ]]; then
 	printf 'RAW LLVM REPORT functions regions\n'
 fi

@@ -175,6 +175,68 @@ if ! rg -F -q 'total line coverage: 66.67%' "$symlink_output"; then
 	exit 1
 fi
 
+sqlx_facade="$repository_root/lints/crates/sqlx/src/lib.rs"
+sqlx_fixture="$repository_root/lints/crates/sqlx/fixture/src/lib.rs"
+sqlx_report_target="$test_root/sqlx-report-target"
+sqlx_report_output="$test_root/sqlx-report-output.log"
+FAKE_SQLX_SCOPE=1 COVERAGE_TARGET_DIR="$sqlx_report_target" \
+	bash "$repository_root/scripts/coverage.sh" -- -p coverage-test --tests \
+	>"$sqlx_report_output" 2>&1
+if jq -e --arg fixture "$sqlx_fixture" \
+	'any(.data[0].files[]; .filename == $fixture)' \
+	"$sqlx_report_target/report/summary.json" >/dev/null; then
+	printf 'coverage report retained the auxiliary SQLx fixture\n' >&2
+	exit 1
+fi
+if ! jq -e --arg facade "$sqlx_facade" \
+	'any(.data[0].files[]; .filename == $facade)' \
+	"$sqlx_report_target/report/summary.json" >/dev/null; then
+	printf 'coverage report excluded the SQLx production facade\n' >&2
+	exit 1
+fi
+if jq -e --arg fixture "$sqlx_fixture" \
+	'any(.files[]; .filename == $fixture)' \
+	"$sqlx_report_target/report/canonical_summary.json" >/dev/null; then
+	printf 'canonical coverage retained the auxiliary SQLx fixture\n' >&2
+	exit 1
+fi
+if ! jq -e --arg facade "$sqlx_facade" \
+	'any(.files[]; .filename == $facade)' \
+	"$sqlx_report_target/report/canonical_summary.json" >/dev/null; then
+	printf 'canonical coverage excluded the SQLx production facade\n' >&2
+	exit 1
+fi
+if ! rg -F -q '/lints/crates/sqlx/fixture/' "$LLVM_COV_LOG"; then
+	printf 'coverage did not pass the exact SQLx fixture exclusion\n' >&2
+	exit 1
+fi
+if ! rg -F -q 'lints/crates/sqlx/fixture excluded' \
+	"$sqlx_report_target/report/canonical_summary.json"; then
+	printf 'canonical coverage scope did not name the SQLx fixture exclusion\n' >&2
+	exit 1
+fi
+
+sqlx_path_target="$test_root/sqlx-path-target"
+sqlx_path_output="$test_root/sqlx-path-output.log"
+FAKE_SQLX_SCOPE=1 COVERAGE_TARGET_DIR="$sqlx_path_target" \
+	bash "$repository_root/scripts/coverage.sh" --min-lines 100 \
+	--path "$repository_root/lints/crates/sqlx" -- -p coverage-test --tests \
+	>"$sqlx_path_output" 2>&1
+if [[ "$(jq '.data[0].files | length' "$sqlx_path_target/report/summary.json")" != 1 ]]; then
+	printf 'SQLx path scope retained an excluded fixture or lost the facade\n' >&2
+	exit 1
+fi
+if ! jq -e --arg facade "$sqlx_facade" \
+	'any(.data[0].files[]; .filename == $facade)' \
+	"$sqlx_path_target/report/summary.json" >/dev/null; then
+	printf 'SQLx path scope did not retain the production facade\n' >&2
+	exit 1
+fi
+if ! rg -F -q 'total line coverage: 100.00%' "$sqlx_path_output"; then
+	printf 'SQLx path scope did not report the retained production facade\n' >&2
+	exit 1
+fi
+
 assert_cli_rejects_before_run() {
 	local name="$1"
 	local expected="$2"
@@ -221,6 +283,12 @@ mkdir -p "$empty_path"
 assert_cli_rejects_before_run empty-path \
 	'--path must contain at least one selected Rust source file' \
 	--path "$empty_path"
+assert_cli_rejects_before_run tests-fixtures-path \
+	'--path must contain at least one selected Rust source file' \
+	--path "$repository_root/tests/fixtures"
+assert_cli_rejects_before_run sqlx-fixture-path \
+	'--path must contain at least one selected Rust source file' \
+	--path "$repository_root/lints/crates/sqlx/fixture"
 assert_cli_rejects_before_run missing-path-value \
 	'--path requires a value' \
 	--path
