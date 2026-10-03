@@ -190,7 +190,7 @@ Source: [Robert Martin, "Stability"](https://objectmentor.com/resources/articles
 ### Hotspot analysis
 
 A hotspot combines static complexity with change frequency or churn. A complex
-file that rarely changes may be costly but not urgent. A frequently changed file
+file that rarely changes may be costly but not urgent. A file that changes often
 that is simple may be healthy. A file with both properties is a high-value review
 and refactoring target.
 

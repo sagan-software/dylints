@@ -134,8 +134,9 @@ The runner also supports `--fast`, `--fix`, `--target-dir PATH`, and
 suggestions marked machine-applicable and reruns the selected checks.
 
 The fixer resolves repository paths before writing. If a repository path resolves
-outside the repository, the fixer fails before writing any edit. Internal symlink
-aliases share one source. Compatible edits combine; conflicting edits are deferred.
+outside the repository, the fixer fails before writing any edit. Symlink aliases
+inside the repository share one source. The fixer combines compatible edits and
+defers conflicting edits.
 
 The Nix package builds a self-contained runner:
 
