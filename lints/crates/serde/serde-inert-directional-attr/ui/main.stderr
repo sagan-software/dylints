@@ -44,12 +44,246 @@ LL -     #[serde(skip_serializing)]
    |
 
 warning: `serde` attribute is inert for the only derived direction
-  --> $DIR/main.rs:53:5
+  --> $DIR/main.rs:39:1
+   |
+LL | #[serde(rename(deserialize = "serialize_only_input"))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+   |
+LL - #[serde(rename(deserialize = "serialize_only_input"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:45:1
+   |
+LL | #[serde(rename(serialize = "deserialize_only_output"))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `serialize` entry, or add `Serialize` if it was intended
+   |
+LL - #[serde(rename(serialize = "deserialize_only_output"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:52:5
+   |
+LL |     #[serde(rename(deserialize = "field_input"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+   |
+LL -     #[serde(rename(deserialize = "field_input"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:58:5
+   |
+LL |     #[serde(rename(serialize = "field_output"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `serialize` entry, or add `Serialize` if it was intended
+   |
+LL -     #[serde(rename(serialize = "field_output"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:64:5
+   |
+LL |     #[serde(rename(deserialize = "variant_input"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+   |
+LL -     #[serde(rename(deserialize = "variant_input"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:70:5
+   |
+LL |     #[serde(rename(serialize = "variant_output"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `serialize` entry, or add `Serialize` if it was intended
+   |
+LL -     #[serde(rename(serialize = "variant_output"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:75:1
+   |
+LL | #[serde(rename_all(deserialize = "camelCase"))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+   |
+LL - #[serde(rename_all(deserialize = "camelCase"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:81:1
+   |
+LL | #[serde(rename_all(serialize = "camelCase"))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `serialize` entry, or add `Serialize` if it was intended
+   |
+LL - #[serde(rename_all(serialize = "camelCase"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:87:1
+   |
+LL | #[serde(rename_all_fields(deserialize = "camelCase"))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+   |
+LL - #[serde(rename_all_fields(deserialize = "camelCase"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:93:1
+   |
+LL | #[serde(rename_all_fields(serialize = "camelCase"))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `serialize` entry, or add `Serialize` if it was intended
+   |
+LL - #[serde(rename_all_fields(serialize = "camelCase"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:99:1
+   |
+LL | #[serde(bound(deserialize = "String: serde::Deserialize<'de>"))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+   |
+LL - #[serde(bound(deserialize = "String: serde::Deserialize<'de>"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:105:1
+   |
+LL | #[serde(bound(serialize = "String: serde::Serialize"))]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `serialize` entry, or add `Serialize` if it was intended
+   |
+LL - #[serde(bound(serialize = "String: serde::Serialize"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:112:5
+   |
+LL | /     #[serde(
+LL | |         skip_serializing_if = "String::is_empty",
+LL | |         rename(deserialize = "field_input")
+LL | |     )]
+   | |______^
+   |
+help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+   |
+LL -         skip_serializing_if = "String::is_empty",
+LL -         rename(deserialize = "field_input")
+LL +         skip_serializing_if = "String::is_empty"
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:121:5
+   |
+LL |     #[serde(default, rename(serialize = "field_output"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `serialize` entry, or add `Serialize` if it was intended
+   |
+LL -     #[serde(default, rename(serialize = "field_output"))]
+LL +     #[serde(default)]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:126:19
+   |
+LL | #[cfg_attr(all(), serde(rename(deserialize = "cfg_attr_input")))]
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:139:5
+   |
+LL | /     #[serde(
+LL | |         rename(deserialize = "field_input", serialize = "field_output"),
+LL | |         skip_serializing_if = "String::is_empty"
+LL | |     )]
+   | |______^
+   |
+help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+   |
+LL -         rename(deserialize = "field_input", serialize = "field_output"),
+LL +         rename(serialize = "field_output"),
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:148:5
+   |
+LL | /     #[serde(
+LL | |         rename(deserialize = "field_input", serialize = "field_output"),
+LL | |         default
+LL | |     )]
+   | |______^
+   |
+help: remove the `serialize` entry, or add `Serialize` if it was intended
+   |
+LL -         rename(deserialize = "field_input", serialize = "field_output"),
+LL +         rename(deserialize = "field_input"),
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:157:5
+   |
+LL |     #[serde(rename(deserialize = "comment_input", /* keep */ serialize = "comment_output"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:163:5
+   |
+LL |     #[serde(rename(deserialize /* keep */ = "commented_input", serialize = "comment_output"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:169:5
+   |
+LL |     #[serde(rename(deserialize /* keep */ = "commented_input"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:175:5
+   |
+LL |     #[serde(rename(deserialize = "/* string value */", serialize = "comment_output"))]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: remove the `deserialize` entry, or add `Deserialize` if it was intended
+   |
+LL -     #[serde(rename(deserialize = "/* string value */", serialize = "comment_output"))]
+LL +     #[serde(rename(serialize = "comment_output"))]
+   |
+
+warning: `serde` attribute is inert for the only derived direction
+  --> $DIR/main.rs:194:5
    |
 LL |     #[serde(rename = "v", default)]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: remove the deserialization-only attribute, or add `Deserialize` if it was intended
 
-warning: 5 warnings emitted
+warning: 26 warnings emitted
 

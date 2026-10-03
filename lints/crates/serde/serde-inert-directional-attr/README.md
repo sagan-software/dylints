@@ -17,8 +17,12 @@ direction.
 
 ## Known problems
 
-The lint checks only the keys listed above. It does not report a directional
-form such as `rename(deserialize = "name")` on a `Serialize`-only type.
+The lint reports inactive `serialize` and `deserialize` string values in
+`rename`, `rename_all`, `rename_all_fields`, and `bound`. If a plain
+`#[serde(...)]` source attribute has a unique supported direction entry and an
+exact deletion span without comments, the lint offers a machine edit that
+preserves active directional values. Otherwise, it gives help text without an
+edit.
 
 ## Example
 

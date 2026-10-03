@@ -32,6 +32,134 @@ enum DeserializeOnlyEnum {
 }
 
 #[derive(Serialize)]
+struct SerializeOnlyDirectionalRename {
+    value: String,
+}
+
+#[derive(Deserialize)]
+struct DeserializeOnlyDirectionalRename {
+    value: String,
+}
+
+#[derive(Serialize)]
+struct SerializeOnlyDirectionalField {
+    value: String,
+}
+
+#[derive(Deserialize)]
+struct DeserializeOnlyDirectionalField {
+    value: String,
+}
+
+#[derive(Serialize)]
+enum SerializeOnlyDirectionalVariant {
+    Value,
+}
+
+#[derive(Deserialize)]
+enum DeserializeOnlyDirectionalVariant {
+    Value,
+}
+
+#[derive(Serialize)]
+struct SerializeOnlyDirectionalRenameAll {
+    field_name: String,
+}
+
+#[derive(Deserialize)]
+struct DeserializeOnlyDirectionalRenameAll {
+    field_name: String,
+}
+
+#[derive(Serialize)]
+enum SerializeOnlyDirectionalRenameAllFields {
+    Fields { field_name: String },
+}
+
+#[derive(Deserialize)]
+enum DeserializeOnlyDirectionalRenameAllFields {
+    Fields { field_name: String },
+}
+
+#[derive(Serialize)]
+struct SerializeOnlyDirectionalBound {
+    value: String,
+}
+
+#[derive(Deserialize)]
+struct DeserializeOnlyDirectionalBound {
+    value: String,
+}
+
+#[derive(Serialize)]
+struct SerializeOnlyRootEntryAfterActive {
+    #[serde(
+        skip_serializing_if = "String::is_empty"
+    )]
+    value: String,
+}
+
+#[derive(Deserialize)]
+struct DeserializeOnlyRootEntryAfterActive {
+    #[serde(default)]
+    value: String,
+}
+
+#[derive(Serialize)]
+#[cfg_attr(all(), serde(rename(deserialize = "cfg_attr_input")))]
+struct CfgAttrDirectionalRename {
+    value: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename(serialize = "both_output", deserialize = "both_input"))]
+struct BothDirectionalRename {
+    value: String,
+}
+
+#[derive(Serialize)]
+struct SerializeOnlyMixedDirectionalField {
+    #[serde(
+        rename(serialize = "field_output"),
+        skip_serializing_if = "String::is_empty"
+    )]
+    value: String,
+}
+
+#[derive(Deserialize)]
+struct DeserializeOnlyMixedDirectionalField {
+    #[serde(
+        rename(deserialize = "field_input"),
+        default
+    )]
+    value: String,
+}
+
+#[derive(Serialize)]
+struct DirectionalRenameWithComment {
+    #[serde(rename(deserialize = "comment_input", /* keep */ serialize = "comment_output"))]
+    value: String,
+}
+
+#[derive(Serialize)]
+struct DirectionalRenameWithCommentInsideInactiveEntry {
+    #[serde(rename(deserialize /* keep */ = "commented_input", serialize = "comment_output"))]
+    value: String,
+}
+
+#[derive(Serialize)]
+struct DirectionalRenameWithCommentInsideOnlyEntry {
+    #[serde(rename(deserialize /* keep */ = "commented_input"))]
+    value: String,
+}
+
+#[derive(Serialize)]
+struct DirectionalRenameWithCommentMarkerInString {
+    #[serde(rename(serialize = "comment_output"))]
+    value: String,
+}
+
+#[derive(Serialize)]
 struct RenamedToKeyword {
     #[serde(rename = "default")]
     value: String,
