@@ -21,7 +21,10 @@ extern crate rustc_span;
 
 use rustc_ast::LitKind;
 use rustc_errors::{Applicability, DiagDecorator};
-use rustc_hir::{Body, Expr, ExprKind, Impl, ImplItemKind, Item, ItemKind, PatKind, def::Res};
+use rustc_hir::{
+    Body, Expr, ExprKind, Impl, ImplItemKind, Item, ItemKind, PatKind,
+    def::{CtorKind, Res},
+};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty::{self, AdtDef, TyCtxt, TypeckResults};
 use rustc_span::{Span, Symbol, def_id::DefId, sym};
@@ -139,6 +142,12 @@ impl<'tcx> ChainChecker<'tcx> {
         let Some((builder, is_tuple)) = self.builder_call(current) else {
             return false;
         };
+        // Nonempty builders must preserve the struct's named or positional field syntax.
+        if !variant.fields.is_empty()
+            && is_tuple != matches!(variant.ctor_kind(), Some(CtorKind::Fn))
+        {
+            return false;
+        }
         // The builder must target `Formatter` and carry the struct's exact name.
         if !self.is_valid_builder(
             current,
