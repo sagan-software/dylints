@@ -367,19 +367,6 @@ pub(crate) fn used_field_names<'tcx>(
     visitor.names
 }
 
-/// Return whether a body performs a fixed typed access through an entity view.
-pub(crate) fn body_contains_fixed_entity_access<'tcx>(
-    cx: &LateContext<'tcx>,
-    body: &Body<'tcx>,
-) -> bool {
-    let mut visitor = FixedEntityAccessVisitor {
-        cx,
-        is_found: false,
-    };
-    visitor.visit_expr(body.value);
-    visitor.is_found
-}
-
 /// Return the system expressions inside an `add_systems` argument.
 ///
 /// Tuples are flattened, and schedule configuration methods such as `run_if`,
@@ -787,44 +774,6 @@ impl<'tcx> Visitor<'tcx> for QueryBindingUseVisitor<'_, 'tcx> {
         if local_path_id(self.cx, expr) == Some(self.binding_id) {
             self.saw_other_use = true;
             return;
-        }
-        rustc_hir::intravisit::walk_expr(self, expr);
-    }
-}
-
-/// Visitor that finds fixed typed access through `EntityRef` or `EntityMut`.
-pub(crate) struct FixedEntityAccessVisitor<'a, 'tcx> {
-    /// Lint context used to resolve receiver types.
-    pub(crate) cx: &'a LateContext<'tcx>,
-    /// Whether a supported access was found.
-    pub(crate) is_found: bool,
-}
-
-impl<'tcx> Visitor<'tcx> for FixedEntityAccessVisitor<'_, 'tcx> {
-    fn visit_nested_body(&mut self, body_id: rustc_hir::BodyId) {
-        if let Some(body) = closure_body(self.cx, body_id) {
-            self.visit_body(body);
-        }
-    }
-
-    fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-        // Match only fixed typed access methods on the two supported entity proxies.
-        if let ExprKind::MethodCall(_, receiver, _, _) = expr.kind
-            && (expression_has_type(self.cx, receiver, "bevy_ecs", "EntityRef")
-                || expression_has_type(self.cx, receiver, "bevy_ecs", "EntityMut"))
-            && bevy_ecs_method_name(self.cx, expr).is_some_and(|name| {
-                matches!(
-                    name.as_str(),
-                    "contains"
-                        | "get"
-                        | "get_components"
-                        | "get_components_mut"
-                        | "get_mut"
-                        | "get_ref"
-                )
-            })
-        {
-            self.is_found = true;
         }
         rustc_hir::intravisit::walk_expr(self, expr);
     }

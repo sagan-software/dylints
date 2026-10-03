@@ -3,9 +3,9 @@
 use super::helpers::{
     ChildrenMutationVisitor, ComponentFieldUseVisitor, ContainsRegion, PresenceQueryUseVisitor,
     QueryBindingUseVisitor, WorldBindingUseVisitor, adjustable_inputs,
-    body_contains_fixed_entity_access, collect_shared_reference_replacements, direct_query_refs,
-    is_zst, local_adt_id, local_named_fields, local_trait_targets, local_type_size,
-    parameter_binding, query_access_width, query_data_has_any_mut_ref, query_data_item_types,
+    collect_shared_reference_replacements, direct_query_refs, is_zst, local_adt_id,
+    local_named_fields, local_trait_targets, local_type_size, parameter_binding,
+    query_access_width, query_data_has_any_mut_ref, query_data_item_types,
     query_data_mut_components, query_data_type, query_filter_tracked_component, query_filter_type,
     reborrowable_type, used_field_names,
 };
@@ -263,22 +263,19 @@ pub fn unfiltered_entity_access_query_parameters<'tcx>(
     body: &Body<'tcx>,
     local_def_id: LocalDefId,
 ) -> Vec<usize> {
-    if !body_contains_fixed_entity_access(cx, body) {
-        return Vec::new();
-    }
-
     let mut indexes = Vec::new();
-    indexes.extend(
-        adjustable_inputs(cx, kind, local_def_id)
-            .into_iter()
-            .filter(|(_, input)| {
-                query_data_type(cx, *input).is_some_and(|data| {
-                    type_is_named(cx, data, "bevy_ecs", "EntityRef")
-                        || type_is_named(cx, data, "bevy_ecs", "EntityMut")
-                })
-            })
-            .map(|(index, _)| index),
-    );
+    for (index, input) in adjustable_inputs(cx, kind, local_def_id) {
+        let has_entity_proxy = query_data_type(cx, input).is_some_and(|data| {
+            type_is_named(cx, data, "bevy_ecs", "EntityRef")
+                || type_is_named(cx, data, "bevy_ecs", "EntityMut")
+        });
+        let has_query_origin = parameter_binding(body, index).is_some_and(|query_binding| {
+            super::query_origins::body_contains_fixed_entity_access(cx, body, query_binding)
+        });
+        if has_entity_proxy && has_query_origin {
+            indexes.push(index);
+        }
+    }
     indexes
 }
 

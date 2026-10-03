@@ -2,9 +2,15 @@
 
 ## What it does
 
-Checks for parameters of type `Query<EntityRef>` or `Query<EntityMut>` in functions that call a
-typed component method on an `EntityRef` or `EntityMut`: `contains`, `get`, `get_components`,
-`get_components_mut`, `get_mut`, or `get_ref`.
+Checks parameters of type `Query<EntityRef>` or `Query<EntityMut>` when entities yielded or fetched
+directly from that query reach a typed component call: `contains`, `get`, `get_components`,
+`get_components_mut`, `get_mut`, or `get_ref`. It recognizes query iteration in `for` loops and
+direct `iter().for_each` or `iter_mut().for_each` closures. It also recognizes `get`, `get_mut`,
+`single`, `single_mut`, `iter().next()`, and `iter_mut().next()` results after direct `unwrap`,
+`expect`, `if let`, `match`, or `let-else` extraction.
+
+Each query parameter is checked independently. An `EntityRef` or `EntityMut` obtained from another
+query or from `World` does not trigger a diagnostic for this parameter.
 
 ## Why is this bad?
 
@@ -14,8 +20,14 @@ uses a fixed set.
 
 ## Known problems
 
-The lint does not link the typed call to the query. A typed call on an `EntityRef` from another
-source in the same function also triggers it. The lint does not inspect calls inside closures. The lint does not check tuple query data such as `(Entity, EntityRef)`.
+The lint follows only the direct origins listed above. Aliases of the `Query` parameter, computed
+query receivers such as helper-call results, iterator adapters, and named callbacks passed to
+`for_each` remain unknown. Tuple query data, such as `(Entity, EntityRef)`, is not checked. For an
+assignment, the lint checks the right-hand side with the old origin. It then drops that origin if it
+cannot prove that the assigned value comes from the selected query.
+
+At control-flow joins, the lint does not restore lost origins. An assignment in one branch can make
+later uses unknown.
 
 ## Example
 

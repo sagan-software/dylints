@@ -1,5 +1,5 @@
 warning: this whole-entity query performs fixed typed component access
-  --> $DIR/main.rs:6:15
+  --> $DIR/main.rs:16:15
    |
 LL | fn bad(query: Query<EntityRef>) {
    |               ^^^^^^^^^^^^^^^^
@@ -8,12 +8,124 @@ LL | fn bad(query: Query<EntityRef>) {
    = note: `#[warn(bevy_unfiltered_entity_access_query)]` on by default
 
 warning: this whole-entity query performs fixed typed component access
-  --> $DIR/main.rs:12:23
+  --> $DIR/main.rs:22:23
    |
 LL | fn bad_mut(mut query: Query<EntityMut>) {
    |                       ^^^^^^^^^^^^^^^^
    |
    = help: request the fixed component set directly in the query
 
-warning: 2 warnings emitted
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:45:25
+   |
+LL | fn bad_query_get(query: Query<EntityRef>, entity_id: Entity) {
+   |                         ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:50:33
+   |
+LL | fn bad_query_get_mut(mut query: Query<EntityMut>, entity_id: Entity) {
+   |                                 ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:54:28
+   |
+LL | fn bad_query_single(query: Query<EntityRef>) {
+   |                            ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:58:36
+   |
+LL | fn bad_query_single_mut(mut query: Query<EntityMut>) {
+   |                                    ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:62:31
+   |
+LL | fn bad_query_iter_next(query: Query<EntityRef>) {
+   |                               ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:66:32
+   |
+LL | fn bad_query_get_if_let(query: Query<EntityRef>, entity_id: Entity) {
+   |                                ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:72:31
+   |
+LL | fn bad_query_get_match(query: Query<EntityRef>, entity_id: Entity) {
+   |                               ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:81:35
+   |
+LL | fn bad_query_single_expect(query: Query<EntityRef>) {
+   |                                   ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:110:28
+   |
+LL | fn bad_query_borrow(query: Query<EntityRef>) {
+   |                            ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:116:27
+   |
+LL | fn bad_query_macro(query: Query<EntityRef>) {
+   |                           ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:135:62
+   |
+LL | fn two_queries(dynamic_query: Query<EntityRef>, typed_query: Query<EntityRef>) {
+   |                                                              ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:150:65
+   |
+LL | fn rhs_access_before_overwrite<'w>(w: &'w World, id: Entity, q: Query<'w, '_, EntityRef<'w>>) {
+   |                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:170:39
+   |
+LL | fn bad_query_iter_mut_next(mut query: Query<EntityMut>) {
+   |                                       ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: this whole-entity query performs fixed typed component access
+  --> $DIR/main.rs:174:34
+   |
+LL | fn bad_query_get_let_else(query: Query<EntityRef>, entity_id: Entity) {
+   |                                  ^^^^^^^^^^^^^^^^
+   |
+   = help: request the fixed component set directly in the query
+
+warning: 16 warnings emitted
 
