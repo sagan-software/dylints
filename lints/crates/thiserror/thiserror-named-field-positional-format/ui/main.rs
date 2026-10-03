@@ -43,4 +43,10 @@ mod glob {
 #[error("tuple: {}", .0)]
 pub struct TupleError(String);
 
+#[derive(Debug, Error)]
+#[error(transparent)]
+struct TransparentStruct {
+    source: std::io::Error,
+}
+
 fn main() {}
