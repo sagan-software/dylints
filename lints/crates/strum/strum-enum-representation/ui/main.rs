@@ -70,6 +70,22 @@ enum AlignedNames {
     Ready,
 }
 
+#[derive(Serialize)]
+enum PayloadNames {
+    Unit,
+    Payload(String),
+}
+
+#[derive(Serialize)]
+struct SerdeStruct {
+    field: usize,
+}
+
+#[derive(Serialize, strum::Display)]
+enum UnicodeNames {
+    Café,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum SerdeOnly {
@@ -110,5 +126,9 @@ fn main() {
     let _ = DirectionalNames::Ready.to_string();
     let _ = InputNames::Ready.to_string();
     let _ = AlignedNames::InProgress.to_string();
+    let _ = PayloadNames::Unit;
+    let _ = PayloadNames::Payload(String::from("payload"));
+    let _ = SerdeStruct { field: 1 };
+    let _ = UnicodeNames::Café.to_string();
     let _ = SerdeOnly::HTTPResponse;
 }

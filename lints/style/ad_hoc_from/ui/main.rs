@@ -120,6 +120,15 @@ fn make_port_option(raw: Option<u16>) -> Port {
     Port(0)
 }
 
+fn make_empty() -> Port {
+    Port(0)
+}
+
+fn make_multiple(first: u8, second: u8) -> Port {
+    let _ = (first, second);
+    Port(0)
+}
+
 fn make_generic<T>(value: T) -> Port {
     let _ = value;
     Port(0)

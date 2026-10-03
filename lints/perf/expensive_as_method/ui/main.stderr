@@ -49,5 +49,15 @@ LL |         decode(&self.raw)
    |
    = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
 
-warning: 5 warnings emitted
+warning: inherent method `as_trait_clone` does work that should not hide behind `as_*`
+  --> $DIR/main.rs:37:8
+   |
+LL |     fn as_trait_clone(&self) -> String {
+   |        ^^^^^^^^^^^^^^
+LL |         Clone::clone(&self.raw)
+   |         ----------------------- this clone copies owned data
+   |
+   = help: reserve `as_*` for cheap borrowed accessors; use `to_*`, `try_*`, or a domain-specific verb for work
+
+warning: 6 warnings emitted
 

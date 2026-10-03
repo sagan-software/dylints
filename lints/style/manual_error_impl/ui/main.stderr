@@ -24,7 +24,7 @@ LL | | }
    = help: use `#[derive(thiserror::Error, Debug)]` with a `#[error("...")]` message
 
 warning: manual `Error` and `Display` implementations look derivable
-  --> $DIR/main.rs:121:1
+  --> $DIR/main.rs:125:1
    |
 LL | / impl Display for ErrorFirst {
 LL | |     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

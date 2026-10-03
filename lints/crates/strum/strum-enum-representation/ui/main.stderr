@@ -32,7 +32,7 @@ LL |     Ready,
    = help: align the Strum and Serde representation attributes
 
 warning: enum `StaticNames` has divergent Strum and Serde output for variant `Ready`: Strum uses `Ready`; Serde uses `ready`
-  --> $DIR/main.rs:82:5
+  --> $DIR/main.rs:98:5
    |
 LL |     Ready,
    |     ^^^^^
@@ -40,7 +40,7 @@ LL |     Ready,
    = help: align the Strum and Serde representation attributes
 
 warning: enum `CfgAttrNames` has divergent Strum and Serde output for variant `Ready`: Strum uses `READY`; Serde uses `Ready`
-  --> $DIR/main.rs:89:5
+  --> $DIR/main.rs:105:5
    |
 LL |     Ready,
    |     ^^^^^

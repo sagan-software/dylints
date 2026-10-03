@@ -113,6 +113,10 @@ mod local_traits {
     impl Error for LocalTraits {}
 }
 
+trait PrimitiveMarker {}
+
+impl PrimitiveMarker for u8 {}
+
 #[derive(Debug)]
 struct ErrorFirst;
 

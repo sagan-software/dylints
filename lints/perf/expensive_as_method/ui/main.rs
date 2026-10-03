@@ -34,6 +34,14 @@ impl Token {
         decode(&self.raw)
     }
 
+    fn as_trait_clone(&self) -> String {
+        Clone::clone(&self.raw)
+    }
+
+    fn as_trait_rendered(&self) -> String {
+        Render::as_string(self)
+    }
+
     fn to_string_value(&self) -> String {
         self.raw.clone()
     }

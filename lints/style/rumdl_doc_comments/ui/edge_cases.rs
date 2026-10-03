@@ -21,6 +21,12 @@ pub fn spaced_emphasis() {}
 /// This paragraph is intentionally written as one long line with `inline_code` so the diagnostic shows that MD013 reports line length without offering a misleading machine-applicable fix.
 pub fn long_line_without_fix() {}
 
+/// This block has extra blank lines.
+///
+///
+/// This paragraph remains intentionally long enough to keep the unfixable line-length warning after formatting.
+pub fn mixed_fixable_and_unfixable() {}
+
 /// This paragraph keeps * spaced * emphasis in a realistic sentence.
 /// ## Details
 /// The follow-up paragraph keeps * another * emphasis issue.

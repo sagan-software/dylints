@@ -14,8 +14,24 @@ LL | /// This paragraph is intentionally written as one long line with `inline_c
    |
    = help: fix the Markdown in this Rust doc comment
 
-warning: MD022 in Rust doc comment at line 2, column 5: Expected 1 blank line above heading
+warning: MD012 in Rust doc comment at line 3, column 4: Multiple consecutive blank lines between content
   --> $DIR/edge_cases.rs:24:1
+   |
+LL | / /// This block has extra blank lines.
+LL | | ///
+LL | | ///
+LL | | /// This paragraph remains intentionally long enough to keep the unfixable line-length warning after formatting.
+   | |________________________________________________________________________________________________________________^
+   |
+help: fix the Markdown in this Rust doc comment
+   |
+LL + /// This block has extra blank lines.
+LL + ///
+LL + ///This paragraph remains intentionally long enough to keep the unfixable line-length warning after formatting.
+   |
+
+warning: MD022 in Rust doc comment at line 2, column 5: Expected 1 blank line above heading
+  --> $DIR/edge_cases.rs:30:1
    |
 LL | / /// This paragraph keeps * spaced * emphasis in a realistic sentence.
 LL | | /// ## Details
@@ -34,25 +50,25 @@ LL + /// It lets one suggestion demonstrate several coordinated edits.
    |
 
 warning: MD037 in Rust doc comment at line 1, column 23: Spaces inside emphasis markers: "* spaced *"
-  --> $DIR/edge_cases.rs:89:5
+  --> $DIR/edge_cases.rs:95:5
    |
 LL |     /// An impl item with * spaced * emphasis.
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `/// An impl item with *spaced* emphasis.`
 
 warning: MD037 in Rust doc comment at line 1, column 20: Spaces inside emphasis markers: "* spaced *"
-  --> $DIR/edge_cases.rs:95:5
+  --> $DIR/edge_cases.rs:101:5
    |
 LL |     /// A variant with * spaced * emphasis.
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `/// A variant with *spaced* emphasis.`
 
 warning: MD037 in Rust doc comment at line 1, column 25: Spaces inside emphasis markers: "* spaced *"
-  --> $DIR/edge_cases.rs:100:5
+  --> $DIR/edge_cases.rs:106:5
    |
 LL |     /// A foreign item with * spaced * emphasis.
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `/// A foreign item with *spaced* emphasis.`
 
 warning: MD037 in Rust doc comment at line 1, column 22: Spaces inside emphasis markers: "* spaced *"
-  --> $DIR/edge_cases.rs:105:1
+  --> $DIR/edge_cases.rs:111:1
    |
 LL | pub fn attribute_docs() {}
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -60,7 +76,7 @@ LL | pub fn attribute_docs() {}
    = help: fix the Markdown in this Rust doc comment
 
 warning: MD037 in Rust doc comment at line 2, column 21: Spaces inside emphasis markers: "* spaced *"
-  --> $DIR/edge_cases.rs:109:1
+  --> $DIR/edge_cases.rs:115:1
    |
 LL | pub fn mixed_docs() {}
    | ^^^^^^^^^^^^^^^^^^^^^^
@@ -68,10 +84,10 @@ LL | pub fn mixed_docs() {}
    = help: fix the Markdown in this Rust doc comment
 
 warning: MD037 in Rust doc comment at line 1, column 21: Spaces inside emphasis markers: "* spaced *"
-  --> $DIR/edge_cases.rs:112:5
+  --> $DIR/edge_cases.rs:118:5
    |
 LL |     //! Inner docs with * spaced * emphasis.
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `//! Inner docs with *spaced* emphasis.`
 
-warning: 9 warnings emitted
+warning: 10 warnings emitted
 

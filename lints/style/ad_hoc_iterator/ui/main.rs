@@ -97,6 +97,11 @@ impl local::Iterator for Lookalike {
 struct State;
 
 impl State {
+    fn next(&mut self) -> usize {
+        let _ = self;
+        0
+    }
+
     fn next_state(&mut self) -> Option<Self> {
         None
     }
