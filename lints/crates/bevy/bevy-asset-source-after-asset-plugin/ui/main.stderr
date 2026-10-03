@@ -1,0 +1,115 @@
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:25:10
+   |
+LL |         .register_asset_source("late_chain", source_builder());
+   |          ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+   = note: `#[warn(bevy_asset_source_after_asset_plugin)]` on by default
+
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:30:9
+   |
+LL |     app.register_asset_source("late_statement", source_builder());
+   |         ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:41:13
+   |
+LL |         app.register_asset_source("let_else", source_builder());
+   |             ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:49:10
+   |
+LL |         .register_asset_source("temporary", source_builder());
+   |          ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+
+warning: `WebAssetPlugin` is added after `AssetPlugin`
+  --> $DIR/main.rs:53:5
+   |
+LL |     app.add_plugins((AssetPlugin::default(), WebAssetPlugin::default()));
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `WebAssetPlugin` before `AssetPlugin`
+
+warning: `WebAssetPlugin` is added after `AssetPlugin`
+  --> $DIR/main.rs:62:5
+   |
+LL |     app.add_plugins(WebAssetPlugin::default());
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `WebAssetPlugin` before `AssetPlugin`
+
+warning: `WebAssetPlugin` is added after `AssetPlugin`
+  --> $DIR/main.rs:67:5
+   |
+LL |     app.add_plugins(plugins);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `WebAssetPlugin` before `AssetPlugin`
+
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:73:11
+   |
+LL |     alias.register_asset_source("alias", source_builder());
+   |           ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:86:13
+   |
+LL |         app.register_asset_source("branch", source_builder());
+   |             ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:96:9
+   |
+LL |     app.register_asset_source("unrelated_assignment", source_builder());
+   |         ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:107:9
+   |
+LL |     app.register_asset_source("moved_app", source_builder());
+   |         ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:114:9
+   |
+LL |     app.register_asset_source("other_app", source_builder());
+   |         ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:166:9
+   |
+LL |     app.register_asset_source("definite_assignment", source_builder());
+   |         ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+
+warning: this asset source is registered after `AssetPlugin`
+  --> $DIR/main.rs:326:9
+   |
+LL |     app.register_asset_source("uninvoked_closure", source_builder());
+   |         ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: register the asset source before adding `AssetPlugin`
+
+warning: 14 warnings emitted
+

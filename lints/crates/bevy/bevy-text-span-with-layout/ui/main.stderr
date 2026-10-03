@@ -1,0 +1,83 @@
+warning: this bundle puts `TextLayout` on a `TextSpan` entity
+  --> $DIR/main.rs:49:17
+   |
+LL |     world.spawn((Span::new("span"), Layout::default()));
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put `TextLayout` on the root entity that has `Text` or `Text2d`
+   = note: `#[warn(bevy_text_span_with_layout)]` on by default
+
+warning: this bundle puts `TextLayout` on a `TextSpan` entity
+  --> $DIR/main.rs:50:17
+   |
+LL |     world.spawn((Span::new("nested"), (Layout::default(),)));
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put `TextLayout` on the root entity that has `Text` or `Text2d`
+
+warning: this bundle puts `TextLayout` on a `TextSpan` entity
+  --> $DIR/main.rs:51:17
+   |
+LL |     world.spawn((TextSpan::new("aliased span"), TextLayout::default()));
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put `TextLayout` on the root entity that has `Text` or `Text2d`
+
+warning: this bundle puts `TextLayout` on a `TextSpan` entity
+  --> $DIR/main.rs:70:17
+   |
+LL |         .insert((Span::new("inserted span"), Layout::default()));
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put `TextLayout` on the root entity that has `Text` or `Text2d`
+
+warning: this bundle puts `TextLayout` on a `TextSpan` entity
+  --> $DIR/main.rs:73:24
+   |
+LL |         .insert_if_new((Span::new("inserted if new"), Layout::default()));
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put `TextLayout` on the root entity that has `Text` or `Text2d`
+
+warning: this bundle puts `TextLayout` on a `TextSpan` entity
+  --> $DIR/main.rs:77:27
+   |
+LL |             related.spawn((Span::new("related span"), Layout::default()));
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put `TextLayout` on the root entity that has `Text` or `Text2d`
+
+warning: this bundle puts `TextLayout` on a `TextSpan` entity
+  --> $DIR/main.rs:83:20
+   |
+LL |     commands.spawn((Span::new("span"), Layout::default()));
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put `TextLayout` on the root entity that has `Text` or `Text2d`
+
+warning: this bundle puts `TextLayout` on a `TextSpan` entity
+  --> $DIR/main.rs:86:17
+   |
+LL |         .insert((Span::new("inserted"), Layout::default()));
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put `TextLayout` on the root entity that has `Text` or `Text2d`
+
+warning: this bundle puts `TextLayout` on a `TextSpan` entity
+  --> $DIR/main.rs:89:24
+   |
+LL |         .insert_if_new((Span::new("inserted if new"), Layout::default()));
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put `TextLayout` on the root entity that has `Text` or `Text2d`
+
+warning: this bundle puts `TextLayout` on a `TextSpan` entity
+  --> $DIR/main.rs:93:27
+   |
+LL |             related.spawn((Span::new("related span"), Layout::default()));
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put `TextLayout` on the root entity that has `Text` or `Text2d`
+
+warning: 10 warnings emitted
+

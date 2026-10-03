@@ -1,0 +1,93 @@
+warning: sort key may allocate a string during repeated comparisons
+  --> $DIR/main.rs:9:5
+   |
+LL |     records.sort_by_key(|record| record.name.to_lowercase());
+   |     -------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     standard stable slice sorting
+   |
+   = help: use `sort_by_cached_key` to compute each recognized key at most once per element
+   = note: `#[warn(expensive_sort_key)]` on by default
+
+warning: sort key may allocate a string during repeated comparisons
+  --> $DIR/main.rs:13:5
+   |
+LL |     records.sort_by_key(|record| record.name.to_uppercase());
+   |     -------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     standard stable slice sorting
+   |
+   = help: use `sort_by_cached_key` to compute each recognized key at most once per element
+
+warning: sort key may allocate a string during repeated comparisons
+  --> $DIR/main.rs:17:5
+   |
+LL |     records.sort_by_key(|record| record.name.to_ascii_lowercase());
+   |     -------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     standard stable slice sorting
+   |
+   = help: use `sort_by_cached_key` to compute each recognized key at most once per element
+
+warning: sort key may allocate a string during repeated comparisons
+  --> $DIR/main.rs:21:5
+   |
+LL |     records.sort_by_key(|record| record.name.to_ascii_uppercase());
+   |     -------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     standard stable slice sorting
+   |
+   = help: use `sort_by_cached_key` to compute each recognized key at most once per element
+
+warning: sort key may allocate a string during repeated comparisons
+  --> $DIR/main.rs:29:5
+   |
+LL |     records.sort_by_key(|record| record.name.to_lowercase());
+   |     -------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     standard stable slice sorting
+   |
+   = help: use `sort_by_cached_key` to compute each recognized key at most once per element
+
+warning: sort key may allocate a string during repeated comparisons
+  --> $DIR/main.rs:43:5
+   |
+LL |     records.sort_by_key(|record| { record.name.to_lowercase() });
+   |     -------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     standard stable slice sorting
+   |
+   = help: use `sort_by_cached_key` to compute each recognized key at most once per element
+
+warning: sort key may allocate a string during repeated comparisons
+  --> $DIR/main.rs:63:5
+   |
+LL |     names.sort_by_key(|name| (*name).clone());
+   |     -----^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     standard stable slice sorting
+   |
+   = help: use `sort_by_cached_key` to compute each recognized key at most once per element
+
+warning: sort key may allocate a string during repeated comparisons
+  --> $DIR/main.rs:85:5
+   |
+LL |     names.sort_by_key(|name| name.to_lowercase());
+   |     -----^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     standard stable slice sorting
+   |
+   = help: use `sort_by_cached_key` to compute each recognized key at most once per element
+
+warning: sort key may allocate a string during repeated comparisons
+  --> $DIR/main.rs:89:5
+   |
+LL |     names.sort_by_key(|name| name.to_lowercase());
+   |     -----^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     standard stable slice sorting
+   |
+   = help: use `sort_by_cached_key` to compute each recognized key at most once per element
+
+warning: 9 warnings emitted
+

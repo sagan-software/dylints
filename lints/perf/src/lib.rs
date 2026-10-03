@@ -35,6 +35,9 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
     // Each constituent crate owns its lint pass; this crate only defines the group.
     boxed_future_return::register_lints(sess, lint_store);
     expensive_as_method::register_lints(sess, lint_store);
+    expensive_sort_key::register_lints(sess, lint_store);
+    // Register ownership checks and repeated vector movement checks.
     owned_input_field_clones::register_lints(sess, lint_store);
     ownership_at_boundaries::register_lints(sess, lint_store);
+    vec_front_removal_in_loop::register_lints(sess, lint_store);
 }

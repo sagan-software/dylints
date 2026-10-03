@@ -271,6 +271,21 @@ fn register_tracing_lints(sess: &rustc_session::Session, lint_store: &mut rustc_
 
 /// Registers the Bevy-specific constituent lints.
 fn register_bevy_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint::LintStore) {
+    // Register text rasterization and render configuration checks.
+    bevy_continuous_font_size::register_lints(sess, lint_store);
+    bevy_continuous_ui_scale::register_lints(sess, lint_store);
+    bevy_invalid_constant_font_size::register_lints(sess, lint_store);
+    bevy_incompatible_msaa::register_lints(sess, lint_store);
+    bevy_text_span_with_layout::register_lints(sess, lint_store);
+    // Register asset setup and lazy message consumption checks.
+    bevy_asset_source_after_asset_plugin::register_lints(sess, lint_store);
+    bevy_load_builder_replaced_guard::register_lints(sess, lint_store);
+    bevy_message_presence_without_consumption::register_lints(sess, lint_store);
+    // Register parameter access and fixed-loop input checks.
+    bevy_conflicting_resource_params::register_lints(sess, lint_store);
+    bevy_conflicting_query_params::register_lints(sess, lint_store);
+    bevy_mouse_displacement_times_delta::register_lints(sess, lint_store);
+    bevy_frame_button_edge_in_fixed_update::register_lints(sess, lint_store);
     // Keep Bevy registration split by subsystem so each helper remains auditable.
     register_bevy_schedule_lints(sess, lint_store);
     register_bevy_query_lints(sess, lint_store);

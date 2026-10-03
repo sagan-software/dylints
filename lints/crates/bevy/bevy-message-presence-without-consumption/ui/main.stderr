@@ -1,0 +1,19 @@
+warning: creating this lazy message iterator does not consume unread messages
+  --> $DIR/main.rs:16:20
+   |
+LL |     let _ = reader.read();
+   |                    ^^^^
+   |
+   = help: consume the iterator, or call `clear()` only when discarding unread messages is intentional
+   = note: `#[warn(bevy_message_presence_without_consumption)]` on by default
+
+warning: creating this lazy message iterator does not consume unread messages
+  --> $DIR/main.rs:42:20
+   |
+LL |     let _ = reader.read_with_id();
+   |                    ^^^^^^^^^^^^
+   |
+   = help: consume the iterator, or call `clear()` only when discarding unread messages is intentional
+
+warning: 2 warnings emitted
+

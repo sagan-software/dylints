@@ -1,0 +1,15 @@
+warning: mouse displacement is multiplied by frame delta time
+  --> $DIR/main.rs:164:15
+   |
+LL |     black_box(motion.delta.x * time.delta_secs());
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: apply sensitivity to mouse displacement without multiplying by elapsed seconds
+note: the lint level is defined here
+  --> $DIR/main.rs:14:9
+   |
+LL | #![warn(bevy_mouse_displacement_times_delta)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: 1 warning emitted
+

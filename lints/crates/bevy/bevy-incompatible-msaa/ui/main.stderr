@@ -1,0 +1,121 @@
+warning: this bundle combines enabled MSAA with deferred rendering; the active pipeline disables MSAA
+  --> $DIR/main.rs:65:17
+   |
+LL |       world.spawn((
+   |  _________________^
+LL | |         Camera3d::default(),
+LL | |         RenderMsaa::Sample2,
+LL | |         RealDeferredPrepass,
+LL | |     ));
+   | |_____^
+   |
+   = note: `#[warn(bevy_incompatible_msaa)]` on by default
+
+warning: this bundle combines enabled MSAA with SSAO; the active plugin skips SSAO extraction
+  --> $DIR/main.rs:70:17
+   |
+LL |       world.spawn((
+   |  _________________^
+LL | |         Camera3d::default(),
+LL | |         Samples::Sample4,
+LL | |         AmbientOcclusion::default(),
+LL | |     ));
+   | |_____^
+
+warning: this bundle combines enabled MSAA with OIT; the active plugin panics when it runs
+  --> $DIR/main.rs:75:17
+   |
+LL |       world.spawn((
+   |  _________________^
+LL | |         Camera3d::default(),
+LL | |         RenderMsaa::Sample8,
+LL | |         Transparency::default(),
+LL | |     ));
+   | |_____^
+
+warning: this bundle combines enabled MSAA with OIT; the active plugin panics when it runs
+  --> $DIR/main.rs:81:17
+   |
+LL |     world.spawn((RenderMsaa::Sample2, Transparency::default()));
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: this bundle combines enabled MSAA with deferred rendering; the active pipeline disables MSAA
+  --> $DIR/main.rs:122:17
+   |
+LL |     world.spawn((Camera2d, RenderMsaa::Sample2, RealDeferredPrepass));
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: this bundle combines enabled MSAA with deferred rendering; the active pipeline disables MSAA
+  --> $DIR/main.rs:125:17
+   |
+LL |     world.spawn((Camera::default(), RenderMsaa::Sample2, RealDeferredPrepass));
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: this bundle combines enabled MSAA with deferred rendering; the active pipeline disables MSAA
+  --> $DIR/main.rs:138:39
+   |
+LL |       world.spawn_empty().insert_if_new((
+   |  _______________________________________^
+LL | |         Camera3d::default(),
+LL | |         RenderMsaa::Sample4,
+LL | |         RealDeferredPrepass,
+LL | |     ));
+   | |_____^
+
+warning: this bundle combines enabled MSAA with deferred rendering; the active pipeline disables MSAA
+  --> $DIR/main.rs:146:27
+   |
+LL |               related.spawn((
+   |  ___________________________^
+LL | |                 Camera3d::default(),
+LL | |                 RenderMsaa::Sample4,
+LL | |                 RealDeferredPrepass,
+LL | |             ));
+   | |_____________^
+
+warning: this bundle combines enabled MSAA with deferred rendering; the active pipeline disables MSAA
+  --> $DIR/main.rs:156:20
+   |
+LL |       commands.spawn((
+   |  ____________________^
+LL | |         Camera3d::default(),
+LL | |         RenderMsaa::Sample4,
+LL | |         RealDeferredPrepass,
+LL | |     ));
+   | |_____^
+
+warning: this bundle combines enabled MSAA with deferred rendering; the active pipeline disables MSAA
+  --> $DIR/main.rs:161:36
+   |
+LL |       commands.entity(entity).insert((
+   |  ____________________________________^
+LL | |         Camera3d::default(),
+LL | |         RenderMsaa::Sample4,
+LL | |         RealDeferredPrepass,
+LL | |     ));
+   | |_____^
+
+warning: this bundle combines enabled MSAA with deferred rendering; the active pipeline disables MSAA
+  --> $DIR/main.rs:166:43
+   |
+LL |       commands.entity(entity).insert_if_new((
+   |  ___________________________________________^
+LL | |         Camera3d::default(),
+LL | |         RenderMsaa::Sample4,
+LL | |         RealDeferredPrepass,
+LL | |     ));
+   | |_____^
+
+warning: this bundle combines enabled MSAA with deferred rendering; the active pipeline disables MSAA
+  --> $DIR/main.rs:174:27
+   |
+LL |               related.spawn((
+   |  ___________________________^
+LL | |                 Camera3d::default(),
+LL | |                 RenderMsaa::Sample4,
+LL | |                 RealDeferredPrepass,
+LL | |             ));
+   | |_____________^
+
+warning: 12 warnings emitted
+

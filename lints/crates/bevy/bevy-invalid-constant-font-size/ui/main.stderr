@@ -1,0 +1,75 @@
+warning: this constant pixel font size is nonpositive
+  --> $DIR/main.rs:73:36
+   |
+LL |     let _negative = PixelScale::Px(TOO_SMALL);
+   |                                    ^^^^^^^^^
+   |
+   = help: use a positive size or disable the text through its visibility state
+   = note: `#[warn(bevy_invalid_constant_font_size)]` on by default
+
+warning: this constant pixel font size is nonpositive
+  --> $DIR/main.rs:74:30
+   |
+LL |     let _zero = FontSize::Px(0.0);
+   |                              ^^^
+   |
+   = help: use a positive size or disable the text through its visibility state
+
+warning: this constant pixel font size exceeds Bevy's 1000 logical pixel warning threshold
+  --> $DIR/main.rs:75:31
+   |
+LL |     let _above = FontSize::Px(TOO_LARGE);
+   |                               ^^^^^^^^^
+   |
+   = help: use a smaller raster size and scale the text entity when appropriate
+
+warning: this constant pixel font size is nonpositive
+  --> $DIR/main.rs:77:34
+   |
+LL |     let _division = FontSize::Px(BELOW_BY_DIVISION);
+   |                                  ^^^^^^^^^^^^^^^^^
+   |
+   = help: use a positive size or disable the text through its visibility state
+
+warning: this constant pixel font size exceeds Bevy's 1000 logical pixel warning threshold
+  --> $DIR/main.rs:78:40
+   |
+LL |     let _multiplication = FontSize::Px(ABOVE_BY_MULTIPLICATION);
+   |                                        ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a smaller raster size and scale the text entity when appropriate
+
+warning: this constant pixel font size exceeds Bevy's 1000 logical pixel warning threshold
+  --> $DIR/main.rs:79:37
+   |
+LL |     let _subtraction = FontSize::Px(ABOVE_BY_SUBTRACTION);
+   |                                     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a smaller raster size and scale the text entity when appropriate
+
+warning: this constant pixel font size exceeds Bevy's 1000 logical pixel warning threshold
+  --> $DIR/main.rs:80:36
+   |
+LL |     let _near_depth = FontSize::Px(NEAR_DEPTH);
+   |                                    ^^^^^^^^^^
+   |
+   = help: use a smaller raster size and scale the text entity when appropriate
+
+warning: this constant pixel font size is nonpositive
+  --> $DIR/main.rs:81:45
+   |
+LL |     let _associated_constant = FontSize::Px(Limits::ZERO);
+   |                                             ^^^^^^^^^^^^
+   |
+   = help: use a positive size or disable the text through its visibility state
+
+warning: this constant pixel font size exceeds Bevy's 1000 logical pixel warning threshold
+  --> $DIR/main.rs:82:32
+   |
+LL |     let _braced = FontSize::Px({ 1001.0 });
+   |                                ^^^^^^^^^^
+   |
+   = help: use a smaller raster size and scale the text entity when appropriate
+
+warning: 9 warnings emitted
+

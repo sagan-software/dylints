@@ -1,0 +1,59 @@
+warning: this second guard replaces an earlier guard on the same load builder
+  --> $DIR/main.rs:28:10
+   |
+LL |         .with_guard(Guard);
+   |          ^^^^^^^^^^
+   |
+   = help: combine guards into one owned value, such as a tuple
+   = note: `#[warn(bevy_load_builder_replaced_guard)]` on by default
+
+warning: this second guard replaces an earlier guard on the same load builder
+  --> $DIR/main.rs:36:14
+   |
+LL |             .with_guard(Guard);
+   |              ^^^^^^^^^^
+   |
+   = help: combine guards into one owned value, such as a tuple
+
+warning: this second guard replaces an earlier guard on the same load builder
+  --> $DIR/main.rs:43:27
+   |
+LL |     let builder = builder.with_guard(Guard);
+   |                           ^^^^^^^^^^
+   |
+   = help: combine guards into one owned value, such as a tuple
+
+warning: this second guard replaces an earlier guard on the same load builder
+  --> $DIR/main.rs:52:10
+   |
+LL |         .with_guard(Guard);
+   |          ^^^^^^^^^^
+   |
+   = help: combine guards into one owned value, such as a tuple
+
+warning: this second guard replaces an earlier guard on the same load builder
+  --> $DIR/main.rs:60:10
+   |
+LL |         .with_guard(Guard);
+   |          ^^^^^^^^^^
+   |
+   = help: combine guards into one owned value, such as a tuple
+
+warning: this second guard replaces an earlier guard on the same load builder
+  --> $DIR/main.rs:78:36
+   |
+LL |     let _guarded_builder = builder.with_guard(Guard);
+   |                                    ^^^^^^^^^^
+   |
+   = help: combine guards into one owned value, such as a tuple
+
+warning: this second guard replaces an earlier guard on the same load builder
+  --> $DIR/main.rs:190:28
+   |
+LL |     let _builder = builder.with_guard(Guard);
+   |                            ^^^^^^^^^^
+   |
+   = help: combine guards into one owned value, such as a tuple
+
+warning: 7 warnings emitted
+

@@ -1,0 +1,118 @@
+warning: this Bevy system may have conflicting query access
+  --> $DIR/main.rs:71:51
+   |
+LL | fn conflicting(write: Query<&mut Position>, read: Query<&Position>) {}
+   |                                                   ^^^^^^^^^^^^^^^^
+   |
+   = help: add disjoint filters or put both queries in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0001 when it initializes the system; world default query filters can change the result
+   = note: `#[warn(bevy_conflicting_query_params)]` on by default
+
+warning: this Bevy system may have conflicting query access
+  --> $DIR/main.rs:74:13
+   |
+LL |       params: ParamSet<
+   |  _____________^
+LL | |         '_,
+LL | |         '_,
+LL | |         ((
+...  |
+LL | |         ),),
+LL | |     >,
+   | |_____^
+   |
+   = help: add disjoint filters or put both queries in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0001 when it initializes the system; world default query filters can change the result
+
+warning: this Bevy system may have conflicting query access
+  --> $DIR/main.rs:87:12
+   |
+LL |     enemy: Query<&Position, With<Enemy>>,
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add disjoint filters or put both queries in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0001 when it initializes the system; world default query filters can change the result
+
+warning: this Bevy system may have conflicting query access
+  --> $DIR/main.rs:93:14
+   |
+LL |     players: Query<&Position, With<Player>>,
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add disjoint filters or put both queries in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0001 when it initializes the system; world default query filters can change the result
+
+warning: this Bevy system may have conflicting query access
+  --> $DIR/main.rs:99:11
+   |
+LL |     read: Query<&Position, With<Player>>,
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add disjoint filters or put both queries in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0001 when it initializes the system; world default query filters can change the result
+
+warning: this Bevy query has conflicting component access
+  --> $DIR/main.rs:103:34
+   |
+LL | fn conflicting_query_data(query: Query<(&mut Position, &Position), Or<()>>) {}
+   |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: move these accesses into separate query parameters, then add disjoint filters or place them in different members of one `ParamSet`
+   = note: Bevy panics while it initializes query data that requests shared and mutable access to the same component
+
+warning: this Bevy system may have conflicting query access
+  --> $DIR/main.rs:107:15
+   |
+LL |     external: Query<&Position>,
+   |               ^^^^^^^^^^^^^^^^
+   |
+   = help: add disjoint filters or put both queries in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0001 when it initializes the system; world default query filters can change the result
+
+warning: this Bevy system may have conflicting query and resource access
+  --> $DIR/main.rs:111:75
+   |
+LL | fn conflicting_resource_pair(query: Query<&mut SharedResource>, resource: ResMut<SharedResource>) {}
+   |                                                                           ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add `Without<IsResource>` or put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0002 when it initializes the system; world default query filters can change the result
+
+warning: this Bevy system may have conflicting query and non-send resource access
+  --> $DIR/main.rs:113:71
+   |
+LL | fn conflicting_non_send_pair(query: Query<&mut LocalValue>, resource: NonSendMut<LocalValue>) {}
+   |                                                                       ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0002 when it initializes the system; world default query filters can change the result
+
+warning: this Bevy system may have conflicting query and non-send resource access
+  --> $DIR/main.rs:117:15
+   |
+LL |     resource: NonSendMut<LocalValue>,
+   |               ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0002 when it initializes the system; world default query filters can change the result
+
+warning: this Bevy system may have conflicting query and non-send resource access
+  --> $DIR/main.rs:123:12
+   |
+LL |     query: Query<&mut LocalValue, Without<IsResource>>,
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0002 when it initializes the system; world default query filters can change the result
+
+warning: this Bevy system may have conflicting query access
+  --> $DIR/main.rs:127:43
+   |
+LL | fn conflicting_ordinary_tuple(parameters: ((Query<&mut Position>, Query<&Position>),)) {}
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add disjoint filters or put both queries in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy may report this as B0001 when it initializes the system; world default query filters can change the result
+
+warning: 12 warnings emitted
+

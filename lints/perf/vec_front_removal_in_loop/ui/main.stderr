@@ -1,0 +1,158 @@
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:5:24
+   |
+LL | /     while !items.is_empty() {
+LL | |         let _removed = items.remove(0);
+   | |                        ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+   = note: `#[warn(vec_front_removal_in_loop)]` on by default
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:25:24
+   |
+LL | /     while !items.is_empty() {
+LL | |         let _removed = items.remove(0);
+   | |                        ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:31:24
+   |
+LL | /     for _ in 0..items.len() {
+LL | |         let _removed = items.remove(0);
+   | |                        ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:34:24
+   |
+LL | /     for _ in 0..=1 {
+LL | |         let _removed = items.remove(0);
+   | |                        ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:37:24
+   |
+LL | /     for _ in [(), ()].iter() {
+LL | |         let _removed = items.remove(0);
+   | |                        ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:44:9
+   |
+LL | /     while !items.is_empty() {
+LL | |         items.remove(0);
+   | |         ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:71:24
+   |
+LL | /     for _ in 0..=1 {
+LL | |         let _removed = items.remove(0);
+   | |                        ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:74:24
+   |
+LL | /     for _ in -START..0 {
+LL | |         let _removed = items.remove(0);
+   | |                        ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:122:9
+   |
+LL | /     for _ in make_inclusive_range(0, 2) {
+LL | |         items.remove(0);
+   | |         ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:128:9
+   |
+LL | /     for _ in std::ops::RangeInclusive::new(0, 2) {
+LL | |         items.remove(0);
+   | |         ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:134:9
+   |
+LL | /     for _ in (|start: usize, end: usize| start..=end)(0, 2) {
+LL | |         items.remove(0);
+   | |         ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:140:9
+   |
+LL | /     for _ in 'a'..'z' {
+LL | |         items.remove(0);
+   | |         ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:146:9
+   |
+LL |     loop {
+   |     ---- this loop may remove multiple elements
+LL |         items.remove(0);
+   |         ^^^^^^^^^^^^^^^
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: front removal from a `Vec` shifts the remaining elements inside a loop
+  --> $DIR/main.rs:217:24
+   |
+LL | /     while !items.is_empty() {
+LL | |         let remaining_len = || items.len();
+LL | |         let _observed_len = remaining_len();
+LL | |         let _removed = items.remove(0);
+   | |                        ^^^^^^^^^^^^^^^
+LL | |     }
+   | |_____- this loop may remove multiple elements
+   |
+   = help: if this loop repeatedly removes elements, consume the vector or use `VecDeque::pop_front`
+
+warning: 14 warnings emitted
+

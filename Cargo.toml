@@ -40,6 +40,12 @@ tracing-lints = { package = "tracing", path = "lints/crates/tracing", features =
 [lints]
 workspace = true
 
+# Keep development and inherited test builds small across the lint workspace.
+# Retain file and line information for backtraces without full debugger data.
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
 [workspace]
 members = [
   "lints/cargo",
@@ -105,29 +111,42 @@ members = [
   "lints/crates/axum/axum-route-service-router",
   "lints/crates/axum/support",
   "lints/crates/bevy",
+  "lints/crates/bevy/bevy-asset-source-after-asset-plugin",
   "lints/crates/bevy/bevy-borrowed-reborrowable",
   "lints/crates/bevy/bevy-camera-modification-in-fixed-update",
   "lints/crates/bevy/bevy-children-mutation-query",
   "lints/crates/bevy/bevy-component-field-contention",
+  "lints/crates/bevy/bevy-conflicting-query-params",
+  "lints/crates/bevy/bevy-conflicting-query-params/ui/bevy018_fixture",
+  "lints/crates/bevy/bevy-conflicting-resource-params",
+  "lints/crates/bevy/bevy-continuous-font-size",
+  "lints/crates/bevy/bevy-continuous-ui-scale",
   "lints/crates/bevy/bevy-disallow-fixed-update-schedule",
   "lints/crates/bevy/bevy-disallow-update-schedule",
   "lints/crates/bevy/bevy-duplicate-dependencies",
   "lints/crates/bevy/bevy-duplicate-plugin-addition",
+  "lints/crates/bevy/bevy-frame-button-edge-in-fixed-update",
   "lints/crates/bevy/bevy-global-transform-mutation-query",
+  "lints/crates/bevy/bevy-incompatible-msaa",
   "lints/crates/bevy/bevy-inherited-visibility-mutation-query",
   "lints/crates/bevy/bevy-insert-message-resource",
+  "lints/crates/bevy/bevy-invalid-constant-font-size",
   "lints/crates/bevy/bevy-iter-current-update-messages",
+  "lints/crates/bevy/bevy-load-builder-replaced-guard",
   "lints/crates/bevy/bevy-main-return-without-app-exit",
   "lints/crates/bevy/bevy-large-component",
   "lints/crates/bevy/bevy-large-component-change-filter",
+  "lints/crates/bevy/bevy-message-presence-without-consumption",
   "lints/crates/bevy/bevy-missing-clone-for-unit-component",
   "lints/crates/bevy/bevy-missing-copy-for-unit-component",
   "lints/crates/bevy/bevy-missing-default-for-unit-component",
   "lints/crates/bevy/bevy-missing-reflect",
+  "lints/crates/bevy/bevy-mouse-displacement-times-delta",
   "lints/crates/bevy/bevy-narrow-exclusive-system",
   "lints/crates/bevy/bevy-partially-used-query-data",
   "lints/crates/bevy/bevy-presence-only-query-fetch",
   "lints/crates/bevy/bevy-readonly-system-access",
+  "lints/crates/bevy/bevy-text-span-with-layout",
   "lints/crates/bevy/bevy-time-elapsed-secs-cast-f64",
   "lints/crates/bevy/bevy-unconventional-naming",
   "lints/crates/bevy/bevy-unit-in-bundle",
@@ -306,8 +325,10 @@ members = [
   "lints/perf",
   "lints/perf/boxed_future_return",
   "lints/perf/expensive_as_method",
+  "lints/perf/expensive_sort_key",
   "lints/perf/owned_input_field_clones",
   "lints/perf/ownership_at_boundaries",
+  "lints/perf/vec_front_removal_in_loop",
   "lints/restriction",
   "lints/restriction/ambiguous_numeric_unit_field",
   "lints/restriction/country_string_field",
@@ -376,11 +397,20 @@ axum          = "0.8.9"
 bevy_018      = { package = "bevy", version = "0.18.0", default-features = false }
 bevy_019      = { package = "bevy", version = "0.19.0", default-features = false }
 bevy_app      = "0.19.0"
+bevy_asset    = "0.19.0"
 bevy_camera   = "0.19.0"
+bevy_core_pipeline = "0.19.0"
 bevy_ecs      = "0.19.0"
+bevy_input    = "0.19.0"
+bevy_math     = "=0.19.0"
+bevy_pbr      = "0.19.0"
 bevy_reflect  = "0.19.0"
+bevy_render   = "0.19.0"
+bevy_sprite   = "0.19.0"
+bevy_text     = "=0.19.0"
 bevy_time     = "0.19.0"
 bevy_transform = "0.19.0"
+bevy_ui       = "=0.19.0"
 clap          = { version = "4.6.1", features = ["derive"] }
 dylint_linting = "6.0.3"
 dylint_testing = "6.0.3"

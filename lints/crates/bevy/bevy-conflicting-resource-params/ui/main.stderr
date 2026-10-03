@@ -1,0 +1,66 @@
+warning: this Bevy system has conflicting access to one resource
+  --> $DIR/main.rs:37:59
+   |
+LL | pub(crate) fn conflicting(write: ResMut<'_, State>, read: Res<'_, State>) {}
+   |                                                           ^^^^^^^^^^^^^^
+   |
+   = help: combine the accesses or put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy reports this access conflict as B0002 when it initializes the system
+   = note: `#[warn(bevy_conflicting_resource_params)]` on by default
+
+warning: this Bevy system has conflicting access to one resource
+  --> $DIR/main.rs:39:69
+   |
+LL | pub(crate) fn conflicting_mutable(first: ResMut<'_, State>, second: ResMut<'_, State>) {}
+   |                                                                     ^^^^^^^^^^^^^^^^^
+   |
+   = help: combine the accesses or put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy reports this access conflict as B0002 when it initializes the system
+
+warning: this Bevy system has conflicting access to one resource
+  --> $DIR/main.rs:41:45
+   |
+LL | pub(crate) fn conflicting_tuple(parameters: ((ResMut<'_, State>,), Res<'_, State>)) {}
+   |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: combine the accesses or put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy reports this access conflict as B0002 when it initializes the system
+
+warning: this Bevy system has conflicting access to one resource
+  --> $DIR/main.rs:43:60
+   |
+LL | pub(crate) fn conflicting_alias(write: StateMut<'_>, read: StateRef<'_>) {}
+   |                                                            ^^^^^^^^^^^^
+   |
+   = help: combine the accesses or put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy reports this access conflict as B0002 when it initializes the system
+
+warning: this Bevy system has conflicting access to one resource
+  --> $DIR/main.rs:47:11
+   |
+LL |     read: NonSend<'_, ThreadState>,
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: combine the accesses or put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy reports this access conflict as B0002 when it initializes the system
+
+warning: this Bevy system has conflicting access to one resource
+  --> $DIR/main.rs:53:11
+   |
+LL |     read: Res<'_, State>,
+   |           ^^^^^^^^^^^^^^
+   |
+   = help: combine the accesses or put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy reports this access conflict as B0002 when it initializes the system
+
+warning: this Bevy system has conflicting access to one resource
+  --> $DIR/main.rs:58:10
+   |
+LL |     set: ParamSet<'_, '_, ((ResMut<'_, State>, Res<'_, State>),)>,
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: combine the accesses or put both parameters in different members of the same `ParamSet`; accesses within one member remain simultaneous
+   = note: Bevy reports this access conflict as B0002 when it initializes the system
+
+warning: 7 warnings emitted
+
