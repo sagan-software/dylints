@@ -2,7 +2,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, btree_map::Entry},
-    fs,
+    fs, io,
     path::{Component, Path, PathBuf},
     process::Command,
 };
@@ -98,15 +98,28 @@ struct SourceEdit {
 }
 
 impl SourceEdit {
-    /// Return whether two edits cannot both apply with one unambiguous result.
-    ///
-    /// Overlapping ranges conflict, and so does an insertion at the start of
-    /// another edit, because their relative order would be arbitrary.
+    /// Return whether two byte ranges cannot both apply with one unambiguous result.
+    const fn has_conflicting_range(&self, other: &Self) -> bool {
+        // Overlapping ranges conflict, as does an insertion at another edit's start.
+        (self.byte_start < other.byte_end && other.byte_start < self.byte_end)
+            || (self.byte_start == other.byte_start
+                && (self.byte_start == self.byte_end || other.byte_start == other.byte_end))
+    }
+}
+
+/// One edit with the canonical source identity used for validation and writes.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+struct ResolvedEdit {
+    /// Compiler-reported path retained for diagnostics and range context.
+    edit: SourceEdit,
+    /// Canonical in-repository path shared by symlink aliases.
+    source: PathBuf,
+}
+
+impl ResolvedEdit {
+    /// Return whether two edits target overlapping ranges in one source file.
     fn has_conflict_with(&self, other: &Self) -> bool {
-        self.file == other.file
-            && ((self.byte_start < other.byte_end && other.byte_start < self.byte_end)
-                || (self.byte_start == other.byte_start
-                    && (self.byte_start == self.byte_end || other.byte_start == other.byte_end)))
+        self.source == other.source && self.edit.has_conflicting_range(&other.edit)
     }
 }
 
@@ -126,7 +139,7 @@ pub(super) struct AppliedFixes {
 pub(super) enum DiagnosticError {
     /// Git could not be started.
     #[error("could not run Git for changed-range filtering")]
-    StartGit(#[source] std::io::Error),
+    StartGit(#[source] io::Error),
     /// Git rejected the revision range.
     #[error("Git could not resolve changed range `{range}`: {stderr}")]
     GitRange {
@@ -141,7 +154,7 @@ pub(super) enum DiagnosticError {
         /// Repository-relative source path.
         path: PathBuf,
         /// Underlying filesystem failure.
-        source: std::io::Error,
+        source: io::Error,
     },
     /// A source file could not be replaced after its fixes were validated.
     #[error(
@@ -152,7 +165,7 @@ pub(super) enum DiagnosticError {
         /// Repository-relative source path.
         path: PathBuf,
         /// Underlying filesystem failure.
-        source: std::io::Error,
+        source: io::Error,
     },
     /// A machine-applicable suggestion does not match the current source.
     #[error(
@@ -298,35 +311,34 @@ pub(super) fn apply_machine_fixes(
     repo: &Path,
     fixes: &[MachineFix],
 ) -> Result<AppliedFixes, DiagnosticError> {
+    let Some(first_edit) = fixes.iter().find_map(|fix| fix.edits.first()) else {
+        return Ok(AppliedFixes::default());
+    };
+    // Resolve the repository once so aliases share one containment boundary.
+    let canonical_repo = fs::canonicalize(repo).map_err(|source| DiagnosticError::ReadSource {
+        path: first_edit.file.clone(),
+        source,
+    })?;
     let mut sources = BTreeMap::<PathBuf, String>::new();
-    let (accepted, mut applied) = collect_accepted_fixes(repo, fixes, &mut sources)?;
+    let (accepted, mut applied) =
+        collect_accepted_fixes(repo, &canonical_repo, fixes, &mut sources)?;
     // Apply each file's edits from the end so earlier byte offsets remain valid.
-    applied.files = write_accepted_fixes(repo, sources, accepted)?;
+    applied.files = write_accepted_fixes(sources, accepted)?;
     Ok(applied)
 }
 
 /// Validate suggestions and retain the non-overlapping edits for one fixer pass.
 fn collect_accepted_fixes(
     repo: &Path,
+    canonical_repo: &Path,
     fixes: &[MachineFix],
     sources: &mut BTreeMap<PathBuf, String>,
-) -> Result<(Vec<SourceEdit>, AppliedFixes), DiagnosticError> {
-    let mut accepted = Vec::<SourceEdit>::new();
+) -> Result<(Vec<ResolvedEdit>, AppliedFixes), DiagnosticError> {
+    let mut accepted = Vec::<ResolvedEdit>::new();
     let mut applied = AppliedFixes::default();
     // Validate every suggestion against the unmodified source before writing anything.
     for fix in fixes {
-        let mut changes = Vec::new();
-        for edit in &fix.edits {
-            let source = load_source(repo, sources, &edit.file)?;
-            validate_edit(source, edit).map_err(|source| DiagnosticError::ApplyFixes {
-                path: edit.file.clone(),
-                source,
-            })?;
-            // Skip parts whose current text already equals the replacement.
-            if source.get(edit.byte_start..edit.byte_end) != Some(&*edit.replacement) {
-                changes.push(edit);
-            }
-        }
+        let changes = collect_changes(repo, canonical_repo, sources, fix)?;
         // An already-applied suggestion must not trigger another fixer pass.
         if changes.is_empty() {
             continue;
@@ -335,13 +347,13 @@ fn collect_accepted_fixes(
         let is_conflicting = changes.iter().enumerate().any(|(index, edit)| {
             accepted
                 .iter()
-                .chain(changes.iter().skip(index + 1).copied())
+                .chain(changes.iter().skip(index + 1))
                 .any(|other| edit.has_conflict_with(other))
         });
         if is_conflicting {
             applied.deferred += 1;
         } else {
-            accepted.extend(changes.into_iter().cloned());
+            accepted.extend(changes);
             applied.suggestions += 1;
         }
     }
@@ -349,31 +361,74 @@ fn collect_accepted_fixes(
     Ok((accepted, applied))
 }
 
+/// Resolve and validate every edit in one compiler suggestion.
+fn collect_changes(
+    repo: &Path,
+    canonical_repo: &Path,
+    sources: &mut BTreeMap<PathBuf, String>,
+    fix: &MachineFix,
+) -> Result<Vec<ResolvedEdit>, DiagnosticError> {
+    let mut changes = Vec::new();
+    for edit in &fix.edits {
+        // Resolve aliases before loading source text or validating byte ranges.
+        let resolved = ResolvedEdit {
+            edit: edit.clone(),
+            source: resolve_source_path(repo, canonical_repo, &edit.file)?,
+        };
+        let source = load_source(sources, &resolved.source, &resolved.edit.file)?;
+        validate_edit(source, &resolved.edit).map_err(|source| DiagnosticError::ApplyFixes {
+            path: resolved.edit.file.clone(),
+            source,
+        })?;
+        // Skip parts whose current text already equals the replacement.
+        if source.get(resolved.edit.byte_start..resolved.edit.byte_end)
+            != Some(&*resolved.edit.replacement)
+        {
+            changes.push(resolved);
+        }
+    }
+    Ok(changes)
+}
+
 /// Write accepted edits after every source has passed validation.
 fn write_accepted_fixes(
-    repo: &Path,
     sources: BTreeMap<PathBuf, String>,
-    mut accepted: Vec<SourceEdit>,
+    mut accepted: Vec<ResolvedEdit>,
 ) -> Result<usize, DiagnosticError> {
     // Count only files with at least one accepted edit.
     let mut files = 0;
-    // Sort source edits before grouping them by file and applying them backwards.
-    accepted.sort();
-    for (file, mut source) in sources {
+    // Sort by canonical source and byte range before applying aliases backwards.
+    accepted.sort_by(|left, right| {
+        left.source
+            .cmp(&right.source)
+            .then_with(|| left.edit.byte_start.cmp(&right.edit.byte_start))
+            .then_with(|| left.edit.byte_end.cmp(&right.edit.byte_end))
+            .then_with(|| left.edit.file.cmp(&right.edit.file))
+    });
+    for (source_path, mut source) in sources {
         // Leave files without accepted changes untouched.
         let edits = accepted
             .iter()
-            .filter(|edit| edit.file == file)
+            .filter(|edit| edit.source == source_path)
             .collect::<Vec<_>>();
         if edits.is_empty() {
             continue;
         }
         // Reverse order keeps earlier byte offsets valid after each replacement.
         for edit in edits.into_iter().rev() {
-            source.replace_range(edit.byte_start..edit.byte_end, &edit.replacement);
+            source.replace_range(
+                edit.edit.byte_start..edit.edit.byte_end,
+                &edit.edit.replacement,
+            );
         }
-        fs::write(repo.join(&file), source)
-            .map_err(|source| DiagnosticError::WriteSource { path: file, source })?;
+        let display_path = accepted
+            .iter()
+            .find(|edit| edit.source == source_path)
+            .map_or_else(|| source_path.clone(), |edit| edit.edit.file.clone());
+        fs::write(&source_path, source).map_err(|source| DiagnosticError::WriteSource {
+            path: display_path,
+            source,
+        })?;
         files += 1;
     }
     Ok(files)
@@ -381,25 +436,49 @@ fn write_accepted_fixes(
 
 /// Return one cached source file, reading and decoding it on first use.
 fn load_source<'source>(
-    repo: &Path,
     sources: &'source mut BTreeMap<PathBuf, String>,
-    file: &Path,
+    source_path: &Path,
+    display_path: &Path,
 ) -> Result<&'source str, DiagnosticError> {
     // Read each file once so every suggestion validates against the same original text.
-    match sources.entry(file.to_owned()) {
+    match sources.entry(source_path.to_owned()) {
         Entry::Occupied(entry) => Ok(entry.into_mut()),
         Entry::Vacant(entry) => {
-            let bytes =
-                fs::read(repo.join(file)).map_err(|source| DiagnosticError::ReadSource {
-                    path: file.to_owned(),
-                    source,
-                })?;
+            let bytes = fs::read(source_path).map_err(|source| DiagnosticError::ReadSource {
+                path: display_path.to_owned(),
+                source,
+            })?;
             let text = String::from_utf8(bytes).map_err(|_error| DiagnosticError::ApplyFixes {
-                path: file.to_owned(),
+                path: display_path.to_owned(),
                 source: FixError::InvalidUtf8,
             })?;
             Ok(entry.insert(text))
         }
+    }
+}
+
+/// Resolve a source path and retain only targets inside the canonical repository.
+fn resolve_source_path(
+    repo: &Path,
+    canonical_repo: &Path,
+    file: &Path,
+) -> Result<PathBuf, DiagnosticError> {
+    // Canonicalization identifies symlink aliases before validation, grouping, and writing.
+    let source =
+        fs::canonicalize(repo.join(file)).map_err(|source| DiagnosticError::ReadSource {
+            path: file.to_owned(),
+            source,
+        })?;
+    if source.starts_with(canonical_repo) {
+        Ok(source)
+    } else {
+        Err(DiagnosticError::ReadSource {
+            path: file.to_owned(),
+            source: io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "source resolves outside repository",
+            ),
+        })
     }
 }
 
@@ -613,7 +692,7 @@ fn relative_file(repo: &Path, file: &str) -> String {
 mod tests {
     use std::{
         fs,
-        os::unix::fs::PermissionsExt as _,
+        os::unix::fs::{PermissionsExt as _, symlink},
         path::{Path, PathBuf},
     };
 
@@ -850,6 +929,96 @@ mod tests {
         assert_eq!(
             apply("abcdef", &fixes),
             (AppliedFixes::default(), "abcdef".to_owned())
+        );
+    }
+
+    /// Empty fix collections do not require a repository or source read.
+    #[test]
+    fn ignores_empty_fix_collections() {
+        let repo = repository(b"abc");
+        // Cover both an absent suggestion list and a suggestion with no edits.
+        let no_fixes = apply_machine_fixes(repo.path(), &[]).unwrap();
+        let empty_fix =
+            apply_machine_fixes(repo.path(), &[MachineFix { edits: Vec::new() }]).unwrap();
+
+        // Neither no-op input may create a source file or write the repository.
+        assert_eq!(no_fixes, AppliedFixes::default());
+        assert_eq!(empty_fix, AppliedFixes::default());
+        assert_eq!(
+            fs::read_to_string(repo.path().join("src/lib.rs")).unwrap(),
+            "abc"
+        );
+    }
+
+    /// An external target behind a repository symlink is rejected without writing it.
+    #[test]
+    fn rejects_external_symlink_targets_before_writing() {
+        let repo = repository(b"abc");
+        let external = tempfile::tempdir().unwrap();
+        let external_file = external.path().join("outside.rs");
+        fs::write(&external_file, "abc").unwrap();
+        symlink(&external_file, repo.path().join("src/link.rs")).unwrap();
+        // A valid internal edit must remain unwritten when a later target is rejected.
+        let fixes = [
+            MachineFix {
+                edits: vec![file_edit("src/lib.rs", 0, 1, "R")],
+            },
+            MachineFix {
+                edits: vec![file_edit("src/link.rs", 0, 1, "X")],
+            },
+        ];
+
+        // Resolve every source before entering the write stage.
+        let error = apply_machine_fixes(repo.path(), &fixes).unwrap_err();
+
+        assert!(matches!(
+            error,
+            DiagnosticError::ReadSource { path, .. } if path == Path::new("src/link.rs")
+        ));
+        assert_eq!(
+            fs::read_to_string(repo.path().join("src/lib.rs")).unwrap(),
+            "abc"
+        );
+        assert_eq!(fs::read_to_string(external_file).unwrap(), "abc");
+    }
+
+    /// Internal symlink aliases share one source identity and preserve both edits.
+    #[test]
+    fn merges_internal_symlink_alias_edits() {
+        let repo = repository(b"abcdef");
+        // Point an in-repository alias at the source that receives the first edit.
+        symlink(
+            repo.path().join("src/lib.rs"),
+            repo.path().join("src/alias.rs"),
+        )
+        .unwrap();
+        let fixes = [
+            MachineFix {
+                edits: vec![file_edit("src/lib.rs", 0, 1, "A")],
+            },
+            MachineFix {
+                edits: vec![file_edit("src/alias.rs", 1, 2, "B")],
+            },
+            // Aliases for an overlapping range still defer the duplicate edit.
+            MachineFix {
+                edits: vec![file_edit("src/alias.rs", 0, 1, "Z")],
+            },
+        ];
+
+        // Group aliases by canonical source and defer the overlapping duplicate.
+        let applied = apply_machine_fixes(repo.path(), &fixes).unwrap();
+
+        assert_eq!(
+            applied,
+            AppliedFixes {
+                suggestions: 2,
+                files: 1,
+                deferred: 1,
+            }
+        );
+        assert_eq!(
+            fs::read_to_string(repo.path().join("src/lib.rs")).unwrap(),
+            "ABcdef"
         );
     }
 
