@@ -1,11 +1,8 @@
 use sqlx::QueryBuilder;
 
-fn local_empty_values() -> Vec<u8> {
-    Vec::new()
-}
-
 fn main() {
     let mut query = QueryBuilder;
+    let local_empty_values: fn() -> Vec<u8> = Vec::new;
     query.push_values::<&u8>(&[]);
     query.push_values(Vec::<u8>::new());
     query.push_values(vec![0_u8; 0]);

@@ -49,6 +49,7 @@ where
 {
     let call = |value: D, visitor: AnyVisitor| Ok::<_, D::Error>((value, visitor));
     let _ = call(deserializer, AnyVisitor);
+    let _ = (|| Ok::<_, D::Error>(()))();
     Ok(())
 }
 
