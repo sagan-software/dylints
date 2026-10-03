@@ -71,6 +71,11 @@ fn good_custom(query: Query<EightQuery>) {
     let _ = query.iter().count();
 }
 
+fn good_empty(entity_query: Query<Entity>, unit_query: Query<()>) {
+    let _ = entity_query.iter().count();
+    let _ = unit_query.iter().count();
+}
+
 fn bad_custom_mutable(mut query: Query<MutableQuery>) {
     let _ = query.iter_mut().count();
 }
@@ -80,5 +85,6 @@ fn main() {
     let _good = good;
     let _bad_custom = bad_custom;
     let _good_custom = good_custom;
+    let _good_empty = good_empty;
     let _bad_custom_mutable = bad_custom_mutable;
 }

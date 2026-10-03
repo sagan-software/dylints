@@ -29,6 +29,10 @@ fn bad_reference(query: &Query<&mut Position>) {
     let _empty = query.is_empty();
 }
 
+fn bad_parenthesized(query: &(Query<&mut Position>)) {
+    let _empty = query.is_empty();
+}
+
 fn bad_alias(query: PositionQuery) {
     let _found = query.single().is_ok();
 }

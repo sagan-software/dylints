@@ -46,6 +46,25 @@ fn unregistered_helper(world: &mut World) {
     let _count = query.iter(world).count();
 }
 
+fn unregistered_query_state_get(world: &mut World) {
+    let mut query = world.query::<&Position>();
+    let _result = query.get(world, Entity::PLACEHOLDER);
+}
+
+fn good_other(value: &mut Position) {
+    let _value = value.0;
+}
+
+fn generic_system() {}
+
+fn generic_schedule<S: bevy_ecs::schedule::ScheduleLabel>(app: &mut App, schedule: S) {
+    app.add_systems(schedule, generic_system);
+}
+
+fn closure_schedule(app: &mut App) {
+    app.add_systems(Update, || {});
+}
+
 fn good(query: Query<&Position>) {
     let _sum: f32 = query.iter().map(|position| position.0).sum();
 }

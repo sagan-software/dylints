@@ -16,7 +16,7 @@ LL | fn bad_same_names_elsewhere(query: Query<AgentQuery>, other: Unrelated) {
    = help: define a smaller query type for this behavior
 
 warning: this custom query uses at most half of its fields
-  --> $DIR/main.rs:82:27
+  --> $DIR/main.rs:94:27
    |
 LL | fn bad_mutable(mut query: Query<MutableAgentQuery>) {
    |                           ^^^^^^^^^^^^^^^^^^^^^^^^

@@ -46,4 +46,8 @@ fn configure(app: &mut App) {
     app.add_plugins(GamePlugin);
 }
 
+fn configure_generic<P: Plugin + Clone>(app: &mut App, plugin: P) {
+    app.add_plugins(plugin.clone()).add_plugins(plugin);
+}
+
 fn main() {}

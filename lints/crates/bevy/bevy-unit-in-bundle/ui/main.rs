@@ -25,6 +25,12 @@ macro_rules! with_unit {
     };
 }
 
+macro_rules! spawn_unit {
+    ($world:expr) => {
+        $world.spawn(())
+    };
+}
+
 fn spawn(world: &mut World) {
     world.spawn((Marker, ()));
     world.spawn(((), Marker));
@@ -35,8 +41,20 @@ fn spawn(world: &mut World) {
     world.spawn(((), ()));
     world.spawn((Marker, unit()));
     world.spawn(with_unit!(Marker));
+    spawn_unit!(world);
     world.spawn(Marker);
     world.spawn_empty();
+}
+
+fn unrelated(text: &mut String) {
+    text.push_str("");
+}
+
+fn related(world: &mut World, parent: Entity) {
+    world.entity_mut(parent).insert((Marker, ()));
+    world.entity_mut(parent).with_children(|children| {
+        children.spawn((Marker, ()));
+    });
 }
 
 fn commands(mut commands: Commands, entity: Entity) {
@@ -45,6 +63,9 @@ fn commands(mut commands: Commands, entity: Entity) {
     commands.entity(entity).insert_if_new(((), Health(2)));
     let nested = (Marker, ());
     commands.spawn(nested);
+    commands.entity(entity).with_children(|children| {
+        children.spawn((Marker, ()));
+    });
 }
 
 fn main() {}

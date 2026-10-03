@@ -16,6 +16,10 @@ fn bad_in_closure(query: Query<&Enemy>) {
     let _count = count();
 }
 
+fn bad_get(query: Query<&Enemy>, entity: Entity) {
+    let _result = query.get(entity);
+}
+
 fn good(query: Query<&Enemy>) {
     let _sum: u32 = query.iter().map(|enemy| enemy.0).sum();
 }

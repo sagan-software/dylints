@@ -28,7 +28,7 @@ mod nested {
     }
 }
 
-fn main() {
+fn main() -> () {
     App::new().run();
     let _ = App::new().run();
     if false {

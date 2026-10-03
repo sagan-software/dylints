@@ -73,6 +73,18 @@ struct MutableAgentQuery {
     i: &'static I,
 }
 
+#[derive(QueryData)]
+struct EightFieldQuery {
+    a: &'static A,
+    b: &'static B,
+    c: &'static C,
+    d: &'static D,
+    e: &'static E,
+    f: &'static F,
+    g: &'static G,
+    h: &'static H,
+}
+
 fn good_read_only_item(query: Query<MutableAgentQuery>) {
     for agent in query.iter() {
         let _all = (agent.a, agent.b, agent.c, agent.d, agent.e);
@@ -85,6 +97,10 @@ fn bad_mutable(mut query: Query<MutableAgentQuery>) {
     }
 }
 
+fn good_small(query: Query<EightFieldQuery>) {
+    let _ = query.iter().next();
+}
+
 fn good(query: Query<&A>) {
     for a in &query {
         let _x = a.0;
@@ -94,4 +110,5 @@ fn good(query: Query<&A>) {
 fn main() {
     let _bad = bad;
     let _good = good;
+    let _good_small = good_small;
 }

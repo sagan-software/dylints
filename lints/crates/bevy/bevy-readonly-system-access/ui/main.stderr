@@ -36,7 +36,19 @@ LL + fn bad_reference(query: &Query<&Position>) {
    |
 
 warning: this mutable query is used only for reading
-  --> $DIR/main.rs:32:21
+  --> $DIR/main.rs:32:29
+   |
+LL | fn bad_parenthesized(query: &(Query<&mut Position>)) {
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: request shared component references in this query
+   |
+LL - fn bad_parenthesized(query: &(Query<&mut Position>)) {
+LL + fn bad_parenthesized(query: &(Query<&Position>)) {
+   |
+
+warning: this mutable query is used only for reading
+  --> $DIR/main.rs:36:21
    |
 LL | fn bad_alias(query: PositionQuery) {
    |                     ^^^^^^^^^^^^^
@@ -44,7 +56,7 @@ LL | fn bad_alias(query: PositionQuery) {
    = help: request shared component references in this query
 
 warning: this mutable query is used only for reading
-  --> $DIR/main.rs:36:26
+  --> $DIR/main.rs:40:26
    |
 LL | fn bad_in_closure(query: Query<&mut Position>) {
    |                          ^^^^^^^^^^^^^^^^^^^^
@@ -55,5 +67,5 @@ LL - fn bad_in_closure(query: Query<&mut Position>) {
 LL + fn bad_in_closure(query: Query<&Position>) {
    |
 
-warning: 5 warnings emitted
+warning: 6 warnings emitted
 

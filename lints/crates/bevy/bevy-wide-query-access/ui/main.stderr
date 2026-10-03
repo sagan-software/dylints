@@ -16,7 +16,7 @@ LL | fn bad_custom(query: Query<WideQuery>) {
    = help: split the system by behavior and request only the components it uses
 
 warning: this query requests a wide component access set
-  --> $DIR/main.rs:74:34
+  --> $DIR/main.rs:79:34
    |
 LL | fn bad_custom_mutable(mut query: Query<MutableQuery>) {
    |                                  ^^^^^^^^^^^^^^^^^^^

@@ -27,6 +27,8 @@ fn elapsed(time: &Time, real: &Time<Real>) {
     let _ = time.elapsed_secs() as f32;
     let _ = f64::from(time.delta_secs());
     let _ = f64::from(1.0_f32);
+    let from: fn(f32) -> f64 = f64::from;
+    let _ = from(real.elapsed_secs());
 }
 
 fn main() {}
