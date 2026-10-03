@@ -2,6 +2,7 @@
 name = "present-toolchain-workspace-member"
 version = "0.1.0"
 edition = "2024"
+workspace = ".."
 
 [[bin]]
 name = "present-toolchain-workspace-member"

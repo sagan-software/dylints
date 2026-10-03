@@ -10,8 +10,10 @@ at the version value.
 
 The lint applies only when the workspace root declares
 `[workspace.dependencies]`. The workspace root is the package manifest itself
-when it has a `[workspace]` table. Otherwise, it is the nearest ancestor
-`Cargo.toml` with a `[workspace]` table that does not exclude the package.
+when it has a `[workspace]` table. Otherwise, an explicit `package.workspace`
+path, resolved relative to the package manifest directory, selects the root.
+When that key is absent, the root is the nearest ancestor `Cargo.toml` with a
+`[workspace]` table that does not exclude the package.
 
 ## Why is this bad?
 
@@ -21,8 +23,7 @@ manifest instead of one entry in `[workspace.dependencies]`.
 
 ## Known problems
 
-Dependencies with only `path` or `git` and no `version` do not warn. The lint
-does not read a `package.workspace` key that points at the workspace root.
+Dependencies with only `path` or `git` and no `version` do not warn.
 
 A package that needs two versions of one crate must give each version its own
 renamed key in `[workspace.dependencies]`, such as

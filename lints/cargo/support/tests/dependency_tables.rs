@@ -8,6 +8,8 @@
 //! remains readable. A separate manifest reverses table declarations to check
 //! the fixed table-kind order.
 
+use tempfile as _;
+
 use cargo_support::{dependencies, dependency_tables, toml_edit::Document};
 use dylint_linting as _;
 use toml_edit as _;

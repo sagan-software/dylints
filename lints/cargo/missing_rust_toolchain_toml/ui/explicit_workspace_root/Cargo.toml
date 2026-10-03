@@ -1,0 +1,3 @@
+[workspace]
+members = ["../external_workspace/member"]
+resolver = "3"

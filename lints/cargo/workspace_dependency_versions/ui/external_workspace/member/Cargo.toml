@@ -1,0 +1,13 @@
+[package]
+name = "external-workspace-dependency"
+version = "0.1.0"
+edition = "2024"
+workspace = "../../explicit_workspace_root"
+
+[dependencies.fixture_dep]
+path = "../../explicit_workspace_root/dependency"
+version = "0.1.0"
+
+[[bin]]
+name = "external-workspace-dependency"
+path = "main.rs"

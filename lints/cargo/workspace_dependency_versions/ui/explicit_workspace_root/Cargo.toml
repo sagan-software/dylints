@@ -1,0 +1,7 @@
+[workspace]
+members = ["../external_workspace/member", "dependency"]
+resolver = "3"
+
+[workspace.dependencies.fixture_dep]
+path = "dependency"
+version = "0.1.0"

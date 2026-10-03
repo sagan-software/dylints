@@ -1,0 +1,9 @@
+[package]
+name = "explicit-workspace-toolchain"
+version = "0.1.0"
+edition = "2024"
+workspace = "../../explicit_workspace_root"
+
+[[bin]]
+name = "explicit-workspace-toolchain"
+path = "main.rs"

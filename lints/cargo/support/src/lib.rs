@@ -15,6 +15,7 @@ extern crate rustc_lint;
 extern crate rustc_span;
 
 use std::{
+    fs,
     ops::Range,
     path::{Path, PathBuf},
     sync::Arc,
@@ -247,11 +248,13 @@ pub fn has_workspace_entry(cx: &EarlyContext<'_>, package: &Manifest, key: &str)
     })
 }
 
-/// Return whether any of `names` is a file in the package directory or an
-/// ancestor up to the package's workspace root.
+/// Return whether any of `names` is a file in the package or workspace scope.
 ///
-/// Without a workspace root, only the package directory is searched. Files
-/// above the workspace root belong to another project and do not count.
+/// When the workspace root contains the package directory, the helper searches
+/// the package directory and its ancestors through the workspace root. When
+/// the workspace root is not an ancestor, the helper checks the package
+/// directory and workspace root separately. Without a workspace root, it checks
+/// only the package directory.
 ///
 /// # Examples
 ///
@@ -264,18 +267,63 @@ pub fn has_workspace_entry(cx: &EarlyContext<'_>, package: &Manifest, key: &str)
 #[must_use]
 pub fn package_has_file(cx: &EarlyContext<'_>, package: &Manifest, names: &[&str]) -> bool {
     let root = workspace_root(cx, package);
-    let stop = root.as_ref().map_or_else(|| &package.dir, |root| &root.dir);
-    file_exists_up_to(&package.dir, stop, names)
+    package_has_file_in_scope(
+        &package.dir,
+        root.as_ref().map(|root| root.dir.as_path()),
+        names,
+    )
+}
+
+/// Describe the `package.workspace` value in a package manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum WorkspaceSetting<'a> {
+    /// The manifest does not declare `package.workspace`.
+    Absent,
+    /// The manifest declares `package.workspace` with a non-string value.
+    Invalid,
+    /// The manifest declares a path to a workspace directory.
+    Path(&'a str),
+}
+
+/// Read the explicit workspace setting from a package manifest table.
+fn workspace_setting(root: &Table) -> WorkspaceSetting<'_> {
+    let Some(item) = root
+        .get("package")
+        .and_then(Item::as_table_like)
+        .and_then(|package| package.get("workspace"))
+    else {
+        return WorkspaceSetting::Absent;
+    };
+
+    item.as_str()
+        .map_or(WorkspaceSetting::Invalid, WorkspaceSetting::Path)
+}
+
+/// Join a package manifest directory and its `package.workspace` directory path.
+fn workspace_manifest_path(package_dir: &Path, workspace_path: &str) -> PathBuf {
+    package_dir.join(workspace_path).join(MANIFEST_FILE_NAME)
 }
 
 /// Load the workspace root manifest for `package`.
 ///
 /// The root is the package manifest itself when it has a `[workspace]` table.
-/// Otherwise it is the nearest ancestor manifest with a `[workspace]` table
-/// whose `exclude` list does not contain the package, as Cargo resolves it.
+/// Otherwise, an explicit `package.workspace` path is resolved relative to the
+/// package manifest directory. If the package omits that key, the root is the
+/// nearest ancestor manifest with a `[workspace]` table whose `exclude` list
+/// does not contain the package. An invalid explicit path has no workspace root.
 fn workspace_root(cx: &EarlyContext<'_>, package: &Manifest) -> Option<Manifest> {
     if workspace_table(package.root()).is_some() {
         return Manifest::load(cx, &package.path);
+    }
+
+    match workspace_setting(package.root()) {
+        WorkspaceSetting::Absent => {}
+        WorkspaceSetting::Invalid => return None,
+        WorkspaceSetting::Path(path) => {
+            let path = workspace_manifest_path(&package.dir, path);
+            let root = Manifest::load(cx, &path)?;
+            return workspace_table(root.root()).is_some().then_some(root);
+        }
     }
 
     // Walk upward and skip workspaces that exclude this package, as Cargo does.
@@ -290,6 +338,35 @@ fn workspace_root(cx: &EarlyContext<'_>, package: &Manifest) -> Option<Manifest>
             workspace_table(candidate.root())
                 .is_some_and(|workspace| !is_excluded(&candidate.dir, workspace, &package.dir))
         })
+}
+
+/// Return the canonical directory when it is readable, otherwise retain `path`.
+fn canonical_directory(path: &Path) -> PathBuf {
+    fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+}
+
+/// Search the package and workspace locations without crossing unrelated parents.
+fn package_has_file_in_scope(
+    package_dir: &Path,
+    workspace_dir: Option<&Path>,
+    names: &[&str],
+) -> bool {
+    let package_dir = canonical_directory(package_dir);
+    let Some(workspace_dir) = workspace_dir else {
+        return directory_has_file(&package_dir, names);
+    };
+
+    let workspace_dir = canonical_directory(workspace_dir);
+    if package_dir.starts_with(&workspace_dir) {
+        file_exists_up_to(&package_dir, &workspace_dir, names)
+    } else {
+        directory_has_file(&package_dir, names) || directory_has_file(&workspace_dir, names)
+    }
+}
+
+/// Return whether one of `names` is a file directly inside `directory`.
+fn directory_has_file(directory: &Path, names: &[&str]) -> bool {
+    names.iter().any(|name| directory.join(name).is_file())
 }
 
 /// Return the `[workspace]` table of a manifest, in any TOML table form.
@@ -311,13 +388,17 @@ fn is_excluded(root_dir: &Path, workspace: &dyn TableLike, package_dir: &Path) -
         })
 }
 
-/// Return whether any of `names` is a file in `start` or an ancestor up to `stop`.
+/// Return whether any of `names` is a file in `start` or an ancestor through `stop`.
 ///
-/// The walk includes `stop`. When `stop` is not an ancestor of `start`, the
-/// walk continues to the file system root.
+/// The walk includes `stop`. When `stop` is not an ancestor of `start`, only
+/// `start` is checked.
 fn file_exists_up_to(start: &Path, stop: &Path, names: &[&str]) -> bool {
+    if !start.starts_with(stop) {
+        return directory_has_file(start, names);
+    }
+
     for directory in start.ancestors() {
-        if names.iter().any(|name| directory.join(name).is_file()) {
+        if directory_has_file(directory, names) {
             return true;
         }
 
@@ -485,18 +566,35 @@ pub fn emit_with_help(
 mod tests {
     //! Unit tests for the pure manifest helpers.
 
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
+    use tempfile::{Builder, NamedTempFile, TempDir};
     use toml_edit::Document;
 
     use super::{
-        dependencies, dependency_tables, entry_range, file_exists_up_to, is_excluded,
-        nearest_manifest_path, workspace_dependency_table, workspace_table,
+        WorkspaceSetting, dependencies, dependency_tables, entry_range, file_exists_up_to, fs,
+        is_excluded, nearest_manifest_path, package_has_file_in_scope, workspace_dependency_table,
+        workspace_manifest_path, workspace_setting, workspace_table,
     };
 
     /// Parse a test manifest.
     fn parse(manifest: &str) -> Document<String> {
         Document::parse(manifest.to_owned()).unwrap()
+    }
+
+    /// Create a temporary child directory with a stable prefix.
+    fn temporary_subdirectory(parent: &Path, prefix: &str) -> TempDir {
+        Builder::new().prefix(prefix).tempdir_in(parent).unwrap()
+    }
+
+    /// Create an empty file with `name` inside `directory`.
+    fn empty_file(directory: &Path, name: &str) -> PathBuf {
+        let path = directory.join(name);
+        let _persisted_file = NamedTempFile::new_in(directory)
+            .unwrap()
+            .persist(&path)
+            .unwrap();
+        path
     }
 
     /// Return the dependency names of each table, one list per table.
@@ -543,11 +641,119 @@ mod tests {
         let results = [
             file_exists_up_to(&src, crate_dir, &["missing", "Cargo.toml"]),
             file_exists_up_to(&src, crate_dir, &["dylint.toml"]),
-            file_exists_up_to(&src, &src.join("x"), &["dylint.toml"]),
+            file_exists_up_to(&src, &src.join("x"), &["Cargo.toml"]),
         ];
 
-        // The workspace's `dylint.toml` is only visible when the walk passes the crate.
-        assert_eq!(results, [true, false, true]);
+        // A non-ancestor stop path cannot make the walk escape to an unrelated parent.
+        assert_eq!(results, [true, false, false]);
+    }
+
+    /// Non-ancestor workspace searches check the package and root directories separately.
+    #[test]
+    fn file_search_checks_external_package_and_workspace_directories_only() {
+        let temporary = tempfile::tempdir().unwrap();
+        let package_parent = temporary_subdirectory(temporary.path(), "external_member");
+        let package_dir = temporary_subdirectory(package_parent.path(), "member");
+        let workspace_dir = temporary_subdirectory(temporary.path(), "workspace_root");
+        let parent_config = empty_file(package_parent.path(), "clippy.toml");
+
+        let missing_member = temporary.path().join("missing_member");
+        let before_config = (
+            package_has_file_in_scope(
+                package_dir.path(),
+                Some(workspace_dir.path()),
+                &["clippy.toml"],
+            ),
+            package_has_file_in_scope(
+                &missing_member,
+                Some(workspace_dir.path()),
+                &["clippy.toml"],
+            ),
+            package_has_file_in_scope(package_dir.path(), None, &["clippy.toml"]),
+            parent_config.is_file(),
+        );
+        assert_eq!(before_config, (false, false, false, true));
+
+        let _workspace_config = empty_file(workspace_dir.path(), "clippy.toml");
+        let has_workspace_config = package_has_file_in_scope(
+            package_dir.path(),
+            Some(workspace_dir.path()),
+            &["clippy.toml"],
+        );
+
+        let _package_config = empty_file(package_dir.path(), "clippy.toml");
+        let after_package_config = (
+            package_has_file_in_scope(
+                package_dir.path(),
+                Some(workspace_dir.path()),
+                &["clippy.toml"],
+            ),
+            package_has_file_in_scope(package_dir.path(), None, &["clippy.toml"]),
+        );
+        assert_eq!(
+            (has_workspace_config, after_package_config),
+            (true, (true, true))
+        );
+    }
+
+    /// Explicit workspace paths resolve from the package directory.
+    /// Malformed values stay distinct.
+    #[test]
+    fn reads_explicit_workspace_path_relative_to_package_directory() {
+        let temporary = tempfile::tempdir().unwrap();
+        let external_dir = temporary_subdirectory(temporary.path(), "external");
+        let package_dir = temporary_subdirectory(external_dir.path(), "member");
+        let workspace_dir = temporary_subdirectory(temporary.path(), "workspace_root");
+        let workspace_manifest = empty_file(workspace_dir.path(), "Cargo.toml");
+
+        let workspace_name = workspace_dir.path().file_name().unwrap().to_str().unwrap();
+        let workspace_path = format!("../../{workspace_name}");
+        let manifest_text = format!("[package]\nworkspace = \"{workspace_path}\"\n");
+        let root = parse(&manifest_text);
+        let resolved = workspace_manifest_path(package_dir.path(), &workspace_path);
+        let absent = parse("[package]\nname = \"standalone\"\n");
+        let invalid = parse("[package]\nworkspace = 7\n");
+        assert_eq!(
+            (
+                workspace_setting(root.as_table()),
+                fs::canonicalize(resolved).unwrap(),
+                workspace_setting(absent.as_table()),
+                workspace_setting(invalid.as_table()),
+            ),
+            (
+                WorkspaceSetting::Path(&workspace_path),
+                fs::canonicalize(workspace_manifest).unwrap(),
+                WorkspaceSetting::Absent,
+                WorkspaceSetting::Invalid,
+            ),
+        );
+    }
+
+    /// A missing explicit workspace path stays distinct from an ancestor workspace.
+    #[test]
+    fn does_not_resolve_a_missing_explicit_workspace_path_to_an_ancestor() {
+        let temporary = tempfile::tempdir().unwrap();
+        let ancestor_dir = temporary_subdirectory(temporary.path(), "external");
+        let package_dir = temporary_subdirectory(ancestor_dir.path(), "member");
+        let ancestor_manifest = empty_file(temporary.path(), "Cargo.toml");
+
+        let package = parse("[package]\nworkspace = \"../../missing_root\"\n");
+        let explicit_path = workspace_manifest_path(package_dir.path(), "../../missing_root");
+
+        assert_eq!(
+            (
+                workspace_setting(package.as_table()),
+                ancestor_manifest.is_file(),
+                explicit_path == ancestor_manifest,
+                explicit_path.is_file(),
+            ),
+            (
+                WorkspaceSetting::Path("../../missing_root"),
+                true,
+                false,
+                false,
+            ),
+        );
     }
 
     /// Standard tables return their header; other entries return their key.

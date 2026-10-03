@@ -1,0 +1,12 @@
+[package]
+name = "external-workspace-lints"
+version = "0.1.0"
+edition = "2024"
+workspace = "../../explicit_workspace_root"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[[bin]]
+name = "external-workspace-lints"
+path = "main.rs"

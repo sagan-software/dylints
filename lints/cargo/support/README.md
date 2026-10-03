@@ -1,8 +1,13 @@
 # cargo-support
 
-`cargo-support` provides shared Cargo manifest helpers for the Cargo lint family.
-It parses manifests with `toml_edit`, keeps dependency entries tied to their
-source document, and finds package and workspace dependency tables.
+`cargo-support` provides shared Cargo manifest helpers for the Cargo lint
+family. It parses manifests with `toml_edit`, keeps dependency entries tied to
+their source document, and finds package and workspace dependency tables. It
+resolves an explicit `package.workspace` path relative to the package manifest
+directory when present; otherwise it finds the nearest non-excluding ancestor
+workspace. File searches stop at an ancestor workspace root. For a workspace
+root outside the package directory, they check the package directory and root
+separately.
 
 The dependency iterators borrow the parsed document. Package tables precede
 target tables. Within each package or target, table kinds follow

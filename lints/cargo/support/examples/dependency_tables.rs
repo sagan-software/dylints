@@ -4,6 +4,7 @@
 
 use cargo_support::{dependencies, dependency_tables, toml_edit::Document};
 use dylint_linting as _;
+use tempfile as _;
 use toml_edit as _;
 
 /// Demonstrate values borrowed from a parsed manifest.

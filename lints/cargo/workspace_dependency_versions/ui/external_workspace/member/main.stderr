@@ -1,0 +1,11 @@
+warning: dependency `fixture_dep` specifies an explicit version instead of inheriting from `[workspace.dependencies]`
+  --> $DIR/Cargo.toml:9:11
+   |
+LL | version = "0.1.0"
+   |           ^^^^^^^
+   |
+   = help: move the version for `fixture_dep` into `[workspace.dependencies]` and use `fixture_dep.workspace = true` here
+   = note: `#[warn(workspace_dependency_versions)]` on by default
+
+warning: 1 warning emitted
+

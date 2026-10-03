@@ -1,0 +1,11 @@
+warning: workspace package defines `[lints]` without `workspace = true`
+  --> $DIR/Cargo.toml:7:2
+   |
+LL | [lints.rust]
+   |  ^^^^^
+   |
+   = help: add `workspace = true` to the package `[lints]` table
+   = note: `#[warn(workspace_lints_inheritance)]` on by default
+
+warning: 1 warning emitted
+
