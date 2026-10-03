@@ -3,9 +3,15 @@
 ## What it does
 
 Counts the public names that each reachable module exposes outside the crate,
-and warns when there are more than 25. Every reachable item counts, including
-functions, types, traits, constants, nested modules, and each name in a
-`pub use` re-export. Items inside `impl` blocks do not count.
+and warns when there are more than 25. Functions, types, traits, constants,
+nested modules, primitive aliases, and names from `pub use` re-exports count.
+Resolved glob re-exports add every exported name. Re-export aliases with
+different names count separately, even when they point to one definition. The
+lint counts a tuple or variant constructor once with its parent definition.
+Compiler-generated test-marker constants for `#[test]` functions do not count.
+
+Items inside `impl` blocks do not count.
+
 This local policy sets the limit at 25, below the `nom = 30` default in the
 [big-code-analysis threshold guide](https://dekobon.github.io/big-code-analysis/thresholds.html).
 This lint counts module names, not class methods.
