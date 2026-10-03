@@ -19,6 +19,8 @@ It makes this suggestion only when those fields have no default field values.
 That derive calls
 `Default::default()` for each field, so the values do not change. Other cases,
 such as a handwritten `Default` impl, get help text only.
+When a generic whole-struct bound does not identify the default implementation,
+the lint also offers help text only.
 
 It warns on types from other crates that have many fields, where listing every
 field is long and the crate documents `..Default::default()` as the intended

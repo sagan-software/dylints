@@ -26,8 +26,10 @@ the `Option` into a `Result`, and `?` returns the error, in one line.
   expected type, because `?` converts the closure's error through `From`. An
   error such as `"x".into()`, `Default::default()`, an unsuffixed number,
   `None`, or `Box::new(..)` coerced to `Box<dyn Error>` gets help without a fix.
-  Literals with a fixed type, constants, struct literals, and calls whose
-  declared return type has no type parameter keep the fix.
+  Literals with a fixed type, constants, struct literals, and direct function,
+  method, or constructor calls whose declared return type has no type parameter
+  keep the fix. Function-item error values, calls through function pointers, and
+  block expressions get help without a fix.
 - The lint ignores an `else` block with any other statement, a `return Err(..)`
   whose error type differs from the function's error type, and an `Err` value
   built through `From`.
