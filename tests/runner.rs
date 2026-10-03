@@ -440,6 +440,92 @@ fn bundled_private_lint_rejects_fixture() {
     );
 }
 
+/// The bundled restriction category executes the public Serde schema check at
+/// a Cargo boundary.
+///
+/// Manifest for the temporary Serde fixture repository.
+const SERDE_SCHEMA_FIXTURE_MANIFEST: &str = "[dependencies]\nserde = { version = \"1.0.229\", features = [\"derive\"] }\nschemars = \"1.2.1\"\n";
+
+/// Source cases for the temporary Serde fixture repository.
+const SERDE_SCHEMA_FIXTURE_SOURCE: &str = r"use schemars::JsonSchema;
+use serde::Serialize;
+
+/// A DTO that must have a schema.
+#[derive(Serialize)]
+pub struct MissingSchema {
+    /// Stable fixture identifier.
+    pub id: String,
+}
+
+/// An enum that must have a schema.
+#[derive(Serialize)]
+pub enum MissingSchemaEnum {
+    /// One valid fixture state.
+    Ready,
+}
+
+/// A DTO with both representations.
+#[derive(JsonSchema, Serialize)]
+pub struct CompleteSchema {
+    /// Stable fixture identifier.
+    pub id: String,
+}
+
+#[derive(Serialize)]
+struct PrivateSchema {
+    id: String,
+}
+
+#[derive(Clone)]
+struct NotSerde;
+
+fn helper() {}
+";
+
+/// Run the bundled public Serde schema lint through a temporary Cargo repository.
+#[test]
+fn bundled_public_serde_schema_derive_rejects_public_dto() {
+    // Build a standalone repository so the test exercises the Cargo boundary.
+    let sandbox = Sandbox::default();
+    let repository = sandbox.path("serde-schema");
+    package_repository(
+        &repository,
+        "serde_schema_fixture",
+        SERDE_SCHEMA_FIXTURE_MANIFEST,
+        "src/lib.rs",
+        SERDE_SCHEMA_FIXTURE_SOURCE,
+    );
+    // Select the restriction category that embeds the public Serde lint.
+    let output = sandbox.run(&[
+        "--repo",
+        text(&repository),
+        "--no-workspace",
+        "--fast",
+        "--target-dir",
+        text(&sandbox.path("target")),
+        "--skip-clippy",
+        "--dylint-category",
+        "restriction",
+        "--heartbeat-seconds",
+        "0",
+    ]);
+
+    // Require both public violations while preserving the valid and private cases.
+    assert_eq!(output.code, Some(1), "{}", output.text);
+    assert!(
+        output.text.contains("public_serde_schema_derive"),
+        "{}",
+        output.text
+    );
+    assert!(
+        output.text.contains("MissingSchema")
+            && output.text.contains("MissingSchemaEnum")
+            && !output.text.contains("CompleteSchema"),
+        "{}",
+        output.text
+    );
+}
+
 /// `--no-deps` still runs the embedded private lints on the selected package.
 #[test]
 fn no_deps_runs_private_lints() {
@@ -466,6 +552,80 @@ fn no_deps_runs_private_lints() {
         output.text.contains("string_error_result"),
         "{}",
         output.text
+    );
+}
+
+/// Assert that one crate-family category exposes its representative lint.
+fn assert_category_registered(
+    sandbox: &Sandbox,
+    args: &[&str],
+    category: &str,
+    representative_lint: &str,
+) {
+    // Run the compiler driver in list mode for one explicit category.
+    let mut command = driver(sandbox, args);
+    let _command = command
+        .env("SAGAN_LINTS_DRIVER_CATEGORIES", category)
+        .env("SAGAN_LINTS_DRIVER_LIST", "1");
+    let result = output(&mut command);
+    let result_text = result.text;
+    let has_representative_lint = result_text
+        .lines()
+        .any(|line| line.contains(representative_lint));
+
+    // Preserve the category name and complete driver output in failures.
+    assert_eq!(result.code, Some(0), "{category}: {result_text}");
+    assert!(
+        has_representative_lint,
+        "{category} did not register {representative_lint}:\n{result_text}"
+    );
+}
+
+/// Check the transport-oriented crate-family categories.
+fn assert_transport_categories(sandbox: &Sandbox, args: &[&str]) {
+    // Exercise each facade through the same compiler-driver list boundary.
+    assert_category_registered(sandbox, args, "axum", "axum_nest_at_root");
+    assert_category_registered(sandbox, args, "bevy", "bevy_borrowed_reborrowable");
+    assert_category_registered(
+        sandbox,
+        args,
+        "clap",
+        "clap_allow_hyphen_values_without_num_args",
+    );
+    assert_category_registered(sandbox, args, "insta", "insta_allow_empty_glob");
+    assert_category_registered(sandbox, args, "reqwest", "reqwest_blocking_in_async");
+}
+
+/// Check the schema, serialization, database, and enum crate-family categories.
+fn assert_data_categories(sandbox: &Sandbox, args: &[&str]) {
+    // Keep schema and representation families covered by separate assertions.
+    assert_category_registered(sandbox, args, "schemars", "schemars_json_schema_ref_return");
+    assert_category_registered(sandbox, args, "serde", "serde_all_fields_default");
+    assert_category_registered(sandbox, args, "sqlx", "sqlx_assert_sql_safe");
+    assert_category_registered(sandbox, args, "strum", "strum_enum_representation");
+}
+
+/// Check the test, error, runtime, and tracing crate-family categories.
+fn assert_runtime_categories(sandbox: &Sandbox, args: &[&str]) {
+    // Check the remaining facades without collapsing their category names.
+    assert_category_registered(
+        sandbox,
+        args,
+        "test-case",
+        "test_case_async_without_test_harness",
+    );
+    assert_category_registered(
+        sandbox,
+        args,
+        "thiserror",
+        "thiserror_named_field_positional_format",
+    );
+    assert_category_registered(sandbox, args, "tokio", "tokio_blocking_call_in_async");
+    assert_category_registered(
+        sandbox,
+        args,
+        "tracing",
+        "tracing_async_block_in_sync_scope",
     );
 }
 
@@ -1746,6 +1906,32 @@ fn compiler_driver_rejects_invalid_process_state() {
         (category_is_rejected, sysroot_is_rejected, empty_is_rejected),
         (true, true, true)
     );
+}
+
+/// Every crate-specific category registers its bundled lint facade with the driver.
+#[test]
+fn compiler_driver_registers_every_crate_family_category() {
+    // Prepare one metadata-only source for every independent category invocation.
+    let sandbox = Sandbox::default();
+    let source = sandbox.path("category_registration.rs");
+    write(&source, "//! Registration fixture.\n");
+    let output_path = sandbox.path("category_registration.rmeta");
+    let args = [
+        "rustc",
+        "--crate-name",
+        "category_registration",
+        "--crate-type=lib",
+        "--edition=2024",
+        "--emit=metadata",
+        "-o",
+        text(&output_path),
+        text(&source),
+    ];
+
+    // Exercise all thirteen explicit crate-family categories.
+    assert_transport_categories(&sandbox, &args);
+    assert_data_categories(&sandbox, &args);
+    assert_runtime_categories(&sandbox, &args);
 }
 
 /// In no-deps mode, only Cargo's primary packages receive the selected private lints.

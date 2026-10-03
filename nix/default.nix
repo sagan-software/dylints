@@ -232,6 +232,10 @@ let
       package = "sqlx";
       library = "sqlx";
     };
+    strum = {
+      package = "strum";
+      library = "strum";
+    };
     test-case = {
       package = "test-case";
       library = "test_case";

@@ -67,6 +67,9 @@ pub(super) enum Category {
     /// SQLx-specific lints.
     #[strum(serialize = "sqlx")]
     Sqlx,
+    /// Strum-specific lints.
+    #[strum(serialize = "strum")]
+    Strum,
     /// Style lints.
     #[strum(serialize = "style")]
     Style,
@@ -105,7 +108,7 @@ pub(super) const DEFAULT_CATEGORIES: [Category; 9] = [
 type RegisterLint = fn(&rustc_session::Session, &mut rustc_lint::LintStore);
 
 /// Registration functions kept in the same order as the closed [`Category`] enum.
-const REGISTER_LINTS: [RegisterLint; 21] = [
+const REGISTER_LINTS: [RegisterLint; 22] = [
     axum_lints::register_lints,
     bevy_lints::register_lints,
     cargo_lints::register_lints,
@@ -121,6 +124,7 @@ const REGISTER_LINTS: [RegisterLint; 21] = [
     schemars_lints::register_lints,
     serde_lints::register_lints,
     sqlx_lints::register_lints,
+    strum_category_lints::register_lints,
     style_lints::register_lints,
     suspicious_lints::register_lints,
     test_case_lints::register_lints,
@@ -174,6 +178,7 @@ mod tests {
             Category::Schemars,
             Category::Serde,
             Category::Sqlx,
+            Category::Strum,
             Category::Style,
             Category::Suspicious,
             Category::TestCase,

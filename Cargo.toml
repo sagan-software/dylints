@@ -27,6 +27,7 @@ serde-lints = { package = "serde", path = "lints/crates/serde", features = ["rli
 serde_json.workspace = true
 sqlx-lints = { package = "sqlx", path = "lints/crates/sqlx", features = ["rlib"] }
 strum.workspace = true
+strum-category-lints = { package = "strum", path = "lints/crates/strum", features = ["rlib"] }
 style-lints = { package = "style", path = "lints/style", features = ["rlib"] }
 suspicious-lints = { package = "suspicious", path = "lints/suspicious", features = ["rlib"] }
 tempfile.workspace = true

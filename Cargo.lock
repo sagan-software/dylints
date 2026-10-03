@@ -5984,6 +5984,7 @@ dependencies = [
  "serde 1.0.229",
  "serde_json",
  "sqlx",
+ "strum 0.1.0",
  "strum 0.28.0",
  "style",
  "suspicious",
