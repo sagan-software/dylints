@@ -164,6 +164,6 @@ repository. The self-lint job fails when a bundled lint reports a finding.
 
 ## License notes
 
-`web/static/` and `web/templates/index.html` adapt the Clippy lint list.
+`web/static/` and `web/templates/index.html.jinja` adapt the Clippy lint list.
 Clippy releases these assets under MIT or Apache-2.0. See
 [`web/static/LICENSE-CLIPPY-MIT`](web/static/LICENSE-CLIPPY-MIT).
