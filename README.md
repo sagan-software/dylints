@@ -90,6 +90,7 @@ The line threshold uses canonical executable lines from production and test
 targets, including `cfg(test)` modules. Reports exclude examples, UI fixtures,
 the SQLx auxiliary fixture at `lints/crates/sqlx/fixture`, and dependency
 sources. Region totals keep each compiled source mapping.
+
 The scoped-report filter supports `jq` 1.6, 1.7.1, and 1.8.2.
 Coverage regression tests also require `rg`; CI installs both tools.
 These metrics do not measure branch coverage. CI requires at least 97% canonical
