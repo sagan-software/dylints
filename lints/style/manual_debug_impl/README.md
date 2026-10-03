@@ -8,6 +8,11 @@ chain. The chain must use the struct's name, show every field in declaration
 order as `&self.field` under the field's own name, and end with `.finish()`.
 That chain prints the same text as `#[derive(Debug)]`.
 
+When a struct has fields, its builder must match its field syntax. Named structs
+must use `debug_struct` with field labels. Tuple structs must use `debug_tuple`
+with positional fields. A different builder prints different text, so the lint
+skips it.
+
 The machine-applicable fix adds `#[derive(Debug)]` to the struct and removes
 the implementation. The lint offers it only when neither item comes from a macro
 and the implementation has no attributes or doc comments.
