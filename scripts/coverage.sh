@@ -221,16 +221,14 @@ if [[ -n "$allowed_filenames_file" ]]; then
             | any($allowed_files[]; . == $filename)))
         | ["branches", "functions", "instantiations", "lines", "mcdc", "regions"] as $metrics
         | reduce $metrics[] as $metric (.;
-            ([(.data[0].files[]?.summary[$metric].count // 0)] | add) // 0
-                as $count
-            | ([(.data[0].files[]?.summary[$metric].covered // 0)] | add) // 0
-                as $covered
+            ((([.data[0].files[]?.summary[$metric].count // 0] | add) // 0) as $count
+            | (([.data[0].files[]?.summary[$metric].covered // 0] | add) // 0) as $covered
             | .data[0].totals[$metric] = {
                 count: $count,
                 covered: $covered,
                 notcovered: ($count - $covered),
                 percent: (if $count == 0 then 0 else 100 * $covered / $count end)
-            }
+            })
         )
     ' "$report_dir/summary.json" >"$filtered_summary_file"
 	mv "$filtered_summary_file" "$report_dir/summary.json"

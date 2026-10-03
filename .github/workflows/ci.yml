@@ -71,7 +71,7 @@ jobs:
       # that exist to trigger lints, so they are excluded.
       - name: Run strict Clippy and the bundled lints
         run: >-
-          target/debug/sagan-lints --repo . --heartbeat-seconds 0
+          cargo run --bin sagan-lints -- --repo . --heartbeat-seconds 0
           --use-repo-clippy-config --no-all-targets
           --extra-cargo-arg=--lib --extra-cargo-arg=--bins --extra-cargo-arg=--tests
 
