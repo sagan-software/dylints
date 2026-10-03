@@ -101,4 +101,73 @@ fn build_number() -> u8 {
     7
 }
 
+// A named tuple constructor with a non-default argument cannot be derived.
+struct NamedTuple(u8);
+
+impl Default for NamedTuple {
+    fn default() -> Self {
+        NamedTuple(7)
+    }
+}
+
+// A closure returning the struct is not its resolved tuple constructor.
+struct ClosureTuple(u8);
+
+impl Default for ClosureTuple {
+    fn default() -> Self {
+        (|| Self(7))()
+    }
+}
+
+// Whole macro-produced values remain outside the supported fix scope.
+macro_rules! custom_struct {
+    () => {
+        GeneratedBody { value: 7 }
+    };
+}
+
+struct GeneratedBody {
+    value: u8,
+}
+
+impl Default for GeneratedBody {
+    fn default() -> Self {
+        custom_struct!()
+    }
+}
+
+// Literal types beyond booleans and integers do not receive this fix.
+struct CharacterField {
+    value: char,
+}
+
+impl Default for CharacterField {
+    fn default() -> Self {
+        Self { value: 'x' }
+    }
+}
+
+// Another trait's default method can have a different value contract.
+trait OtherDefault {
+    fn default() -> Self;
+}
+
+impl OtherDefault for u8 {
+    fn default() -> Self {
+        7
+    }
+}
+
+struct OtherTraitField {
+    value: u8,
+}
+
+impl Default for OtherTraitField {
+    fn default() -> Self {
+        Self {
+            value: <u8 as OtherDefault>::default(),
+        }
+    }
+}
+
 fn main() {}
