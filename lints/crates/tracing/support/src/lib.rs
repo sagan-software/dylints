@@ -1149,7 +1149,14 @@ fn is_to_string_call(source: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{TracingMacroInvocation, macro_arguments};
+    use super::{
+        TracingMacroInvocation, apply_field_replacements, block_comment_end, char_literal_end,
+        compact_source, format_values, is_exact_argument_split, is_field_path,
+        is_format_invocation, is_level_argument, is_macro_configuration, is_raw_string_close,
+        is_to_string_call, macro_arguments, macro_contents, matching_delimiter,
+        redundant_field_ranges, resolve_format_argument, skipped_token_end, split_assignment,
+        split_top_level, strip_field_sigil, top_level_byte,
+    };
     use rustc_span::DUMMY_SP;
 
     /// Parse a macro source fixture into an invocation, panicking on malformed fixtures.
@@ -1181,5 +1188,506 @@ mod tests {
 
         let invocation = invocation_fixture("info!(request_id = request_id /* keep this */);");
         assert_eq!(invocation.redundant_field_assignment_replacement(), None);
+    }
+
+    /// Nested groups, literals, comments, and trailing commas stay in one argument.
+    #[test]
+    fn parses_nested_macro_arguments() {
+        let source = "info!(field = (1, 2), \"text,)\", /* outer /* inner, */ done */, user,)";
+        assert_eq!(
+            macro_arguments(source),
+            Some(vec![
+                "field = (1, 2)".to_owned(),
+                "\"text,)\"".to_owned(),
+                "/* outer /* inner, */ done */".to_owned(),
+                "user".to_owned(),
+            ])
+        );
+    }
+
+    #[test]
+    fn parses_bracket_macro_arguments() {
+        assert_eq!(
+            macro_arguments("info![first, second]"),
+            Some(vec!["first".to_owned(), "second".to_owned()])
+        );
+    }
+
+    #[test]
+    fn parses_braced_macro_arguments() {
+        assert_eq!(
+            macro_arguments("info!{first, second}"),
+            Some(vec!["first".to_owned(), "second".to_owned()])
+        );
+    }
+
+    #[test]
+    fn rejects_unsupported_macro_arguments() {
+        assert_eq!(macro_arguments("info!<first>"), None);
+        assert_eq!(macro_arguments("info!(unterminated"), None);
+    }
+
+    #[test]
+    fn splits_nested_macro_arguments() {
+        assert_eq!(
+            split_top_level("a,(b,c),[d,e],{f,g},h", b','),
+            vec!["a", "(b,c)", "[d,e]", "{f,g}", "h"]
+        );
+    }
+
+    #[test]
+    fn matches_balanced_macro_delimiters() {
+        assert_eq!(
+            matching_delimiter("(nested)", 0, b'(', b')'),
+            Some("(nested)".len() - 1)
+        );
+        assert_eq!(matching_delimiter(")", 0, b'(', b')'), None);
+    }
+
+    /// Replacements preserve source formatting and separators.
+    #[test]
+    fn preserves_replacement_source_formatting() {
+        let invocation =
+            invocation_fixture("info!(  request_id = request_id , user.id = user.id )");
+        assert_eq!(
+            invocation.redundant_field_assignment_replacement(),
+            Some("info!(  request_id , user.id )".to_owned())
+        );
+    }
+
+    #[test]
+    fn rejects_replacement_without_redundant_fields() {
+        let no_redundant = invocation_fixture("info!(target: \"app\", value)");
+        assert_eq!(no_redundant.redundant_field_assignment_replacement(), None);
+    }
+
+    #[test]
+    fn rejects_mismatched_replacement_arguments() {
+        let mut mismatched = invocation_fixture("info!(value = value)");
+        mismatched.arguments.push("extra".to_owned());
+        assert_eq!(mismatched.redundant_field_assignment_replacement(), None);
+    }
+
+    #[test]
+    fn rejects_malformed_replacement_source() {
+        let malformed = TracingMacroInvocation {
+            span: DUMMY_SP,
+            macro_name: "info".to_owned(),
+            arguments: Vec::new(),
+            source: "info!(value = value".to_owned(),
+        };
+        assert_eq!(malformed.redundant_field_assignment_replacement(), None);
+    }
+
+    #[test]
+    fn extracts_macro_contents() {
+        assert_eq!(
+            macro_contents("info!(value = value)"),
+            Some(("(value = value)", "value = value"))
+        );
+        assert_eq!(macro_contents("info!<value>"), None);
+    }
+
+    #[test]
+    fn finds_redundant_field_ranges() {
+        assert_eq!(
+            redundant_field_ranges("value = value", &["value = value"]),
+            Some(vec![(0, 13, "value".to_owned())])
+        );
+    }
+
+    #[test]
+    fn rejects_nonredundant_field_ranges() {
+        assert_eq!(redundant_field_ranges("value", &["plain"]), None);
+    }
+
+    #[test]
+    fn applies_valid_field_replacements() {
+        assert_eq!(
+            apply_field_replacements("info!(value = value)", 6, vec![(0, 13, "value".to_owned())]),
+            Some("info!(value)".to_owned())
+        );
+    }
+
+    #[test]
+    fn rejects_out_of_bounds_field_replacements() {
+        assert_eq!(
+            apply_field_replacements("info!(value)", 6, vec![(8, 20, "value".to_owned())]),
+            None
+        );
+    }
+
+    #[test]
+    fn compares_exact_argument_splits() {
+        assert!(is_exact_argument_split(
+            &["value = value"],
+            &["value = value".to_owned()]
+        ));
+        assert!(!is_exact_argument_split(&["value"], &["other".to_owned()]));
+    }
+
+    /// Field metadata excludes structured values from interpolated message results.
+    #[test]
+    fn resolves_unstructured_message_values() {
+        let invocation = invocation_fixture(
+            "info!(target: \"app\", parent: parent, Level::INFO, user_id, \
+             request_id = %request_id, rendered = format!(\"{}\", value), \
+             text = user.name.to_string(), \
+             \"{user_id} {request_id} {missing} {named} {0} {{escaped}} {}\", \
+             missing, named = value, trailing)",
+        );
+        assert_eq!(
+            invocation.unstructured_message_values().collect::<Vec<_>>(),
+            vec![
+                "missing".to_owned(),
+                "value".to_owned(),
+                "missing".to_owned(),
+                "missing".to_owned(),
+            ]
+        );
+    }
+
+    #[test]
+    fn resolves_redundant_field_assignments() {
+        let invocation = invocation_fixture(
+            "info!(target: \"app\", parent: parent, Level::INFO, user_id, \
+             request_id = %request_id, rendered = format!(\"{}\", value), \
+             text = user.name.to_string(), \
+             \"{user_id} {request_id} {missing} {named} {0} {{escaped}} {}\", \
+             missing, named = value, trailing)",
+        );
+        assert_eq!(
+            invocation.redundant_field_assignments().collect::<Vec<_>>(),
+            vec!["%request_id".to_owned()]
+        );
+    }
+
+    #[test]
+    fn finds_formatted_and_stringified_fields() {
+        let invocation = invocation_fixture(
+            "info!(rendered = format!(\"{}\", value), text = user.name.to_string())",
+        );
+        assert_eq!(
+            invocation.formatted_field_for(" format! ( \"{}\", value ) "),
+            Some("rendered".to_owned())
+        );
+        assert_eq!(
+            invocation.stringified_field_for(" user . name . to_string ( ) "),
+            Some("text".to_owned())
+        );
+    }
+
+    #[test]
+    fn excludes_non_event_message_values() {
+        let mut non_event = invocation_fixture("span!(request_id = request_id)");
+        non_event.macro_name = "span".to_owned();
+        assert_eq!(
+            non_event.unstructured_message_values().collect::<Vec<_>>(),
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            non_event.redundant_field_assignments().collect::<Vec<_>>(),
+            vec!["request_id".to_owned()]
+        );
+    }
+
+    /// Format values retain named, positional, escaped, and malformed boundaries.
+    #[test]
+    fn formats_named_and_positional_values() {
+        assert_eq!(
+            format_values(
+                "{name} {0} {1} {} {unknown} {{escaped}} {",
+                &[
+                    "first".to_owned(),
+                    "name = user".to_owned(),
+                    "second".to_owned(),
+                ],
+            ),
+            vec![
+                "user".to_owned(),
+                "first".to_owned(),
+                "second".to_owned(),
+                "first".to_owned(),
+                "unknown".to_owned(),
+            ]
+        );
+    }
+
+    #[test]
+    fn rejects_missing_format_values() {
+        assert_eq!(format_values("{9} {}", &[]), Vec::<String>::new());
+    }
+
+    #[test]
+    fn resolves_implicit_indexed_and_named_arguments() {
+        let positional = ["first".to_owned(), "second".to_owned()];
+        let named = [("name".to_owned(), "value".to_owned())];
+        let mut implicit_position = 0;
+        assert_eq!(
+            resolve_format_argument("", &positional, &named, &mut implicit_position),
+            Some("first".to_owned())
+        );
+        assert_eq!(
+            resolve_format_argument("1", &positional, &named, &mut implicit_position),
+            Some("second".to_owned())
+        );
+        assert_eq!(
+            resolve_format_argument("name", &positional, &named, &mut implicit_position),
+            Some("value".to_owned())
+        );
+    }
+
+    #[test]
+    fn resolves_captured_and_rejects_out_of_range_arguments() {
+        let positional = ["first".to_owned(), "second".to_owned()];
+        let named = [("name".to_owned(), "value".to_owned())];
+        let mut implicit_position = 0;
+        assert_eq!(
+            resolve_format_argument("captured", &positional, &named, &mut implicit_position),
+            Some("captured".to_owned())
+        );
+        assert_eq!(
+            resolve_format_argument("9", &positional, &named, &mut implicit_position),
+            None
+        );
+    }
+
+    /// Source compaction retains normalized punctuation spelling.
+    #[test]
+    fn compacts_field_syntax() {
+        assert_eq!(compact_source(" user . id "), "user.id");
+    }
+
+    #[test]
+    fn strips_field_sigils() {
+        assert_eq!(strip_field_sigil(" %user "), ("%", "user"));
+        assert_eq!(strip_field_sigil(" ?user "), ("?", "user"));
+        assert_eq!(strip_field_sigil(" user "), ("", "user"));
+    }
+
+    #[test]
+    fn accepts_ascii_field_paths() {
+        assert!(is_field_path("_"));
+        assert!(is_field_path("r#type"));
+        assert!(is_field_path("user.id"));
+    }
+
+    #[test]
+    fn accepts_unicode_field_paths() {
+        assert!(is_field_path("élève"));
+    }
+
+    #[test]
+    fn rejects_empty_and_malformed_field_paths() {
+        assert!(!is_field_path(""));
+        assert!(!is_field_path("1user"));
+        assert!(!is_field_path("user..id"));
+    }
+
+    #[test]
+    fn rejects_invalid_raw_and_punctuation_field_paths() {
+        assert!(!is_field_path("r#"));
+        assert!(!is_field_path("user-id"));
+    }
+
+    /// Macro configuration predicates recognize supported keys and reject prefixes.
+    #[test]
+    fn recognizes_macro_configuration() {
+        assert!(is_macro_configuration(" target: \"app\""));
+        assert!(is_macro_configuration("parent: span"));
+        assert!(is_macro_configuration("name: \"request\""));
+    }
+
+    #[test]
+    fn rejects_nonconfiguration_field_prefixes() {
+        assert!(!is_macro_configuration("targeting: value"));
+    }
+
+    #[test]
+    fn recognizes_level_arguments() {
+        assert!(is_level_argument(" Level :: INFO "));
+    }
+
+    #[test]
+    fn rejects_non_level_arguments() {
+        assert!(!is_level_argument("INFO"));
+    }
+
+    #[test]
+    fn recognizes_format_invocations() {
+        assert!(is_format_invocation(" std :: format! ( \"{}\", value ) "));
+        assert!(is_format_invocation("::std::format!(\"{}\", value)"));
+    }
+
+    #[test]
+    fn rejects_malformed_format_invocations() {
+        assert!(!is_format_invocation("format!(\"{}\", value"));
+    }
+
+    #[test]
+    fn recognizes_to_string_calls() {
+        assert!(is_to_string_call("user.name.to_string()"));
+    }
+
+    #[test]
+    fn rejects_chained_to_string_calls() {
+        assert!(!is_to_string_call("user.name.to_string().trim()"));
+    }
+
+    /// Comment scanners skip line and nested block comments.
+    #[test]
+    fn skips_line_and_nested_comments() {
+        let line_comment = "// comment\nnext";
+        assert_eq!(
+            skipped_token_end(line_comment, 0),
+            Some("// comment\n".len())
+        );
+        let block_comment = "/* outer /* inner */ end */x";
+        assert_eq!(
+            block_comment_end(block_comment.as_bytes(), 0),
+            Some(block_comment.len() - 1)
+        );
+        assert_eq!(
+            block_comment_end(b"/* unterminated", 0),
+            Some("/* unterminated".len())
+        );
+    }
+
+    #[test]
+    fn skips_cooked_and_byte_string_literals() {
+        assert_eq!(
+            skipped_token_end("\"quoted, )\"", 0),
+            Some("\"quoted, )\"".len())
+        );
+        assert_eq!(
+            skipped_token_end("b\"bytes, )\"", 0),
+            Some("b\"bytes, )\"".len())
+        );
+    }
+
+    #[test]
+    fn skips_cstring_and_char_literals() {
+        assert_eq!(
+            skipped_token_end("c\"cstring, )\"", 0),
+            Some("c\"cstring, )\"".len())
+        );
+        assert_eq!(skipped_token_end("'x'", 0), Some("'x'".len()));
+        assert_eq!(skipped_token_end("b'x'", 0), Some("b'x'".len()));
+    }
+
+    #[test]
+    fn skips_raw_string_literals() {
+        assert_eq!(
+            skipped_token_end("r#\"raw, )\"#", 0),
+            Some("r#\"raw, )\"#".len())
+        );
+    }
+
+    #[test]
+    fn skips_prefixed_raw_string_literals() {
+        assert_eq!(
+            skipped_token_end("br##\"byte raw, )\"##", 0),
+            Some("br##\"byte raw, )\"##".len())
+        );
+        assert_eq!(
+            skipped_token_end("cr#\"cstring raw, )\"#", 0),
+            Some("cr#\"cstring raw, )\"#".len())
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_literal_prefixes() {
+        assert_eq!(skipped_token_end("'too-long'", 0), None);
+        assert_eq!(skipped_token_end("rnot-a-string", 0), None);
+    }
+
+    #[test]
+    fn extends_unterminated_raw_literals() {
+        assert_eq!(
+            skipped_token_end("r#\"unterminated", 0),
+            Some("r#\"unterminated".len())
+        );
+    }
+
+    /// Cooked literal scanners retain escaped and unterminated boundaries.
+    #[test]
+    fn covers_cooked_literal_boundaries() {
+        assert_eq!(
+            super::cooked_literal_end(b"\"a\\\\\\\"b\"", 0, b'"'),
+            "\"a\\\\\\\"b\"".len()
+        );
+        assert_eq!(
+            super::cooked_literal_end(b"\"unterminated", 0, b'"'),
+            "\"unterminated".len()
+        );
+    }
+
+    #[test]
+    fn covers_char_literal_boundaries() {
+        assert_eq!(char_literal_end(b"'x'", 0), Some(3));
+        assert_eq!(char_literal_end(b"'too-long'", 0), None);
+    }
+
+    #[test]
+    fn matches_raw_string_closing_hashes() {
+        assert!(is_raw_string_close(b"\"##", 0, b"##"));
+        assert!(!is_raw_string_close(b"\"#", 0, b"##"));
+        assert!(!is_raw_string_close(b"x", 0, b""));
+    }
+
+    /// Top-level scanning finds an assignment outside nested syntax.
+    #[test]
+    fn finds_top_level_assignment() {
+        assert_eq!(
+            top_level_byte("call(a = 1), value = other", b'='),
+            Some("call(a = 1), value ".len())
+        );
+    }
+
+    #[test]
+    fn ignores_nested_assignment_operators() {
+        assert_eq!(top_level_byte("call(a = 1)", b'='), None);
+    }
+
+    #[test]
+    fn splits_assignment_sides() {
+        assert_eq!(
+            split_assignment("field = call(a = 1)"),
+            Some(("field ", " call(a = 1)"))
+        );
+    }
+
+    #[test]
+    fn rejects_arrow_as_assignment() {
+        assert_eq!(split_assignment("value => other"), None);
+    }
+
+    #[test]
+    fn rejects_missing_assignment() {
+        assert_eq!(split_assignment("plain"), None);
+    }
+
+    /// String extraction accepts cooked literals.
+    #[test]
+    fn extracts_cooked_string_contents() {
+        assert_eq!(
+            super::rust_string_contents("  \"cooked\"  "),
+            Some("cooked".to_owned())
+        );
+    }
+
+    #[test]
+    fn extracts_raw_string_contents() {
+        assert_eq!(
+            super::rust_string_contents(" r##\"raw\"## "),
+            Some("raw".to_owned())
+        );
+    }
+
+    #[test]
+    fn rejects_non_string_contents() {
+        assert_eq!(super::rust_string_contents("b\"bytes\""), None);
+        assert_eq!(super::rust_string_contents("r#\"mismatched\"##"), None);
+        assert_eq!(super::rust_string_contents("not a literal"), None);
     }
 }
