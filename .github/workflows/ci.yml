@@ -50,9 +50,6 @@ jobs:
   self-lint:
     name: Bundled lints on this repository
     runs-on: ubuntu-latest
-    # The repository does not pass its own Dylint lints yet. Remove this line
-    # once the findings are fixed so the job becomes a required gate.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - name: Free runner disk space
