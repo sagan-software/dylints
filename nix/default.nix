@@ -487,6 +487,8 @@ let
     commonArgs
     // {
       inherit cargoArtifacts;
+      # Vendored Dylint has no sibling driver source; use its external-driver mode.
+      DOCS_RS = "1";
       cargoClippyExtraArgs = "--workspace --lib --bins --tests -- -D warnings";
     }
   );
