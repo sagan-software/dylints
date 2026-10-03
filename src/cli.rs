@@ -182,13 +182,13 @@ mod tests {
 
     #[test]
     fn parses_external_target_directory() {
-        let cli = Cli::try_parse_from(["sagan-lints", "--target-dir", "/tmp/sagan-lints-target"])
-            .unwrap();
+        // Preserve an absolute external target while avoiding a machine-specific fixture path.
+        let temporary = tempfile::tempdir().unwrap();
+        let target = temporary.path().join("sagan-lints-target");
+        let target_text = target.to_str().unwrap();
+        let cli = Cli::try_parse_from(["sagan-lints", "--target-dir", target_text]).unwrap();
 
-        assert_eq!(
-            cli.target_dir.as_deref(),
-            Some(std::path::Path::new("/tmp/sagan-lints-target"))
-        );
+        assert_eq!(cli.target_dir.as_deref(), Some(target.as_path()));
     }
 
     #[test]

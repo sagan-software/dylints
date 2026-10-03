@@ -102,7 +102,7 @@ impl SourceEdit {
     ///
     /// Overlapping ranges conflict, and so does an insertion at the start of
     /// another edit, because their relative order would be arbitrary.
-    fn conflicts_with(&self, other: &Self) -> bool {
+    fn has_conflict_with(&self, other: &Self) -> bool {
         self.file == other.file
             && ((self.byte_start < other.byte_end && other.byte_start < self.byte_end)
                 || (self.byte_start == other.byte_start
@@ -269,7 +269,14 @@ fn collect_machine_fixes(repo: &Path, message: &CompilerMessage, fixes: &mut BTr
         .spans
         .iter()
         .filter(|span| span.suggestion_applicability.as_deref() == Some("MachineApplicable"))
-        .map(|span| source_edit(repo, span))
+        .map(|span| {
+            Some(SourceEdit {
+                file: safe_relative_file(repo, &span.file_name)?,
+                byte_start: span.byte_start?,
+                byte_end: span.byte_end?,
+                replacement: span.suggested_replacement.clone()?,
+            })
+        })
         .collect::<Option<Vec<_>>>();
     // Drop the whole suggestion when any part lacks a range or leaves the repository.
     if let Some(mut edits) = edits.filter(|edits| !edits.is_empty()) {
@@ -282,16 +289,6 @@ fn collect_machine_fixes(repo: &Path, message: &CompilerMessage, fixes: &mut BTr
     }
 }
 
-/// Convert one suggestion span into a repository edit when every field is usable.
-fn source_edit(repo: &Path, span: &CompilerSpan) -> Option<SourceEdit> {
-    Some(SourceEdit {
-        file: safe_relative_file(repo, &span.file_name)?,
-        byte_start: span.byte_start?,
-        byte_end: span.byte_end?,
-        replacement: span.suggested_replacement.clone()?,
-    })
-}
-
 /// Apply every non-conflicting suggestion and defer the rest to the next fixer pass.
 ///
 /// Each suggestion applies all-or-nothing. A suggestion that overlaps one
@@ -302,13 +299,25 @@ pub(super) fn apply_machine_fixes(
     fixes: &[MachineFix],
 ) -> Result<AppliedFixes, DiagnosticError> {
     let mut sources = BTreeMap::<PathBuf, String>::new();
+    let (accepted, mut applied) = collect_accepted_fixes(repo, fixes, &mut sources)?;
+    // Apply each file's edits from the end so earlier byte offsets remain valid.
+    applied.files = write_accepted_fixes(repo, sources, accepted)?;
+    Ok(applied)
+}
+
+/// Validate suggestions and retain the non-overlapping edits for one fixer pass.
+fn collect_accepted_fixes(
+    repo: &Path,
+    fixes: &[MachineFix],
+    sources: &mut BTreeMap<PathBuf, String>,
+) -> Result<(Vec<SourceEdit>, AppliedFixes), DiagnosticError> {
     let mut accepted = Vec::<SourceEdit>::new();
     let mut applied = AppliedFixes::default();
     // Validate every suggestion against the unmodified source before writing anything.
     for fix in fixes {
         let mut changes = Vec::new();
         for edit in &fix.edits {
-            let source = load_source(repo, &mut sources, &edit.file)?;
+            let source = load_source(repo, sources, &edit.file)?;
             validate_edit(source, edit).map_err(|source| DiagnosticError::ApplyFixes {
                 path: edit.file.clone(),
                 source,
@@ -327,7 +336,7 @@ pub(super) fn apply_machine_fixes(
             accepted
                 .iter()
                 .chain(changes.iter().skip(index + 1).copied())
-                .any(|other| edit.conflicts_with(other))
+                .any(|other| edit.has_conflict_with(other))
         });
         if is_conflicting {
             applied.deferred += 1;
@@ -337,9 +346,21 @@ pub(super) fn apply_machine_fixes(
         }
     }
 
-    // Apply each file's edits from the end so earlier byte offsets remain valid.
+    Ok((accepted, applied))
+}
+
+/// Write accepted edits after every source has passed validation.
+fn write_accepted_fixes(
+    repo: &Path,
+    sources: BTreeMap<PathBuf, String>,
+    mut accepted: Vec<SourceEdit>,
+) -> Result<usize, DiagnosticError> {
+    // Count only files with at least one accepted edit.
+    let mut files = 0;
+    // Sort source edits before grouping them by file and applying them backwards.
     accepted.sort();
     for (file, mut source) in sources {
+        // Leave files without accepted changes untouched.
         let edits = accepted
             .iter()
             .filter(|edit| edit.file == file)
@@ -347,14 +368,15 @@ pub(super) fn apply_machine_fixes(
         if edits.is_empty() {
             continue;
         }
+        // Reverse order keeps earlier byte offsets valid after each replacement.
         for edit in edits.into_iter().rev() {
             source.replace_range(edit.byte_start..edit.byte_end, &edit.replacement);
         }
         fs::write(repo.join(&file), source)
             .map_err(|source| DiagnosticError::WriteSource { path: file, source })?;
-        applied.files += 1;
+        files += 1;
     }
-    Ok(applied)
+    Ok(files)
 }
 
 /// Return one cached source file, reading and decoding it on first use.
@@ -656,6 +678,7 @@ mod tests {
     /// One diagnostic's machine-applicable spans form one suggestion; other spans are ignored.
     #[test]
     fn groups_machine_applicable_spans_by_diagnostic() {
+        // Build parent and nested compiler messages with duplicate Cargo output.
         let parent_span = span(
             "/repo/src/lib.rs",
             1,
@@ -747,6 +770,7 @@ mod tests {
     /// Non-overlapping suggestions apply from the end across several files.
     #[test]
     fn applies_non_overlapping_suggestions() {
+        // Include adjacent edits and a second file to verify grouping boundaries.
         let repo = repository(b"abcdef");
         fs::write(repo.path().join("src/other.rs"), "xyz").unwrap();
         let fixes = [
@@ -833,6 +857,7 @@ mod tests {
     #[test]
     fn rejects_invalid_ranges() {
         let repo = repository("é".as_bytes());
+        // Exercise bounds, oversized ranges, and UTF-8 alignment independently.
         let cases = [
             (
                 edit(1, 0, ""),
@@ -847,12 +872,21 @@ mod tests {
                 "byte range is not aligned to UTF-8 character boundaries",
             ),
         ];
+        assert_invalid_ranges(repo.path(), &cases);
+        assert_eq!(
+            fs::read(repo.path().join("src/lib.rs")).unwrap(),
+            "é".as_bytes()
+        );
+    }
 
+    /// Check each invalid range and verify that the source remains unchanged.
+    fn assert_invalid_ranges(repo: &Path, cases: &[(SourceEdit, &str)]) {
+        // Every invalid suggestion must fail before the write stage.
         for (invalid, message) in cases {
             let error = apply_machine_fixes(
-                repo.path(),
+                repo,
                 &[MachineFix {
-                    edits: vec![invalid],
+                    edits: vec![invalid.clone()],
                 }],
             )
             .unwrap_err();
@@ -862,15 +896,12 @@ mod tests {
                 format!("could not apply fixes to `src/lib.rs`: {message}")
             );
         }
-        assert_eq!(
-            fs::read(repo.path().join("src/lib.rs")).unwrap(),
-            "é".as_bytes()
-        );
     }
 
     /// Unreadable, undecodable, and unwritable sources report their path.
     #[test]
     fn reports_source_file_failures() {
+        // Use separate repositories so read, decode, and write failures stay distinguishable.
         let fix = [MachineFix {
             edits: vec![edit(0, 0, "x")],
         }];
@@ -880,6 +911,7 @@ mod tests {
         let path = read_only.path().join("src/lib.rs");
         fs::set_permissions(&path, fs::Permissions::from_mode(0o444)).unwrap();
 
+        // Read and decode failures must report their distinct error categories.
         assert!(matches!(
             apply_machine_fixes(missing.path(), &fix),
             Err(DiagnosticError::ReadSource { .. })
@@ -902,6 +934,7 @@ mod tests {
     /// Unified diff output yields inclusive new-file ranges for retained files only.
     #[test]
     fn parses_changed_ranges() {
+        // Retain only additions from tracked files and preserve paths with spaces.
         let diff = "@@ -1 +1 @@\n\
 diff --git a/src/lib.rs b/src/lib.rs\n\
 --- a/src/lib.rs\n\
@@ -924,19 +957,32 @@ diff --git a/src/lib.rs b/src/lib.rs\n\
 
     /// Unified hunk coordinates retain their inclusive start and count.
     #[test]
-    fn parses_new_hunk_range() {
-        // Parse an explicit multi-line new-file range.
+    fn parses_explicit_new_hunk_range() {
         assert_eq!(new_hunk_range("@@ -4,2 +9,3 @@"), Some((9, 3)));
-        // Default a missing new-file count to one line.
+    }
+
+    /// Unified hunk coordinates default a missing new-file count to one.
+    #[test]
+    fn parses_default_new_hunk_count() {
         assert_eq!(new_hunk_range("@@ -1 +7 @@"), Some((7, 1)));
-        // Reject text outside the unified hunk grammar.
+    }
+
+    /// Unified hunk coordinates reject text outside the hunk grammar.
+    #[test]
+    fn rejects_non_hunk_text() {
         assert_eq!(new_hunk_range("not a hunk"), None);
+    }
+
+    /// Unified hunk coordinates reject nonnumeric new-file locations.
+    #[test]
+    fn rejects_invalid_new_hunk_location() {
         assert_eq!(new_hunk_range("@@ -1 +x @@"), None);
     }
 
     /// Diagnostics are unique, warning-or-error, and repository-relative.
     #[test]
     fn projects_unique_diagnostics() {
+        // Build duplicate warning and secondary-only compiler diagnostics.
         let warning = cargo_message(&format!(
             r#"{{"level":"warning","message":"w","code":{{"code":"clippy::unwrap_used"}},"spans":[{},{}]}}"#,
             span("/repo/src/lib.rs", 3, true, ""),
@@ -949,21 +995,34 @@ diff --git a/src/lib.rs b/src/lib.rs\n\
         let note = cargo_message(r#"{"level":"note","message":"n","spans":[]}"#);
         let output = format!("{warning}\n{warning}\n{secondary_only}\n{note}\n");
 
+        // Duplicate messages collapse before stable formatting and classification.
         let diagnostics = diagnostics_from_cargo_output("clippy", Path::new("/repo"), &output);
 
+        // Collect the observable report facets into one structured assertion.
+        let formatted = diagnostics
+            .iter()
+            .map(format_diagnostic)
+            .collect::<Vec<_>>();
+        let first_location = diagnostics[0].primary_location();
+        let is_first_blocking = diagnostics[0].is_blocking_compiler_error();
+        let is_second_blocking = diagnostics[1].is_blocking_compiler_error();
         assert_eq!(
-            diagnostics
-                .iter()
-                .map(format_diagnostic)
-                .collect::<Vec<_>>(),
-            [
-                "clippy: src/lib.rs:3: warning [clippy::unwrap_used]: w",
-                "clippy: /elsewhere/lib.rs:4: error [E0425]: e",
-            ]
+            (
+                formatted,
+                first_location,
+                is_first_blocking,
+                is_second_blocking
+            ),
+            (
+                vec![
+                    "clippy: src/lib.rs:3: warning [clippy::unwrap_used]: w".to_owned(),
+                    "clippy: /elsewhere/lib.rs:4: error [E0425]: e".to_owned(),
+                ],
+                Some(("src/lib.rs", 3)),
+                false,
+                true,
+            )
         );
-        assert_eq!(diagnostics[0].primary_location(), Some(("src/lib.rs", 3)));
-        assert!(!diagnostics[0].is_blocking_compiler_error());
-        assert!(diagnostics[1].is_blocking_compiler_error());
     }
 
     /// Only uncoded errors and `E` codes block a changed-range run.
@@ -996,6 +1055,7 @@ diff --git a/src/lib.rs b/src/lib.rs\n\
     /// Changed-range filtering keeps intersecting spans and spanless errors.
     #[test]
     fn filters_diagnostics_to_changed_lines() {
+        // Keep spanless errors while selecting only intersecting source lines.
         let output = [
             format!(
                 r#"{{"level":"warning","message":"inside","spans":[{}]}}"#,
@@ -1017,6 +1077,7 @@ diff --git a/src/lib.rs b/src/lib.rs\n\
         let diagnostics = diagnostics_from_cargo_output("dylint", Path::new("/repo"), &output);
         let ranges = [("src/lib.rs".to_owned(), vec![(1, 2), (4, 6)])].into();
 
+        // The changed-file filter must preserve diagnostics in stable source order.
         let selected = filter_diagnostics(&ranges, &diagnostics);
 
         assert_eq!(

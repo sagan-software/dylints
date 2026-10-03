@@ -45,13 +45,6 @@ struct RunOutput {
 }
 
 impl Sandbox {
-    /// Create an empty sandbox.
-    fn new() -> Self {
-        Self {
-            root: tempfile::tempdir().expect("temporary directory should be available"),
-        }
-    }
-
     /// Resolve a path below the sandbox root.
     fn path(&self, relative: &str) -> PathBuf {
         self.root.path().join(relative)
@@ -85,10 +78,12 @@ impl Sandbox {
 
     /// Write files into a new Git repository and commit them.
     fn repository(&self, name: &str, files: &[(&str, &str)]) -> PathBuf {
+        // Create every requested file before initializing Git so the baseline is complete.
         let repository = self.path(name);
         for (relative, contents) in files {
             write(&repository.join(relative), contents);
         }
+        // Commit the fixture before the runner computes changed ranges.
         git(&repository, &["init", "-q"]);
         commit_all(&repository, "baseline");
         repository
@@ -102,6 +97,15 @@ impl Sandbox {
             .collect::<Vec<_>>();
         assert_eq!(targets.len(), 1, "{targets:?}");
         targets.remove(0)
+    }
+}
+
+impl Default for Sandbox {
+    /// Create a sandbox with a temporary root.
+    fn default() -> Self {
+        Self {
+            root: tempfile::tempdir().expect("temporary directory should be available"),
+        }
     }
 }
 
@@ -207,7 +211,9 @@ fn emit(lines: &[String]) -> String {
     format!("cat <<'JSON'\n{}\nJSON", lines.join("\n"))
 }
 
-/// Write a single-package Cargo repository pinned to the runner's toolchain and commit it.
+/// Write a single-package Cargo repository pinned to the runner's toolchain.
+///
+/// Commit the repository so the runner can compare later source changes.
 fn package_repository(
     repository: &Path,
     name: &str,
@@ -215,6 +221,7 @@ fn package_repository(
     source_path: &str,
     source: &str,
 ) {
+    // Keep the manifest, lockfile, toolchain, and source in one committed fixture.
     write(
         &repository.join("Cargo.toml"),
         &format!(
@@ -232,6 +239,7 @@ fn package_repository(
         "[toolchain]\nchannel = \"nightly-2026-07-15\"\n",
     );
     write(&repository.join(source_path), source);
+    // Initialize Git only after every input file exists.
     git(repository, &["init", "-q"]);
     commit_all(repository, "baseline");
 }
@@ -283,9 +291,14 @@ fn ui_lint_crate_names(dir: &Path, names: &mut Vec<String>) {
 #[test]
 fn lists_bundled_private_lints() {
     // List the bundled lints from an empty workspace.
-    let sandbox = Sandbox::new();
+    let sandbox = Sandbox::default();
     let output = list_private_lints(&sandbox);
 
+    assert_bundled_lints_are_listed(&output);
+}
+
+/// Verify representative lints from the bundled category libraries.
+fn assert_bundled_lints_are_listed(output: &RunOutput) {
     // Sample one lint from a repository, a crate-specific, and a style library.
     for lint in [
         "dependency_full_semver_versions",
@@ -313,7 +326,7 @@ fn lists_every_lint_crate_with_ui_fixtures() {
     assert!(!names.is_empty(), "no lint crates with ui/ were found");
 
     // Ask the runner which lints its bundled category libraries register.
-    let sandbox = Sandbox::new();
+    let sandbox = Sandbox::default();
     let output = list_private_lints(&sandbox);
 
     // Match whole list rows so a lint name that prefixes another cannot hide a gap.
@@ -336,7 +349,8 @@ fn lists_every_lint_crate_with_ui_fixtures() {
 /// A listing dry run plans one direct compiler phase per default category.
 #[test]
 fn list_dry_run_plans_one_phase_per_default_category() {
-    let sandbox = Sandbox::new();
+    // Dry-run output is the public phase-order contract for the default category set.
+    let sandbox = Sandbox::default();
     let output = sandbox.run(&[
         "--repo",
         text(&fixture("cargo-install-target")),
@@ -361,7 +375,13 @@ fn list_dry_run_plans_one_phase_per_default_category() {
 /// A dry run plans Clippy and the embedded driver without external Dylint helpers.
 #[test]
 fn dry_run_uses_embedded_driver() {
-    let sandbox = Sandbox::new();
+    assert_dry_run_uses_embedded_driver();
+}
+
+/// Verify that dry-run planning uses the embedded compiler driver.
+fn assert_dry_run_uses_embedded_driver() {
+    // Build a dry-run command with one private category and an explicit target.
+    let sandbox = Sandbox::default();
     let target = sandbox.path("target");
     let output = sandbox.run(&[
         "--repo",
@@ -377,6 +397,7 @@ fn dry_run_uses_embedded_driver() {
         "--dry-run",
     ]);
 
+    // Confirm both Cargo phases use the embedded executable and target path.
     assert_eq!(output.code, Some(0), "{}", output.text);
     assert!(output.text.contains(" clippy "), "{}", output.text);
     assert!(output.text.contains(" check"), "{}", output.text);
@@ -394,7 +415,8 @@ fn dry_run_uses_embedded_driver() {
 /// A bundled private lint rejects the fixture's string error result.
 #[test]
 fn bundled_private_lint_rejects_fixture() {
-    let sandbox = Sandbox::new();
+    // Select one bundled lint phase against the checked-in diagnostic fixture.
+    let sandbox = Sandbox::default();
     let target = sandbox.path("target");
     let output = sandbox.run(&[
         "--repo",
@@ -421,7 +443,7 @@ fn bundled_private_lint_rejects_fixture() {
 /// `--no-deps` still runs the embedded private lints on the selected package.
 #[test]
 fn no_deps_runs_private_lints() {
-    let sandbox = Sandbox::new();
+    let sandbox = Sandbox::default();
     let output = sandbox.run(&[
         "--repo",
         text(&fixture("cargo-install-target")),
@@ -450,7 +472,7 @@ fn no_deps_runs_private_lints() {
 /// A check that passed under one category reruns when another category is selected.
 #[test]
 fn switching_categories_reruns_cached_checks() {
-    let sandbox = Sandbox::new();
+    let sandbox = Sandbox::default();
     let repository = sandbox.path("switch");
     package_repository(
         &repository,
@@ -488,7 +510,8 @@ fn switching_categories_reruns_cached_checks() {
 /// Strict Clippy rejects the fixture's `unwrap` call.
 #[test]
 fn strict_clippy_rejects_fixture() {
-    let sandbox = Sandbox::new();
+    // Run strict Clippy without the embedded private-lint phase.
+    let sandbox = Sandbox::default();
     let target = sandbox.path("target");
     let output = sandbox.run(&[
         "--repo",
@@ -510,10 +533,18 @@ fn strict_clippy_rejects_fixture() {
     );
 }
 
-/// Fix mode rewrites machine-applicable findings and a second run no longer reports them.
+/// Fix mode rewrites machine-applicable findings.
+///
+/// A second run no longer reports the rewritten findings.
 #[test]
 fn fix_mode_applies_machine_applicable_suggestions() {
-    let sandbox = Sandbox::new();
+    assert_fix_mode_applies_machine_applicable_suggestions();
+}
+
+/// Verify the rewritten source and the clean verification pass.
+fn assert_fix_mode_applies_machine_applicable_suggestions() {
+    // Copy the fixture into a writable repository before running fix mode.
+    let sandbox = Sandbox::default();
     let working_copy = sandbox.path("input");
     let input = fixture("lint-fixer/input");
     write(
@@ -527,6 +558,7 @@ fn fix_mode_applies_machine_applicable_suggestions() {
     let repository = text(&working_copy);
     let fix_args = ["--repo", repository, "--fast", "--skip-clippy", "--fix"];
 
+    // Apply machine suggestions, then rerun the same selected phase.
     let fixed = sandbox.run(&fix_args);
     assert_eq!(fixed.code, Some(0), "{}", fixed.text);
     let expected = read(&fixture("lint-fixer/expected/src/main.rs"));
@@ -554,7 +586,13 @@ fn fix_mode_applies_machine_applicable_suggestions() {
 /// A clean external repository passes without build output or Git changes inside it.
 #[test]
 fn clean_repository_passes_without_writing_into_it() {
-    let sandbox = Sandbox::new();
+    assert_clean_repository_passes_without_writing_into_it();
+}
+
+/// Verify a clean external repository stays free of runner artifacts and changes.
+fn assert_clean_repository_passes_without_writing_into_it() {
+    // Prepare a committed package that satisfies the pinned compiler version.
+    let sandbox = Sandbox::default();
     let repository = sandbox.path("clean");
     package_repository(
         &repository,
@@ -564,6 +602,7 @@ fn clean_repository_passes_without_writing_into_it() {
         "#![allow(missing_docs, reason = \"synthetic fixture has no public API\")]\n\nfn main() {}\n",
     );
 
+    // Run both phases and inspect the repository after completion.
     let output = sandbox.run(&[
         "--repo",
         text(&repository),
@@ -601,7 +640,7 @@ fn clean_repository_passes_without_writing_into_it() {
 const CHANGED_RANGE_BASELINE: &str = "pub fn baseline(values: &[u64]) -> Vec<u64> {\n    values.iter().map(|value| value * 2).collect()\n}\n";
 
 /// Run the complexity lints on a repository, optionally limited to the last commit.
-fn run_complexity(sandbox: &Sandbox, repository: &Path, last_commit_only: bool) -> RunOutput {
+fn run_complexity(sandbox: &Sandbox, repository: &Path, is_last_commit_only: bool) -> RunOutput {
     let mut args = vec![
         "--repo",
         text(repository),
@@ -612,7 +651,7 @@ fn run_complexity(sandbox: &Sandbox, repository: &Path, last_commit_only: bool) 
         "--heartbeat-seconds",
         "0",
     ];
-    if last_commit_only {
+    if is_last_commit_only {
         args.extend(["--changed-range", "HEAD^..HEAD"]);
     }
     sandbox.run(&args)
@@ -621,7 +660,13 @@ fn run_complexity(sandbox: &Sandbox, repository: &Path, last_commit_only: bool) 
 /// A changed range reports findings on changed lines only.
 #[test]
 fn changed_range_reports_only_changed_lines() {
-    let sandbox = Sandbox::new();
+    assert_changed_range_reports_only_changed_lines();
+}
+
+/// Verify that changed-range filtering ignores unrelated changes and selects new findings.
+fn assert_changed_range_reports_only_changed_lines() {
+    // Start from a committed baseline with one known complexity finding.
+    let sandbox = Sandbox::default();
     let repository = sandbox.path("diff");
     let library = repository.join("src/lib.rs");
     let baseline = CHANGED_RANGE_BASELINE;
@@ -663,6 +708,7 @@ fn changed_range_reports_only_changed_lines() {
         ),
     );
     commit_all(&repository, "changed lint boundary");
+    // The final range must contain only the newly introduced finding.
     let changed = run_complexity(&sandbox, &repository, true);
     assert_eq!(changed.code, Some(1), "{}", changed.text);
     assert_eq!(
@@ -676,7 +722,8 @@ fn changed_range_reports_only_changed_lines() {
 /// A package that requires a newer compiler fails with the required version.
 #[test]
 fn incompatible_rust_version_is_reported() {
-    let sandbox = Sandbox::new();
+    // Build a fixture whose declared version exceeds the embedded compiler.
+    let sandbox = Sandbox::default();
     let repository = sandbox.path("toolchain");
     package_repository(
         &repository,
@@ -686,6 +733,7 @@ fn incompatible_rust_version_is_reported() {
         "fn main() {}\n",
     );
 
+    // The runner must reject the package before starting lint phases.
     let output = sandbox.run(&[
         "--repo",
         text(&repository),
@@ -708,8 +756,10 @@ const FIX_SOURCE: &str = "foo\n";
 
 /// Run the fake Cargo phase in fix mode with extra arguments.
 fn run_fix(sandbox: &Sandbox, body: &str, extra: &[&str]) -> (PathBuf, RunOutput) {
+    // Use a fresh source fixture for each fake Cargo process.
     let repository = sandbox.repository("fix", &[("src/lib.rs", FIX_SOURCE)]);
     let cargo = sandbox.fake_cargo(body);
+    // Append caller-selected mode flags after the stable fix arguments.
     let mut args = vec![
         "--repo",
         text(&repository),
@@ -725,10 +775,46 @@ fn run_fix(sandbox: &Sandbox, body: &str, extra: &[&str]) -> (PathBuf, RunOutput
     (repository, output)
 }
 
-/// Fix mode applies one suggestion, defers its overlapping rival, and verifies a clean pass.
+/// Fix mode applies one suggestion and defers its overlapping rival.
+///
+/// The next pass verifies a clean source.
 #[test]
 fn fix_mode_converges_and_reports_only_the_final_pass() {
-    let sandbox = Sandbox::new();
+    assert_fix_mode_converges_and_reports_only_the_final_pass();
+}
+
+/// Verify overlapping suggestions, pass logs, reports, and final timing metadata.
+fn assert_fix_mode_converges_and_reports_only_the_final_pass() {
+    let sandbox = Sandbox::default();
+    let logs = sandbox.path("logs");
+    let report = sandbox.path("report.json");
+    let timings = sandbox.path("timings.json");
+    // Request all persisted artifacts so each output boundary is checked.
+    let (repository, output) = run_converging_fix(&sandbox, &logs, &report, &timings);
+
+    // Only the final verification pass may populate the report.
+    assert_output(
+        &output,
+        0,
+        &[
+            "clippy: src/lib.rs:1: error [demo]: error finding",
+            "clippy: applied 1 machine-applicable suggestions across 1 files.",
+            "clippy: deferred 1 overlapping suggestions to the next pass.",
+            "fix: applied 1 suggestions; starting verification pass 2.",
+        ],
+    );
+    assert_eq!(read(&repository.join("src/lib.rs")), "bar\n");
+    assert_fix_convergence_artifacts(&logs, &report, &timings);
+}
+
+/// Run the two-pass fixture that applies one fix and defers its rival.
+fn run_converging_fix(
+    sandbox: &Sandbox,
+    logs: &Path,
+    report: &Path,
+    timings: &Path,
+) -> (PathBuf, RunOutput) {
+    // Feed one accepted suggestion and one overlapping rival to the fixer.
     let first = compiler_message(
         "error",
         Some("demo"),
@@ -741,53 +827,49 @@ fn fix_mode_converges_and_reports_only_the_final_pass() {
         ("src/lib.rs", 1),
         Some((0, 3, "baz")),
     );
-    let body = format!(
-        "if grep -q foo src/lib.rs; then\n{}\nexit 101\nfi",
-        emit(&[first, rival])
-    );
-    let logs = sandbox.path("logs");
-    let report = sandbox.path("report.json");
-    let timings = sandbox.path("timings.json");
-
-    let (repository, output) = run_fix(
-        &sandbox,
+    // Keep the shell body stable so the second pass sees the applied source edit.
+    let finding = emit(&[first, rival]);
+    let body = format!("if grep -q foo src/lib.rs; then\n{finding}\nexit 101\nfi");
+    run_fix(
+        sandbox,
         &body,
         &[
             "--log-dir",
-            text(&logs),
+            text(logs),
             "--gitlab-code-quality",
-            text(&report),
+            text(report),
             "--timings-json",
-            text(&timings),
+            text(timings),
         ],
-    );
+    )
+}
 
-    assert_output(
-        &output,
-        0,
-        &[
-            "clippy: src/lib.rs:1: error [demo]: error finding",
-            "clippy: applied 1 machine-applicable suggestions across 1 files.",
-            "clippy: deferred 1 overlapping suggestions to the next pass.",
-            "fix: applied 1 suggestions; starting verification pass 2.",
-        ],
-    );
-    assert_eq!(read(&repository.join("src/lib.rs")), "bar\n");
+/// Verify the final source, report, log files, and phase timing metadata.
+fn assert_fix_convergence_artifacts(logs: &Path, report: &Path, timings: &Path) {
     // The report describes the verified final source, not the first pass.
-    assert_eq!(read(&report), "[]\n");
+    assert_eq!(read(report), "[]\n");
     assert!(logs.join("fix-pass-1/clippy.stdout").is_file());
     assert!(logs.join("fix-pass-2/clippy.command").is_file());
+    // The retained phase list includes both the initial and verification passes.
     let timings: serde_json::Value =
-        serde_json::from_str(&read(&timings)).expect("timings should be JSON");
-    assert_eq!(timings["phases"].as_array().map(Vec::len), Some(2));
+        serde_json::from_str(&read(timings)).expect("timings should be JSON");
+    assert_eq!(
+        timings
+            .get("phases")
+            .and_then(serde_json::Value::as_array)
+            .map(Vec::len),
+        Some(2)
+    );
 }
 
 /// Fix mode stops after its pass limit when every pass produces another edit.
 #[test]
 fn fix_mode_stops_at_the_pass_limit() {
-    let sandbox = Sandbox::new();
+    // A repeated insertion exercises the runner's fixed pass bound.
+    let sandbox = Sandbox::default();
     let insertion = compiler_message("error", Some("demo"), ("src/lib.rs", 1), Some((0, 0, "x")));
 
+    // The final source records every bounded insertion before the failure.
     let (repository, output) = run_fix(&sandbox, &format!("{}\nexit 101", emit(&[insertion])), &[]);
 
     assert_eq!(output.code, Some(1), "{}", output.text);
@@ -804,7 +886,13 @@ fn fix_mode_stops_at_the_pass_limit() {
 /// A failing phase without fixes fails, and an invalid fix aborts with its path.
 #[test]
 fn fix_mode_reports_unfixable_failures() {
-    let sandbox = Sandbox::new();
+    assert_fix_mode_reports_unfixable_failures();
+}
+
+/// Verify both a failed phase without fixes and an invalid replacement range.
+fn assert_fix_mode_reports_unfixable_failures() {
+    // Preserve the command failure when no machine-applicable fix exists.
+    let sandbox = Sandbox::default();
     let (_repository, unfixable) = run_fix(&sandbox, "echo broken >&2\nexit 101", &[]);
     assert_eq!(unfixable.code, Some(1), "{}", unfixable.text);
     assert!(
@@ -815,7 +903,8 @@ fn fix_mode_reports_unfixable_failures() {
         unfixable.text
     );
 
-    let sandbox = Sandbox::new();
+    // Use a separate run to verify invalid ranges leave source unchanged.
+    let sandbox = Sandbox::default();
     let invalid = compiler_message("error", None, ("src/lib.rs", 1), Some((0, 99, "x")));
     let (repository, output) = run_fix(&sandbox, &emit(&[invalid]), &[]);
     assert_eq!(output.code, Some(1), "{}", output.text);
@@ -832,7 +921,13 @@ fn fix_mode_reports_unfixable_failures() {
 /// Raw mode forwards child streams and fails only when a phase fails.
 #[test]
 fn raw_mode_forwards_output_and_exit_status() {
-    let sandbox = Sandbox::new();
+    assert_raw_mode_forwards_output_and_exit_status();
+}
+
+/// Verify raw stream forwarding and the phase exit-status contract.
+fn assert_raw_mode_forwards_output_and_exit_status() {
+    // Run one successful phase and inspect both child streams.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("raw", &[("src/lib.rs", "")]);
     let cargo = sandbox.fake_cargo(
         "echo out-marker\necho err-marker >&2\nexit \"$(printenv FAKE_STATUS || echo 0)\"",
@@ -847,6 +942,16 @@ fn raw_mode_forwards_output_and_exit_status() {
 
     let passed = sandbox.run(&args);
     assert_eq!(passed.code, Some(0), "{}", passed.text);
+    assert_forwarded_fragments(&passed);
+    // A nonzero child status must remain visible in the runner summary.
+    let failed = output(sandbox.command(&args).env("FAKE_STATUS", "3"));
+    assert_eq!(failed.code, Some(1), "{}", failed.text);
+    assert!(failed.text.contains("(exit 3)"), "{}", failed.text);
+}
+
+/// Check every stable marker emitted by a successful raw phase.
+fn assert_forwarded_fragments(passed: &RunOutput) {
+    // Keep stream markers and runner timing output in one ordered contract.
     for expected in [
         "out-marker",
         "err-marker",
@@ -860,21 +965,24 @@ fn raw_mode_forwards_output_and_exit_status() {
             passed.text
         );
     }
-
-    let failed = output(sandbox.command(&args).env("FAKE_STATUS", "3"));
-    assert_eq!(failed.code, Some(1), "{}", failed.text);
-    assert!(failed.text.contains("(exit 3)"), "{}", failed.text);
 }
 
 /// Log and timing files record each phase's command, streams, and status.
 #[test]
 fn log_dir_and_timings_record_each_phase() {
-    let sandbox = Sandbox::new();
+    assert_log_dir_and_timings_record_each_phase();
+}
+
+/// Verify captured streams, command logs, and timing metadata for one phase.
+fn assert_log_dir_and_timings_record_each_phase() {
+    // Request logs and timings together so both persisted output contracts run.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("logs", &[("src/lib.rs", "")]);
     let cargo = sandbox.fake_cargo("echo out-marker\necho err-marker >&2");
     let logs = sandbox.path("logs");
     let timings = sandbox.path("reports/timings.json");
 
+    // Run one phase before checking its forwarded output and persisted artifacts.
     let output = sandbox.run(&[
         "--repo",
         text(&repository),
@@ -887,29 +995,54 @@ fn log_dir_and_timings_record_each_phase() {
         text(&timings),
     ]);
 
+    assert_log_output(&output, &logs);
+    assert_log_files(&logs, &timings);
+}
+
+/// Verify the process status and streamed output before reading persisted files.
+fn assert_log_output(output: &RunOutput, logs: &Path) {
     assert_eq!(output.code, Some(0), "{}", output.text);
     // Captured streams are still forwarded after the phase finishes.
     assert!(output.text.contains("out-marker"), "{}", output.text);
+    let log_path = text(logs);
     assert!(
-        output
-            .text
-            .contains(&format!("Full logs: {}\n", text(&logs))),
+        output.text.contains(&format!("Full logs: {log_path}\n")),
         "{}",
         output.text
     );
+}
+
+/// Verify phase stream files and timing metadata for the completed process.
+fn assert_log_files(logs: &Path, timings: &Path) {
+    // Each stream and command file records the same phase that produced the timing entry.
     assert_eq!(read(&logs.join("clippy.stdout")), "out-marker\n");
     assert_eq!(read(&logs.join("clippy.stderr")), "err-marker\n");
     assert!(read(&logs.join("clippy.command")).starts_with("sh "));
+    // Parse the timing document only after all phase files have been checked.
     let timings: serde_json::Value =
-        serde_json::from_str(&read(&timings)).expect("timings should be JSON");
-    assert_eq!(timings["phases"][0]["name"], "clippy");
-    assert_eq!(timings["phases"][0]["return_code"], 0);
+        serde_json::from_str(&read(timings)).expect("timings should be JSON");
+    let phase = timings
+        .get("phases")
+        .and_then(serde_json::Value::as_array)
+        .and_then(|phases| phases.first())
+        .expect("timings should contain the clippy phase");
+    assert_eq!(
+        phase.get("name"),
+        Some(&serde_json::Value::String("clippy".to_owned()))
+    );
+    assert_eq!(phase.get("return_code"), Some(&serde_json::Value::from(0)));
 }
 
 /// Report and log paths that cannot be written fail with the affected path.
 #[test]
 fn unwritable_report_paths_are_reported() {
-    let sandbox = Sandbox::new();
+    assert_unwritable_report_paths_are_reported();
+}
+
+/// Verify every report destination reports its affected path when blocked.
+fn assert_unwritable_report_paths_are_reported() {
+    // Build one file blocker and one directory blocker for the three outputs.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("unwritable", &[("src/lib.rs", "")]);
     let cargo = sandbox.fake_cargo("true");
     let blocker = sandbox.path("blocker");
@@ -924,9 +1057,17 @@ fn unwritable_report_paths_are_reported() {
         "--skip-dylint",
     ];
 
+    // Each report option must report its own failed destination.
+    assert_unwritable_paths(&sandbox, &base, &blocker, &directory);
+}
+
+/// Run the three output-path failure cases without hiding their individual paths.
+fn assert_unwritable_paths(sandbox: &Sandbox, base: &[&str], blocker: &Path, directory: &Path) {
+    // Each option exercises a different filesystem failure boundary.
+    // Preserve the option name in each assertion so failures identify the boundary.
     for (flag, path) in [
         ("--log-dir", blocker.join("logs")),
-        ("--timings-json", directory),
+        ("--timings-json", directory.to_path_buf()),
         ("--gitlab-code-quality", blocker.join("report.json")),
     ] {
         let mut args = base.to_vec();
@@ -943,16 +1084,25 @@ fn unwritable_report_paths_are_reported() {
     }
 }
 
-/// GitLab reports contain findings and fail the run; failures without JSON keep raw output.
+/// GitLab reports contain findings and fail the run.
+///
+/// Failures without JSON keep raw output.
 #[test]
 fn gitlab_code_quality_reports_findings() {
-    let sandbox = Sandbox::new();
+    assert_gitlab_code_quality_reports_findings();
+}
+
+/// Verify finding, raw-failure, and clean report outcomes.
+fn assert_gitlab_code_quality_reports_findings() {
+    // Reuse one fixture while selecting each fake Cargo outcome by environment.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("quality", &[("src/lib.rs", "")]);
     let finding = compiler_message("warning", Some("demo"), ("src/lib.rs", 1), None);
-    let cargo = sandbox.fake_cargo(&format!(
-        "case \"$(printenv FAKE_CASE || echo clean)\" in\nfinding)\n{}\n;;\nbroken)\necho raw-failure >&2\nexit 101\n;;\nesac",
-        emit(&[finding])
-    ));
+    let finding_output = emit(&[finding]);
+    let body = format!(
+        "case \"$(printenv FAKE_CASE || echo clean)\" in\nfinding)\n{finding_output}\n;;\nbroken)\necho raw-failure >&2\nexit 101\n;;\nesac"
+    );
+    let cargo = sandbox.fake_cargo(&body);
     let report = sandbox.path("report.json");
     let args = [
         "--repo",
@@ -965,6 +1115,19 @@ fn gitlab_code_quality_reports_findings() {
     ];
 
     let found = output(sandbox.command(&args).env("FAKE_CASE", "finding"));
+    assert_gitlab_findings(&found, &report);
+
+    // A broken phase keeps raw output and replaces the report with no findings.
+    let broken = output(sandbox.command(&args).env("FAKE_CASE", "broken"));
+    assert_gitlab_broken(&broken, &report);
+
+    // A clean phase succeeds and leaves an empty report.
+    let clean = sandbox.run(&args);
+    assert_gitlab_clean(&clean, &report);
+}
+
+/// Verify a finding fails the run and becomes a GitLab code-quality entry.
+fn assert_gitlab_findings(found: &RunOutput, report: &Path) {
     assert_eq!(found.code, Some(1), "{}", found.text);
     assert!(
         found
@@ -974,25 +1137,37 @@ fn gitlab_code_quality_reports_findings() {
         found.text
     );
     let entries: serde_json::Value =
-        serde_json::from_str(&read(&report)).expect("report should be JSON");
-    assert_eq!(entries[0]["check_name"], "demo");
+        serde_json::from_str(&read(report)).expect("report should be JSON");
+    assert_eq!(
+        entries
+            .get(0)
+            .and_then(serde_json::Value::as_object)
+            .and_then(|entry| entry.get("check_name")),
+        Some(&serde_json::Value::String("demo".to_owned()))
+    );
+}
 
-    let broken = output(sandbox.command(&args).env("FAKE_CASE", "broken"));
+/// Verify a failed phase preserves raw output and clears the report.
+fn assert_gitlab_broken(broken: &RunOutput, report: &Path) {
     assert_eq!(broken.code, Some(1), "{}", broken.text);
     assert!(broken.text.contains("raw-failure"), "{}", broken.text);
-    assert_eq!(read(&report), "[]\n");
+    assert_eq!(read(report), "[]\n");
+}
 
-    let clean = sandbox.run(&args);
+/// Verify a clean phase succeeds and leaves an empty report.
+fn assert_gitlab_clean(clean: &RunOutput, report: &Path) {
     assert_eq!(clean.code, Some(0), "{}", clean.text);
-    assert_eq!(read(&report), "[]\n");
+    assert_eq!(read(report), "[]\n");
 }
 
 /// Skipping every phase succeeds and still writes a valid empty report.
 #[test]
 fn empty_selection_writes_an_empty_report() {
-    let sandbox = Sandbox::new();
+    // An empty phase selection still owns the requested report path.
+    let sandbox = Sandbox::default();
     let report = sandbox.path("report.json");
 
+    // The runner should report the empty selection without preparing Cargo.
     let output = sandbox.run(&[
         "--repo",
         text(&fixture("cargo-install-target")),
@@ -1017,6 +1192,7 @@ fn empty_selection_writes_an_empty_report() {
 /// lines inside and outside the range, `blocking` reports a compiler error outside
 /// it, `broken` fails without JSON, and any other value succeeds silently.
 fn changed_range_repository(sandbox: &Sandbox) -> (PathBuf, String) {
+    // Commit the baseline before adding the changed Rust and manifest lines.
     let repository = sandbox.repository(
         "changed",
         &[
@@ -1024,21 +1200,24 @@ fn changed_range_repository(sandbox: &Sandbox) -> (PathBuf, String) {
             ("crates/a/Cargo.toml", "[package]\nname = \"a\"\n"),
         ],
     );
+    // Change both a Rust line and a nested manifest line for filtering coverage.
     write(&repository.join("src/lib.rs"), "one\ntwo\nTHREE\n");
     write(
         &repository.join("crates/a/Cargo.toml"),
         "[package]\nname = \"b\"\n",
     );
     commit_all(&repository, "change");
+    // Build inside, outside, blocking, and malformed phase outcomes.
     let unchanged = compiler_message("error", Some("demo"), ("src/lib.rs", 1), None);
     let changed = compiler_message("error", Some("demo"), ("src/lib.rs", 3), None);
     let manifest = compiler_message("warning", Some("demo"), ("crates/a/Cargo.toml", 2), None);
     let blocking = compiler_message("error", Some("E0425"), ("src/lib.rs", 1), None);
-    let cargo = sandbox.fake_cargo(&format!(
-        "case \"$(printenv FAKE_CASE || echo clean)\" in\nfindings)\n{}\nexit 101\n;;\nblocking)\n{}\nexit 101\n;;\nbroken)\nexit 101\n;;\nesac",
-        emit(&[unchanged, changed, manifest]),
-        emit(&[blocking])
-    ));
+    let findings_output = emit(&[unchanged, changed, manifest]);
+    let blocking_output = emit(&[blocking]);
+    let body = format!(
+        "case \"$(printenv FAKE_CASE || echo clean)\" in\nfindings)\n{findings_output}\nexit 101\n;;\nblocking)\n{blocking_output}\nexit 101\n;;\nbroken)\nexit 101\n;;\nesac"
+    );
+    let cargo = sandbox.fake_cargo(&body);
     (repository, cargo)
 }
 
@@ -1062,9 +1241,11 @@ fn run_changed_range(sandbox: &Sandbox, repository: &Path, cargo: &str, case: &s
 /// Changed-range mode selects diagnostics on changed Rust and nested manifest lines.
 #[test]
 fn changed_range_selects_changed_rust_and_manifest_lines() {
-    let sandbox = Sandbox::new();
+    // The changed-range report must include both selected source categories.
+    let sandbox = Sandbox::default();
     let (repository, cargo) = changed_range_repository(&sandbox);
 
+    // Run the fixture after the repository contains both changed hunks.
     let findings = run_changed_range(&sandbox, &repository, &cargo, "findings");
 
     assert_output(
@@ -1091,16 +1272,23 @@ fn changed_range_selects_changed_rust_and_manifest_lines() {
 /// Changed-range mode passes a clean run and fails an incomplete one.
 #[test]
 fn changed_range_fails_incomplete_runs() {
-    let sandbox = Sandbox::new();
+    // A clean run succeeds before incomplete compiler outcomes are checked.
+    let sandbox = Sandbox::default();
     let (repository, cargo) = changed_range_repository(&sandbox);
 
     let clean = run_changed_range(&sandbox, &repository, &cargo, "clean");
     assert_output(&clean, 0, &["clippy: no diagnostics on changed lines."]);
 
     // A compiler error outside the range or a failure without JSON means the run is incomplete.
+    assert_incomplete_changed_range_cases(&sandbox, &repository, &cargo);
+}
+
+/// Verify both incomplete changed-range outcomes use the same failure diagnostic.
+fn assert_incomplete_changed_range_cases(sandbox: &Sandbox, repository: &Path, cargo: &str) {
+    // Keep compiler errors outside the range and malformed output as separate cases.
     for case in ["blocking", "broken"] {
         assert_output(
-            &run_changed_range(&sandbox, &repository, &cargo, case),
+            &run_changed_range(sandbox, repository, cargo, case),
             1,
             &["clippy: command failed before changed-range linting completed; inspect logs."],
         );
@@ -1110,9 +1298,11 @@ fn changed_range_fails_incomplete_runs() {
 /// An unknown revision range or a missing Git executable fails before any phase runs.
 #[test]
 fn changed_range_reports_git_failures() {
-    let sandbox = Sandbox::new();
+    // Exercise revision resolution and the missing Git executable separately.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("git", &[("src/lib.rs", "")]);
     let cargo = sandbox.fake_cargo("true");
+    // Build one command for each Git failure boundary while preserving the repository path.
     let args = |range| {
         vec![
             "--repo".to_owned(),
@@ -1129,22 +1319,23 @@ fn changed_range_reports_git_failures() {
     };
 
     let unknown = output(&mut run("missing-revision..HEAD"));
-    assert_eq!(unknown.code, Some(1), "{}", unknown.text);
-    assert!(
-        unknown
+    let unknown_is_rejected = unknown.code == Some(1)
+        && unknown
             .text
-            .contains("Git could not resolve changed range `missing-revision..HEAD`"),
-        "{}",
-        unknown.text
-    );
+            .contains("Git could not resolve changed range `missing-revision..HEAD`");
 
+    // Removing Git from PATH must fail before Cargo starts.
     let no_git = output(run("HEAD").env("PATH", sandbox.path("empty-path")));
-    assert_eq!(no_git.code, Some(1), "{}", no_git.text);
-    assert!(
-        no_git
+    let no_git_is_rejected = no_git.code == Some(1)
+        && no_git
             .text
-            .contains("could not run Git for changed-range filtering"),
-        "{}",
+            .contains("could not run Git for changed-range filtering");
+    // Both failures report their own boundary and never reach the phase runner.
+    assert_eq!(
+        (unknown_is_rejected, no_git_is_rejected),
+        (true, true),
+        "unknown:\n{}\nno Git:\n{}",
+        unknown.text,
         no_git.text
     );
 }
@@ -1152,8 +1343,10 @@ fn changed_range_reports_git_failures() {
 /// A long phase prints heartbeats at the requested interval.
 #[test]
 fn heartbeat_reports_long_running_phases() {
-    let sandbox = Sandbox::new();
+    // Use a delayed fake phase so the one-second heartbeat becomes observable.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("heartbeat", &[("src/lib.rs", "")]);
+    // Keep the child alive long enough for one heartbeat to be emitted.
     let cargo = sandbox.fake_cargo("sleep 1.5");
 
     let output = sandbox.run(&[
@@ -1177,7 +1370,8 @@ fn heartbeat_reports_long_running_phases() {
 /// Unusable Cargo commands fail with the phase or option that rejected them.
 #[test]
 fn unusable_cargo_commands_are_reported() {
-    let sandbox = Sandbox::new();
+    // Check both an unstartable executable and an empty wrapper command.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("cargo-command", &[("src/lib.rs", "")]);
     let missing = sandbox.path("missing-cargo");
     let repo = text(&repository);
@@ -1197,6 +1391,12 @@ fn unusable_cargo_commands_are_reported() {
     );
 
     // Both phase builders reject a wrapper without an executable.
+    assert_empty_cargo_wrappers_rejected(&sandbox, repo);
+}
+
+/// Verify both phase-selection branches reject a wrapper without an executable.
+fn assert_empty_cargo_wrappers_rejected(sandbox: &Sandbox, repo: &str) {
+    // Keep the Clippy and private-lint skip flags as independent boundaries.
     for skipped in ["--skip-clippy", "--skip-dylint"] {
         let empty = sandbox.run(&["--repo", repo, "--cargo-cmd", " ", skipped]);
         assert_eq!(empty.code, Some(1), "{}", empty.text);
@@ -1213,32 +1413,34 @@ fn unusable_cargo_commands_are_reported() {
 /// Missing and non-directory repository paths fail before any cache is created.
 #[test]
 fn invalid_repository_paths_are_rejected() {
-    let sandbox = Sandbox::new();
+    // Check missing and non-directory paths before any cache directory exists.
+    let sandbox = Sandbox::default();
     let file = sandbox.path("file");
     write(&file, "not a repository");
 
+    // A missing path fails during canonicalization.
     let missing = sandbox.run(&["--repo", text(&sandbox.path("missing"))]);
-    assert_eq!(missing.code, Some(1), "{}", missing.text);
-    assert!(
-        missing.text.contains("could not resolve"),
-        "{}",
-        missing.text
-    );
+    let missing_is_rejected = missing.code == Some(1) && missing.text.contains("could not resolve");
 
+    // A regular file resolves but fails the directory boundary.
     let not_directory = sandbox.run(&["--repo", text(&file)]);
-    assert_eq!(not_directory.code, Some(1), "{}", not_directory.text);
-    assert!(
-        not_directory.text.contains("not a directory:"),
-        "{}",
+    let file_is_rejected =
+        not_directory.code == Some(1) && not_directory.text.contains("not a directory:");
+    let cache_is_untouched = !sandbox.path("cache").exists();
+    assert_eq!(
+        (missing_is_rejected, file_is_rejected, cache_is_untouched),
+        (true, true, true),
+        "missing:\n{}\nfile:\n{}",
+        missing.text,
         not_directory.text
     );
-    assert!(!sandbox.path("cache").exists());
 }
 
 /// Cache candidates inside the repository, relative, or unwritable are all skipped.
 #[test]
 fn unsafe_cache_candidates_are_rejected() {
-    let sandbox = Sandbox::new();
+    // Combine repository, relative, symlink, and HOME-file candidates.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("cache-safety", &[("src/lib.rs", "")]);
     let link = sandbox.path("link-into-repository");
     symlink(&repository, &link).expect("symlink should be creatable");
@@ -1254,24 +1456,33 @@ fn unsafe_cache_candidates_are_rejected() {
             .env("HOME", &home),
     );
 
-    assert_eq!(output.code, Some(1), "{}", output.text);
-    assert!(
-        output
+    // Rejection must happen before cache creation through any candidate.
+    let cache_is_rejected = output.code == Some(1)
+        && output
             .text
-            .contains("no writable Sagan-lints cache directory"),
+            .contains("no writable Sagan-lints cache directory");
+    let has_relative_cache_diagnostic = output.text.contains("relative-cache");
+    // Rejection happens before anything is created through the symbolic link.
+    let linked_cache_is_untouched = !repository.join("sagan-lints").exists();
+    let repository_cache_is_untouched = !repository.join("cache").exists();
+    assert_eq!(
+        (
+            cache_is_rejected,
+            has_relative_cache_diagnostic,
+            linked_cache_is_untouched,
+            repository_cache_is_untouched,
+        ),
+        (true, true, true, true),
         "{}",
         output.text
     );
-    assert!(output.text.contains("relative-cache"), "{}", output.text);
-    // Rejection happens before anything is created through the symbolic link.
-    assert!(!repository.join("sagan-lints").exists());
-    assert!(!repository.join("cache").exists());
 }
 
 /// The target-cache limit must be an unsigned decimal byte count.
 #[test]
 fn invalid_target_cache_limits_are_rejected() {
-    let sandbox = Sandbox::new();
+    // Check signed and non-UTF-8 values against the same parser boundary.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("limit", &[("src/lib.rs", "")]);
     let cargo = sandbox.fake_cargo("true");
     let args = [
@@ -1282,10 +1493,16 @@ fn invalid_target_cache_limits_are_rejected() {
         "--skip-dylint",
     ];
 
+    assert_invalid_target_cache_limits(&sandbox, &args);
+}
+
+/// Verify each malformed target-cache limit produces the same diagnostic.
+fn assert_invalid_target_cache_limits(sandbox: &Sandbox, args: &[&str]) {
+    // Keep signed and invalid-UTF-8 inputs as separate parser cases.
     for value in [OsStr::new("-1"), OsStr::from_bytes(b"\xff")] {
         let output = output(
             sandbox
-                .command(&args)
+                .command(args)
                 .env("SAGAN_LINTS_TARGET_CACHE_MAX_BYTES", value),
         );
         assert_eq!(output.code, Some(1), "{}", output.text);
@@ -1302,21 +1519,28 @@ fn invalid_target_cache_limits_are_rejected() {
 /// A missing compiler sysroot or tool fails with the missing path.
 #[test]
 fn missing_compiler_runtime_is_reported() {
-    let sandbox = Sandbox::new();
+    // Check a missing sysroot and a missing Cargo asset independently.
+    let sandbox = Sandbox::default();
     let repository = fixture("cargo-install-target");
     let empty_sysroot = sandbox.path("sysroot");
     fs::create_dir_all(&empty_sysroot).expect("sysroot should be creatable");
 
+    assert_missing_compiler_runtime(&sandbox, &repository, &empty_sysroot);
+}
+
+/// Verify missing runtime directories report the exact packaged asset path.
+fn assert_missing_compiler_runtime(sandbox: &Sandbox, repository: &Path, empty_sysroot: &Path) {
+    // Preserve the distinction between a missing sysroot and a missing tool.
     for (sysroot, missing) in [
         (
             sandbox.path("missing-sysroot"),
             sandbox.path("missing-sysroot"),
         ),
-        (empty_sysroot.clone(), empty_sysroot.join("bin/cargo")),
+        (empty_sysroot.to_path_buf(), empty_sysroot.join("bin/cargo")),
     ] {
         let output = output(
             sandbox
-                .command(&["--repo", text(&repository), "--dry-run"])
+                .command(&["--repo", text(repository), "--dry-run"])
                 .env("SAGAN_LINTS_SYSROOT", &sysroot),
         );
         assert_eq!(output.code, Some(1), "{}", output.text);
@@ -1348,7 +1572,8 @@ fn managed_args<'a>(repository: &'a Path, cargo: &'a str) -> [&'a str; 5] {
 /// The managed target directory is pruned only when it exceeds the configured limit.
 #[test]
 fn managed_target_cache_is_pruned_above_its_limit() {
-    let sandbox = Sandbox::new();
+    // Run unlimited and zero-sized limits before the pruning boundary.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("managed", &[("src/lib.rs", "")]);
     let cargo = sandbox.fake_cargo(ARTIFACT_CARGO);
     let args = managed_args(&repository, &cargo);
@@ -1361,12 +1586,9 @@ fn managed_target_cache_is_pruned_above_its_limit() {
     };
 
     // The default and disabled limits retain a small build cache.
-    for limit in [None, Some("0"), Some("000")] {
-        let kept = run(limit);
-        assert_eq!(kept.code, Some(0), "{}", kept.text);
-        assert!(sandbox.managed_target().join("build/artifact").is_file());
-    }
+    assert_retained_managed_cache_limits(&sandbox, &run);
 
+    // The positive limit removes the oversized target after the phase.
     let target = sandbox.managed_target();
     let pruned = run(Some("1"));
     assert_eq!(pruned.code, Some(0), "{}", pruned.text);
@@ -1380,13 +1602,28 @@ fn managed_target_cache_is_pruned_above_its_limit() {
     assert!(!target.exists());
 }
 
+/// Verify limits that retain the managed target directory.
+fn assert_retained_managed_cache_limits(
+    sandbox: &Sandbox,
+    run: &impl Fn(Option<&str>) -> RunOutput,
+) {
+    // Disabled limits retain the artifact for reuse.
+    for limit in [None, Some("0"), Some("000")] {
+        let kept = run(limit);
+        assert_eq!(kept.code, Some(0), "{}", kept.text);
+        assert!(sandbox.managed_target().join("build/artifact").is_file());
+    }
+}
+
 /// An early failure still prunes an oversized managed target directory.
 #[test]
 fn managed_target_cache_is_pruned_after_early_failure() {
-    let sandbox = Sandbox::new();
+    // Build once, then trigger an early changed-range failure during cleanup.
+    let sandbox = Sandbox::default();
     let repository = sandbox.repository("early-failure", &[("src/lib.rs", "")]);
     let cargo = sandbox.fake_cargo(ARTIFACT_CARGO);
     let args = managed_args(&repository, &cargo);
+    // The successful build creates the managed target before the failing run.
     let built = output(
         sandbox
             .command(&args)
@@ -1397,6 +1634,7 @@ fn managed_target_cache_is_pruned_after_early_failure() {
 
     let mut failing = args.to_vec();
     failing.extend(["--changed-range", "missing-revision..HEAD"]);
+    // Drop cleanup must prune the target even though planning fails early.
     let failed = output(
         sandbox
             .command(&failing)
@@ -1410,11 +1648,18 @@ fn managed_target_cache_is_pruned_after_early_failure() {
 /// Measurement and removal failures name the managed target directory.
 #[test]
 fn managed_target_cache_failures_are_reported() {
+    // Measure and removal failures use distinct fake Cargo permission modes.
+    assert_managed_target_cache_failures();
+}
+
+/// Verify managed target measurement and removal errors retain their context.
+fn assert_managed_target_cache_failures() {
+    // Restore permissions after each mode so temporary directories remain removable.
     for (mode, message) in [
         ("000", "could not measure managed target directory"),
         ("555", "could not prune managed target directory"),
     ] {
-        let sandbox = Sandbox::new();
+        let sandbox = Sandbox::default();
         let repository = sandbox.repository("prune-failure", &[("src/lib.rs", "")]);
         let cargo = sandbox.fake_cargo(ARTIFACT_CARGO);
         let failed = output(
@@ -1436,7 +1681,8 @@ fn managed_target_cache_failures_are_reported() {
 /// A closed standard output fails the run with one diagnostic instead of a panic.
 #[test]
 fn closed_stdout_is_reported() {
-    let sandbox = Sandbox::new();
+    // Close the runner's output pipe before its first progress write.
+    let sandbox = Sandbox::default();
     let mut child = sandbox
         .command(&[
             "--repo",
@@ -1478,38 +1724,37 @@ fn driver(sandbox: &Sandbox, args: &[&str]) -> Command {
 /// The compiler driver rejects invalid process state before starting rustc.
 #[test]
 fn compiler_driver_rejects_invalid_process_state() {
-    let sandbox = Sandbox::new();
+    // Exercise category, runtime, and missing-input failures before rustc starts.
+    let sandbox = Sandbox::default();
 
     let category = output(driver(&sandbox, &[]).env("SAGAN_LINTS_DRIVER_CATEGORIES", "bogus"));
-    assert_eq!(category.code, Some(1), "{}", category.text);
-    assert!(
-        category
+    let category_is_rejected = category.code == Some(1)
+        && category
             .text
-            .contains("sagan-lints compiler driver: unknown embedded lint category `bogus`"),
-        "{}",
-        category.text
-    );
+            .contains("sagan-lints compiler driver: unknown embedded lint category `bogus`");
 
     let sysroot = output(driver(&sandbox, &[]).env("SAGAN_LINTS_SYSROOT", sandbox.path("missing")));
-    assert_eq!(sysroot.code, Some(1), "{}", sysroot.text);
-    assert!(
-        sysroot
+    let sysroot_is_rejected = sysroot.code == Some(1)
+        && sysroot
             .text
-            .contains("sagan-lints compiler driver: packaged asset does not exist"),
-        "{}",
-        sysroot.text
-    );
+            .contains("sagan-lints compiler driver: packaged asset does not exist");
 
     // Without arguments, rustc itself reports the missing input.
     let empty = output(&mut driver(&sandbox, &[]));
-    assert_eq!(empty.code, Some(1), "{}", empty.text);
+    let empty_is_rejected = empty.code == Some(1);
+    assert_eq!(
+        (category_is_rejected, sysroot_is_rejected, empty_is_rejected),
+        (true, true, true)
+    );
 }
 
 /// In no-deps mode, only Cargo's primary packages receive the selected private lints.
 #[test]
 fn compiler_driver_lints_only_primary_packages_in_no_deps_mode() {
-    let sandbox = Sandbox::new();
+    // Compile the same source as a dependency and a primary package.
+    let sandbox = Sandbox::default();
     let source = sandbox.path("lib.rs");
+    // The fixture triggers a selected private lint only in the primary branch.
     write(
         &source,
         "//! Fixture.\n\n/// Parse.\npub fn parse() -> Result<u8, String> {\n    Ok(1)\n}\n",
@@ -1536,9 +1781,11 @@ fn compiler_driver_lints_only_primary_packages_in_no_deps_mode() {
         output(&mut command)
     };
 
+    // Dependencies skip private lints in no-deps mode.
     let dependency = run(false);
     assert_eq!(dependency.code, Some(0), "{}", dependency.text);
 
+    // Primary packages retain the selected private lint diagnostics.
     let primary = run(true);
     assert_eq!(primary.code, Some(1), "{}", primary.text);
     assert!(

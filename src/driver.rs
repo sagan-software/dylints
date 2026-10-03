@@ -74,7 +74,7 @@ impl rustc_driver::Callbacks for Callbacks {
             if let Some(before) = before {
                 let status = write_lint_list(&categories, lint_store, &before)
                     .map_or(ExitCode::FAILURE, |()| ExitCode::SUCCESS);
-                std::process::exit(exit_code(status));
+                std::process::exit(i32::from(status != ExitCode::SUCCESS));
             }
         }));
 
@@ -161,7 +161,14 @@ pub(super) fn run() -> ExitCode {
         arguments.push(format!(r#"--cfg=dylint_lib="{key}""#));
     }
     if is_linted {
-        arguments.extend(selected_rustflags());
+        // An empty value encodes no arguments, as in Cargo's encoded flags.
+        arguments.extend(
+            env::var(RUSTFLAGS_ENV)
+                .unwrap_or_default()
+                .split(RUSTFLAGS_SEPARATOR)
+                .filter(|argument| !argument.is_empty())
+                .map(str::to_owned),
+        );
     }
 
     // Listing mode exits after callbacks register the requested category.
@@ -222,21 +229,6 @@ fn selected_categories() -> Result<Vec<Category>, crate::category_parse_error::C
         .collect()
 }
 
-/// Decode rustc arguments from the separator-delimited process boundary.
-#[expect(
-    runtime_env_read,
-    reason = "the compiler wrapper reads its typed process boundary"
-)]
-fn selected_rustflags() -> Vec<String> {
-    // An empty value encodes no arguments, as in Cargo's encoded flags.
-    env::var(RUSTFLAGS_ENV)
-        .unwrap_or_default()
-        .split(RUSTFLAGS_SEPARATOR)
-        .filter(|argument| !argument.is_empty())
-        .map(str::to_owned)
-        .collect()
-}
-
 /// Emit one stable category heading and every newly registered lint.
 #[expect(
     abc_size,
@@ -293,11 +285,6 @@ fn driver_error(error: &dyn std::fmt::Display) -> ExitCode {
     // Ignore a closed stderr pipe because the exit code remains the process contract.
     drop(io::stderr().lock().write_all(diagnostic.as_bytes()));
     ExitCode::FAILURE
-}
-
-/// Convert a stable process exit value for `process::exit`.
-fn exit_code(code: ExitCode) -> i32 {
-    i32::from(code != ExitCode::SUCCESS)
 }
 
 /// Keep the shared linker support crate in the final static dependency graph.

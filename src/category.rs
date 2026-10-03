@@ -182,8 +182,14 @@ mod tests {
             Category::Tracing,
         ];
 
+        assert_category_keys_round_trip(&categories);
+    }
+
+    /// Check every closed category key against its parser representation.
+    fn assert_category_keys_round_trip(categories: &[Category]) {
+        // Keep the complete vocabulary in one table so additions require a test case.
         for category in categories {
-            assert_eq!(Category::from_str(category.key()).ok(), Some(category));
+            assert_eq!(Category::from_str(category.key()).ok(), Some(*category));
         }
     }
 

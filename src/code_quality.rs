@@ -125,12 +125,17 @@ mod tests {
         );
 
         // Verify GitLab's required fields and UTF-8 array framing together.
-        assert!(report.starts_with('['));
-        assert!(report.contains("\"check_name\": \"ownership_at_boundaries\""));
-        assert!(report.contains("\"severity\": \"major\""));
-        assert!(report.contains("\"path\": \"src/lib.rs\""));
-        assert!(report.contains("\"begin\": 7"));
-        assert!(!report.starts_with('\u{feff}'));
+        assert_eq!(
+            (
+                report.starts_with('['),
+                report.contains("\"check_name\": \"ownership_at_boundaries\""),
+                report.contains("\"severity\": \"major\""),
+                report.contains("\"path\": \"src/lib.rs\""),
+                report.contains("\"begin\": 7"),
+                !report.starts_with('\u{feff}'),
+            ),
+            (true, true, true, true, true, true)
+        );
     }
 
     #[test]
