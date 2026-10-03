@@ -51,17 +51,19 @@ struct Candidate {
     source: Span,
 }
 
-/// Tracks candidate writes and direct registrations until the crate pass ends.
+/// Tracks candidate writes and potentially repeating registrations
+/// until the crate pass ends.
 ///
 /// The lint records writes while it visits function bodies, then reports only
 /// writes whose function has a directly resolved registration in a repeating
-/// Bevy schedule. The visitor keeps local data-flow state per function.
+/// Bevy schedule without a proven one-shot run condition. The visitor keeps
+/// local data-flow state per function.
 #[derive(Debug, Default)]
 pub struct BevyContinuousFontSize {
     /// Candidate font-size writes found in local functions.
     candidates: Vec<Candidate>,
-    /// Free functions passed directly to an `App::add_systems` call.
-    registered_systems: Vec<LocalDefId>,
+    /// Free functions registered under conditions that may repeat.
+    repeating_systems: Vec<LocalDefId>,
 }
 
 impl<'tcx> LateLintPass<'tcx> for BevyContinuousFontSize {
@@ -84,16 +86,20 @@ impl<'tcx> LateLintPass<'tcx> for BevyContinuousFontSize {
         writes.visit_expr(body.value);
     }
 
-    /// Retain only direct registrations under built-in repeating schedules.
+    /// Retain direct registrations that may repeat under built-in schedules.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        // Resolve the registered functions before checking schedule identity.
+        // Resolve the registration before checking whether its schedule repeats.
         let Some(registration) = bevy_support::directly_registered_systems(cx, expr) else {
             return;
         };
         if !is_repeating_schedule(cx, expr, registration.schedule.as_str()) {
             return;
         }
-        self.registered_systems.extend(registration.systems);
+        // Preserve condition semantics while retaining only repeatable functions.
+        let Some(systems) = bevy_support::directly_registered_repeating_systems(cx, expr) else {
+            return;
+        };
+        self.repeating_systems.extend(systems);
     }
 
     /// Report candidate writes only when their function is directly registered.
@@ -101,7 +107,7 @@ impl<'tcx> LateLintPass<'tcx> for BevyContinuousFontSize {
         // Suppress duplicate source spans from repeated HIR traversal paths.
         let mut emitted = HashSet::new();
         for candidate in &self.candidates {
-            if !self.registered_systems.contains(&candidate.system)
+            if !self.repeating_systems.contains(&candidate.system)
                 || !emitted.insert((candidate.system, candidate.source))
             {
                 continue;

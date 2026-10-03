@@ -183,8 +183,9 @@ pub use self::queries::{
     unfiltered_entity_access_query_parameters, wide_query_parameters, zst_query_parameters,
 };
 pub use self::systems::{
-    camera_fixed_update_system_spans, directly_registered_systems, disallowed_schedule_span,
-    discarded_app_run_spans, inserted_message_resource_span, is_system_mutably_querying_camera,
+    camera_fixed_update_system_spans, directly_registered_repeating_systems,
+    directly_registered_systems, disallowed_schedule_span, discarded_app_run_spans,
+    inserted_message_resource_span, is_system_mutably_querying_camera,
     iter_current_update_messages_span,
 };
 pub use self::traits::{

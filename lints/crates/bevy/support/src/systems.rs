@@ -5,9 +5,18 @@ use super::helpers::{
     query_filter_has_camera, query_filter_type, system_expressions, system_function,
 };
 use super::{
-    Body, DefId, Expr, FnDecl, LateContext, LocalDefId, RegisteredSystems, Span, Visitor,
-    bevy_method_call, expression_has_type, type_is_named,
+    Body, DefId, Expr, ExprKind, FnDecl, LateContext, LocalDefId, RegisteredSystems, Span, Visitor,
+    bevy_method_call, expression_has_type, trait_is_named, type_is_named,
 };
+
+/// Classification of resolved conditions on one system registration.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum RegistrationMode {
+    /// The condition analysis does not prove that the system runs at most once.
+    MayRepeat,
+    /// A resolved condition guarantees that the system runs at most once.
+    AtMostOnce,
+}
 
 /// Return local systems from one resolved `App::add_systems` call.
 #[must_use]
@@ -39,6 +48,135 @@ pub fn directly_registered_systems(
         .filter_map(|system| system_function(cx, system)?.as_local())
         .collect::<Vec<_>>();
     (!systems.is_empty()).then_some(RegisteredSystems { schedule, systems })
+}
+
+/// Return local systems in a direct registration that may run repeatedly.
+#[must_use]
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, expr| {
+///     let _ = bevy_support::directly_registered_repeating_systems(cx, expr);
+/// };
+/// ```
+pub fn directly_registered_repeating_systems(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+) -> Option<Vec<LocalDefId>> {
+    // Resolve the app registration before traversing its system configuration.
+    let call = app_method_call(cx, expr, "add_systems")?;
+    let [_, systems, ..] = call.arguments else {
+        return None;
+    };
+    Some(repeating_systems_in_config(
+        cx,
+        systems,
+        RegistrationMode::MayRepeat,
+    ))
+}
+
+/// Collect direct local systems unless their resolved run condition is one-shot.
+fn repeating_systems_in_config(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    mode: RegistrationMode,
+) -> Vec<LocalDefId> {
+    // Apply an outer tuple condition to every configured member.
+    if let ExprKind::Tup(elements) = expr.kind {
+        return elements
+            .iter()
+            .flat_map(|element| repeating_systems_in_config(cx, element, mode))
+            .collect();
+    }
+
+    // Preserve a proved condition through each resolved Bevy schedule wrapper.
+    if let ExprKind::MethodCall(_, receiver, arguments, _) = expr.kind {
+        let Some(method) = cx.typeck_results().type_dependent_def_id(expr.hir_id) else {
+            return Vec::new();
+        };
+        let Some(schedule_configs) = cx.tcx.trait_of_assoc(method) else {
+            return Vec::new();
+        };
+        if !trait_is_named(cx, schedule_configs, "bevy_ecs", "IntoScheduleConfigs") {
+            return Vec::new();
+        }
+
+        // `run_if` and `distributive_run_if` attach their condition to this receiver.
+        let is_run_condition_method = matches!(
+            cx.tcx.item_name(method).as_str(),
+            "run_if" | "distributive_run_if"
+        );
+        let mode = if is_run_condition_method
+            && arguments
+                .first()
+                .is_some_and(|condition| condition_is_one_shot(cx, condition))
+        {
+            RegistrationMode::AtMostOnce
+        } else {
+            mode
+        };
+        return repeating_systems_in_config(cx, receiver, mode);
+    }
+
+    // Emit only local function paths that remain eligible for repeated execution.
+    if mode == RegistrationMode::AtMostOnce {
+        return Vec::new();
+    }
+    system_function(cx, expr)
+        .and_then(DefId::as_local)
+        .into_iter()
+        .collect()
+}
+
+/// Return whether an expression is the resolved built-in `run_once` condition.
+fn condition_is_one_shot(cx: &LateContext<'_>, condition: &Expr<'_>) -> bool {
+    if let Some(def_id) = system_function(cx, condition) {
+        // Match Bevy's exact definition path so same-named application functions do not count.
+        let crate_name = cx.tcx.crate_name(def_id.krate);
+        if crate_name.as_str() != "bevy_ecs" {
+            return false;
+        }
+        let function_name = cx.tcx.item_name(def_id);
+        if function_name.as_str() != "run_once" {
+            return false;
+        }
+        let definition_path = cx.tcx.def_path(def_id);
+        let mut path = definition_path
+            .data
+            .iter()
+            .rev()
+            .filter_map(|segment| segment.data.get_opt_name());
+        return matches!(
+            (path.next(), path.next(), path.next(), path.next()),
+            (Some(function), Some(module), Some(parent), Some(schedule))
+                if function.as_str() == "run_once"
+                    && module.as_str() == "common_conditions"
+                    && parent.as_str() == "condition"
+                    && schedule.as_str() == "schedule"
+        );
+    }
+
+    // Only conjunction preserves an at-most-once operand as an upper bound.
+    let ExprKind::MethodCall(_, receiver, arguments, _) = condition.kind else {
+        return false;
+    };
+    let Some(method) = cx.typeck_results().type_dependent_def_id(condition.hir_id) else {
+        return false;
+    };
+    let Some(trait_id) = cx.tcx.trait_of_assoc(method) else {
+        return false;
+    };
+    trait_is_named(cx, trait_id, "bevy_ecs", "SystemCondition")
+        && matches!(
+            cx.tcx.item_name(method).as_str(),
+            "and" | "and_then" | "and_eager"
+        )
+        && (condition_is_one_shot(cx, receiver)
+            || arguments
+                .first()
+                .is_some_and(|right| condition_is_one_shot(cx, right)))
 }
 
 /// Return whether a system function mutably queries camera-filtered entities.

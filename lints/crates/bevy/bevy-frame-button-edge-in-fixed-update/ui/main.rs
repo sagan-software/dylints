@@ -16,6 +16,7 @@
 use bevy_app::{App, FixedUpdate, Update};
 use bevy_ecs::{
     resource::Resource,
+    schedule::{IntoScheduleConfigs, common_conditions::run_once},
     system::{Res, ResMut},
 };
 use bevy_input::{ButtonInput, keyboard::KeyCode};
@@ -28,6 +29,10 @@ mod custom_schedule {
 }
 
 fn pressed(keys: Res<ButtonInput<KeyCode>>) {
+    if keys.just_pressed(KeyCode::Space) {}
+}
+
+fn pressed_once(keys: Res<ButtonInput<KeyCode>>) {
     if keys.just_pressed(KeyCode::Space) {}
 }
 
@@ -84,6 +89,7 @@ fn configure(app: &mut App) {
         FixedUpdate,
         (pressed, released, held, buffered, explicitly_cleared),
     );
+    app.add_systems(FixedUpdate, pressed_once.run_if(run_once));
     app.add_systems(FixedUpdate, tuple_pressed);
     app.add_systems(Update, update_only);
     app.add_systems(Update, tuple_update_only);

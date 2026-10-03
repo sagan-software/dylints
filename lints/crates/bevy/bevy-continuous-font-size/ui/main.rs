@@ -2,7 +2,7 @@
 
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::prelude::*;
-use bevy_ecs::schedule::common_conditions::run_once;
+use bevy_ecs::schedule::common_conditions::{resource_exists, run_once};
 use bevy_math::Vec3;
 use bevy_text::{FontSize, TextFont};
 use bevy_time::{Fixed, Time as BevyClock};
@@ -100,6 +100,108 @@ fn animate_time(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
 }
 
 fn animate_once(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_group_left(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_group_right(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_inner_left(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_inner_right(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_configured(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_once_and_left(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_once_and_right(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_distributive_once(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_unknown(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_resource_condition(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+mod lookalike_condition {
+    pub(crate) fn run_once() -> bool {
+        true
+    }
+}
+
+fn animate_lookalike(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_or(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn animate_both(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
+    for mut label in &mut labels {
+        label.font_size = FontSize::Px(clock.elapsed_secs());
+    }
+}
+
+fn always_condition() -> bool {
+    true
+}
+
+struct ConditionFactory;
+
+impl ConditionFactory {
+    fn always(self) -> impl Fn() -> bool {
+        || true
+    }
+}
+
+fn animate_method_condition(mut labels: Query<&mut TextFont>, clock: Res<BevyClock>) {
     for mut label in &mut labels {
         label.font_size = FontSize::Px(clock.elapsed_secs());
     }
@@ -532,6 +634,55 @@ fn configure(app: &mut App) {
     );
     app.add_systems(Startup, startup_size);
     app.add_systems(Update, animate_once.run_if(run_once));
+    app.add_systems(
+        Update,
+        (animate_group_left, animate_group_right)
+            .before(animate_time)
+            .run_if(run_once),
+    );
+    app.add_systems(
+        Update,
+        (
+            animate_inner_left.run_if(run_once),
+            animate_inner_right.run_if(run_once),
+        ),
+    );
+    app.add_systems(
+        Update,
+        animate_configured.after(animate_time).run_if(run_once),
+    );
+    app.add_systems(Update, animate_configured.run_if(|| true));
+    app.add_systems(
+        Update,
+        animate_once_and_left.run_if(run_once.and_then(always_condition)),
+    );
+    app.add_systems(
+        Update,
+        animate_once_and_right.run_if(always_condition.and_then(run_once)),
+    );
+    app.add_systems(
+        Update,
+        animate_distributive_once.distributive_run_if(run_once),
+    );
+    app.add_systems(Update, animate_unknown.run_if(always_condition));
+    app.add_systems(
+        Update,
+        animate_resource_condition.run_if(resource_exists::<BevyClock>),
+    );
+    app.add_systems(
+        Update,
+        animate_method_condition.run_if(ConditionFactory.always()),
+    );
+    app.add_systems(
+        Update,
+        animate_lookalike.run_if(lookalike_condition::run_once),
+    );
+    app.add_systems(
+        Update,
+        animate_or.run_if(run_once.or_else(always_condition)),
+    );
+    app.add_systems(Update, animate_both.run_if(run_once));
+    app.add_systems(Update, animate_both);
     app.add_systems(custom_schedule::Update, unregistered);
 }
 

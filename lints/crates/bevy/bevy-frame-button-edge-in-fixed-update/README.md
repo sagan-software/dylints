@@ -10,7 +10,9 @@ With Bevy's standard `InputPlugin`, `ButtonInput` updates in `PreUpdate`, once p
 
 ## Known problems
 
-The lint checks direct local function registrations and cannot prove that `InputPlugin` is installed. It recognizes standalone resource parameters and resource parameters inside tuples. It skips `Option`, `ParamSet`, custom system parameters, and other parameter wrappers. It skips nested closure bodies because it cannot prove when they run. It ignores system run conditions, so a condition such as `run_once()` can change whether repeated edge reads are possible. Manually updated `ButtonInput` resources can be valid when their edges are maintained for each fixed tick.
+The lint checks direct local function registrations and cannot prove that `InputPlugin` is installed. It recognizes standalone resource parameters and resource parameters inside tuples. It skips `Option`, `ParamSet`, custom system parameters, and other parameter wrappers. It skips nested closure bodies because it cannot prove when they run.
+
+It ignores system run conditions. Bevy's resolved `run_once` condition limits reads to at most once, but it cannot prevent edge loss when a rendered frame has no fixed tick: the standard input systems clear and rebuild `ButtonInput` in the next `PreUpdate` after its one-frame edge. Manually updated `ButtonInput` resources can be valid when their edges are maintained for each fixed tick.
 
 Held-state reads such as `pressed` are not frame edges and do not trigger it. Custom buffered input is outside its analysis. Clearing an edge inside `FixedUpdate` can prevent repeated reads after a tick, but it cannot preserve an edge across a frame with no fixed tick. This semantic warning complements `bevy-disallow-fixed-update-schedule`, which enforces a project-wide policy.
 

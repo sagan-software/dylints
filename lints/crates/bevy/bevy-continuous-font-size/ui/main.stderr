@@ -8,7 +8,7 @@ LL |         label.font_size = FontSize::Px(size);
    = note: `#[warn(bevy_continuous_font_size)]` on by default
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:104:46
+  --> $DIR/main.rs:134:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed_secs());
    |                                              ^^^^^^^^^^^^
@@ -16,7 +16,55 @@ LL |         label.font_size = FontSize::Px(clock.elapsed_secs());
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:110:40
+  --> $DIR/main.rs:158:46
+   |
+LL |         label.font_size = FontSize::Px(clock.elapsed_secs());
+   |                                              ^^^^^^^^^^^^
+   |
+   = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
+
+warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:164:46
+   |
+LL |         label.font_size = FontSize::Px(clock.elapsed_secs());
+   |                                              ^^^^^^^^^^^^
+   |
+   = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
+
+warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:176:46
+   |
+LL |         label.font_size = FontSize::Px(clock.elapsed_secs());
+   |                                              ^^^^^^^^^^^^
+   |
+   = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
+
+warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:182:46
+   |
+LL |         label.font_size = FontSize::Px(clock.elapsed_secs());
+   |                                              ^^^^^^^^^^^^
+   |
+   = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
+
+warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:188:46
+   |
+LL |         label.font_size = FontSize::Px(clock.elapsed_secs());
+   |                                              ^^^^^^^^^^^^
+   |
+   = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
+
+warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:206:46
+   |
+LL |         label.font_size = FontSize::Px(clock.elapsed_secs());
+   |                                              ^^^^^^^^^^^^
+   |
+   = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
+
+warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:212:40
    |
 LL |         label.font_size = FontSize::Px(transform.translation.distance(Vec3::ZERO));
    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -24,7 +72,7 @@ LL |         label.font_size = FontSize::Px(transform.translation.distance(Vec3:
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:167:40
+  --> $DIR/main.rs:269:40
    |
 LL |         label.font_size = FontSize::Px(size);
    |                                        ^^^^
@@ -32,7 +80,7 @@ LL |         label.font_size = FontSize::Px(size);
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:193:40
+  --> $DIR/main.rs:295:40
    |
 LL |         label.font_size = FontSize::Px(canceled_size);
    |                                        ^^^^^^^^^^^^^
@@ -40,7 +88,7 @@ LL |         label.font_size = FontSize::Px(canceled_size);
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:195:50
+  --> $DIR/main.rs:297:50
    |
 LL |             label.font_size = FontSize::Px(clock.elapsed_secs());
    |                                                  ^^^^^^^^^^^^
@@ -48,7 +96,7 @@ LL |             label.font_size = FontSize::Px(clock.elapsed_secs());
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:197:46
+  --> $DIR/main.rs:299:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed_secs() + ADDITIVE_OFFSET);
    |                                              ^^^^^^^^^^^^
@@ -56,7 +104,7 @@ LL |         label.font_size = FontSize::Px(clock.elapsed_secs() + ADDITIVE_OFFS
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:198:67
+  --> $DIR/main.rs:300:67
    |
 LL |         label.font_size = FontSize::Px(SUBTRACTIVE_OFFSET - clock.elapsed_secs());
    |                                                                   ^^^^^^^^^^^^
@@ -64,7 +112,7 @@ LL |         label.font_size = FontSize::Px(SUBTRACTIVE_OFFSET - clock.elapsed_s
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:199:61
+  --> $DIR/main.rs:301:61
    |
 LL |         label.font_size = FontSize::Px(SCALE_FACTOR * clock.elapsed_secs());
    |                                                             ^^^^^^^^^^^^
@@ -72,7 +120,7 @@ LL |         label.font_size = FontSize::Px(SCALE_FACTOR * clock.elapsed_secs())
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:200:46
+  --> $DIR/main.rs:302:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed_secs() / DIVISOR);
    |                                              ^^^^^^^^^^^^
@@ -80,7 +128,7 @@ LL |         label.font_size = FontSize::Px(clock.elapsed_secs() / DIVISOR);
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:201:47
+  --> $DIR/main.rs:303:47
    |
 LL |         label.font_size = FontSize::Px(-clock.elapsed_secs());
    |                                               ^^^^^^^^^^^^
@@ -88,7 +136,7 @@ LL |         label.font_size = FontSize::Px(-clock.elapsed_secs());
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:202:46
+  --> $DIR/main.rs:304:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed_secs_f64() as f32);
    |                                              ^^^^^^^^^^^^^^^^
@@ -96,7 +144,7 @@ LL |         label.font_size = FontSize::Px(clock.elapsed_secs_f64() as f32);
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:206:27
+  --> $DIR/main.rs:308:27
    |
 LL |             true => clock.elapsed_secs(),
    |                           ^^^^^^^^^^^^
@@ -104,7 +152,7 @@ LL |             true => clock.elapsed_secs(),
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:211:28
+  --> $DIR/main.rs:313:28
    |
 LL |             false => clock.elapsed_secs(),
    |                            ^^^^^^^^^^^^
@@ -112,7 +160,7 @@ LL |             false => clock.elapsed_secs(),
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:214:46
+  --> $DIR/main.rs:316:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed_secs() * Factors::VALUE);
    |                                              ^^^^^^^^^^^^
@@ -120,7 +168,7 @@ LL |         label.font_size = FontSize::Px(clock.elapsed_secs() * Factors::VALU
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:218:46
+  --> $DIR/main.rs:320:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed_secs() * NONZERO_FACTOR);
    |                                              ^^^^^^^^^^^^
@@ -128,7 +176,7 @@ LL |         label.font_size = FontSize::Px(clock.elapsed_secs() * NONZERO_FACTO
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:220:47
+  --> $DIR/main.rs:322:47
    |
 LL |         label.font_size = FontSize::Px((clock.elapsed_secs_f64() * NONZERO_F64_FACTOR) as f32);
    |                                               ^^^^^^^^^^^^^^^^
@@ -136,7 +184,7 @@ LL |         label.font_size = FontSize::Px((clock.elapsed_secs_f64() * NONZERO_
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:221:47
+  --> $DIR/main.rs:323:47
    |
 LL |         label.font_size = FontSize::Px((clock.elapsed_secs_f64() * NEGATIVE_F64_FACTOR) as f32);
    |                                               ^^^^^^^^^^^^^^^^
@@ -144,7 +192,7 @@ LL |         label.font_size = FontSize::Px((clock.elapsed_secs_f64() * NEGATIVE
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:222:47
+  --> $DIR/main.rs:324:47
    |
 LL |         label.font_size = FontSize::Px((clock.elapsed_secs_f64() * ARITHMETIC_F64_FACTOR) as f32);
    |                                               ^^^^^^^^^^^^^^^^
@@ -152,7 +200,7 @@ LL |         label.font_size = FontSize::Px((clock.elapsed_secs_f64() * ARITHMET
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:229:46
+  --> $DIR/main.rs:331:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed_secs() * MAX_DEPTH_FACTOR);
    |                                              ^^^^^^^^^^^^
@@ -160,7 +208,7 @@ LL |         label.font_size = FontSize::Px(clock.elapsed_secs() * MAX_DEPTH_FAC
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:250:46
+  --> $DIR/main.rs:352:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed_secs_f64() as f32);
    |                                              ^^^^^^^^^^^^^^^^
@@ -168,7 +216,7 @@ LL |         label.font_size = FontSize::Px(clock.elapsed_secs_f64() as f32);
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:251:46
+  --> $DIR/main.rs:353:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed_secs_wrapped());
    |                                              ^^^^^^^^^^^^^^^^^^^^
@@ -176,7 +224,7 @@ LL |         label.font_size = FontSize::Px(clock.elapsed_secs_wrapped());
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:252:46
+  --> $DIR/main.rs:354:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed_secs_wrapped_f64() as f32);
    |                                              ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -184,7 +232,7 @@ LL |         label.font_size = FontSize::Px(clock.elapsed_secs_wrapped_f64() as 
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:253:46
+  --> $DIR/main.rs:355:46
    |
 LL |         label.font_size = FontSize::Px(clock.delta_secs_f64() as f32);
    |                                              ^^^^^^^^^^^^^^
@@ -192,7 +240,7 @@ LL |         label.font_size = FontSize::Px(clock.delta_secs_f64() as f32);
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:254:46
+  --> $DIR/main.rs:356:46
    |
 LL |         label.font_size = FontSize::Px(clock.elapsed().as_secs_f32());
    |                                              ^^^^^^^
@@ -200,7 +248,7 @@ LL |         label.font_size = FontSize::Px(clock.elapsed().as_secs_f32());
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:255:46
+  --> $DIR/main.rs:357:46
    |
 LL |         label.font_size = FontSize::Px(clock.delta().as_secs_f32());
    |                                              ^^^^^
@@ -208,7 +256,7 @@ LL |         label.font_size = FontSize::Px(clock.delta().as_secs_f32());
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:303:42
+  --> $DIR/main.rs:405:42
    |
 LL |     label.font_size = FontSize::Px(clock.elapsed_secs());
    |                                          ^^^^^^^^^^^^
@@ -216,7 +264,7 @@ LL |     label.font_size = FontSize::Px(clock.elapsed_secs());
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:310:40
+  --> $DIR/main.rs:412:40
    |
 LL |         label.font_size = FontSize::Px(size);
    |                                        ^^^^
@@ -224,7 +272,7 @@ LL |         label.font_size = FontSize::Px(size);
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:331:59
+  --> $DIR/main.rs:433:59
    |
 LL |         *label = TextFont::default().with_font_size(clock.elapsed_secs() * 1.5);
    |                                                           ^^^^^^^^^^^^
@@ -232,7 +280,7 @@ LL |         *label = TextFont::default().with_font_size(clock.elapsed_secs() * 
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:338:43
+  --> $DIR/main.rs:440:43
    |
 LL |             font_size: FontSize::Px(clock.delta_secs()),
    |                                           ^^^^^^^^^^
@@ -240,7 +288,7 @@ LL |             font_size: FontSize::Px(clock.delta_secs()),
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:359:46
+  --> $DIR/main.rs:461:46
    |
 LL |         label.font_size = FontSize::Px(clock.delta_secs());
    |                                              ^^^^^^^^^^
@@ -248,7 +296,7 @@ LL |         label.font_size = FontSize::Px(clock.delta_secs());
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:375:40
+  --> $DIR/main.rs:477:40
    |
 LL |         label.font_size = FontSize::Px(size);
    |                                        ^^^^
@@ -256,7 +304,7 @@ LL |         label.font_size = FontSize::Px(size);
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:384:40
+  --> $DIR/main.rs:486:40
    |
 LL |         label.font_size = FontSize::Px(size);
    |                                        ^^^^
@@ -264,7 +312,7 @@ LL |         label.font_size = FontSize::Px(size);
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:400:40
+  --> $DIR/main.rs:502:40
    |
 LL |         label.font_size = FontSize::Px(size);
    |                                        ^^^^
@@ -272,12 +320,12 @@ LL |         label.font_size = FontSize::Px(size);
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
 warning: this system is registered in a repeating schedule and derives a Bevy text raster size from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:438:40
+  --> $DIR/main.rs:540:40
    |
 LL |         label.font_size = FontSize::Px(size);
    |                                        ^^^^
    |
    = help: if rendered sizes differ, they may use distinct font atlas keys; keep the raster size stable and scale the entity when layout and visual quality allow
 
-warning: 35 warnings emitted
+warning: 41 warnings emitted
 

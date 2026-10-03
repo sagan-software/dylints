@@ -8,7 +8,7 @@ LL |     scale.0 += delta * 0.1;
    = note: `#[warn(bevy_continuous_ui_scale)]` on by default
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:91:20
+  --> $DIR/main.rs:111:20
    |
 LL |     scale.0 = time.elapsed_secs();
    |                    ^^^^^^^^^^^^
@@ -16,7 +16,55 @@ LL |     scale.0 = time.elapsed_secs();
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:132:15
+  --> $DIR/main.rs:127:20
+   |
+LL |     scale.0 = time.elapsed_secs();
+   |                    ^^^^^^^^^^^^
+   |
+   = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
+
+warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:131:20
+   |
+LL |     scale.0 = time.elapsed_secs();
+   |                    ^^^^^^^^^^^^
+   |
+   = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
+
+warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:141:20
+   |
+LL |     scale.0 = time.elapsed_secs();
+   |                    ^^^^^^^^^^^^
+   |
+   = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
+
+warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:145:20
+   |
+LL |     scale.0 = time.elapsed_secs();
+   |                    ^^^^^^^^^^^^
+   |
+   = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
+
+warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:149:20
+   |
+LL |     scale.0 = time.elapsed_secs();
+   |                    ^^^^^^^^^^^^
+   |
+   = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
+
+warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:165:20
+   |
+LL |     scale.0 = time.elapsed_secs();
+   |                    ^^^^^^^^^^^^
+   |
+   = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
+
+warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
+  --> $DIR/main.rs:206:15
    |
 LL |     scale.0 = value;
    |               ^^^^^
@@ -24,7 +72,7 @@ LL |     scale.0 = value;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:152:15
+  --> $DIR/main.rs:226:15
    |
 LL |     scale.0 = canceled_scale;
    |               ^^^^^^^^^^^^^^
@@ -32,7 +80,7 @@ LL |     scale.0 = canceled_scale;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:154:24
+  --> $DIR/main.rs:228:24
    |
 LL |         scale.0 = time.elapsed_secs();
    |                        ^^^^^^^^^^^^
@@ -40,7 +88,7 @@ LL |         scale.0 = time.elapsed_secs();
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:156:20
+  --> $DIR/main.rs:230:20
    |
 LL |     scale.0 = time.elapsed_secs() + ADDITIVE_OFFSET;
    |                    ^^^^^^^^^^^^
@@ -48,7 +96,7 @@ LL |     scale.0 = time.elapsed_secs() + ADDITIVE_OFFSET;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:157:41
+  --> $DIR/main.rs:231:41
    |
 LL |     scale.0 = SUBTRACTIVE_OFFSET - time.elapsed_secs();
    |                                         ^^^^^^^^^^^^
@@ -56,7 +104,7 @@ LL |     scale.0 = SUBTRACTIVE_OFFSET - time.elapsed_secs();
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:158:35
+  --> $DIR/main.rs:232:35
    |
 LL |     scale.0 = SCALE_FACTOR * time.elapsed_secs();
    |                                   ^^^^^^^^^^^^
@@ -64,7 +112,7 @@ LL |     scale.0 = SCALE_FACTOR * time.elapsed_secs();
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:159:20
+  --> $DIR/main.rs:233:20
    |
 LL |     scale.0 = time.elapsed_secs() / DIVISOR;
    |                    ^^^^^^^^^^^^
@@ -72,7 +120,7 @@ LL |     scale.0 = time.elapsed_secs() / DIVISOR;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:160:21
+  --> $DIR/main.rs:234:21
    |
 LL |     scale.0 = -time.elapsed_secs();
    |                     ^^^^^^^^^^^^
@@ -80,7 +128,7 @@ LL |     scale.0 = -time.elapsed_secs();
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:161:20
+  --> $DIR/main.rs:235:20
    |
 LL |     scale.0 = time.elapsed_secs_f64() as f32;
    |                    ^^^^^^^^^^^^^^^^
@@ -88,7 +136,7 @@ LL |     scale.0 = time.elapsed_secs_f64() as f32;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:173:22
+  --> $DIR/main.rs:247:22
    |
 LL |         true => time.elapsed_secs(),
    |                      ^^^^^^^^^^^^
@@ -96,7 +144,7 @@ LL |         true => time.elapsed_secs(),
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:178:23
+  --> $DIR/main.rs:252:23
    |
 LL |         false => time.elapsed_secs(),
    |                       ^^^^^^^^^^^^
@@ -104,7 +152,7 @@ LL |         false => time.elapsed_secs(),
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:181:20
+  --> $DIR/main.rs:255:20
    |
 LL |     scale.0 = time.elapsed_secs() * Factors::VALUE;
    |                    ^^^^^^^^^^^^
@@ -112,7 +160,7 @@ LL |     scale.0 = time.elapsed_secs() * Factors::VALUE;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:185:20
+  --> $DIR/main.rs:259:20
    |
 LL |     scale.0 = time.elapsed_secs() * NONZERO_FACTOR;
    |                    ^^^^^^^^^^^^
@@ -120,7 +168,7 @@ LL |     scale.0 = time.elapsed_secs() * NONZERO_FACTOR;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:187:21
+  --> $DIR/main.rs:261:21
    |
 LL |     scale.0 = (time.elapsed_secs_f64() * NONZERO_F64_FACTOR) as f32;
    |                     ^^^^^^^^^^^^^^^^
@@ -128,7 +176,7 @@ LL |     scale.0 = (time.elapsed_secs_f64() * NONZERO_F64_FACTOR) as f32;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:188:21
+  --> $DIR/main.rs:262:21
    |
 LL |     scale.0 = (time.elapsed_secs_f64() * NEGATIVE_F64_FACTOR) as f32;
    |                     ^^^^^^^^^^^^^^^^
@@ -136,7 +184,7 @@ LL |     scale.0 = (time.elapsed_secs_f64() * NEGATIVE_F64_FACTOR) as f32;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:189:21
+  --> $DIR/main.rs:263:21
    |
 LL |     scale.0 = (time.elapsed_secs_f64() * ARITHMETIC_F64_FACTOR) as f32;
    |                     ^^^^^^^^^^^^^^^^
@@ -144,7 +192,7 @@ LL |     scale.0 = (time.elapsed_secs_f64() * ARITHMETIC_F64_FACTOR) as f32;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:196:20
+  --> $DIR/main.rs:270:20
    |
 LL |     scale.0 = time.elapsed_secs() * MAX_DEPTH_FACTOR;
    |                    ^^^^^^^^^^^^
@@ -152,7 +200,7 @@ LL |     scale.0 = time.elapsed_secs() * MAX_DEPTH_FACTOR;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:207:20
+  --> $DIR/main.rs:281:20
    |
 LL |     scale.0 = time.elapsed_secs_f64() as f32;
    |                    ^^^^^^^^^^^^^^^^
@@ -160,7 +208,7 @@ LL |     scale.0 = time.elapsed_secs_f64() as f32;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:208:20
+  --> $DIR/main.rs:282:20
    |
 LL |     scale.0 = time.elapsed_secs_wrapped();
    |                    ^^^^^^^^^^^^^^^^^^^^
@@ -168,7 +216,7 @@ LL |     scale.0 = time.elapsed_secs_wrapped();
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:209:20
+  --> $DIR/main.rs:283:20
    |
 LL |     scale.0 = time.elapsed_secs_wrapped_f64() as f32;
    |                    ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -176,7 +224,7 @@ LL |     scale.0 = time.elapsed_secs_wrapped_f64() as f32;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:210:20
+  --> $DIR/main.rs:284:20
    |
 LL |     scale.0 = time.delta_secs_f64() as f32;
    |                    ^^^^^^^^^^^^^^
@@ -184,7 +232,7 @@ LL |     scale.0 = time.delta_secs_f64() as f32;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:211:20
+  --> $DIR/main.rs:285:20
    |
 LL |     scale.0 = time.elapsed().as_secs_f32();
    |                    ^^^^^^^
@@ -192,7 +240,7 @@ LL |     scale.0 = time.elapsed().as_secs_f32();
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:212:20
+  --> $DIR/main.rs:286:20
    |
 LL |     scale.0 = time.delta().as_secs_f32();
    |                    ^^^^^
@@ -200,7 +248,7 @@ LL |     scale.0 = time.delta().as_secs_f32();
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:255:15
+  --> $DIR/main.rs:329:15
    |
 LL |     scale.0 = value;
    |               ^^^^^
@@ -208,7 +256,7 @@ LL |     scale.0 = value;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:275:15
+  --> $DIR/main.rs:349:15
    |
 LL |     scale.0 = value;
    |               ^^^^^
@@ -216,7 +264,7 @@ LL |     scale.0 = value;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:282:15
+  --> $DIR/main.rs:356:15
    |
 LL |     scale.0 = value;
    |               ^^^^^
@@ -224,7 +272,7 @@ LL |     scale.0 = value;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:294:15
+  --> $DIR/main.rs:368:15
    |
 LL |     scale.0 = value;
    |               ^^^^^
@@ -232,7 +280,7 @@ LL |     scale.0 = value;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:326:15
+  --> $DIR/main.rs:400:15
    |
 LL |     scale.0 = value;
    |               ^^^^^
@@ -240,7 +288,7 @@ LL |     scale.0 = value;
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:342:19
+  --> $DIR/main.rs:416:19
    |
 LL |         scale.0 = transform.translation.distance(Vec3::ZERO);
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -248,12 +296,12 @@ LL |         scale.0 = transform.translation.distance(Vec3::ZERO);
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
 warning: this system is registered in a repeating schedule and derives `UiScale` from a time- or distance-based value that may vary between runs
-  --> $DIR/main.rs:356:20
+  --> $DIR/main.rs:430:20
    |
 LL |     scale.0 = time.elapsed().as_secs_f64() as f32;
    |                    ^^^^^^^
    |
    = help: when the app renders text, prefer a stable or discrete scale because new raster sizes may use additional atlas keys
 
-warning: 32 warnings emitted
+warning: 38 warnings emitted
 

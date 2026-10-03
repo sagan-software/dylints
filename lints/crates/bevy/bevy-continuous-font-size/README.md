@@ -10,7 +10,9 @@ The effective font size contributes to the font-atlas key. When rendering needs 
 
 ## Known problems
 
-The lint recognizes only direct registrations under Bevy's built-in repeating schedules and a bounded set of resolved expression forms. It tracks local values through direct assignments and `+=`, `-=`, `*=`, and `/=`; a statically known zero multiplier clears the local value's taint. It does not inspect run conditions, so a `run_if(run_once)` registration can warn even though Bevy invokes the system at most once. It also does not analyze runtime stability, paused time, whether either vector in `Vec3::distance` changes, or whether text rendering requests a new atlas key. A stable distance can still be assigned repeatedly.
+The lint recognizes only direct registrations under Bevy's built-in repeating schedules and a bounded set of resolved expression forms. It tracks local values through direct assignments and `+=`, `-=`, `*=`, and `/=`; a statically known zero multiplier clears the local value's taint. It recognizes Bevy's resolved `run_once` condition on each registration, including through schedule-configuration wrappers, tuple groups or members, and conjunctions of Bevy system conditions. It still warns when the same function also has a registration that may repeat. Unknown or custom conditions remain potentially repeating unless a Bevy system-condition conjunction contains the resolved built-in `run_once`. Same-named application functions and disjunctions remain potentially repeating.
+
+The lint also does not analyze runtime stability, paused time, whether either vector in `Vec3::distance` changes, or whether text rendering requests a new atlas key. A stable distance can still be assigned repeatedly.
 
 The lint deliberately excludes rounding calls such as `time.elapsed_secs().floor()`, even though that value may change as elapsed time grows. It excludes `Time<Fixed>::delta` as a stable timestep; an application that changes that timestep at runtime can vary without a warning. Finite choices, constant reassignments, startup systems, and transform scaling are not reported.
 

@@ -1,5 +1,5 @@
 warning: this button edge lasts one frame but is read in `FixedUpdate`
-  --> $DIR/main.rs:31:13
+  --> $DIR/main.rs:32:13
    |
 LL |     if keys.just_pressed(KeyCode::Space) {}
    |             ^^^^^^^^^^^^
@@ -12,7 +12,7 @@ LL | #![warn(bevy_frame_button_edge_in_fixed_update)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 warning: this button edge lasts one frame but is read in `FixedUpdate`
-  --> $DIR/main.rs:35:13
+  --> $DIR/main.rs:36:13
    |
 LL |     if keys.just_pressed(KeyCode::Space) {}
    |             ^^^^^^^^^^^^
@@ -20,7 +20,15 @@ LL |     if keys.just_pressed(KeyCode::Space) {}
    = help: capture the edge before the fixed loop and pass it to fixed-step systems
 
 warning: this button edge lasts one frame but is read in `FixedUpdate`
-  --> $DIR/main.rs:39:13
+  --> $DIR/main.rs:40:13
+   |
+LL |     if keys.just_pressed(KeyCode::Space) {}
+   |             ^^^^^^^^^^^^
+   |
+   = help: capture the edge before the fixed loop and pass it to fixed-step systems
+
+warning: this button edge lasts one frame but is read in `FixedUpdate`
+  --> $DIR/main.rs:44:13
    |
 LL |     if keys.just_released(KeyCode::Space) {}
    |             ^^^^^^^^^^^^^
@@ -28,12 +36,12 @@ LL |     if keys.just_released(KeyCode::Space) {}
    = help: capture the edge before the fixed loop and pass it to fixed-step systems
 
 warning: this button edge lasts one frame but is read in `FixedUpdate`
-  --> $DIR/main.rs:56:13
+  --> $DIR/main.rs:61:13
    |
 LL |     if keys.just_pressed(KeyCode::Space) {
    |             ^^^^^^^^^^^^
    |
    = help: capture the edge before the fixed loop and pass it to fixed-step systems
 
-warning: 4 warnings emitted
+warning: 5 warnings emitted
 
