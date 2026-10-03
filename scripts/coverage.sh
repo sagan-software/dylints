@@ -147,6 +147,7 @@ done < <(find "$target_dir/debug" -maxdepth 2 -type f \( -name '*.so' -o -perm -
 	! -name '*.d' ! -name 'build-script-*' -print0)
 
 ignore='(/\.cargo/registry/|/rustc/|/nix/store/|/examples/|/ui/|/tests/fixtures/|/lints/crates/sqlx/fixture/|/target/)'
+sqlx_fixture_source="$repository_root/lints/crates/sqlx/fixture"
 common=(--instr-profile "$target_dir/coverage.profdata" --ignore-filename-regex "$ignore")
 
 # llvm-cov records #[path] modules with their lexical source paths, such as
@@ -251,6 +252,11 @@ while IFS= read -r record || [[ -n "$record" ]]; do
 			source_for_match="$repository_root/$source_for_match"
 		fi
 		current_source="$(realpath -m -- "$source_for_match")"
+		# The report regex sees lexical #[path] spellings; exclude the canonical
+		# SQLx fixture after realpath normalization as well.
+		if [[ "$current_source" == "$sqlx_fixture_source/"* ]]; then
+			current_source=''
+		fi
 		if [[ -n "$selected_sources_file" ]] &&
 			! grep -F -x -q "$current_source" "$selected_sources_file"; then
 			current_source=''

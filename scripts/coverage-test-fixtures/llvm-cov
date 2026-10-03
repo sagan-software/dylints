@@ -3,8 +3,10 @@ set -euo pipefail
 printf '%s\n' "$*" >>"$LLVM_COV_LOG"
 include_sqlx=0
 include_sqlx_fixture=0
+include_sqlx_alias=0
 if [[ "${FAKE_SQLX_SCOPE:-0}" == 1 ]]; then
 	include_sqlx=1
+	include_sqlx_alias=1
 	if [[ "$*" != *'/lints/crates/sqlx/fixture/'* ]]; then
 		include_sqlx_fixture=1
 	fi
@@ -18,9 +20,13 @@ if [[ "$*" == *'export --summary-only'* ]]; then
 		covered_count=$((covered_count + 1))
 		percent='4.2553191489'
 	fi
-	if ((include_sqlx_fixture == 1)); then
+	if ((include_sqlx_alias == 1)); then
 		file_count=$((file_count + 1))
 		percent='4.1666666667'
+	fi
+	if ((include_sqlx_fixture == 1)); then
+		file_count=$((file_count + 1))
+		percent='4.0816326531'
 	fi
 	printf '{"data":[{"files":['
 	printf '{"filename":"%s/lints/complexity/chaining_lint_support.rs","summary":{"lines":{"count":1,"covered":1,"percent":100},"regions":{"count":1,"covered":1,"percent":100}}},' "$FAKE_REPOSITORY_ROOT"
@@ -28,6 +34,9 @@ if [[ "$*" == *'export --summary-only'* ]]; then
 	printf '{"filename":"%s/src/runner.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}}' "$FAKE_REPOSITORY_ROOT"
 	if ((include_sqlx == 1)); then
 		printf ',{"filename":"%s/lints/crates/sqlx/src/lib.rs","summary":{"lines":{"count":1,"covered":1,"percent":100},"regions":{"count":1,"covered":1,"percent":100}}}' "$FAKE_REPOSITORY_ROOT"
+	fi
+	if ((include_sqlx_alias == 1)); then
+		printf ',{"filename":"%s/lints/crates/sqlx/support/../fixture/src/lib.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}}' "$FAKE_REPOSITORY_ROOT"
 	fi
 	if ((include_sqlx_fixture == 1)); then
 		printf ',{"filename":"%s/lints/crates/sqlx/fixture/src/lib.rs","summary":{"lines":{"count":1,"covered":0,"percent":0},"regions":{"count":1,"covered":0,"percent":0}}}' "$FAKE_REPOSITORY_ROOT"
@@ -60,6 +69,14 @@ EOF
 TN:
 SF:$FAKE_REPOSITORY_ROOT/lints/crates/sqlx/src/lib.rs
 DA:1,1
+end_of_record
+EOF
+	fi
+	if ((include_sqlx_alias == 1)); then
+		cat <<EOF
+TN:
+SF:$FAKE_REPOSITORY_ROOT/lints/crates/sqlx/support/../fixture/src/lib.rs
+DA:1,0
 end_of_record
 EOF
 	fi

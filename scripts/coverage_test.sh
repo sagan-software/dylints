@@ -177,11 +177,18 @@ fi
 
 sqlx_facade="$repository_root/lints/crates/sqlx/src/lib.rs"
 sqlx_fixture="$repository_root/lints/crates/sqlx/fixture/src/lib.rs"
+sqlx_fixture_alias="$repository_root/lints/crates/sqlx/support/../fixture/src/lib.rs"
 sqlx_report_target="$test_root/sqlx-report-target"
 sqlx_report_output="$test_root/sqlx-report-output.log"
 FAKE_SQLX_SCOPE=1 COVERAGE_TARGET_DIR="$sqlx_report_target" \
 	bash "$repository_root/scripts/coverage.sh" -- -p coverage-test --tests \
 	>"$sqlx_report_output" 2>&1
+if ! jq -e --arg alias "$sqlx_fixture_alias" \
+	'any(.data[0].files[]; .filename == $alias)' \
+	"$sqlx_report_target/report/summary.json" >/dev/null; then
+	printf 'coverage fixture did not retain the lexical SQLx alias for canonical filtering\n' >&2
+	exit 1
+fi
 if jq -e --arg fixture "$sqlx_fixture" \
 	'any(.data[0].files[]; .filename == $fixture)' \
 	"$sqlx_report_target/report/summary.json" >/dev/null; then
