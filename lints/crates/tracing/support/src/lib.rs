@@ -1169,6 +1169,7 @@ mod tests {
         }
     }
 
+    /// Replace redundant assignments without changing invocation structure.
     #[test]
     fn rewrites_redundant_assignments_in_place() {
         let invocation = invocation_fixture("info!(request_id = request_id, user.id = user.id);");
@@ -1178,6 +1179,7 @@ mod tests {
         );
     }
 
+    /// Preserve field sigils and reject comments in machine fixes.
     #[test]
     fn preserves_sigil_and_rejects_comment_rewrites() {
         let invocation = invocation_fixture("debug_span!(\"request\", request_id = %request_id);");
@@ -1190,7 +1192,7 @@ mod tests {
         assert_eq!(invocation.redundant_field_assignment_replacement(), None);
     }
 
-    /// Nested groups, literals, comments, and trailing commas stay in one argument.
+    /// Keep nested groups, literals, comments, and trailing commas in one argument.
     #[test]
     fn parses_nested_macro_arguments() {
         let source = "info!(field = (1, 2), \"text,)\", /* outer /* inner, */ done */, user,)";
@@ -1205,6 +1207,7 @@ mod tests {
         );
     }
 
+    /// Parse bracket-delimited macro arguments.
     #[test]
     fn parses_bracket_macro_arguments() {
         assert_eq!(
@@ -1213,6 +1216,7 @@ mod tests {
         );
     }
 
+    /// Parse brace-delimited macro arguments.
     #[test]
     fn parses_braced_macro_arguments() {
         assert_eq!(
@@ -1221,12 +1225,14 @@ mod tests {
         );
     }
 
+    /// Reject unsupported and unterminated macro delimiters.
     #[test]
     fn rejects_unsupported_macro_arguments() {
         assert_eq!(macro_arguments("info!<first>"), None);
         assert_eq!(macro_arguments("info!(unterminated"), None);
     }
 
+    /// Split arguments only at top-level commas.
     #[test]
     fn splits_nested_macro_arguments() {
         assert_eq!(
@@ -1235,6 +1241,7 @@ mod tests {
         );
     }
 
+    /// Match balanced delimiters and reject an unmatched closer.
     #[test]
     fn matches_balanced_macro_delimiters() {
         assert_eq!(
@@ -1244,7 +1251,7 @@ mod tests {
         assert_eq!(matching_delimiter(")", 0, b'(', b')'), None);
     }
 
-    /// Replacements preserve source formatting and separators.
+    /// Preserve source spacing and separators in replacements.
     #[test]
     fn preserves_replacement_source_formatting() {
         let invocation =
@@ -1255,12 +1262,14 @@ mod tests {
         );
     }
 
+    /// Reject replacements when no redundant field exists.
     #[test]
     fn rejects_replacement_without_redundant_fields() {
         let no_redundant = invocation_fixture("info!(target: \"app\", value)");
         assert_eq!(no_redundant.redundant_field_assignment_replacement(), None);
     }
 
+    /// Reject replacements whose parsed arguments do not match the source.
     #[test]
     fn rejects_mismatched_replacement_arguments() {
         let mut mismatched = invocation_fixture("info!(value = value)");
@@ -1268,6 +1277,7 @@ mod tests {
         assert_eq!(mismatched.redundant_field_assignment_replacement(), None);
     }
 
+    /// Reject replacements for malformed macro source.
     #[test]
     fn rejects_malformed_replacement_source() {
         let malformed = TracingMacroInvocation {
@@ -1279,6 +1289,7 @@ mod tests {
         assert_eq!(malformed.redundant_field_assignment_replacement(), None);
     }
 
+    /// Extract macro contents and reject unsupported delimiters.
     #[test]
     fn extracts_macro_contents() {
         assert_eq!(
@@ -1288,6 +1299,7 @@ mod tests {
         assert_eq!(macro_contents("info!<value>"), None);
     }
 
+    /// Find source ranges for redundant field assignments.
     #[test]
     fn finds_redundant_field_ranges() {
         assert_eq!(
@@ -1296,11 +1308,13 @@ mod tests {
         );
     }
 
+    /// Reject ranges when no redundant assignment exists.
     #[test]
     fn rejects_nonredundant_field_ranges() {
         assert_eq!(redundant_field_ranges("value", &["plain"]), None);
     }
 
+    /// Apply a valid source replacement around the macro delimiters.
     #[test]
     fn applies_valid_field_replacements() {
         assert_eq!(
@@ -1309,6 +1323,7 @@ mod tests {
         );
     }
 
+    /// Reject replacements whose ranges exceed the source.
     #[test]
     fn rejects_out_of_bounds_field_replacements() {
         assert_eq!(
@@ -1317,6 +1332,7 @@ mod tests {
         );
     }
 
+    /// Compare parsed arguments with source arguments exactly.
     #[test]
     fn compares_exact_argument_splits() {
         assert!(is_exact_argument_split(
@@ -1326,7 +1342,7 @@ mod tests {
         assert!(!is_exact_argument_split(&["value"], &["other".to_owned()]));
     }
 
-    /// Field metadata excludes structured values from interpolated message results.
+    /// Resolve interpolated values while excluding structured fields.
     #[test]
     fn resolves_unstructured_message_values() {
         let invocation = invocation_fixture(
@@ -1347,6 +1363,7 @@ mod tests {
         );
     }
 
+    /// Identify redundant structured field assignments.
     #[test]
     fn resolves_redundant_field_assignments() {
         let invocation = invocation_fixture(
@@ -1362,6 +1379,7 @@ mod tests {
         );
     }
 
+    /// Find fields assigned from format and string conversion calls.
     #[test]
     fn finds_formatted_and_stringified_fields() {
         let invocation = invocation_fixture(
@@ -1377,6 +1395,7 @@ mod tests {
         );
     }
 
+    /// Exclude message values when the macro is not an event macro.
     #[test]
     fn excludes_non_event_message_values() {
         let mut non_event = invocation_fixture("span!(request_id = request_id)");
@@ -1391,7 +1410,7 @@ mod tests {
         );
     }
 
-    /// Format values retain named, positional, escaped, and malformed boundaries.
+    /// Resolve named, positional, escaped, and malformed format values.
     #[test]
     fn formats_named_and_positional_values() {
         assert_eq!(
@@ -1413,11 +1432,13 @@ mod tests {
         );
     }
 
+    /// Return no values when format arguments are unavailable.
     #[test]
     fn rejects_missing_format_values() {
         assert_eq!(format_values("{9} {}", &[]), Vec::<String>::new());
     }
 
+    /// Resolve implicit, indexed, and named format arguments.
     #[test]
     fn resolves_implicit_indexed_and_named_arguments() {
         let positional = ["first".to_owned(), "second".to_owned()];
@@ -1437,6 +1458,7 @@ mod tests {
         );
     }
 
+    /// Resolve captured arguments and reject out-of-range positions.
     #[test]
     fn resolves_captured_and_rejects_out_of_range_arguments() {
         let positional = ["first".to_owned(), "second".to_owned()];
@@ -1452,12 +1474,13 @@ mod tests {
         );
     }
 
-    /// Source compaction retains normalized punctuation spelling.
+    /// Remove whitespace without changing field punctuation.
     #[test]
     fn compacts_field_syntax() {
         assert_eq!(compact_source(" user . id "), "user.id");
     }
 
+    /// Strip percent, question-mark, and absent field sigils.
     #[test]
     fn strips_field_sigils() {
         assert_eq!(strip_field_sigil(" %user "), ("%", "user"));
@@ -1465,6 +1488,7 @@ mod tests {
         assert_eq!(strip_field_sigil(" user "), ("", "user"));
     }
 
+    /// Accept ASCII field identifiers, raw names, and paths.
     #[test]
     fn accepts_ascii_field_paths() {
         assert!(is_field_path("_"));
@@ -1472,11 +1496,13 @@ mod tests {
         assert!(is_field_path("user.id"));
     }
 
+    /// Accept alphabetic Unicode field identifiers.
     #[test]
     fn accepts_unicode_field_paths() {
         assert!(is_field_path("élève"));
     }
 
+    /// Reject empty and malformed field paths.
     #[test]
     fn rejects_empty_and_malformed_field_paths() {
         assert!(!is_field_path(""));
@@ -1484,6 +1510,7 @@ mod tests {
         assert!(!is_field_path("user..id"));
     }
 
+    /// Reject invalid raw identifiers and punctuation in field paths.
     #[test]
     fn rejects_invalid_raw_and_punctuation_field_paths() {
         assert!(!is_field_path("r#"));
@@ -1491,6 +1518,7 @@ mod tests {
     }
 
     /// Macro configuration predicates recognize supported keys and reject prefixes.
+    /// Recognize supported tracing configuration arguments.
     #[test]
     fn recognizes_macro_configuration() {
         assert!(is_macro_configuration(" target: \"app\""));
@@ -1498,43 +1526,50 @@ mod tests {
         assert!(is_macro_configuration("name: \"request\""));
     }
 
+    /// Reject configuration arguments with an unsupported prefix.
     #[test]
     fn rejects_nonconfiguration_field_prefixes() {
         assert!(!is_macro_configuration("targeting: value"));
     }
 
+    /// Recognize an explicit tracing level argument.
     #[test]
     fn recognizes_level_arguments() {
         assert!(is_level_argument(" Level :: INFO "));
     }
 
+    /// Reject values that do not name a tracing level.
     #[test]
     fn rejects_non_level_arguments() {
         assert!(!is_level_argument("INFO"));
     }
 
+    /// Recognize standard format invocation spellings.
     #[test]
     fn recognizes_format_invocations() {
         assert!(is_format_invocation(" std :: format! ( \"{}\", value ) "));
         assert!(is_format_invocation("::std::format!(\"{}\", value)"));
     }
 
+    /// Reject an unterminated format invocation.
     #[test]
     fn rejects_malformed_format_invocations() {
         assert!(!is_format_invocation("format!(\"{}\", value"));
     }
 
+    /// Recognize a direct field string conversion call.
     #[test]
     fn recognizes_to_string_calls() {
         assert!(is_to_string_call("user.name.to_string()"));
     }
 
+    /// Reject a string conversion followed by another method.
     #[test]
     fn rejects_chained_to_string_calls() {
         assert!(!is_to_string_call("user.name.to_string().trim()"));
     }
 
-    /// Comment scanners skip line and nested block comments.
+    /// Skip line comments and nested block comments.
     #[test]
     fn skips_line_and_nested_comments() {
         let line_comment = "// comment\nnext";
@@ -1553,6 +1588,7 @@ mod tests {
         );
     }
 
+    /// Skip cooked strings and byte strings.
     #[test]
     fn skips_cooked_and_byte_string_literals() {
         assert_eq!(
@@ -1565,6 +1601,7 @@ mod tests {
         );
     }
 
+    /// Skip C strings and character literals.
     #[test]
     fn skips_cstring_and_char_literals() {
         assert_eq!(
@@ -1575,6 +1612,7 @@ mod tests {
         assert_eq!(skipped_token_end("b'x'", 0), Some("b'x'".len()));
     }
 
+    /// Skip raw strings with hash delimiters.
     #[test]
     fn skips_raw_string_literals() {
         assert_eq!(
@@ -1583,6 +1621,7 @@ mod tests {
         );
     }
 
+    /// Skip byte raw and C raw strings.
     #[test]
     fn skips_prefixed_raw_string_literals() {
         assert_eq!(
@@ -1595,12 +1634,14 @@ mod tests {
         );
     }
 
+    /// Reject invalid literal prefixes and oversized character literals.
     #[test]
     fn rejects_invalid_literal_prefixes() {
         assert_eq!(skipped_token_end("'too-long'", 0), None);
         assert_eq!(skipped_token_end("rnot-a-string", 0), None);
     }
 
+    /// Consume an unterminated raw literal through the available source.
     #[test]
     fn extends_unterminated_raw_literals() {
         assert_eq!(
@@ -1609,7 +1650,7 @@ mod tests {
         );
     }
 
-    /// Cooked literal scanners retain escaped and unterminated boundaries.
+    /// Preserve escaped and unterminated cooked literal boundaries.
     #[test]
     fn covers_cooked_literal_boundaries() {
         assert_eq!(
@@ -1622,12 +1663,14 @@ mod tests {
         );
     }
 
+    /// Accept short character literals and reject long ones.
     #[test]
     fn covers_char_literal_boundaries() {
         assert_eq!(char_literal_end(b"'x'", 0), Some(3));
         assert_eq!(char_literal_end(b"'too-long'", 0), None);
     }
 
+    /// Match exact raw-string closing hash sequences.
     #[test]
     fn matches_raw_string_closing_hashes() {
         assert!(is_raw_string_close(b"\"##", 0, b"##"));
@@ -1635,7 +1678,7 @@ mod tests {
         assert!(!is_raw_string_close(b"x", 0, b""));
     }
 
-    /// Top-level scanning finds an assignment outside nested syntax.
+    /// Find an assignment outside nested syntax.
     #[test]
     fn finds_top_level_assignment() {
         assert_eq!(
@@ -1644,11 +1687,13 @@ mod tests {
         );
     }
 
+    /// Ignore assignment operators inside nested groups.
     #[test]
     fn ignores_nested_assignment_operators() {
         assert_eq!(top_level_byte("call(a = 1)", b'='), None);
     }
 
+    /// Split an assignment into its original source sides.
     #[test]
     fn splits_assignment_sides() {
         assert_eq!(
@@ -1657,17 +1702,20 @@ mod tests {
         );
     }
 
+    /// Reject an arrow as an assignment operator.
     #[test]
     fn rejects_arrow_as_assignment() {
         assert_eq!(split_assignment("value => other"), None);
     }
 
+    /// Reject a field without an assignment operator.
     #[test]
     fn rejects_missing_assignment() {
         assert_eq!(split_assignment("plain"), None);
     }
 
     /// String extraction accepts cooked literals.
+    /// Extract contents from a cooked string literal.
     #[test]
     fn extracts_cooked_string_contents() {
         assert_eq!(
@@ -1676,6 +1724,7 @@ mod tests {
         );
     }
 
+    /// Extract contents from a raw string literal.
     #[test]
     fn extracts_raw_string_contents() {
         assert_eq!(
@@ -1684,6 +1733,7 @@ mod tests {
         );
     }
 
+    /// Reject byte strings, mismatched hashes, and non-literals.
     #[test]
     fn rejects_non_string_contents() {
         assert_eq!(super::rust_string_contents("b\"bytes\""), None);
