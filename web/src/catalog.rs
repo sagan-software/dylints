@@ -385,6 +385,42 @@ pub(crate) mod tests {
         insta::assert_snapshot!("fixture_catalog", html);
     }
 
+    /// An empty registry renders every discovered lint with no registered level.
+    #[test]
+    fn fixture_catalog_empty_registration_snapshot() {
+        // Read the same valid fixture through the production discovery path without registrations.
+        let root = fixture_repository();
+        let lints = read_lints(root.path(), &RegisteredLints::default())
+            .expect("fixture lints should load without registrations");
+
+        // Confirm absent registrations retain `none` instead of receiving an invented default.
+        let summary: Vec<_> = lints
+            .iter()
+            .map(|lint| (lint.name.as_str(), lint.level, lint.applicability))
+            .collect();
+        assert_eq!(
+            summary,
+            [
+                (
+                    "fixable_style",
+                    LintLevel::None,
+                    Applicability::MachineApplicable
+                ),
+                (
+                    "serde_unregistered",
+                    LintLevel::None,
+                    Applicability::NotMachineApplicable
+                ),
+            ]
+        );
+
+        // Snapshot the complete valid page with the empty registration state.
+        let html = SiteTemplate::new(&lints)
+            .render()
+            .expect("Askama template should render");
+        insta::assert_snapshot!("fixture_catalog_empty_registration", html);
+    }
+
     /// A registered lint without a README stops generation.
     #[test]
     fn undocumented_registered_lint_is_rejected() {
