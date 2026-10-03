@@ -90,6 +90,7 @@ The line threshold uses canonical executable lines from production and test
 targets, including `cfg(test)` modules. Reports exclude examples, UI fixtures,
 the SQLx auxiliary fixture at `lints/crates/sqlx/fixture`, and dependency
 sources. Region totals keep each compiled source mapping.
+The scoped-report filter supports `jq` 1.6, 1.7.1, and 1.8.2.
 These metrics do not measure branch coverage. CI requires at least 97% canonical
 line coverage. The audit target remains 99–100%; the reports record remaining gaps.
 
@@ -168,6 +169,8 @@ from `main`.
 and tests for pushes to `main`, `pull_request` events, and manual runs. It also
 builds the catalog, measures coverage, and runs the bundled lints against this
 repository. The self-lint job fails when a bundled lint reports a finding.
+CI starts the runner through Cargo so rustup supplies `RUSTUP_TOOLCHAIN` to
+`dylint-link`.
 
 ## License notes
 
