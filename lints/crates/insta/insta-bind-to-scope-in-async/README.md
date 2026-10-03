@@ -3,7 +3,8 @@
 ## What it does
 
 Checks for `insta::Settings::bind_to_scope` calls inside an async function,
-async block, or async closure.
+async block, or async closure. It warns when the returned guard may remain live
+while the coroutine returns `Poll::Pending` at a suspension point.
 
 ## Why is this bad?
 
@@ -15,9 +16,17 @@ the settings, and snapshots in other tasks can pick them up.
 
 ## Known problems
 
-The lint warns even when no `.await` occurs while the guard is alive. It does
-not check a call inside a plain closure within async code, or inside a
-synchronous function that async code calls.
+Calls inside plain closures nested in async code and calls inside synchronous
+functions called by async code are not analyzed.
+
+Mutable collection tracking is conservative. After `drop(guards.pop())`, the
+lint can still warn at a later `.await` because MIR does not identify which
+element the collection removed.
+
+Opaque helper calls can also produce false positives when their return type
+mentions the guard but stores no guard, such as `PhantomData<Guard>`. The lint
+preserves aggregate field paths through a helper only when its MIR proves that
+the helper returns its sole argument unchanged.
 
 ## Example
 

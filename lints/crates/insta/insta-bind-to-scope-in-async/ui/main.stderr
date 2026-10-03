@@ -1,11 +1,123 @@
 warning: this thread-local guard can cross async scheduling points
-  --> $DIR/main.rs:2:27
+  --> $DIR/main.rs:34:25
    |
-LL |     let _guard = settings.bind_to_scope();
-   |                           ^^^^^^^^^^^^^
+LL |     let live = settings.bind_to_scope();
+   |                         ^^^^^^^^^^^^^
    |
    = help: use `Settings::bind_async`
    = note: `#[warn(insta_bind_to_scope_in_async)]` on by default
 
-warning: 1 warning emitted
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:40:26
+   |
+LL |     let guard = settings.bind_to_scope();
+   |                          ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:48:26
+   |
+LL |     let guard = settings.bind_to_scope();
+   |                          ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:56:26
+   |
+LL |     let guard = settings.bind_to_scope();
+   |                          ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:63:26
+   |
+LL |     let guard = settings.bind_to_scope();
+   |                          ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:70:35
+   |
+LL |     let boxed = Box::new(settings.bind_to_scope());
+   |                                   ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:77:26
+   |
+LL |     guards.push(settings.bind_to_scope());
+   |                          ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:84:26
+   |
+LL |     guards.push(settings.bind_to_scope());
+   |                          ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:93:26
+   |
+LL |     guards.push(settings.bind_to_scope());
+   |                          ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:115:39
+   |
+LL |     let wrapped = wrap_guard(settings.bind_to_scope());
+   |                                       ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:121:54
+   |
+LL |     let guards = (settings.bind_to_scope(), settings.bind_to_scope());
+   |                                                      ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:133:28
+   |
+LL |     let guards = (settings.bind_to_scope(),);
+   |                            ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:140:63
+   |
+LL |     let guards = identity((settings.bind_to_scope(), settings.bind_to_scope()));
+   |                                                               ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:147:52
+   |
+LL |     let old = ((settings.bind_to_scope(), settings.bind_to_scope()),);
+   |                                                    ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/main.rs:155:26
+   |
+LL |     let guard = settings.bind_to_scope();
+   |                          ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+
+warning: 15 warnings emitted
 
