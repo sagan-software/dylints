@@ -63,4 +63,42 @@ struct LocalLookalike<'a> {
     body: local::Cow<'a, str>,
 }
 
+macro_rules! derived_comment {
+    ($name:ident) => {
+        #[derive(Default, Deserialize)]
+        struct $name<'a> {
+            #[serde(borrow)]
+            body: Cow<'a, str>,
+        }
+    };
+}
+
+derived_comment!(MacroComment);
+
+macro_rules! inner_default {
+    ($name:ident) => {
+        impl Default for $name {
+            fn default() -> Self {
+                Self
+            }
+        }
+    };
+}
+
+macro_rules! outer_default {
+    ($name:ident) => {
+        inner_default!($name);
+    };
+}
+
+struct NestedDefault;
+
+outer_default!(NestedDefault);
+
+#[derive(Deserialize)]
+struct NonCowInputs<'a> {
+    borrowed: &'a str,
+    number: u32,
+}
+
 fn main() {}

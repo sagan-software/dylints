@@ -43,6 +43,30 @@ where
     Deserializer::deserialize_any(deserializer, AnyVisitor)
 }
 
+fn closure_call<'de, D>(deserializer: D) -> Result<(), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let call = |value: D, visitor: AnyVisitor| Ok::<_, D::Error>((value, visitor));
+    let _ = call(deserializer, AnyVisitor);
+    Ok(())
+}
+
+fn local_call<'de, D>(_: D, _: AnyVisitor) -> Result<(), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(())
+}
+
+fn function_pointer_call<'de, D>(deserializer: D) -> Result<(), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let _ = local_call(deserializer, AnyVisitor);
+    Ok(())
+}
+
 struct Wrapper<D>(D);
 
 impl<'de, D: Deserializer<'de>> Deserializer<'de> for Wrapper<D> {

@@ -8,5 +8,17 @@ LL | |     bad: String,
    |
    = note: `#[warn(schemars_redundant_serde_default)]` on by default
 
-warning: 1 warning emitted
+warning: this Schemars attribute duplicates Serde
+  --> $DIR/main.rs:20:13
+   |
+LL |             #[schemars(default)]
+   |             ^^^^^^^^^^^^^^^^^^^^
+...
+LL | duplicate_default!(MacroExample);
+   | -------------------------------- in this macro invocation
+   |
+   = help: remove the redundant Schemars attribute
+   = note: this warning originates in the macro `duplicate_default` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: 2 warnings emitted
 

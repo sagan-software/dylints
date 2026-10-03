@@ -39,4 +39,8 @@ pub struct UnrawFieldFormat {
     r#kind: String,
 }
 
+#[derive(ThisError, Debug)]
+#[error(transparent)]
+pub struct TransparentRaw(std::io::Error);
+
 fn main() {}

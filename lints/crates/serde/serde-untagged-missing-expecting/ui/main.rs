@@ -24,6 +24,12 @@ enum DescribedValue {
     Id(u64),
 }
 
+#[derive(Deserialize)]
+enum TaggedValue {
+    Name(String),
+    Id(u64),
+}
+
 #[derive(serde::Serialize)]
 #[serde(untagged)]
 enum SerializeOnly {

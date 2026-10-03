@@ -12,4 +12,17 @@ struct Example {
     good: String,
 }
 
+macro_rules! duplicate_default {
+    ($name:ident) => {
+        #[derive(JsonSchema, Serialize)]
+        struct $name {
+            #[serde(default)]
+            #[schemars(default)]
+            field: String,
+        }
+    };
+}
+
+duplicate_default!(MacroExample);
+
 fn main() {}

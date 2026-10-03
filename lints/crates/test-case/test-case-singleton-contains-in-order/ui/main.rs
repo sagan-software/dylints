@@ -14,4 +14,9 @@ fn direct(values: Vec<u8>) -> Vec<u8> {
     values
 }
 
+#[test_case(Some(1_u8) => matches Some(_) ; "simple match")]
+fn simple(value: Option<u8>) -> Option<u8> {
+    value
+}
+
 fn main() {}

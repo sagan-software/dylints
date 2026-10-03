@@ -1,5 +1,5 @@
 warning: this `Settings` value discards inherited configuration
-  --> $DIR/main.rs:8:13
+  --> $DIR/main.rs:12:13
    |
 LL |     let _ = insta::Settings::new();
    |             ^^^^^^^^^^^^^^^^^---^^
@@ -9,7 +9,7 @@ LL |     let _ = insta::Settings::new();
    = note: `#[warn(insta_settings_new)]` on by default
 
 warning: this `Settings` value discards inherited configuration
-  --> $DIR/main.rs:9:13
+  --> $DIR/main.rs:13:13
    |
 LL |     let _ = Settings::default();
    |             ^^^^^^^^^^-------^^
@@ -17,7 +17,7 @@ LL |     let _ = Settings::default();
    |                       help: use `Settings::clone_current`: `clone_current`
 
 warning: this `Settings` value discards inherited configuration
-  --> $DIR/main.rs:10:13
+  --> $DIR/main.rs:14:13
    |
 LL |     let _ = Alias::new();
    |             ^^^^^^^---^^
@@ -25,7 +25,7 @@ LL |     let _ = Alias::new();
    |                    help: use `Settings::clone_current`: `clone_current`
 
 warning: this `Settings` value discards inherited configuration
-  --> $DIR/main.rs:11:23
+  --> $DIR/main.rs:15:23
    |
 LL |     let _: Settings = Default::default();
    |                       ^^^^^^^^^^^^^^^^^^
@@ -33,7 +33,7 @@ LL |     let _: Settings = Default::default();
    = help: use `Settings::clone_current()`
 
 warning: this `Settings` value discards inherited configuration
-  --> $DIR/main.rs:12:13
+  --> $DIR/main.rs:16:13
    |
 LL |     let _ = <Settings as Default>::default();
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

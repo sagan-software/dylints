@@ -121,6 +121,22 @@ pub struct TestRow;
 
 impl Row for TestRow {}
 
+/// A row whose `column` method comes from a trait implementation.
+#[derive(Clone, Copy, Debug)]
+pub struct OverriddenRow;
+
+impl Row for OverriddenRow {
+    fn column<I>(&self, _index: I) {}
+}
+
+/// A trait used to exercise methods on a non-ADT owner.
+pub trait Dynamic {}
+
+impl dyn Dynamic + '_ {
+    /// Index a column on a dynamic owner.
+    pub fn column(&self, _index: usize) {}
+}
+
 /// A pooled connection.
 #[derive(Clone, Copy, Debug)]
 pub struct PoolConnection;

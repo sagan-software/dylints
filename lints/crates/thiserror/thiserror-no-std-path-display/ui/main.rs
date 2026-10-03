@@ -42,4 +42,13 @@ pub struct NamedFile {
     name: String,
 }
 
+#[derive(Error, Debug)]
+#[error("duplicate")]
+struct DuplicateName {
+    marker: (),
+}
+
+#[allow(dead_code, non_upper_case_globals)]
+const DuplicateName: u8 = 0;
+
 fn main() {}

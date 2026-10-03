@@ -63,5 +63,17 @@ LL ~     r#type: String,
 LL ~     user_id: String,
    |
 
-warning: 5 warnings emitted
+warning: all fields use one Serde rename convention
+  --> $DIR/main.rs:89:13
+   |
+LL |             #[serde(rename = "firstName")]
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+LL | renamed_struct!(MacroGenerated);
+   | ------------------------------- in this macro invocation
+   |
+   = help: add `#[serde(rename_all(serialize = "camelCase"))]` to the struct and remove its field-level renames
+   = note: this warning originates in the macro `renamed_struct` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: 6 warnings emitted
 

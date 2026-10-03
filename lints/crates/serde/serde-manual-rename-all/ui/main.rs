@@ -82,4 +82,18 @@ struct OneField {
     user_id: String,
 }
 
+macro_rules! renamed_struct {
+    ($name:ident) => {
+        #[derive(Serialize)]
+        struct $name {
+            #[serde(rename = "firstName")]
+            first_name: String,
+            #[serde(rename = "lastName")]
+            last_name: String,
+        }
+    };
+}
+
+renamed_struct!(MacroGenerated);
+
 fn main() {}

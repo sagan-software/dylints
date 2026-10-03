@@ -15,5 +15,13 @@ LL |     TestRow.column("name");
    |
    = help: use `try_column` and handle or propagate the error
 
-warning: 2 warnings emitted
+warning: SQLx `column` panics for an invalid index or name
+  --> $DIR/main.rs:14:19
+   |
+LL |     OverriddenRow.column(0);
+   |                   ^^^^^^
+   |
+   = help: use `try_column` and handle or propagate the error
+
+warning: 3 warnings emitted
 

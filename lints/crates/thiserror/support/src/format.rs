@@ -347,6 +347,18 @@ mod tests {
         assert!(ErrorAttr::parse("not an attribute").is_none());
     }
 
+    /// Reject multiple outer attributes because parsing requires exactly one.
+    #[test]
+    fn rejects_multiple_outer_attributes() {
+        assert!(ErrorAttr::parse("#[error(\"x\")] #[error(\"y\")]").is_none());
+    }
+
+    /// Reject a non-error list attribute after parsing its path.
+    #[test]
+    fn rejects_other_list_attribute() {
+        assert!(ErrorAttr::parse("#[other(\"x\")]").is_none());
+    }
+
     #[test]
     fn splits_arguments() {
         let text = "#[error(\"{} {}\", .0, x = a == b, source,)]";

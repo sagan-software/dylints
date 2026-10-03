@@ -25,6 +25,8 @@ enum Error {
     Constant { count: u8 },
     #[error("{}", LIMIT)]
     OnlyConstant { count: u8 },
+    #[error(transparent)]
+    Transparent(std::io::Error),
 }
 
 mod glob {
