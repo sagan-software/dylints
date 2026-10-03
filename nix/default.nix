@@ -553,16 +553,18 @@ let
     runtimeInputs = dylintRuntimeInputs;
     text = withRepoSetup ''
       cd "$PRIVATE_LINTS_ROOT"
-      # Lint library, binary, and test targets; UI example targets are lint fixtures.
-      exec cargo run --quiet --bin sagan-lints -- \
-        --repo . \
-        --heartbeat-seconds 0 \
-        --use-repo-clippy-config \
-        --no-all-targets \
-        --extra-cargo-arg=--lib \
-        --extra-cargo-arg=--bins \
-        --extra-cargo-arg=--tests \
-        "$@"
+      run_self_lints() {
+        cargo run --quiet --bin sagan-lints -- \
+          --repo . \
+          --heartbeat-seconds 0 \
+          --use-repo-clippy-config \
+          --no-all-targets \
+          "$@"
+      }
+      # Cargo's default scope selects only the libraries and binaries that exist.
+      run_self_lints "$@"
+      # Check unit and integration tests separately; UI examples are lint fixtures.
+      run_self_lints --extra-cargo-arg=--tests "$@"
     '';
   };
 
