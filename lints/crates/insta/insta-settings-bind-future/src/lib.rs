@@ -18,7 +18,7 @@ extern crate rustc_span;
 #[cfg(test)]
 use insta as _;
 
-use insta_support::{is_explicit_async_closure, settings_method_call};
+use insta_support::{call_returns_future, settings_method_call};
 use rustc_errors::{Applicability, DiagDecorator};
 use rustc_hir::{
     CaptureBy, ClosureKind, CoroutineDesugaring, CoroutineKind, CoroutineSource, Expr, ExprKind,
@@ -35,30 +35,31 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for InstaSettingsBindFuture {
-    /// Check explicit futures returned from semantically resolved `Settings::bind` calls.
+    /// Check futures returned from semantically resolved `Settings::bind` calls.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        // Resolve the exact bind method and require its sole closure argument.
+        // Resolve the exact bind method and require its sole callable argument.
         let Some(call) = settings_method_call(cx, expr, "bind") else {
             return;
         };
-        let [closure] = call.arguments else {
+        let [callable] = call.arguments else {
             return;
         };
-        // Report only closures whose result is an explicit future.
-        if !is_explicit_async_closure(cx, closure) {
+        // The method returns the callable result, which may implement Future without async syntax.
+        if !call_returns_future(cx, expr) {
             return;
         }
 
-        let closure_prefix = closure_prefix_span(cx, closure);
+        // Keep the automatic edit limited to the previously reviewed direct async-block shape.
+        let closure_prefix = closure_prefix_span(cx, callable);
 
         cx.emit_span_lint(
             INSTA_SETTINGS_BIND_FUTURE,
             call.method_span,
             DiagDecorator(|diagnostic| {
-                let help = "pass the async block directly to `Settings::bind_async` instead";
+                let help = "pass the future directly to `Settings::bind_async` instead";
                 let diagnostic = diagnostic
                     .primary_message("these settings reset before the returned future is polled");
-                // Rename the method and drop the closure head so the async block becomes the argument.
+                // Rename the method and drop the closure head only when that preserves the call semantics.
                 if let Some(closure_prefix) = closure_prefix {
                     let _configured_suggestion = diagnostic.multipart_suggestion(
                         help,

@@ -11,12 +11,16 @@
 
 extern crate rustc_driver as _;
 extern crate rustc_hir;
+extern crate rustc_infer;
 extern crate rustc_lint;
 extern crate rustc_span;
+extern crate rustc_trait_selection;
 
 use rustc_hir::{ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, def::Res};
+use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::{ExpnData, ExpnKind, MacroKind, Span, SyntaxContext, def_id::DefId};
+use rustc_trait_selection::infer::InferCtxtExt as _;
 
 use dylint_linting as _;
 
@@ -478,6 +482,35 @@ pub fn tracing_function_arguments<'hir>(
         .iter()
         .any(|expected_path| is_tracing_def(cx, def_id, expected_path))
         .then_some(arguments)
+}
+
+/// Return whether a resolved tracing scope call returns a value implementing `Future`.
+///
+/// `Span::in_scope` and the tracing subscriber scope functions return their
+/// callable's output type directly. The inferred call result covers closures,
+/// function items, and stored callables without matching their source syntax.
+#[must_use]
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, expr| {
+///     let _ = tracing_support::call_returns_future(cx, expr);
+/// };
+/// ```
+pub fn call_returns_future(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    // Resolve the standard Future trait before asking the type solver about this result.
+    let Some(future_trait) = cx.tcx.lang_items().future_trait() else {
+        return false;
+    };
+    // Tracing's synchronous scope functions return the callable output unchanged.
+    let output = cx.typeck_results().expr_ty(expr);
+    cx.tcx
+        .infer_ctxt()
+        .build(cx.typing_mode())
+        .type_implements_trait(future_trait, [output], cx.param_env)
+        .must_apply_modulo_regions()
 }
 
 /// Return whether an expression directly calls one exact tracing function.

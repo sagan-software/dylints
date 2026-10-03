@@ -11,9 +11,11 @@
 extern crate rustc_ast;
 extern crate rustc_driver as _;
 extern crate rustc_hir;
+extern crate rustc_infer;
 extern crate rustc_lint;
 extern crate rustc_middle;
 extern crate rustc_span;
+extern crate rustc_trait_selection;
 
 use dylint_linting as _;
 use rustc_ast::LitKind;
@@ -21,9 +23,11 @@ use rustc_hir::{
     ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, Node, QPath,
     def::{DefKind, Res},
 };
+use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_lint::{LateContext, LintContext};
 use rustc_middle::ty::Ty;
 use rustc_span::{ExpnData, ExpnKind, MacroKind, Span, SyntaxContext, def_id::DefId, sym};
+use rustc_trait_selection::infer::InferCtxtExt as _;
 
 /// Public Insta snapshot assertion macros.
 const SNAPSHOT_MACROS: &[&str] = &[
@@ -410,6 +414,35 @@ pub fn settings_method_call<'hir>(
         method_span: segment.ident.span,
         arguments,
     })
+}
+
+/// Return whether a resolved call returns a value that implements `Future`.
+///
+/// Insta settings methods such as `Settings::bind` return their callable's
+/// output type directly. Inspecting the inferred call result covers closures,
+/// function items, and local callable bindings without relying on their syntax.
+#[must_use]
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _call = |cx, expr| {
+///     let _ = insta_support::call_returns_future(cx, expr);
+/// };
+/// ```
+pub fn call_returns_future(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    // Resolve the standard Future trait before asking the type solver about this result.
+    let Some(future_trait) = cx.tcx.lang_items().future_trait() else {
+        return false;
+    };
+    // `Settings::bind` returns the closure output unchanged, so the call type is that output.
+    let output = cx.typeck_results().expr_ty(expr);
+    cx.tcx
+        .infer_ctxt()
+        .build(cx.typing_mode())
+        .type_implements_trait(future_trait, [output], cx.param_env)
+        .must_apply_modulo_regions()
 }
 
 /// Match a Settings setter whose only argument is an empty string.

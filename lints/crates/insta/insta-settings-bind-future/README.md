@@ -2,26 +2,25 @@
 
 ## What it does
 
-Checks for `insta::Settings::bind` calls whose closure returns an async block,
-or whose argument is an async closure, such as
-`settings.bind(|| async { ... })`.
+Checks for `insta::Settings::bind` calls whose callable returns a `Future`,
+including futures returned by function calls or stored closures.
 
 ## Why is this bad?
 
-`Settings::bind` applies the settings only while its closure runs. The closure
-only creates the future, and the call removes the settings before the future runs.
-Snapshots inside the future do not see the settings.
+`Settings::bind` applies the settings only while its callable runs. If the
+caller polls the returned future, that happens after the scope ends, so snapshots
+inside it do not see the settings.
 
 ## Known problems
 
-The lint does not check a closure that returns a future from a function call,
-such as `settings.bind(|| work())`.
-
-The machine-applicable fix renames `bind` to `bind_async` and removes the
-closure head, so `bind(|| async { .. })` becomes `bind_async(async { .. })`. The
-lint offers it only when the parameterless closure returns the async block
-directly. A `move` closure also needs an `async move` block. Async closures
-and other `move` closures get help without a fix.
+The lint detects any callable whose result implements `Future`, but its
+machine-applicable fix remains limited to a parameterless synchronous closure
+that returns a direct async block. That fix renames `bind` to `bind_async` and
+removes the closure head. A `move` closure needs an `async move` block to
+preserve captures. Async closures, function calls, stored closures, and other
+callables receive help without a fix. For those cases, review captures and side
+effects because constructing the future directly can change when callable code
+runs.
 
 ## Example
 

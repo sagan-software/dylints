@@ -2,21 +2,20 @@
 
 ## What it does
 
-Checks for an async closure, or a closure whose body is an async block, passed
-directly to `Span::in_scope`, `tracing::subscriber::with_default`, or
-`tracing::dispatcher::with_default`.
+Checks whether `Span::in_scope`, `tracing::subscriber::with_default`, or
+`tracing::dispatcher::with_default` returns a `Future`, regardless of whether
+its callable argument is a closure, function item, or stored value.
 
 ## Why is this bad?
 
-These functions set the span or subscriber only while the closure runs. The
-closure only creates the future and returns it. Another executor polls the future
-after the scope ends, so its events miss the span or subscriber.
+These functions set the span or subscriber only while the callable runs. If the
+caller polls the returned future, that happens after the scope ends, so its
+events miss the span or subscriber.
 
 ## Known problems
 
-The lint checks only a closure written directly as the argument. A closure
-stored in a variable first, or a closure that calls a function returning a
-future, does not trigger the lint.
+The lint flags any returned `Future`, but cannot determine whether or when the
+caller polls it or whether that context is intended for its events.
 
 ## Example
 

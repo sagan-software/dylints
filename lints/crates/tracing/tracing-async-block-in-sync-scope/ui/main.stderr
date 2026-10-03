@@ -1,5 +1,5 @@
 warning: this span scope ends before the returned future is polled
-  --> $DIR/main.rs:9:23
+  --> $DIR/main.rs:47:23
    |
 LL |     let future = span.in_scope(|| async { work().await });
    |                       ^^^^^^^^
@@ -8,7 +8,7 @@ LL |     let future = span.in_scope(|| async { work().await });
    = note: `#[warn(tracing_async_block_in_sync_scope)]` on by default
 
 warning: this subscriber scope ends before the returned future is polled
-  --> $DIR/main.rs:14:18
+  --> $DIR/main.rs:52:18
    |
 LL |       let future = subscriber::with_default(subscriber::NoSubscriber::default(), || async {
    |  __________________^
@@ -18,5 +18,61 @@ LL | |     });
    |
    = help: attach the subscriber with `WithSubscriber::with_subscriber` instead
 
-warning: 2 warnings emitted
+warning: this span scope ends before the returned future is polled
+  --> $DIR/main.rs:61:23
+   |
+LL |     let future = span.in_scope(|| make_future());
+   |                       ^^^^^^^^
+   |
+   = help: attach the span with `Future::instrument` instead
+
+warning: this span scope ends before the returned future is polled
+  --> $DIR/main.rs:69:23
+   |
+LL |     let future = span.in_scope(future_factory);
+   |                       ^^^^^^^^
+   |
+   = help: attach the span with `Future::instrument` instead
+
+warning: this span scope ends before the returned future is polled
+  --> $DIR/main.rs:76:10
+   |
+LL |     span.in_scope(make_ready_future).await;
+   |          ^^^^^^^^
+   |
+   = help: attach the span with `Future::instrument` instead
+
+warning: this subscriber scope ends before the returned future is polled
+  --> $DIR/main.rs:81:5
+   |
+LL |     subscriber::with_default(subscriber::NoSubscriber::default(), make_future).await;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: attach the subscriber with `WithSubscriber::with_subscriber` instead
+
+warning: this subscriber scope ends before the returned future is polled
+  --> $DIR/main.rs:87:5
+   |
+LL |     tracing::dispatcher::with_default(&dispatch, make_boxed_future).await;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: attach the subscriber with `WithSubscriber::with_subscriber` instead
+
+warning: this span scope ends before the returned future is polled
+  --> $DIR/main.rs:92:10
+   |
+LL |     span.in_scope(|| future).await;
+   |          ^^^^^^^^
+   |
+   = help: attach the span with `Future::instrument` instead
+
+warning: this span scope ends before the returned future is polled
+  --> $DIR/main.rs:98:10
+   |
+LL |     span.in_scope(make_custom_future).await;
+   |          ^^^^^^^^
+   |
+   = help: attach the span with `Future::instrument` instead
+
+warning: 9 warnings emitted
 

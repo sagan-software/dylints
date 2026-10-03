@@ -22,7 +22,7 @@ use rustc_errors::DiagDecorator;
 use rustc_hir::Expr;
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_span::Span;
-use tracing_support::{is_explicit_async_closure, tracing_function_arguments, tracing_method_call};
+use tracing_support::{call_returns_future, tracing_function_arguments, tracing_method_call};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -33,12 +33,12 @@ dylint_support::documented_late_lint! {
 }
 
 impl<'tcx> LateLintPass<'tcx> for TracingAsyncBlockInSyncScope {
-    /// Check explicit async closures passed to synchronous tracing context APIs.
+    /// Check futures returned from tracing's synchronous context APIs.
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        // Handle span scope first because its closure is the sole method argument.
+        // Check the exact span method and its returned type to accept every callable form.
         if let Some(method) = tracing_method_call(cx, expr, "tracing::span::Span::in_scope")
-            && let [closure] = method.arguments
-            && is_explicit_async_closure(cx, closure)
+            && let [_callable] = method.arguments
+            && call_returns_future(cx, expr)
         {
             emit_async_scope_lint(
                 cx,
@@ -49,7 +49,7 @@ impl<'tcx> LateLintPass<'tcx> for TracingAsyncBlockInSyncScope {
             return;
         }
 
-        // Normalize both subscriber scope functions before checking their closure argument.
+        // Resolve both subscriber scope functions before checking their returned type.
         let Some(arguments) = tracing_function_arguments(
             cx,
             expr,
@@ -60,10 +60,10 @@ impl<'tcx> LateLintPass<'tcx> for TracingAsyncBlockInSyncScope {
         ) else {
             return;
         };
-        let [_, closure] = arguments else {
+        let [_, _callable] = arguments else {
             return;
         };
-        if is_explicit_async_closure(cx, closure) {
+        if call_returns_future(cx, expr) {
             emit_async_scope_lint(
                 cx,
                 expr.span,

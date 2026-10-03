@@ -1,43 +1,115 @@
 warning: these settings reset before the returned future is polled
-  --> $DIR/main.rs:11:27
+  --> $DIR/main.rs:49:27
    |
 LL |     let future = settings.bind(|| async { work().await });
    |                           ^^^^
    |
    = note: `#[warn(insta_settings_bind_future)]` on by default
-help: pass the async block directly to `Settings::bind_async` instead
+help: pass the future directly to `Settings::bind_async` instead
    |
 LL -     let future = settings.bind(|| async { work().await });
 LL +     let future = settings.bind_async(async { work().await });
    |
 
 warning: these settings reset before the returned future is polled
-  --> $DIR/main.rs:19:10
+  --> $DIR/main.rs:57:10
    |
 LL |         .bind(|| async move {
    |          ^^^^
    |
-help: pass the async block directly to `Settings::bind_async` instead
+help: pass the future directly to `Settings::bind_async` instead
    |
 LL -         .bind(|| async move {
 LL +         .bind_async(async move {
    |
 
 warning: these settings reset before the returned future is polled
-  --> $DIR/main.rs:28:14
+  --> $DIR/main.rs:66:14
    |
 LL |     settings.bind(move || async { work().await }).await;
    |              ^^^^
    |
-   = help: pass the async block directly to `Settings::bind_async` instead
+   = help: pass the future directly to `Settings::bind_async` instead
 
 warning: these settings reset before the returned future is polled
-  --> $DIR/main.rs:33:14
+  --> $DIR/main.rs:71:14
    |
 LL |     settings.bind(async || work().await).await;
    |              ^^^^
    |
-   = help: pass the async block directly to `Settings::bind_async` instead
+   = help: pass the future directly to `Settings::bind_async` instead
 
-warning: 4 warnings emitted
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:77:14
+   |
+LL |     settings.bind(|| work()).await;
+   |              ^^^^
+   |
+   = help: pass the future directly to `Settings::bind_async` instead
+
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:83:14
+   |
+LL |     settings.bind(make_future).await;
+   |              ^^^^
+   |
+   = help: pass the future directly to `Settings::bind_async` instead
+
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:90:14
+   |
+LL |     settings.bind(future_factory).await;
+   |              ^^^^
+   |
+   = help: pass the future directly to `Settings::bind_async` instead
+
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:96:14
+   |
+LL |     settings.bind(make_ready_future).await;
+   |              ^^^^
+   |
+   = help: pass the future directly to `Settings::bind_async` instead
+
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:102:14
+   |
+LL |     settings.bind(make_boxed_future).await;
+   |              ^^^^
+   |
+   = help: pass the future directly to `Settings::bind_async` instead
+
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:110:10
+   |
+LL |         .bind(|| {
+   |          ^^^^
+   |
+   = help: pass the future directly to `Settings::bind_async` instead
+
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:126:14
+   |
+LL |     settings.bind(future_factory).await;
+   |              ^^^^
+   |
+   = help: pass the future directly to `Settings::bind_async` instead
+
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:131:14
+   |
+LL |     settings.bind(|| future).await;
+   |              ^^^^
+   |
+   = help: pass the future directly to `Settings::bind_async` instead
+
+warning: these settings reset before the returned future is polled
+  --> $DIR/main.rs:137:14
+   |
+LL |     settings.bind(make_custom_future).await;
+   |              ^^^^
+   |
+   = help: pass the future directly to `Settings::bind_async` instead
+
+warning: 13 warnings emitted
 
