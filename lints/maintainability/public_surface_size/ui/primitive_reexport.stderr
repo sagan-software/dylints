@@ -1,0 +1,16 @@
+warning: module exports 26 reachable public names, which exceeds 25
+  --> $DIR/primitive_reexport.rs:3:1
+   |
+LL | / pub fn f01() {}
+LL | | pub fn f02() {}
+LL | | pub fn f03() {}
+LL | | pub fn f04() {}
+...  |
+LL | | pub use u8 as Byte;
+   | |___________________^
+   |
+   = help: expose a focused facade and keep implementation modules private
+   = note: `#[warn(public_surface_size)]` on by default
+
+warning: 1 warning emitted
+

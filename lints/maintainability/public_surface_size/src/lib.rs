@@ -1,4 +1,5 @@
 #![feature(rustc_private)]
+#![warn(unused_extern_crates)]
 
 //! A lint to bound reachable public names per module.
 //!
@@ -11,10 +12,16 @@ extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_span;
 
+use std::collections::HashSet;
+
 use rustc_errors::DiagDecorator;
-use rustc_hir::{HirId, ItemKind, Mod};
+use rustc_hir::{
+    Attribute, HirId, ItemKind, Mod, Node, PrimTy,
+    attrs::AttributeKind,
+    def::{DefKind, Res},
+};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
-use rustc_span::def_id::CRATE_DEF_ID;
+use rustc_span::def_id::{CRATE_DEF_ID, DefId};
 
 /// Largest accepted number of reachable public names exported by one module.
 const PUBLIC_NAME_LIMIT: usize = 25;
@@ -41,17 +48,21 @@ impl<'tcx> LateLintPass<'tcx> for PublicSurfaceSize {
             return;
         }
 
-        // HIR use leaves retain each re-exported name, while effective visibility filters private
-        // ancestry. Impl blocks and global assembly do not introduce caller-visible names.
-        let public_names = module
-            .item_ids
+        // Resolved module children retain each exported name, including glob re-exports, while
+        // visibility filters private ancestry. Impl blocks and global assembly add no names.
+        let public_names = cx
+            .tcx
+            .module_children_local(module_id)
             .iter()
-            .filter(|item_id| {
-                let item = cx.tcx.hir_item(**item_id);
-                !matches!(item.kind, ItemKind::Impl(..) | ItemKind::GlobalAsm { .. })
-                    && cx.effective_visibilities.is_reachable(item.owner_id.def_id)
+            .filter_map(|child| {
+                if !child.vis.is_public() || is_test_marker(cx, &child.res) {
+                    return None;
+                }
+                normalized_definition(cx, &child.res)
+                    .map(|definition| (child.ident.name, definition))
             })
-            .count();
+            .collect::<HashSet<_>>()
+            .len();
         if public_names <= PUBLIC_NAME_LIMIT {
             return;
         }
@@ -68,6 +79,50 @@ impl<'tcx> LateLintPass<'tcx> for PublicSurfaceSize {
             }),
         );
     }
+}
+
+/// Identifies a resolved public declaration, including primitive type aliases.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+enum PublicDefinition {
+    /// A definition with a compiler-assigned identity.
+    Def(DefId),
+    /// A primitive type identified by its language-level type.
+    Primitive(PrimTy),
+}
+
+/// Normalize a constructor to its parent so one exported tuple or variant
+/// name counts once.
+fn normalized_definition<Id>(cx: &LateContext<'_>, res: &Res<Id>) -> Option<PublicDefinition> {
+    match res {
+        Res::Def(DefKind::Ctor(..), def_id) => Some(PublicDefinition::Def(cx.tcx.parent(*def_id))),
+        Res::Def(_, def_id) => Some(PublicDefinition::Def(*def_id)),
+        Res::PrimTy(prim_ty) => Some(PublicDefinition::Primitive(*prim_ty)),
+        Res::SelfTyParam { .. }
+        | Res::SelfTyAlias { .. }
+        | Res::SelfCtor(_)
+        | Res::Local(_)
+        | Res::ToolMod
+        | Res::OpenMod(_)
+        | Res::NonMacroAttr(_)
+        | Res::Err => None,
+    }
+}
+
+/// Return whether an item is the compiler-generated marker for a `#[test]` function.
+fn is_test_marker<Id>(cx: &LateContext<'_>, res: &Res<Id>) -> bool {
+    // Test markers resolve to generated constants; inspect their typed attributes before counting.
+    let Some(local_def_id) = res.opt_def_id().and_then(DefId::as_local) else {
+        return false;
+    };
+    let Node::Item(item) = cx.tcx.hir_node_by_def_id(local_def_id) else {
+        return false;
+    };
+    matches!(item.kind, ItemKind::Const(..))
+        && cx
+            .tcx
+            .hir_attrs(item.hir_id())
+            .iter()
+            .any(|attr| matches!(attr, Attribute::Parsed(AttributeKind::RustcTestMarker(_))))
 }
 
 #[test]
