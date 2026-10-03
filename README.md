@@ -99,8 +99,8 @@ nix run .#coverage -- --min-lines 99 --path lints/style/ad_hoc_display -- -p ad_
 
 `--min-lines` accepts digits with an optional decimal fraction, from 0 through
 100. Each `--path` must name an existing directory with at least one selected
-Rust source. Symlinked Rust sources are supported. Invalid arguments fail
-before the command builds or replaces reports.
+Rust source. The coverage command supports symlinked Rust sources. Invalid
+arguments fail before the command builds or replaces reports.
 
 Each run replaces the generated build, profiles, and reports in its coverage
 directory. Set `COVERAGE_TARGET_DIR` to a dedicated directory to keep runs separate.
