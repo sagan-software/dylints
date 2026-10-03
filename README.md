@@ -54,16 +54,62 @@ cargo clippy --workspace --lib --bins --tests -- -D warnings
 cargo test --workspace --lib --bins --tests
 ```
 
-The command runs unit, UI, and integration tests. Some lint README examples
+The test command runs unit, UI, and integration tests. Some lint README examples
 depend on application types, so the command skips doctests.
 UI tests marked `// run-rustfix` apply machine-applicable suggestions and
 compile the resulting program. Their `.fixed` files record the expected rewrite.
+
+Run the same gates through the Nix check app:
+
+```sh
+nix run .#check
+```
 
 Run one lint's UI tests:
 
 ```sh
 cargo test -p ad_hoc_display --lib
 ```
+
+## Coverage
+
+Measure the workspace through the Nix coverage app:
+
+```sh
+nix run .#coverage
+```
+
+The command builds fresh instrumented binaries and runs every workspace test.
+It writes reports to `target/coverage/report`.
+`canonical_summary.json` merges lexical paths that name the same source file.
+`canonical_gaps.txt` lists executable lines with no hits.
+`summary.json`, `summary.txt`, and `lcov.info` keep the LLVM reports.
+`llvm-cov.stderr` keeps mapping warnings.
+
+The line threshold uses canonical executable lines from production and test
+targets, including `cfg(test)` modules. Reports exclude examples, UI fixtures,
+and dependency sources. Region totals keep each compiled source mapping.
+These metrics do not measure branch coverage.
+
+To measure a lint's coverage with a minimum of 99%, run:
+
+```sh
+nix run .#coverage -- --min-lines 99 --path lints/style/ad_hoc_display -- -p ad_hoc_display --lib --tests
+```
+
+`--min-lines` accepts digits with an optional decimal fraction, from 0 through
+100. Each `--path` must name an existing directory with at least one selected
+Rust source. Symlinked Rust sources are supported. Invalid arguments fail
+before the command builds or replaces reports.
+
+Each run replaces the generated build, profiles, and reports in its coverage
+directory. Set `COVERAGE_TARGET_DIR` to a dedicated directory to keep runs separate.
+Coverage compiles the workspace again and needs extra disk space.
+
+## Documentation checks
+
+The runner uses `rumdl_doc_comments` to check documentation comments in Rust.
+Standalone Markdown and prose need separate Markdown and writing tools.
 
 ## Runner
 
@@ -113,9 +159,8 @@ from `main`.
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs formatting, Clippy,
 and tests for pushes to `main`, `pull_request` events, and manual runs. It also
-builds the catalog
-and runs the bundled lints against this repository. The self-lint job does not
-block merges until the repository passes its own lints.
+builds the catalog, measures coverage, and runs the bundled lints against this
+repository. The self-lint job fails when a bundled lint reports a finding.
 
 ## License notes
 
