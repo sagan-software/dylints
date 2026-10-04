@@ -2,8 +2,9 @@
 
 ## What it does
 
-Checks for calls to `std::env::var` and `std::env::var_os` outside
-configuration, startup, build-script, and test code.
+Checks calls to `std::env::var`, `std::env::var_os`, `std::env::vars`, and
+`std::env::vars_os` outside configuration, startup, build-script, and test
+code.
 
 ## Why is this bad?
 
@@ -17,10 +18,14 @@ Parsing and default rules for the variable spread to every read site.
 The lint allows a function when any of these conditions applies:
 
 - The function's name is `main`.
-- Its name or the name of any enclosing module, type, or impl contains the word
-  `cli`, `config`, `configuration`, `bootstrap`, `settings`, `setting`, `env`, or
-  `environment`. The lint splits words on non-alphanumeric characters and
-  matches case, so it allows `load_config` but not `AppConfig::load`.
+- Its name or the name of any enclosing module, type, or impl contains one of
+  these words: `cli`, `config`, `configuration`, `bootstrap`, `settings`,
+  `setting`, `env`, or `environment`.
+- The lint compares ASCII letters without regard to case. ASCII letters and
+  digits form tokens. Lower-to-upper CamelCase and acronym-to-word transitions
+  split tokens. Other non-alphanumeric ASCII characters separate tokens. Each
+  non-ASCII Unicode scalar acts as a separator. This allows `load_config`,
+  `AppConfig::load`, and `APIConfig::load`.
 - Its path contains the word `test`, `tests`, or `testing`.
 - It is a `#[test]` function, or it or an enclosing item has a `cfg` that
   requires `test`, such as `#[cfg(test)]` or `#[cfg(all(test, unix))]`.
@@ -28,8 +33,8 @@ The lint allows a function when any of these conditions applies:
   the allowed words, such as `config.rs` or `settings/mod.rs`.
 
 The lint judges a read inside a closure, such as a `LazyLock` initializer, by
-the item that owns the closure. It does not check `std::env::vars` or reads
-through wrapper functions.
+the item that owns the closure. It does not follow reads through wrapper
+functions.
 
 ## Example
 

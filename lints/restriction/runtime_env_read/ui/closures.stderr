@@ -31,6 +31,14 @@ LL |     std::env::var("NOT_TEST").ok()
    |
    = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
 
+warning: `std::env::vars` reads runtime environment outside config/bootstrap code
+  --> $DIR/closures.rs:51:17
+   |
+LL |         let _ = std::env::vars();
+   |                 ^^^^^^^^^^^^^^
+   |
+   = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
+
 warning: `std::env::var` reads runtime environment outside config/bootstrap code
   --> $DIR/closures.rs:52:17
    |
@@ -39,5 +47,5 @@ LL |         let _ = std::env::var("METHOD_READ");
    |
    = help: read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward
 
-warning: 5 warnings emitted
+warning: 6 warnings emitted
 

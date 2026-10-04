@@ -1,5 +1,5 @@
 warning: `std::env::var` reads runtime environment outside config/bootstrap code
-  --> $DIR/edge_cases.rs:6:5
+  --> $DIR/edge_cases.rs:7:5
    |
 LL |     env::var("API_TOKEN")
    |     ^^^^^^^^
@@ -8,7 +8,7 @@ LL |     env::var("API_TOKEN")
    = note: `#[warn(runtime_env_read)]` on by default
 
 warning: `std::env::var_os` reads runtime environment outside config/bootstrap code
-  --> $DIR/edge_cases.rs:10:5
+  --> $DIR/edge_cases.rs:11:5
    |
 LL |     var_os("TEMPLATE_PATH")
    |     ^^^^^^

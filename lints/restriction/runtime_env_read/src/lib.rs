@@ -87,7 +87,7 @@ impl<'tcx> Visitor<'tcx> for EnvReadFinder<'_, 'tcx> {
     }
 }
 
-/// Return the function name when a callee resolves to `std::env::var` or `std::env::var_os`.
+/// Return the function name when a callee resolves to a standard environment read.
 fn env_read_name(cx: &LateContext<'_>, callee: &Expr<'_>) -> Option<&'static str> {
     let ExprKind::Path(qpath) = callee.kind else {
         return None;
@@ -101,6 +101,8 @@ fn env_read_name(cx: &LateContext<'_>, callee: &Expr<'_>) -> Option<&'static str
         [krate, module, name] if *krate == sym::std && *module == sym::env => match name.as_str() {
             "var" => Some("var"),
             "var_os" => Some("var_os"),
+            "vars" => Some("vars"),
+            "vars_os" => Some("vars_os"),
             _ => None,
         },
         _ => None,
@@ -206,10 +208,17 @@ fn allowed_source_path(cx: &LateContext<'_>, span: Span) -> bool {
 
 /// Return whether a definition name marks a configuration or test boundary.
 fn has_allowed_def_name(cx: &LateContext<'_>, def_id: DefId) -> bool {
-    cx.tcx.opt_item_name(def_id).is_some_and(|name| {
-        let name = name.as_str();
-        name_has_allowed_context(name) || test_context_name(name)
-    })
+    // Inherent impls have no item name, but their resolved path ends with the self type name.
+    let impl_self_name = matches!(cx.tcx.def_kind(def_id), DefKind::Impl { .. })
+        .then(|| cx.get_def_path(def_id))
+        .and_then(|path| path.last().copied());
+    cx.tcx
+        .opt_item_name(def_id)
+        .or(impl_self_name)
+        .is_some_and(|name| {
+            let name = name.as_str();
+            name_has_allowed_context(name) || test_context_name(name)
+        })
 }
 
 /// Return whether a source file stem marks a build or configuration boundary.
@@ -230,29 +239,84 @@ fn is_allowed_parent_directory(path: &Path) -> bool {
 /// Return whether a name contains a configuration or entry-point word.
 fn name_has_allowed_context(name: &str) -> bool {
     tokens(name).any(|token| {
-        matches!(
+        token_matches_any(
             token,
-            "cli"
-                | "config"
-                | "configuration"
-                | "bootstrap"
-                | "settings"
-                | "setting"
-                | "env"
-                | "environment"
+            &[
+                "cli",
+                "config",
+                "configuration",
+                "bootstrap",
+                "settings",
+                "setting",
+                "env",
+                "environment",
+            ],
         )
     })
 }
 
 /// Return whether a name contains a test word.
 fn test_context_name(name: &str) -> bool {
-    tokens(name).any(|token| matches!(token, "test" | "tests" | "testing"))
+    tokens(name).any(|token| token_matches_any(token, &["test", "tests", "testing"]))
 }
 
-/// Split a name into its alphanumeric words.
+/// Split a name lazily into borrowed ASCII alphanumeric words.
+///
+/// ASCII lower-to-upper and acronym-to-word transitions split tokens. Other
+/// non-alphanumeric ASCII characters and each non-ASCII Unicode scalar separate
+/// tokens, matching the lint's ASCII-only vocabulary.
 fn tokens(name: &str) -> impl Iterator<Item = &str> {
-    name.split(|ch: char| !ch.is_ascii_alphanumeric())
-        .filter(|token| !token.is_empty())
+    let mut remaining = name;
+    std::iter::from_fn(move || next_token(&mut remaining))
+}
+
+/// Return the next borrowed word and advance past its following separator.
+fn next_token<'a>(remaining: &mut &'a str) -> Option<&'a str> {
+    loop {
+        let mut chars = remaining.char_indices().peekable();
+        let (_, first) = chars.next()?;
+        if !first.is_ascii_alphanumeric() {
+            // `char_indices` provides a UTF-8 boundary for the skipped character.
+            *remaining = remaining.split_at(first.len_utf8()).1;
+            continue;
+        }
+
+        let mut previous = first;
+        while let Some((index, current)) = chars.next() {
+            if !current.is_ascii_alphanumeric() {
+                // Both offsets come from `char_indices` or a complete character width.
+                let (word, suffix) = remaining.split_at(index);
+                *remaining = suffix.split_at(current.len_utf8()).1;
+                return Some(word);
+            }
+            if is_word_boundary(previous, current, chars.peek().map(|(_, next)| *next)) {
+                // The word boundary is the current character's `char_indices` offset.
+                let (word, suffix) = remaining.split_at(index);
+                *remaining = suffix;
+                return Some(word);
+            }
+            previous = current;
+        }
+
+        let word = *remaining;
+        *remaining = "";
+        return Some(word);
+    }
+}
+
+/// Return whether an ASCII lower-to-upper or acronym-to-word boundary starts here.
+fn is_word_boundary(previous: char, current: char, next: Option<char>) -> bool {
+    (previous.is_ascii_lowercase() && current.is_ascii_uppercase())
+        || (previous.is_ascii_uppercase()
+            && current.is_ascii_uppercase()
+            && next.is_some_and(|next| next.is_ascii_lowercase()))
+}
+
+/// Return whether a token matches any lowercase policy word without allocating.
+fn token_matches_any(token: &str, candidates: &[&str]) -> bool {
+    candidates
+        .iter()
+        .any(|candidate| token.eq_ignore_ascii_case(candidate))
 }
 
 /// Emit the environment-read diagnostic at the callee.
