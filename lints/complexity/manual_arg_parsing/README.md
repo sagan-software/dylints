@@ -15,7 +15,7 @@ wrong. A parser such as `clap` derives that handling from one type definition.
 
 - The lint suppresses a call only when its iterator feeds a resolved
   `std::process::Command::args` or `Iterator::count` call through at most four
-  standard `skip` or `take` adapters.
+  standard `skip` or `take` adapters; longer chains remain linted.
 - The lint still flags stored iterators, filtered or mixed streams, other
   consumers, and parsing operations such as `next`, `nth`, and `collect`.
 - Methods named `args` or `count` on other types do not qualify for suppression.

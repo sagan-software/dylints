@@ -16,7 +16,7 @@ LL |     let _all: Vec<_> = args_os().collect();
    = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
 
 warning: command line arguments are parsed manually
-  --> $DIR/edge_cases.rs:37:18
+  --> $DIR/edge_cases.rs:32:18
    |
 LL |     let _count = std::env::args_os()
    |                  ^^^^^^^^^^^^^^^^^
@@ -24,7 +24,7 @@ LL |     let _count = std::env::args_os()
    = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
 
 warning: command line arguments are parsed manually
-  --> $DIR/edge_cases.rs:55:23
+  --> $DIR/edge_cases.rs:50:23
    |
 LL |     LocalCommand.args(std::env::args_os().skip(1));
    |                       ^^^^^^^^^^^^^^^^^
@@ -32,7 +32,7 @@ LL |     LocalCommand.args(std::env::args_os().skip(1));
    = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
 
 warning: command line arguments are parsed manually
-  --> $DIR/edge_cases.rs:56:24
+  --> $DIR/edge_cases.rs:51:24
    |
 LL |     LocalCommand.count(std::env::args().skip(1));
    |                        ^^^^^^^^^^^^^^
@@ -40,7 +40,7 @@ LL |     LocalCommand.count(std::env::args().skip(1));
    = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
 
 warning: command line arguments are parsed manually
-  --> $DIR/edge_cases.rs:60:21
+  --> $DIR/edge_cases.rs:55:21
    |
 LL |     let arguments = std::env::args_os().skip(1);
    |                     ^^^^^^^^^^^^^^^^^
@@ -48,23 +48,23 @@ LL |     let arguments = std::env::args_os().skip(1);
    = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
 
 warning: command line arguments are parsed manually
-  --> $DIR/edge_cases.rs:66:15
+  --> $DIR/edge_cases.rs:60:61
    |
-LL |         .args(std::env::args_os().filter(|_| true));
+LL |     let _command = std::process::Command::new("child").args(std::env::args_os().filter(|_| true));
+   |                                                             ^^^^^^^^^^^^^^^^^
+   |
+   = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
+
+warning: command line arguments are parsed manually
+  --> $DIR/edge_cases.rs:65:15
+   |
+LL |         .args(std::env::args_os().chain(std::iter::once(std::ffi::OsString::from("--extra"))));
    |               ^^^^^^^^^^^^^^^^^
    |
    = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
 
 warning: command line arguments are parsed manually
-  --> $DIR/edge_cases.rs:71:9
-   |
-LL |         std::env::args_os().chain(std::iter::once(std::ffi::OsString::from("--extra"))),
-   |         ^^^^^^^^^^^^^^^^^
-   |
-   = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
-
-warning: command line arguments are parsed manually
-  --> $DIR/edge_cases.rs:76:20
+  --> $DIR/edge_cases.rs:69:20
    |
 LL |     std::mem::drop(std::env::args());
    |                    ^^^^^^^^^^^^^^
@@ -72,7 +72,7 @@ LL |     std::mem::drop(std::env::args());
    = help: derive `clap::Parser` for the CLI shape, or use `clap` parsing instead
 
 warning: command line arguments are parsed manually
-  --> $DIR/edge_cases.rs:80:13
+  --> $DIR/edge_cases.rs:73:13
    |
 LL |     let _ = std::env::args();
    |             ^^^^^^^^^^^^^^

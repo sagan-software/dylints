@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use std::env::{self, args_os};
 use std::env::args_os as imported_args_os;
+use std::env::{self, args_os};
 use std::process::Command as ChildCommand;
 
 fn reads_args_with_chain() {
@@ -25,12 +25,7 @@ fn forwards_renamed_imports() {
 }
 
 fn counts_four_bounded_adapters() {
-    let _count = imported_args_os()
-        .skip(1)
-        .take(8)
-        .skip(2)
-        .take(3)
-        .count();
+    let _count = imported_args_os().skip(1).take(8).skip(2).take(3).count();
 }
 
 fn warns_after_five_bounded_adapters() {
@@ -62,14 +57,12 @@ fn forwards_a_stored_iterator_later() {
 }
 
 fn filters_before_forwarding() {
-    let _command = std::process::Command::new("child")
-        .args(std::env::args_os().filter(|_| true));
+    let _command = std::process::Command::new("child").args(std::env::args_os().filter(|_| true));
 }
 
 fn mixes_arguments_before_forwarding() {
-    let _command = std::process::Command::new("child").args(
-        std::env::args_os().chain(std::iter::once(std::ffi::OsString::from("--extra"))),
-    );
+    let _command = std::process::Command::new("child")
+        .args(std::env::args_os().chain(std::iter::once(std::ffi::OsString::from("--extra"))));
 }
 
 fn passes_arguments_to_an_unrelated_function() {
