@@ -16,9 +16,10 @@ type fixes the unit and offers correct comparison and formatting.
 
 ## Known problems
 
-The compiler resolves type aliases before the lint peels up to eight
-consecutive standard `Option` layers. Longer chains, local `Option`
-lookalikes, and user-defined wrappers remain opaque. After peeling, it checks only primitive
+The compiler resolves type aliases before the lint examines the type. The lint
+peels up to eight consecutive standard `Option` layers at each point in its
+traversal. Longer chains, local `Option` lookalikes, and user-defined wrappers
+remain opaque. After peeling, it checks only primitive
 integer types, including type aliases and `use` renames; integer newtypes
 remain opaque.
 

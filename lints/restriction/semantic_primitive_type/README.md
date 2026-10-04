@@ -11,9 +11,10 @@ domain value as a primitive. It flags three cases by name:
   `_reason_code` or `_reason_codes`, with a `String` or `str` type.
 
 It looks through references, slices, arrays, and `Vec`. The compiler resolves
-type aliases before the lint peels up to eight consecutive
-standard `Option` layers. Longer chains, local `Option` lookalikes,
-and user-defined wrappers remain opaque. The lint checks a return type against the function name. It also
+type aliases before the lint examines the type. The lint peels up to eight
+consecutive standard `Option` layers at each point in its traversal. Longer
+chains, local `Option` lookalikes, and user-defined wrappers remain opaque. The
+lint checks a return type against the function name. It also
 flags a `match` on a string that has three or more string-literal arms and a
 catch-all arm.
 
