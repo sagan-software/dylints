@@ -9340,6 +9340,7 @@ dependencies = [
  "dylint_linting",
  "dylint_testing",
  "tracing 0.1.44",
+ "tracing-subscriber",
  "tracing-support",
 ]
 

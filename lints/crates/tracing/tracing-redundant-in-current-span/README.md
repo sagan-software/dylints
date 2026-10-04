@@ -2,52 +2,68 @@
 
 ## What it does
 
-Checks for `in_current_span()` called directly on the result of
-`Instrument::instrument(span)`.
+Reports direct chains of `Instrument::instrument(span)` followed by
+`in_current_span()`, with advice to use `span.or_current()` when the inner span
+is disabled.
 
 ## Why is this bad?
 
-The call wraps the future twice, so each poll enters two spans. Tracing
-documents that `span.or_current()` passed to `instrument` is more efficient:
-it attaches the new span when enabled and the current span otherwise, with one
-wrapper.
+`Instrument::instrument` and `Instrument::in_current_span` each attach a span
+that is entered whenever the instrumented future is polled or dropped. See the
+[tracing 0.1.44 Instrument documentation](https://docs.rs/tracing/0.1.44/tracing/instrument/trait.Instrument.html).
+`Span::or_current` selects the current span only when the supplied span is
+disabled. See the [tracing 0.1.44 `Span::or_current` documentation](https://docs.rs/tracing/0.1.44/tracing/struct.Span.html#method.or_current).
+
+When `outer` is current and an enabled parentless `inner` span is used, each
+poll and drop of the original chain calls `on_enter(outer)`, `on_enter(inner)`,
+`on_exit(inner)`, then `on_exit(outer)`. When those same spans are used with
+`instrument(inner.or_current())`, each poll and drop calls only
+`on_enter(inner)` and `on_exit(inner)`. The recording subscriber test asserts
+both callback sequences.
 
 ## Known problems
 
-The lint reports every direct chain, whatever the span argument is. The rewrite
-differs when tracing enables the inner span. In that case, the future no longer
-enters the current span around the inner span on each poll. This
-matters when the inner span has a different parent, such as one created with
-`parent: None`.
+The lint cannot determine whether the runtime subscriber enables the inner
+span, so it reports a direct chain even when that span is enabled. If `outer`
+is current and an enabled parentless `inner` span is used, replacing the chain
+with `instrument(inner.or_current())` removes `on_enter(outer)` and
+`on_exit(outer)` on each poll and drop.
 
-The lint does not follow the instrumented future through a local binding or
-another function.
+The lint checks the direct method chain. It does not follow an instrumented
+future through a local binding or another function.
 
 ## Example
 
 ```rust
-use tracing::Instrument;
+use tracing::{Instrument, info_span};
 
 async fn work() {}
 
-async fn run() {
-    work()
-        .instrument(tracing::debug_span!("work"))
-        .in_current_span()
-        .await;
+fn drop_inner() {
+    let _outer = info_span!("outer").entered();
+    let _future = work()
+        .instrument(info_span!(parent: None, "inner"))
+        .in_current_span();
 }
 ```
 
 ## Use instead
 
+If the subscriber disables the inner span, pass it through `or_current()`
+before `instrument`:
+
 ```rust
-use tracing::Instrument;
+use tracing::{Instrument, info_span};
 
 async fn work() {}
 
-async fn run() {
-    work()
-        .instrument(tracing::debug_span!("work").or_current())
-        .await;
+fn drop_inner() {
+    let _outer = info_span!("outer").entered();
+    let inner = info_span!(parent: None, "inner");
+    let _future = work().instrument(inner.or_current());
 }
 ```
+
+Otherwise, keep the original chain when the captured current span's enter and
+exit callbacks are required. Accept their removal only when that change is
+intended.

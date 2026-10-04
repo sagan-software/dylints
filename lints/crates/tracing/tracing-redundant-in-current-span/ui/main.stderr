@@ -1,11 +1,21 @@
-warning: this nested tracing instrumentation is redundant
-  --> $DIR/main.rs:10:10
+warning: this nested tracing instrumentation may be redundant when the inner span is disabled
+  --> $DIR/main.rs:28:10
    |
 LL |         .in_current_span()
    |          ^^^^^^^^^^^^^^^
    |
-   = help: pass `span.or_current()` to `instrument` and remove `in_current_span`
+   = help: when the inner span is disabled, pass `span.or_current()` to `instrument` and remove `in_current_span`
+   = note: for an enabled independent inner span, removing `in_current_span()` can remove enter/exit events for the captured current span on each poll and drop
    = note: `#[warn(tracing_redundant_in_current_span)]` on by default
 
-warning: 1 warning emitted
+warning: this nested tracing instrumentation may be redundant when the inner span is disabled
+  --> $DIR/main.rs:37:10
+   |
+LL |         .in_current_span();
+   |          ^^^^^^^^^^^^^^^
+   |
+   = help: when the inner span is disabled, pass `span.or_current()` to `instrument` and remove `in_current_span`
+   = note: for an enabled independent inner span, removing `in_current_span()` can remove enter/exit events for the captured current span on each poll and drop
+
+warning: 2 warnings emitted
 
