@@ -23,9 +23,10 @@ machine-applicable fix; fixes apply only to direct literals. The lint suppresses
 this warning only when it can trace immutable router builders or local
 bindings to `Router::without_v07_checks`. It can warn when that call is out of
 sight, such as on a mutable binding or a router passed in as a parameter. It
-does not check `nest` paths, where any wildcard panics. A machine-applicable
-fix requires a plain string literal without escapes and Rust-style wildcard
-identifiers.
+does not check `nest` paths, where any wildcard panics.
+
+A machine-applicable fix requires a plain string literal without escapes and
+Rust-style wildcard identifiers.
 
 ## Example
 
