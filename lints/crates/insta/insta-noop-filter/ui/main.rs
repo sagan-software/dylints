@@ -1,7 +1,18 @@
 // run-rustfix
 // rustfix-only-machine-applicable
+//! Compiler UI cases for no-op Insta filters and rustfix output.
+#![feature(rustc_private)]
+
+use dylint_linting as _;
+use dylint_support as _;
+use dylint_testing as _;
+use insta_noop_filter as _;
+use insta_support as _;
+
+/// A current-crate token constant used by the local-alias control.
 const TOKEN: &str = "token";
 
+/// Exercise no-op filters and preserve shared local declarations after rustfix.
 fn main() {
     let mut settings = insta::Settings::clone_current();
     settings.add_filter("token", "token");
@@ -9,4 +20,9 @@ fn main() {
     let () = settings.add_filter("token", "token");
     settings.add_filter("token", "[token]");
     settings.add_filter("a.b", "a.b");
+
+    let shared_token = "token";
+    let shared_alias = shared_token;
+    settings.add_filter(shared_token, shared_alias);
+    settings.add_filter(shared_token, "[token]");
 }

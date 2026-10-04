@@ -1,5 +1,5 @@
 warning: this filter replaces matched text with itself
-  --> $DIR/main.rs:7:5
+  --> $DIR/main.rs:18:5
    |
 LL |     settings.add_filter("token", "token");
    | ----^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^- help: remove the filter
@@ -7,18 +7,24 @@ LL |     settings.add_filter("token", "token");
    = note: `#[warn(insta_noop_filter)]` on by default
 
 warning: this filter replaces matched text with itself
-  --> $DIR/main.rs:8:5
+  --> $DIR/main.rs:19:5
    |
 LL |     settings.add_filter(TOKEN, "token");
    | ----^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^- help: remove the filter
 
 warning: this filter replaces matched text with itself
-  --> $DIR/main.rs:9:14
+  --> $DIR/main.rs:20:14
    |
 LL |     let () = settings.add_filter("token", "token");
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: remove the filter or provide a stable replacement
 
-warning: 3 warnings emitted
+warning: this filter replaces matched text with itself
+  --> $DIR/main.rs:26:5
+   |
+LL |     settings.add_filter(shared_token, shared_alias);
+   | ----^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^- help: remove the filter
+
+warning: 4 warnings emitted
 

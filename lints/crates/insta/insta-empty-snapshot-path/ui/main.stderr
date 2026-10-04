@@ -1,5 +1,5 @@
 warning: this Insta setting is an empty string
-  --> $DIR/main.rs:3:14
+  --> $DIR/main.rs:13:14
    |
 LL |     settings.set_snapshot_path("");
    |              ^^^^^^^^^^^^^^^^^
@@ -7,5 +7,13 @@ LL |     settings.set_snapshot_path("");
    = help: provide reviewer context or omit the setting
    = note: `#[warn(insta_empty_snapshot_path)]` on by default
 
-warning: 1 warning emitted
+warning: this Insta setting is an empty string
+  --> $DIR/main.rs:17:14
+   |
+LL |     settings.set_snapshot_path(empty_path);
+   |              ^^^^^^^^^^^^^^^^^
+   |
+   = help: provide reviewer context or omit the setting
+
+warning: 2 warnings emitted
 

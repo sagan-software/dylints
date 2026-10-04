@@ -14,10 +14,11 @@ test.
 
 ## Known problems
 
-The lint checks a string literal passed directly as the pattern, or
-a `const` defined in the same crate and initialized with a string literal. It
-does not check patterns held in variables or built at runtime. It does not
-check other patterns that can match empty text, such as `"a*"`.
+The lint follows a string literal through at most eight simple immutable local
+bindings or constants defined in the same crate. Mutable, destructured, or
+uninitialized bindings, external constants and statics, calls, and other
+computed expressions remain unknown. The lint does not check other patterns
+that can match empty text, such as `"a*"`.
 
 ## Example
 

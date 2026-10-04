@@ -13,8 +13,10 @@ macro never records or compares the snapshot.
 
 ## Known problems
 
-The lint checks a string literal passed directly as the name, or
-a `const` defined in the same crate and initialized with a string literal. It does not check names held in variables or built at runtime.
+The lint follows a string literal through at most eight simple immutable local
+bindings or constants defined in the same crate. Mutable, destructured, or
+uninitialized bindings, external constants and statics, calls, and other
+computed expressions remain unknown.
 
 ## Example
 

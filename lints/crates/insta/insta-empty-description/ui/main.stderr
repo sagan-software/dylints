@@ -1,5 +1,5 @@
 warning: this Insta setting is an empty string
-  --> $DIR/main.rs:5:14
+  --> $DIR/main.rs:16:14
    |
 LL |     settings.set_description("");
    |              ^^^^^^^^^^^^^^^
@@ -8,12 +8,20 @@ LL |     settings.set_description("");
    = note: `#[warn(insta_empty_description)]` on by default
 
 warning: this Insta setting is an empty string
-  --> $DIR/main.rs:6:14
+  --> $DIR/main.rs:17:14
    |
 LL |     settings.set_description(EMPTY);
    |              ^^^^^^^^^^^^^^^
    |
    = help: provide reviewer context or omit the setting
 
-warning: 2 warnings emitted
+warning: this Insta setting is an empty string
+  --> $DIR/main.rs:21:14
+   |
+LL |     settings.set_description(empty_description);
+   |              ^^^^^^^^^^^^^^^
+   |
+   = help: provide reviewer context or omit the setting
+
+warning: 3 warnings emitted
 

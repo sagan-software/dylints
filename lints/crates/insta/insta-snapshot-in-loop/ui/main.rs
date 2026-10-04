@@ -1,7 +1,21 @@
-#![allow(dead_code)]
+//! Compiler UI cases for repeated Insta snapshot assertions in loops.
+#![feature(rustc_private)]
+#![allow(
+    dead_code,
+    reason = "compiler UI fixture items are intentionally not executed"
+)]
 
+use dylint_linting as _;
+use dylint_support as _;
+use dylint_testing as _;
+use insta_snapshot_in_loop as _;
+use insta_support as _;
+
+/// A repeated current-crate snapshot name.
 const NAME: &str = "fixed";
 
+/// Exercise repeated snapshot names in for, while, and bare loops.
+#[expect(clippy::never_loop, reason = "Exercises a snapshot in a bare loop")]
 fn invalid() {
     for value in 0..2 {
         insta::assert_debug_snapshot!(value);
@@ -23,6 +37,15 @@ fn invalid() {
     }
 }
 
+/// Keep a literal local name from repeating across loop iterations.
+fn invalid_immutable_local_name() {
+    let name = "fixed local";
+    for value in 0..2 {
+        insta::assert_snapshot!(name, value.to_string());
+    }
+}
+
+/// Use different computed names on each pass through every loop.
 fn valid_distinct_names() {
     for value in 0..2 {
         insta::assert_snapshot!(format!("case_{value}"), value.to_string());
@@ -32,6 +55,7 @@ fn valid_distinct_names() {
     }
 }
 
+/// Allow explicitly repeated names through the Insta wrapper.
 fn valid_duplicates() {
     insta::allow_duplicates! {
         for _ in 0..2 {
@@ -40,6 +64,7 @@ fn valid_duplicates() {
     }
 }
 
+/// Keep a nested function outside the surrounding loop body semantics.
 fn valid_nested_function() {
     for _ in 0..2 {
         fn helper() {
@@ -49,8 +74,10 @@ fn valid_nested_function() {
     }
 }
 
+/// Keep a snapshot assertion outside every loop.
 fn valid_outside_loop() {
     insta::assert_snapshot!("once");
 }
 
+/// Provide the binary entry point required by the UI example.
 fn main() {}

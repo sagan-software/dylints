@@ -825,6 +825,12 @@ fn type_contains_guard_with_seen<'tcx>(
     if ty == guard_ty {
         return true;
     }
+    // The standard marker carries `T` only in type information, never as a value.
+    if let TyKind::Adt(adt, _) = ty.kind()
+        && cx.tcx.lang_items().get(LangItem::PhantomData) == Some(adt.did())
+    {
+        return false;
+    }
     if !seen.insert(ty) {
         return false;
     }

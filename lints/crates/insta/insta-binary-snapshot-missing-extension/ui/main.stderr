@@ -1,5 +1,5 @@
 warning: this binary snapshot name has no file extension
-  --> $DIR/main.rs:4:36
+  --> $DIR/main.rs:16:36
    |
 LL |     insta::assert_binary_snapshot!("response", Vec::new());
    |                                    ^^^^^^^^^^
@@ -8,12 +8,20 @@ LL |     insta::assert_binary_snapshot!("response", Vec::new());
    = note: `#[warn(insta_binary_snapshot_missing_extension)]` on by default
 
 warning: this binary snapshot name has no file extension
-  --> $DIR/main.rs:10:36
+  --> $DIR/main.rs:24:36
    |
 LL |     insta::assert_binary_snapshot!(NAME, Vec::new());
    |                                    ^^^^
    |
    = help: include an extension, such as `.bin`, in the snapshot name
 
-warning: 2 warnings emitted
+warning: this binary snapshot name has no file extension
+  --> $DIR/main.rs:31:36
+   |
+LL |     insta::assert_binary_snapshot!(name, Vec::new());
+   |                                    ^^^^
+   |
+   = help: include an extension, such as `.bin`, in the snapshot name
+
+warning: 3 warnings emitted
 

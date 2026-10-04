@@ -1,5 +1,5 @@
 warning: this Insta setting is an empty string
-  --> $DIR/main.rs:3:14
+  --> $DIR/main.rs:20:14
    |
 LL |     settings.set_input_file("");
    |              ^^^^^^^^^^^^^^
@@ -7,5 +7,45 @@ LL |     settings.set_input_file("");
    = help: provide reviewer context or omit the setting
    = note: `#[warn(insta_empty_input_file)]` on by default
 
-warning: 1 warning emitted
+warning: this Insta setting is an empty string
+  --> $DIR/main.rs:25:14
+   |
+LL |     settings.set_input_file(input_alias);
+   |              ^^^^^^^^^^^^^^
+   |
+   = help: provide reviewer context or omit the setting
+
+warning: this Insta setting is an empty string
+  --> $DIR/main.rs:28:14
+   |
+LL |     settings.set_input_file(const_alias);
+   |              ^^^^^^^^^^^^^^
+   |
+   = help: provide reviewer context or omit the setting
+
+warning: this Insta setting is an empty string
+  --> $DIR/main.rs:31:14
+   |
+LL |     settings.set_input_file(shadowed_input);
+   |              ^^^^^^^^^^^^^^
+   |
+   = help: provide reviewer context or omit the setting
+
+warning: this Insta setting is an empty string
+  --> $DIR/main.rs:38:18
+   |
+LL |         settings.set_input_file(shadowed_input);
+   |                  ^^^^^^^^^^^^^^
+   |
+   = help: provide reviewer context or omit the setting
+
+warning: this Insta setting is an empty string
+  --> $DIR/main.rs:58:14
+   |
+LL |     settings.set_input_file(depth7);
+   |              ^^^^^^^^^^^^^^
+   |
+   = help: provide reviewer context or omit the setting
+
+warning: 6 warnings emitted
 

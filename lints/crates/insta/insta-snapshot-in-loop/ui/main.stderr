@@ -1,5 +1,5 @@
 warning: this assertion can visit the same snapshot more than once
-  --> $DIR/main.rs:7:9
+  --> $DIR/main.rs:21:9
    |
 LL |         insta::assert_debug_snapshot!(value);
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL |         insta::assert_debug_snapshot!(value);
    = note: `#[warn(insta_snapshot_in_loop)]` on by default
 
 warning: this assertion can visit the same snapshot more than once
-  --> $DIR/main.rs:10:9
+  --> $DIR/main.rs:24:9
    |
 LL |         insta::assert_snapshot!("fixed", value.to_string());
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL |         insta::assert_snapshot!("fixed", value.to_string());
    = help: use distinct snapshot names or wrap equal repeats in `allow_duplicates!`
 
 warning: this assertion can visit the same snapshot more than once
-  --> $DIR/main.rs:13:9
+  --> $DIR/main.rs:27:9
    |
 LL |         insta::assert_snapshot!(NAME, value.to_string());
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -24,7 +24,7 @@ LL |         insta::assert_snapshot!(NAME, value.to_string());
    = help: use distinct snapshot names or wrap equal repeats in `allow_duplicates!`
 
 warning: this assertion can visit the same snapshot more than once
-  --> $DIR/main.rs:17:9
+  --> $DIR/main.rs:31:9
    |
 LL |         insta::assert_snapshot!(value.to_string(), @"0");
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -32,12 +32,20 @@ LL |         insta::assert_snapshot!(value.to_string(), @"0");
    = help: use distinct snapshot names or wrap equal repeats in `allow_duplicates!`
 
 warning: this assertion can visit the same snapshot more than once
-  --> $DIR/main.rs:21:9
+  --> $DIR/main.rs:35:9
    |
 LL |         insta::assert_binary_snapshot!(".bin", vec![1]);
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: use distinct snapshot names or wrap equal repeats in `allow_duplicates!`
 
-warning: 5 warnings emitted
+warning: this assertion can visit the same snapshot more than once
+  --> $DIR/main.rs:44:9
+   |
+LL |         insta::assert_snapshot!(name, value.to_string());
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use distinct snapshot names or wrap equal repeats in `allow_duplicates!`
+
+warning: 6 warnings emitted
 

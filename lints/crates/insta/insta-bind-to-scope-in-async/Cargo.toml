@@ -21,6 +21,10 @@ insta.workspace = true
 name = "main"
 path = "ui/main.rs"
 
+[[example]]
+name = "phantom-guard-opt0"
+path = "ui/phantom_guard_opt0.rs"
+
 [features]
 rlib = ["dylint_linting/constituent"]
 

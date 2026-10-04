@@ -14,10 +14,13 @@ records.
 
 ## Known problems
 
-The lint skips patterns that contain any of `.^$*+?()[]{}|\`, even when the
-filter still has no effect. It checks string literals passed directly as
-arguments, and a `const` defined in the same crate and initialized with a string literal. The machine-applicable fix removes the call only
-when the call is a whole statement.
+The lint follows string literals through at most eight simple immutable local
+bindings or constants defined in the same crate. Mutable, destructured, or
+uninitialized bindings, external constants and statics, calls, and other
+computed expressions remain unknown. It skips patterns that contain any of
+`.^$*+?()[]{}|\`, even when the filter still has no effect. The
+machine-applicable fix removes the call only when it is a whole statement. The
+fix leaves local declarations and other statements unchanged.
 
 ## Example
 

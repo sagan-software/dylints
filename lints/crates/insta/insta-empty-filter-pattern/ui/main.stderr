@@ -1,5 +1,5 @@
 warning: this empty regex matches every position in the snapshot
-  --> $DIR/main.rs:3:25
+  --> $DIR/main.rs:13:25
    |
 LL |     settings.add_filter("", "[redacted]");
    |                         ^^
@@ -7,5 +7,13 @@ LL |     settings.add_filter("", "[redacted]");
    = help: use a regex that selects only the unstable snapshot content
    = note: `#[warn(insta_empty_filter_pattern)]` on by default
 
-warning: 1 warning emitted
+warning: this empty regex matches every position in the snapshot
+  --> $DIR/main.rs:17:25
+   |
+LL |     settings.add_filter(empty_pattern, "[redacted]");
+   |                         ^^^^^^^^^^^^^
+   |
+   = help: use a regex that selects only the unstable snapshot content
+
+warning: 2 warnings emitted
 

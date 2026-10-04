@@ -1,0 +1,11 @@
+warning: this thread-local guard can cross async scheduling points
+  --> $DIR/phantom_guard_opt0.rs:41:26
+   |
+LL |     let guard = settings.bind_to_scope();
+   |                          ^^^^^^^^^^^^^
+   |
+   = help: use `Settings::bind_async`
+   = note: `#[warn(insta_bind_to_scope_in_async)]` on by default
+
+warning: 1 warning emitted
+

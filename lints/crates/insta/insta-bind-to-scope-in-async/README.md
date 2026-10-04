@@ -23,10 +23,12 @@ Mutable collection tracking is conservative. After `drop(guards.pop())`, the
 lint can still warn at a later `.await` because MIR does not identify which
 element the collection removed.
 
-Opaque helper calls can also produce false positives when their return type
-mentions the guard but stores no guard, such as `PhantomData<Guard>`. The lint
-preserves aggregate field paths through a helper only when its MIR proves that
-the helper returns its sole argument unchanged.
+The standard `PhantomData<T>` carries `T` only in type information and does not
+retain a guard. Values stored in `Option<T>`, `Box<T>`, struct fields, or nested
+futures can retain the guard. Opaque helper calls can still produce false
+positives when a return type mentions the guard but MIR cannot prove that the
+value stores no guard. The lint follows aggregate field paths through a helper
+only when MIR proves that the helper returns its sole argument unchanged.
 
 ## Example
 

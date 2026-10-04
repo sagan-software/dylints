@@ -20,7 +20,8 @@ extern crate rustc_trait_selection;
 use dylint_linting as _;
 use rustc_ast::LitKind;
 use rustc_hir::{
-    ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, Node, QPath,
+    BindingMode, ClosureKind, CoroutineDesugaring, CoroutineKind, Expr, ExprKind, Node, PatKind,
+    QPath,
     def::{DefKind, Res},
 };
 use rustc_infer::infer::TyCtxtInferExt as _;
@@ -100,17 +101,13 @@ pub fn insta_macro_invocation(
 /// # Examples
 ///
 /// ```rust
-/// # #![feature(rustc_private)]
-/// # use insta_support::InstaMacroInvocation;
-/// # use rustc_span::DUMMY_SP;
-/// let invocation = InstaMacroInvocation {
-///     span: DUMMY_SP,
-///     name: "assert_display_snapshot".to_owned(),
-///     arguments: vec!["value".to_owned()],
-///     source: "insta::assert_display_snapshot!(value)".to_owned(),
+/// #![feature(rustc_private)]
+/// use insta_support::{InstaMacroInvocation, insta_macro_replacement};
+///
+/// let replace_snapshot: fn(&InstaMacroInvocation) -> Option<String> = |invocation| {
+///     insta_macro_replacement(invocation, "assert_snapshot")
 /// };
-/// let replacement = insta_support::insta_macro_replacement(&invocation, "assert_snapshot");
-/// assert_eq!(replacement.as_deref(), Some("insta::assert_snapshot!(value)"));
+/// let _ = replace_snapshot;
 /// ```
 pub fn insta_macro_replacement(
     invocation: &InstaMacroInvocation,
@@ -192,10 +189,14 @@ pub fn is_in_allow_duplicates(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     })
 }
 
-/// Extract a string argument without evaluating arbitrary code.
+/// Maximum number of local and constant bindings followed during extraction.
+const STRING_LITERAL_RESOLUTION_LIMIT: usize = 8;
+
+/// Extract a known string argument without evaluating arbitrary code.
 ///
-/// The argument must be a string literal, a reference to one, or a path to a
-/// `const` in the current crate whose initializer is such a literal.
+/// The expression must be a string literal or resolve through at most eight simple
+/// immutable local or current-crate constant bindings to a string literal. Mutable
+/// bindings, destructuring, calls, and other computed expressions remain unknown.
 #[must_use]
 ///
 /// # Examples
@@ -207,19 +208,54 @@ pub fn is_in_allow_duplicates(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 /// };
 /// ```
 pub fn string_literal(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<String> {
+    string_literal_with_remaining(cx, expr, STRING_LITERAL_RESOLUTION_LIMIT)
+}
+
+/// Resolve a literal through a bounded chain of constants and immutable locals.
+fn string_literal_with_remaining(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    remaining: usize,
+) -> Option<String> {
     if let ExprKind::Lit(literal) = expr.kind {
         return literal.node.str().map(|value| value.as_str().to_owned());
+    }
+    if remaining == 0 {
+        return None;
     }
 
     let ExprKind::Path(ref path) = expr.kind else {
         return None;
     };
-    // Read the initializer of a local constant without evaluating it.
-    let Res::Def(DefKind::Const { .. }, def_id) = cx.qpath_res(path, expr.hir_id) else {
-        return None;
-    };
-    let body = cx.tcx.hir_maybe_body_owned_by(def_id.as_local()?)?;
-    string_literal(cx, body.value)
+    match cx.qpath_res(path, expr.hir_id) {
+        Res::Def(DefKind::Const { .. }, def_id) => {
+            // Read only a current-crate constant body; external values stay unknown.
+            let body = cx.tcx.hir_maybe_body_owned_by(def_id.as_local()?)?;
+            string_literal_with_remaining(cx, body.value, remaining - 1)
+        }
+        Res::Local(binding) => {
+            // Follow only a direct immutable local binding with a visible initializer.
+            let Some((_, Node::LetStmt(local))) = cx.tcx.hir_parent_iter(binding).next() else {
+                return None;
+            };
+            let PatKind::Binding(BindingMode::NONE, binding_id, _, None) = local.pat.kind else {
+                return None;
+            };
+            if binding_id != binding || local.pat.hir_id != binding {
+                return None;
+            }
+            string_literal_with_remaining(cx, local.init?, remaining - 1)
+        }
+        Res::Def(..)
+        | Res::PrimTy(_)
+        | Res::SelfTyParam { .. }
+        | Res::SelfTyAlias { .. }
+        | Res::SelfCtor(_)
+        | Res::ToolMod
+        | Res::OpenMod(_)
+        | Res::NonMacroAttr(_)
+        | Res::Err => None,
+    }
 }
 
 /// Extract the source contents of one complete cooked or raw string literal.

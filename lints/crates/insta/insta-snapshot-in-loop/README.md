@@ -16,11 +16,13 @@ the iteration order. An inline snapshot repeated in a loop fails. Inside
 
 ## Known problems
 
-The lint skips an assertion whose explicit name comes from a computation, such as
-`format!("case_{i}")`, because each pass can use a different name. It still
-warns for a literal name or a `const` name, which repeats on each pass. It
-does not check assertions inside closures passed to iterator methods such as
-`for_each`, or inside functions called from a loop.
+The lint skips a computed snapshot name, such as `format!("case_{i}")`, because
+each pass can use a different name. It warns for a literal or a name resolving
+through at most eight simple immutable local bindings or same-crate constants,
+because those values repeat. Mutable, destructured, or uninitialized bindings,
+external constants and statics, and other computed names remain unknown. The
+lint does not check assertions inside closures passed to iterator methods such
+as `for_each`, or inside functions called from a loop.
 
 ## Example
 
