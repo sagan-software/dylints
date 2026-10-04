@@ -29,8 +29,7 @@ wrong. A parser such as `clap` derives that handling from one type definition.
 
 ```rust
 fn main() {
-    let command = std::env::args().nth(1);
-    run(command);
+    let _command = std::env::args().nth(1);
 }
 ```
 
@@ -45,7 +44,6 @@ struct Cli {
 }
 
 fn main() {
-    let cli = Cli::parse();
-    run(cli.command);
+    let _command = Cli::parse().command;
 }
 ```

@@ -5453,6 +5453,7 @@ dependencies = [
 name = "manual_arg_parsing"
 version = "0.1.0"
 dependencies = [
+ "clap 4.6.4",
  "dylint-support",
  "dylint_linting",
  "dylint_testing",

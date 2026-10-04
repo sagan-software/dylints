@@ -15,6 +15,9 @@ extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_span;
 
+#[cfg(test)]
+use clap as _;
+
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
     Expr, ExprKind, HirId, Node, QPath,
