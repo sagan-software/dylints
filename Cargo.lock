@@ -5108,6 +5108,7 @@ dependencies = [
  "dylint-support",
  "dylint_linting",
  "dylint_testing",
+ "log",
  "tracing 0.1.44",
 ]
 
