@@ -12,7 +12,9 @@ systems that write `T`. A `With<T>` filter matches the same entities without tha
 
 ## Known problems
 
-Any other use of the query prevents the warning. The lint does not inspect uses inside closures, so it can report a query even if a closure also reads it. The lint does not check query data other than a single `&T`.
+Any other use of the query prevents the warning. The lint follows query uses into closure bodies, so
+a closure that reads a fetched component also prevents the warning. The lint recognizes only a
+single shared component reference, `&T`, as query data.
 
 ## Example
 

@@ -43,9 +43,9 @@ Rust review lints for local policy restrictions.
   types without `JsonSchema` in crates that use schemars.
 - [`repeated_cfg_gate`](repeated_cfg_gate): flags `cfg` predicates repeated more
   than three times across a crate outside test code.
-- [`runtime_env_read`](runtime_env_read): flags `std::env::var` and
-  `std::env::var_os` calls outside configuration, startup, build-script, and
-  test code.
+- [`runtime_env_read`](runtime_env_read): flags `std::env::var`,
+  `std::env::var_os`, `std::env::vars`, and `std::env::vars_os` calls outside
+  configuration, startup, build-script, and test code.
 - [`secret_raw_type`](secret_raw_type): flags secret fields, parameters, and
   local variables stored as raw strings or byte buffers.
 - [`semantic_primitive_type`](semantic_primitive_type): flags IDs, HTTP

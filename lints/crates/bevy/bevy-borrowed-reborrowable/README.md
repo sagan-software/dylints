@@ -15,12 +15,15 @@ adds a second layer of indirection, and callers must keep a mutable binding aliv
 
 ## Known problems
 
-The lint skips `self` parameters and parameters whose lifetime appears in the return type. It still
-reports trait method implementations, where the trait fixes the parameter type.
+The lint skips `self` parameters and parameters whose lifetime appears in the return type. It also
+skips trait method implementations because the trait fixes their parameter types.
 
 ## Example
 
 ```rust
+# use bevy_ecs::{component::Component, system::Query};
+# #[derive(Component)]
+# struct Marker;
 fn count_markers(query: &mut Query<&Marker>) -> usize {
     query.iter().count()
 }
@@ -29,6 +32,9 @@ fn count_markers(query: &mut Query<&Marker>) -> usize {
 ## Use instead
 
 ```rust
+# use bevy_ecs::{component::Component, system::Query};
+# #[derive(Component)]
+# struct Marker;
 fn count_markers(query: Query<&Marker>) -> usize {
     query.iter().count()
 }

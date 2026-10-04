@@ -11,11 +11,11 @@ child entities. Editing `Children` directly can leave it out of sync with the `C
 
 ## Known problems
 
-Bevy provides `Children::swap` and the `Children::sort_by` methods to reorder children through
-`&mut Children`. These keep the hierarchy in sync, but the lint also reports queries that only use
-them.
+The lint ignores queries whose only mutable uses are resolved inherent `Children` methods such as
+`swap` and `sort_by`, including calls inside closures. It still reports direct collection mutation
+and a mutable `Children` handle passed elsewhere.
 
-The lint does not look inside `Option<&mut Children>` or custom `QueryData` types.
+The query analysis does not look inside `Option<&mut Children>` or custom `QueryData` types.
 
 ## Example
 

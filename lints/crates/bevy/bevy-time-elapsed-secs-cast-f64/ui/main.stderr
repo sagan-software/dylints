@@ -1,5 +1,5 @@
 warning: widening `elapsed_secs()` to `f64` cannot recover its lost precision
-  --> $DIR/main.rs:21:18
+  --> $DIR/main.rs:38:18
    |
 LL |     let _ = time.elapsed_secs() as f64;
    |                  ^^^^^^^^^^^^
@@ -12,7 +12,7 @@ LL +     let _ = time.elapsed_secs_f64();
    |
 
 warning: widening `elapsed_secs()` to `f64` cannot recover its lost precision
-  --> $DIR/main.rs:22:25
+  --> $DIR/main.rs:39:25
    |
 LL |     let _ = 2.0 * (time.elapsed_secs()) as f64;
    |                         ^^^^^^^^^^^^
@@ -24,7 +24,7 @@ LL +     let _ = 2.0 * (time.elapsed_secs_f64());
    |
 
 warning: widening `elapsed_secs()` to `f64` cannot recover its lost precision
-  --> $DIR/main.rs:23:28
+  --> $DIR/main.rs:40:28
    |
 LL |     let _ = f64::from(real.elapsed_secs());
    |                            ^^^^^^^^^^^^
@@ -36,7 +36,7 @@ LL +     let _ = real.elapsed_secs_f64();
    |
 
 warning: widening `elapsed_secs()` to `f64` cannot recover its lost precision
-  --> $DIR/main.rs:24:23
+  --> $DIR/main.rs:41:23
    |
 LL |     let _: f64 = time.elapsed_secs().into();
    |                       ^^^^^^^^^^^^
@@ -48,7 +48,7 @@ LL +     let _: f64 = time.elapsed_secs_f64();
    |
 
 warning: widening `elapsed_secs()` to `f64` cannot recover its lost precision
-  --> $DIR/main.rs:25:25
+  --> $DIR/main.rs:42:25
    |
 LL |     let _ = widen!(time.elapsed_secs());
    |                         ^^^^^^^^^^^^

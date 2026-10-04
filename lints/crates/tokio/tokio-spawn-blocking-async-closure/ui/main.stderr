@@ -1,35 +1,51 @@
 warning: the future returned by this closure is not polled
-  --> $DIR/main.rs:16:13
+  --> $DIR/main.rs:33:10
    |
-LL |     let _ = tokio::task::spawn_blocking(|| async {});
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     drop(tokio::task::spawn_blocking(|| async {}));
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: use `tokio::spawn` or a synchronous closure
    = note: `#[warn(tokio_spawn_blocking_async_closure)]` on by default
 
 warning: the future returned by this closure is not polled
-  --> $DIR/main.rs:17:13
+  --> $DIR/main.rs:34:10
    |
-LL |     let _ = tokio::task::spawn_blocking(async || 1_u8);
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: use `tokio::spawn` or a synchronous closure
-
-warning: the future returned by this closure is not polled
-  --> $DIR/main.rs:18:13
-   |
-LL |     let _ = tokio::task::spawn_blocking(make_future);
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     drop(tokio::task::spawn_blocking(async || 1_u8));
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: use `tokio::spawn` or a synchronous closure
 
 warning: the future returned by this closure is not polled
-  --> $DIR/main.rs:19:13
+  --> $DIR/main.rs:36:10
    |
-LL |     let _ = tokio::task::spawn_blocking(ready_value);
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     drop(tokio::task::spawn_blocking(future_closure));
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: use `tokio::spawn` or a synchronous closure
 
-warning: 4 warnings emitted
+warning: the future returned by this closure is not polled
+  --> $DIR/main.rs:41:10
+   |
+LL |     drop(tokio::task::spawn_blocking(|| make_future()));
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `tokio::spawn` or a synchronous closure
+
+warning: the future returned by this closure is not polled
+  --> $DIR/main.rs:42:10
+   |
+LL |     drop(tokio::task::spawn_blocking(make_future));
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `tokio::spawn` or a synchronous closure
+
+warning: the future returned by this closure is not polled
+  --> $DIR/main.rs:43:10
+   |
+LL |     drop(tokio::task::spawn_blocking(ready_value));
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: use `tokio::spawn` or a synchronous closure
+
+warning: 6 warnings emitted
 

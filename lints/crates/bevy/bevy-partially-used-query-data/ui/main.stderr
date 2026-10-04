@@ -1,25 +1,25 @@
 warning: this custom query uses at most half of its fields
-  --> $DIR/main.rs:36:15
+  --> $DIR/main.rs:68:15
    |
-LL | fn bad(query: Query<AgentQuery>) {
-   |               ^^^^^^^^^^^^^^^^^
+LL | fn bad(query: Query<'_, '_, AgentQuery>) {
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: define a smaller query type for this behavior
    = note: `#[warn(bevy_partially_used_query_data)]` on by default
 
 warning: this custom query uses at most half of its fields
-  --> $DIR/main.rs:49:36
+  --> $DIR/main.rs:89:36
    |
-LL | fn bad_same_names_elsewhere(query: Query<AgentQuery>, other: Unrelated) {
-   |                                    ^^^^^^^^^^^^^^^^^
+LL | fn bad_same_names_elsewhere(query: Query<'_, '_, AgentQuery>, other: &Unrelated) {
+   |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: define a smaller query type for this behavior
 
 warning: this custom query uses at most half of its fields
-  --> $DIR/main.rs:94:27
+  --> $DIR/main.rs:160:27
    |
-LL | fn bad_mutable(mut query: Query<MutableAgentQuery>) {
-   |                           ^^^^^^^^^^^^^^^^^^^^^^^^
+LL | fn bad_mutable(mut query: Query<'_, '_, MutableAgentQuery>) {
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: define a smaller query type for this behavior
 

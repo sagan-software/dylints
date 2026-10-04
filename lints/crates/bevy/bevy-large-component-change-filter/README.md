@@ -14,7 +14,9 @@ Bevy tracks changes per component. A write to any field of `T` marks all of `T` 
 
 ## Known problems
 
-The lint matches fields by name anywhere in the function body, so a field with the same name on another type counts as a use. The lint does not count field accesses inside closures or in destructuring patterns.
+The lint counts field reads on the filtered component type, including inside closures. Fields with
+the same name on another type do not count. The lint does not count fields accessed only through
+destructuring patterns.
 
 ## Example
 

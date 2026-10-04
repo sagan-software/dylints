@@ -13,15 +13,19 @@ system that reads or writes `T`, even though this system only reads.
 
 ## Known problems
 
-Any other use of the query prevents the warning, including `&query` in a `for` loop. The lint does not inspect uses inside closures, so it can report a query that a closure mutates. The lint only checks
-references directly in the query data or in tuples.
+Any other use of the query prevents the warning, including `&query` in a `for` loop. The lint follows
+query uses into closure bodies, so a mutation inside a closure prevents the warning. It recognizes
+mutable references directly in the query data or in tuples.
 
 ## Example
 
 ```rust
+# use bevy_ecs::{component::Component, system::Query};
+# #[derive(Component)]
+# struct Position(f32);
 fn log_positions(query: Query<&mut Position>) {
     for position in query.iter() {
-        info!("{}", position.0);
+        let _position = position.0;
     }
 }
 ```
@@ -29,9 +33,12 @@ fn log_positions(query: Query<&mut Position>) {
 ## Use instead
 
 ```rust
+# use bevy_ecs::{component::Component, system::Query};
+# #[derive(Component)]
+# struct Position(f32);
 fn log_positions(query: Query<&Position>) {
     for position in query.iter() {
-        info!("{}", position.0);
+        let _position = position.0;
     }
 }
 ```

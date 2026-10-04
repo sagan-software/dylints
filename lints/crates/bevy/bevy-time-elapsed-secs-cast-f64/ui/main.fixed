@@ -1,22 +1,39 @@
 // run-rustfix
 // rustfix-only-machine-applicable
-#![allow(
-    dead_code,
-    elided_lifetimes_in_paths,
-    let_underscore_drop,
-    missing_docs,
-    unknown_lints,
-    unused_results
-)]
+#![feature(rustc_private)]
+//! Checks casts from Bevy elapsed seconds against the lint.
 
+use bevy_support as _;
 use bevy_time::{Real, Time};
+use bevy_time_elapsed_secs_cast_f64 as _;
+use dylint_linting as _;
+use dylint_support as _;
+use dylint_testing as _;
 
+/// Expands an expression with an explicit cast for the macro UI case.
 macro_rules! widen {
     ($value:expr) => {
         $value as f64
     };
 }
 
+/// Exercises lossy elapsed-time casts and quiet boundary cases.
+#[expect(
+    clippy::cast_lossless,
+    reason = "The casts are deliberate triggering examples for the Dylint UI test."
+)]
+#[expect(
+    clippy::let_underscore_must_use,
+    reason = "Discarded conversion results preserve the existing UI test expressions."
+)]
+#[expect(
+    clippy::unnecessary_cast,
+    reason = "The same-type cast is a quiet control for the elapsed-seconds lint."
+)]
+#[expect(
+    trivial_numeric_casts,
+    reason = "The same-type cast is a quiet control for the elapsed-seconds lint."
+)]
 fn elapsed(time: &Time, real: &Time<Real>) {
     let _ = time.elapsed_secs_f64();
     let _ = 2.0 * (time.elapsed_secs_f64());
@@ -31,4 +48,7 @@ fn elapsed(time: &Time, real: &Time<Real>) {
     let _ = from(real.elapsed_secs());
 }
 
-fn main() {}
+/// Runs the test cases so the fixture items remain used.
+fn main() {
+    elapsed(&Time::default(), &Time::<Real>::default());
+}

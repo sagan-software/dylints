@@ -1,17 +1,17 @@
 warning: this query change-tracks a large component
-  --> $DIR/main.rs:19:15
+  --> $DIR/main.rs:43:15
    |
-LL | fn bad(query: Query<&LargeAgent, Changed<LargeAgent>>) {
-   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL | fn bad(query: Query<'_, '_, &LargeAgent, Changed<LargeAgent>>) {
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: split independently changing state and filter on the specific component
    = note: `#[warn(bevy_large_component_change_filter)]` on by default
 
 warning: this query change-tracks a large component
-  --> $DIR/main.rs:42:36
+  --> $DIR/main.rs:77:12
    |
-LL | fn bad_same_names_elsewhere(query: Query<&LargeAgent, Changed<LargeAgent>>, mirror: Mirror) {
-   |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     query: Query<'_, '_, &LargeAgent, Changed<LargeAgent>>,
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: split independently changing state and filter on the specific component
 

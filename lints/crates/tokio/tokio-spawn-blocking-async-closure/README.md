@@ -2,8 +2,8 @@
 
 ## What it does
 
-Checks for calls to `tokio::task::spawn_blocking` whose argument is an async
-closure or a closure whose body is an async block.
+Checks calls to `tokio::task::spawn_blocking` when its function argument returns a type that
+implements `Future`.
 
 ## Why is this bad?
 
@@ -14,13 +14,13 @@ caller awaits that returned future.
 
 ## Known problems
 
-The lint checks only a closure written directly as the argument. A closure
-stored in a variable first, or a closure that calls a function returning a
-future, does not trigger the lint.
+The lint checks the resolved direct call and its inferred result type. It does not track whether the
+caller later awaits the `JoinHandle` and polls its future result.
 
 ## Example
 
 ```rust
+# async fn work() {}
 fn start() {
     let _task = tokio::task::spawn_blocking(|| async {
         work().await;
@@ -34,6 +34,7 @@ Spawn async work with `tokio::spawn`. If the work is blocking, keep the
 `spawn_blocking` closure synchronous.
 
 ```rust
+# async fn work() {}
 fn start() {
     let _task = tokio::spawn(async {
         work().await;

@@ -12,13 +12,17 @@ fixed steps that do not line up with frames, so the view stutters.
 
 ## Known problems
 
-The lint only checks systems passed as a plain function path or in a tuple of paths. It skips
-systems with ordering or run conditions, such as `move_camera.after(input)`. It only recognizes the
-`With<Camera>` filter, so the lint does not report queries filtered on `Camera2d` or `Camera3d`.
+The lint resolves tuple members and schedule configuration methods such as `.after()`, `.run_if()`,
+and `.chain()`. It skips closure systems and recognizes only the `With<Camera>` filter, so it does
+not report queries filtered on `Camera2d` or `Camera3d`.
 
 ## Example
 
 ```rust
+# use bevy_app::{App, FixedUpdate};
+# use bevy_camera::Camera;
+# use bevy_ecs::{query::With, system::Query};
+# use bevy_transform::components::Transform;
 fn move_camera(mut cameras: Query<&mut Transform, With<Camera>>) {
     for mut transform in &mut cameras {
         transform.translation.x += 1.0;
@@ -33,6 +37,8 @@ fn build(app: &mut App) {
 ## Use instead
 
 ```rust
+# use bevy_app::{App, Update};
+# fn move_camera() {}
 fn build(app: &mut App) {
     app.add_systems(Update, move_camera);
 }

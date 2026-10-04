@@ -11,7 +11,9 @@ Unused `&mut` fields still stop other systems that use those components from run
 
 ## Known problems
 
-The lint matches fields by name anywhere in the function body, so a field with the same name on another type counts as a use. The lint does not count field accesses inside closures or in destructuring patterns.
+The lint counts fields on the derived `QueryData` item types, including inside closures. Fields with
+the same name on unrelated types do not count. The lint does not count fields accessed only through
+destructuring patterns.
 
 ## Example
 

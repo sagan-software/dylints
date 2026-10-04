@@ -12,15 +12,18 @@ run in parallel, even when one writes only `x` and the other writes only `y`.
 
 ## Known problems
 
-The lint only sees free functions passed to `App::add_systems` as a plain path or in a tuple of
-paths. It skips systems with ordering or run conditions, such as `(move_x, move_y).chain()`.
+The lint compares named free functions registered through `App::add_systems` or
+`SubApp::add_systems`. It resolves tuple members and schedule configuration methods such as
+`.chain()`, `.run_if()`, and `.after()`.
 
-It skips a function when its queries mutate more than one local component, or when the function
-uses the component as a whole value. The lint does not inspect field accesses inside closures.
+It skips a function when its parameters contain more than one mutable local-component query access
+or when the function uses a component as a whole value. Field accesses inside closures count.
 
 ## Example
 
 ```rust
+# use bevy_app::{App, Update};
+# use bevy_ecs::prelude::{Component, Query};
 #[derive(Component)]
 struct Motion {
     x: f32,
@@ -47,6 +50,7 @@ fn build(app: &mut App) {
 ## Use instead
 
 ```rust
+# use bevy_ecs::prelude::{Component, Query};
 #[derive(Component)]
 struct MotionX(f32);
 
