@@ -409,30 +409,14 @@ async fn unsupported_reborrow_over_field_depth_limit(span: tracing::Span) {
     other_work().await;
 }
 
-/// Expect the lint to identify a guard nested in `Box<Option<_>>`.
-#[allow(
-    unknown_lints,
-    reason = "Cargo prebuilds UI examples before loading their Dylint library."
-)]
-#[expect(
-    tracing_await_holding_span_guard,
-    reason = "The nested Box<Option<_>> must retain the entered span across this await."
-)]
+/// Warn when `Box<Option<_>>` retains the guard across suspension.
 async fn regression_boxed_option_guard(span: tracing::Span) {
     let guard = Box::new(Some(span.entered()));
     other_work().await;
     drop(guard);
 }
 
-/// Expect the lint to identify a guard nested in a boxed user-defined wrapper.
-#[allow(
-    unknown_lints,
-    reason = "Cargo prebuilds UI examples before loading their Dylint library."
-)]
-#[expect(
-    tracing_await_holding_span_guard,
-    reason = "The boxed user-defined wrapper retains its entered span across this await."
-)]
+/// Warn when a boxed user-defined wrapper retains the guard across suspension.
 async fn regression_boxed_user_struct_guard(span: tracing::Span) {
     let guard = Box::new(GuardWrapper {
         marker: false,

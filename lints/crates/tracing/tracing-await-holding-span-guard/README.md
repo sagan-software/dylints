@@ -8,8 +8,8 @@ future retains in its saved state at an `.await`. The lint follows owned moves
 through `Option`, `Box::new`, tuples, and user-defined struct fields.
 It preserves nested field paths when `Box::new` moves a wrapper such as
 `Box<Option<EnteredSpan>>`.
-It checks the state at each suspension, so a guard retained through one `.await`
-still warns there even when code releases it before a later `.await`.
+It checks each suspension separately: releasing a guard after one `.await` does
+not erase that warning, and the release can keep later `.await` points quiet.
 
 ## Why is this bad?
 

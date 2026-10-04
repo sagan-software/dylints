@@ -92,5 +92,37 @@ async fn tuple_guard(span: Span) {
     drop(guard);
 }
 
+/// Warn when `Box<Option<_>>` retains the guard across optimized suspension.
+async fn boxed_option_guard(span: Span) {
+    let guard = Box::new(Some(span.entered()));
+    other_work().await;
+    drop(guard);
+}
+
+/// Stay quiet when the boxed option is dropped before optimized suspension.
+async fn dropped_boxed_option_guard(span: Span) {
+    let guard = Box::new(Some(span.entered()));
+    drop(guard);
+    other_work().await;
+}
+
+/// Warn when a boxed user-defined wrapper retains the guard across suspension.
+async fn boxed_struct_guard(span: Span) {
+    let guard = Box::new(GuardWrapper {
+        guard: Some(span.entered()),
+    });
+    other_work().await;
+    drop(guard);
+}
+
+/// Stay quiet when the boxed wrapper is dropped before optimized suspension.
+async fn dropped_boxed_struct_guard(span: Span) {
+    let guard = Box::new(GuardWrapper {
+        guard: Some(span.entered()),
+    });
+    drop(guard);
+    other_work().await;
+}
+
 /// Satisfy the optimized compiler UI fixture entry-point requirement.
 fn main() {}

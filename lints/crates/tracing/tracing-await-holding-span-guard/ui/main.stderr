@@ -194,5 +194,31 @@ LL |     other_work().await;
    |                  ^^^^^
    = help: use `Span::in_scope`, `Future::instrument`, or `#[instrument]`
 
-warning: 15 warnings emitted
+warning: this tracing span guard is held across an `.await` point
+  --> $DIR/main.rs:414:31
+   |
+LL |     let guard = Box::new(Some(span.entered()));
+   |                               ^^^^^^^^^^^^^^
+   |
+note: the span remains entered through these suspension points
+  --> $DIR/main.rs:415:18
+   |
+LL |     other_work().await;
+   |                  ^^^^^
+   = help: use `Span::in_scope`, `Future::instrument`, or `#[instrument]`
+
+warning: this tracing span guard is held across an `.await` point
+  --> $DIR/main.rs:425:21
+   |
+LL |         guard: Some(span.entered()),
+   |                     ^^^^^^^^^^^^^^
+   |
+note: the span remains entered through these suspension points
+  --> $DIR/main.rs:427:18
+   |
+LL |     other_work().await;
+   |                  ^^^^^
+   = help: use `Span::in_scope`, `Future::instrument`, or `#[instrument]`
+
+warning: 17 warnings emitted
 
