@@ -154,7 +154,7 @@ unset CARGO_BUILD_BUILD_DIR
 lint_host=$(rustc +nightly-2026-07-15 -vV | sed -n 's/^host: //p')
 lint_host=$(printf '%s' "$lint_host" | tr '[:lower:]-' '[:upper:]_')
 export "CARGO_TARGET_${lint_host}_LINKER=dylint-link"
-DYLINT_RUSTFLAGS="-D warnings" cargo dylint --all --workspace -- --all-targets
+RUSTFLAGS="-D warnings" cargo dylint --all --workspace -- --all-targets
 ```
 
 The last command fails on lint warnings and other compiler warnings.

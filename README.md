@@ -98,7 +98,7 @@ crate. `--all-targets` also checks tests, examples, and benches.
 To make lint warnings fail a CI check, use:
 
 ```sh
-DYLINT_RUSTFLAGS="-D warnings" cargo dylint --all --workspace -- --all-targets
+RUSTFLAGS="-D warnings" cargo dylint --all --workspace -- --all-targets
 ```
 
 This also treats the compiler's other warnings as errors. Keep running
