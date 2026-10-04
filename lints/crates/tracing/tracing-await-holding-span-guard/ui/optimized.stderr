@@ -1,0 +1,68 @@
+warning: this tracing span guard is held across an `.await` point
+  --> $DIR/optimized.rs:22:23
+   |
+LL |     let _guard = Some(span.entered());
+   |                       ^^^^^^^^^^^^^^
+   |
+note: the span remains entered through these suspension points
+  --> $DIR/optimized.rs:23:18
+   |
+LL |     other_work().await;
+   |                  ^^^^^
+   = help: use `Span::in_scope`, `Future::instrument`, or `#[instrument]`
+   = note: `#[warn(tracing_await_holding_span_guard)]` on by default
+
+warning: this tracing span guard is held across an `.await` point
+  --> $DIR/optimized.rs:59:22
+   |
+LL |     let guard = Some(span.entered());
+   |                      ^^^^^^^^^^^^^^
+   |
+note: the span remains entered through these suspension points
+  --> $DIR/optimized.rs:63:18
+   |
+LL |     other_work().await;
+   |                  ^^^^^
+   = help: use `Span::in_scope`, `Future::instrument`, or `#[instrument]`
+
+warning: this tracing span guard is held across an `.await` point
+  --> $DIR/optimized.rs:68:26
+   |
+LL |     let guard = Box::new(span.entered());
+   |                          ^^^^^^^^^^^^^^
+   |
+note: the span remains entered through these suspension points
+  --> $DIR/optimized.rs:69:18
+   |
+LL |     other_work().await;
+   |                  ^^^^^
+   = help: use `Span::in_scope`, `Future::instrument`, or `#[instrument]`
+
+warning: this tracing span guard is held across an `.await` point
+  --> $DIR/optimized.rs:82:21
+   |
+LL |         guard: Some(span.entered()),
+   |                     ^^^^^^^^^^^^^^
+   |
+note: the span remains entered through these suspension points
+  --> $DIR/optimized.rs:84:18
+   |
+LL |     other_work().await;
+   |                  ^^^^^
+   = help: use `Span::in_scope`, `Future::instrument`, or `#[instrument]`
+
+warning: this tracing span guard is held across an `.await` point
+  --> $DIR/optimized.rs:90:18
+   |
+LL |     let guard = (span.entered(),);
+   |                  ^^^^^^^^^^^^^^
+   |
+note: the span remains entered through these suspension points
+  --> $DIR/optimized.rs:91:18
+   |
+LL |     other_work().await;
+   |                  ^^^^^
+   = help: use `Span::in_scope`, `Future::instrument`, or `#[instrument]`
+
+warning: 5 warnings emitted
+

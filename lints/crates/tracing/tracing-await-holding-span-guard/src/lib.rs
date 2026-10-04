@@ -9,9 +9,11 @@
 //! The README defines the supported async shape and replacement. UI fixtures
 //! cover triggering and non-triggering forms for safe adoption.
 
+extern crate rustc_abi;
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_middle;
+extern crate rustc_span;
 
 #[cfg(test)]
 use tracing as _;
@@ -22,6 +24,8 @@ use rustc_hir::{
 };
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::{mir::CoroutineLayout, ty::Adt};
+
+mod ownership;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -47,12 +51,16 @@ impl<'tcx> LateLintPass<'tcx> for TracingAwaitHoldingSpanGuard {
             return;
         };
 
-        check_interior_types(cx, coroutine_layout);
+        check_interior_types(cx, coroutine_layout, *def_id);
     }
 }
 
 /// Diagnose tracing guards stored in coroutine states at suspension points.
-fn check_interior_types(cx: &LateContext<'_>, coroutine: &CoroutineLayout<'_>) {
+fn check_interior_types<'tcx>(
+    cx: &LateContext<'tcx>,
+    coroutine: &CoroutineLayout<'tcx>,
+    async_body: rustc_hir::def_id::LocalDefId,
+) {
     // Inspect only saved ADT locals because tracing guards are ADTs.
     for (type_index, type_cause) in coroutine.field_tys.iter_enumerated() {
         let Adt(adt, _) = type_cause.ty.kind() else {
@@ -89,6 +97,9 @@ fn check_interior_types(cx: &LateContext<'_>, coroutine: &CoroutineLayout<'_>) {
             }),
         );
     }
+
+    // Follow constructor results through owned wrappers using MIR move and drop facts.
+    ownership::check_wrapped_guards(cx, coroutine, async_body);
 }
 
 /// Prove that a saved local is one of tracing's two span guard types.

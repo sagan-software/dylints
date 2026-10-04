@@ -20,6 +20,10 @@ tracing.workspace = true
 name = "main"
 path = "ui/main.rs"
 
+[[example]]
+name = "optimized"
+path = "ui/optimized.rs"
+
 [features]
 rlib = ["dylint_linting/constituent"]
 
