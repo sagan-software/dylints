@@ -13,9 +13,11 @@ telling cases apart.
 
 ## Known problems
 
-The lint follows a string literal through at most eight simple immutable local
-bindings or constants defined in the same crate. Mutable, destructured, or
-uninitialized bindings, external constants and statics, calls, and other
+The lint follows string literals for at most eight steps through simple immutable
+local bindings, same-crate constants, and same-crate inherent associated
+constants. Trait-associated constants remain unknown because an implementation
+may override a trait default. Mutable, destructured, or uninitialized bindings;
+external constants, statics, and associated constants; calls; and other
 computed expressions remain unknown. The lint does not check suffixes that
 contain only whitespace.
 

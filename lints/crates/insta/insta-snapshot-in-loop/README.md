@@ -17,12 +17,13 @@ the iteration order. An inline snapshot repeated in a loop fails. Inside
 ## Known problems
 
 The lint skips a computed snapshot name, such as `format!("case_{i}")`, because
-each pass can use a different name. It warns for a literal or a name resolving
-through at most eight simple immutable local bindings or same-crate constants,
-because those values repeat. Mutable, destructured, or uninitialized bindings,
-external constants and statics, and other computed names remain unknown. The
-lint does not check assertions inside closures passed to iterator methods such
-as `for_each`, or inside functions called from a loop.
+each pass can use a different name. It warns for a literal or a name that resolves in at most eight steps through
+simple immutable local bindings, same-crate constants, and same-crate inherent
+associated constants, because those values repeat. Trait-associated constants remain unknown because an implementation may
+override a trait default. Mutable, destructured, or uninitialized bindings;
+external constants, statics, and associated constants; calls; and other computed
+names remain unknown. The lint does not check assertions inside closures passed
+to iterator methods such as `for_each`, or inside functions called from a loop.
 
 ## Example
 

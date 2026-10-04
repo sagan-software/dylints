@@ -23,5 +23,21 @@ LL |     settings.set_description(empty_description);
    |
    = help: provide reviewer context or omit the setting
 
-warning: 3 warnings emitted
+warning: this Insta setting is an empty string
+  --> $DIR/main.rs:39:14
+   |
+LL |     settings.set_description(AssociatedDescription::EMPTY);
+   |              ^^^^^^^^^^^^^^^
+   |
+   = help: provide reviewer context or omit the setting
+
+warning: this Insta setting is an empty string
+  --> $DIR/main.rs:44:14
+   |
+LL |     settings.set_description(empty_associated_description);
+   |              ^^^^^^^^^^^^^^^
+   |
+   = help: provide reviewer context or omit the setting
+
+warning: 5 warnings emitted
 

@@ -26,7 +26,7 @@ use rustc_hir::{
 };
 use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_lint::{LateContext, LintContext};
-use rustc_middle::ty::Ty;
+use rustc_middle::ty::{AssocContainer, Ty};
 use rustc_span::{ExpnData, ExpnKind, MacroKind, Span, SyntaxContext, def_id::DefId, sym};
 use rustc_trait_selection::infer::InferCtxtExt as _;
 
@@ -189,14 +189,16 @@ pub fn is_in_allow_duplicates(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     })
 }
 
-/// Maximum number of local and constant bindings followed during extraction.
+/// Maximum number of literal-reference steps through local and constant definitions.
 const STRING_LITERAL_RESOLUTION_LIMIT: usize = 8;
 
 /// Extract a known string argument without evaluating arbitrary code.
 ///
 /// The expression must be a string literal or resolve through at most eight simple
-/// immutable local or current-crate constant bindings to a string literal. Mutable
-/// bindings, destructuring, calls, and other computed expressions remain unknown.
+/// immutable local, same-crate non-associated constant, or same-crate inherent
+/// associated-constant references to a string literal. Trait-associated constants
+/// remain unknown because an implementation may override a trait default. Mutable
+/// bindings, destructuring, calls, and other computed expressions also remain unknown.
 #[must_use]
 ///
 /// # Examples
@@ -230,6 +232,15 @@ fn string_literal_with_remaining(
     match cx.qpath_res(path, expr.hir_id) {
         Res::Def(DefKind::Const { .. }, def_id) => {
             // Read only a current-crate constant body; external values stay unknown.
+            let body = cx.tcx.hir_maybe_body_owned_by(def_id.as_local()?)?;
+            string_literal_with_remaining(cx, body.value, remaining - 1)
+        }
+        Res::Def(DefKind::AssocConst { .. }, def_id) => {
+            // Do not read trait items: an implementation can override their defaults.
+            if cx.tcx.associated_item(def_id).container != AssocContainer::InherentImpl {
+                return None;
+            }
+            // Read only a current-crate inherent item body; external values stay unknown.
             let body = cx.tcx.hir_maybe_body_owned_by(def_id.as_local()?)?;
             string_literal_with_remaining(cx, body.value, remaining - 1)
         }
@@ -483,8 +494,10 @@ pub fn call_returns_future(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 
 /// Match a Settings setter whose only argument is an empty string.
 ///
-/// The argument must be an empty string literal or a local constant initialized
-/// with one, leaving computed values outside this contract.
+/// The argument must be an empty string literal or resolve through at most eight
+/// simple immutable local bindings, same-crate non-associated constants, or same-crate
+/// inherent associated constants. Trait-associated constants remain unknown because
+/// an implementation may override a trait default.
 #[must_use]
 ///
 /// # Examples

@@ -14,11 +14,13 @@ records.
 
 ## Known problems
 
-The lint follows string literals through at most eight simple immutable local
-bindings or constants defined in the same crate. Mutable, destructured, or
-uninitialized bindings, external constants and statics, calls, and other
+The lint follows string literals for at most eight steps through simple immutable
+local bindings, same-crate constants, and same-crate inherent associated
+constants. Trait-associated constants remain unknown because an implementation
+may override a trait default. Mutable, destructured, or uninitialized bindings;
+external constants, statics, and associated constants; calls; and other
 computed expressions remain unknown. It skips patterns that contain any of
-`.^$*+?()[]{}|\`, even when the filter still has no effect. The
+`.^$*+?()[]{}|\\`, even when the filter still has no effect. The
 machine-applicable fix removes the call only when it is a whole statement. The
 fix leaves local declarations and other statements unchanged.
 
