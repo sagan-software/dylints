@@ -15,8 +15,9 @@ author left out a value by mistake.
 
 The lint follows string literals for at most eight steps through simple immutable
 local bindings, same-crate constants, and same-crate inherent associated
-constants. Trait-associated constants remain unknown because an implementation
-may override a trait default. Mutable, destructured, or uninitialized bindings;
+constants. Trait-associated constants remain unknown, even with literal defaults,
+because an implementation may override the default.
+Mutable, destructured, or uninitialized bindings;
 external constants, statics, and associated constants; calls; and other
 computed expressions remain unknown.
 

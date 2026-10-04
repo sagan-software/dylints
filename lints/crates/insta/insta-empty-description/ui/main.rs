@@ -19,6 +19,9 @@ fn main() {
 
     let empty_description = "";
     settings.set_description(empty_description);
+
+    associated_const_description(AssociatedDescription);
+    trait_associated_description_controls(DefaultDescription, NamedDescription);
 }
 
 /// Provide an empty description through a same-crate associated constant.
@@ -34,7 +37,7 @@ impl AssociatedDescription {
 }
 
 /// Exercise empty, nonempty, computed, and aliased inherent associated constants.
-fn associated_const_description() {
+fn associated_const_description(_description: AssociatedDescription) {
     let mut settings = insta::Settings::clone_current();
     settings.set_description(AssociatedDescription::EMPTY);
     settings.set_description(AssociatedDescription::NONEMPTY);
@@ -80,7 +83,10 @@ impl DescriptionValue for NamedDescription {
 }
 
 /// Keep trait defaults, overrides, and computed values unknown to the lint.
-fn trait_associated_description_controls() {
+fn trait_associated_description_controls(
+    _default_description: DefaultDescription,
+    _named_description: NamedDescription,
+) {
     let mut settings = insta::Settings::clone_current();
     settings.set_description(<DefaultDescription as DescriptionValue>::DEFAULT_EMPTY);
     settings.set_description(<NamedDescription as DescriptionValue>::OVERRIDDEN);
