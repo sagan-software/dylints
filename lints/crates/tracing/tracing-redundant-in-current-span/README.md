@@ -65,5 +65,5 @@ fn drop_inner() {
 ```
 
 Otherwise, keep the original chain when the captured current span's enter and
-exit callbacks are required. Accept their removal only when that change is
-intended.
+exit callbacks are required. Remove the chain only when you intend to remove
+those callbacks.
