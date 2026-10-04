@@ -6,6 +6,8 @@ Checks for a `tracing::span::Entered` or `tracing::span::EnteredSpan` guard
 that a resolved `Span::enter` or `Span::entered` call returns and that an async
 future retains in its saved state at an `.await`. The lint follows owned moves
 through `Option`, `Box::new`, tuples, and user-defined struct fields.
+It checks the state at each suspension, so a guard retained through one `.await`
+still warns there even when code releases it before a later `.await`.
 
 ## Why is this bad?
 

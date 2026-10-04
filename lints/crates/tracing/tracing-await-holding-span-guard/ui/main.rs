@@ -70,7 +70,7 @@ const fn opaque_no_op_mut_ref(_guard: &mut Option<tracing::span::EnteredSpan>) {
 
 /// Consume a boolean through an indirect-call control.
 #[inline(never)]
-fn ignore_flag(_flag: bool) {}
+const fn ignore_flag(_flag: bool) {}
 
 /// Avoid warning after an opaque helper consumes the guard and returns `None`.
 async fn valid_opaque_helper_discards_guard(span: tracing::Span) {
@@ -276,7 +276,7 @@ impl Drop for GuardWrapper {
 /// Store a recursive wrapper before its tracing guard.
 struct RecursiveGuard {
     /// Optional recursive ownership link.
-    next: Option<Box<RecursiveGuard>>,
+    next: Option<Box<Self>>,
     /// Optional tracing guard retained by this wrapper.
     held: Option<tracing::span::EnteredSpan>,
 }
@@ -304,7 +304,7 @@ async fn invalid_recursive_struct_guard(span: tracing::Span) {
 }
 
 /// Provide the wrapper callback field's function pointer value.
-fn wrapper_callback() {}
+const fn wrapper_callback() {}
 
 /// Leave array wrappers unsupported and quiet.
 async fn unsupported_array_guard_wrapper(span: tracing::Span) {
