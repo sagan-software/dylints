@@ -15,6 +15,7 @@ extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_lexer;
 extern crate rustc_middle;
+extern crate rustc_parse;
 extern crate rustc_span;
 
 use std::collections::HashMap;
@@ -29,6 +30,7 @@ use rustc_hir::{
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty::{TyCtxt, Visibility};
+use rustc_parse::lexer::nfc_normalize;
 use rustc_span::{
     BytePos, Span, Symbol,
     def_id::{CRATE_DEF_ID, LocalDefId},
@@ -317,7 +319,8 @@ fn is_named_twice_in_file(
     let counts = files.entry(source_file.start_pos).or_insert_with(|| {
         let mut counts = HashMap::new();
         for identifier in identifier_tokens(source) {
-            *counts.entry(Symbol::intern(identifier)).or_insert(0) += 1;
+            // Match rustc's NFC normalization of written Unicode identifiers.
+            *counts.entry(nfc_normalize(identifier)).or_insert(0) += 1;
         }
         counts
     });
