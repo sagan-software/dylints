@@ -754,8 +754,8 @@ fn consume_moved_call_inputs<'tcx>(
         {
             continue;
         }
-        let source_is_guard = state.places.iter().any(|tracked| tracked == &source);
-        if result_is_box && source_is_guard {
+        if result_is_box {
+            // Preserve the tracked field suffix when `Box::new` owns a wrapper.
             carried_places.extend(transfer_guard_places(
                 &state.places,
                 &source,
