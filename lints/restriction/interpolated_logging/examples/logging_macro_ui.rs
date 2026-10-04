@@ -50,8 +50,8 @@ fn log_key_value_messages(user: u32) {
     log::info!(
         target: "log-target",
         payload = "{json}";
-        "log received {}",
-        user.saturating_add(1),
+        "log received {user}",
+        user = fixture_next_user(user),
     );
 }
 
@@ -62,14 +62,14 @@ fn log_logger_messages(user: u32) {
         target: concat!("logger-target.", "{user}"),
         "logger received {user}"
     );
-    log::info!(target: "log-target", "log received {}", user.saturating_add(1));
+    log::info!(target: "log-target", "log received {user}", user = fixture_next_user(user));
 }
 
 /// Check built-in `concat!` literal decoding and interpolation detection.
 fn concat_messages(user: u32) {
     tracing::info!(
-        concat!(r"received {}", 1, 'x', true, false, 2.5, -3, -0.5),
-        user,
+        concat!(r"received {user}", 1, 'x', true, false, 2.5, -3, -0.5),
+        user = user,
     );
     tracing::info!(concat!("{", '0', "}"), user);
     tracing::warn!("\x7b0\x7d", user);
@@ -90,4 +90,9 @@ fn concat_messages(user: u32) {
 )]
 fn empty_concat_message() {
     tracing::info!(concat!());
+}
+
+/// Compute the saturating value used by the named-format-argument cases.
+const fn fixture_next_user(user: u32) -> u32 {
+    user.saturating_add(1)
 }

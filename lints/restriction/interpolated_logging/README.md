@@ -10,8 +10,9 @@ such as `::std::concat!`, by final path segment. It accepts parenthesis,
 bracket, and brace delimiters. It recognizes strings, raw strings, characters,
 booleans, integers, floats, and negative numeric literals. It reads the `log`
 key/value `;` form and the positional level in `tracing::event!`, while
-skipping recognized options and structured fields. Rust literal escapes are
-decoded before the resulting message text is checked.
+skipping recognized options and structured fields. Named format arguments
+interpolate into the message text. Rust literal escapes are decoded
+before the resulting message text is checked.
 
 ## Why is this bad?
 

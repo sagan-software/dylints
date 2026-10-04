@@ -34,8 +34,8 @@ LL |     tracing::info!(concat!("received {", "}",), user);
 warning: logging message uses string interpolation
   --> $DIR/logging_macro_ui.rs:53:9
    |
-LL |         "log received {}",
-   |         ^^^^^^^^^^^^^^^^^
+LL |         "log received {user}",
+   |         ^^^^^^^^^^^^^^^^^^^^^
    |
    = help: put runtime values in structured key/value fields and keep the message static
 
@@ -50,16 +50,16 @@ LL |         "logger received {user}"
 warning: logging message uses string interpolation
   --> $DIR/logging_macro_ui.rs:65:38
    |
-LL |     log::info!(target: "log-target", "log received {}", user.saturating_add(1));
-   |                                      ^^^^^^^^^^^^^^^^^
+LL |     log::info!(target: "log-target", "log received {user}", user = fixture_next_user(user));
+   |                                      ^^^^^^^^^^^^^^^^^^^^^
    |
    = help: put runtime values in structured key/value fields and keep the message static
 
 warning: logging message uses string interpolation
   --> $DIR/logging_macro_ui.rs:71:17
    |
-LL |         concat!(r"received {}", 1, 'x', true, false, 2.5, -3, -0.5),
-   |                 ^^^^^^^^^^^^^^
+LL |         concat!(r"received {user}", 1, 'x', true, false, 2.5, -3, -0.5),
+   |                 ^^^^^^^^^^^^^^^^^^
    |
    = help: put runtime values in structured key/value fields and keep the message static
 
