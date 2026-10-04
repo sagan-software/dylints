@@ -13,8 +13,12 @@ wrong. A parser such as `clap` derives that handling from one type definition.
 
 ## Known problems
 
-- The lint flags every call, including code that only forwards the arguments
-  to a child process or counts them.
+- The lint suppresses a call only when its iterator feeds a resolved
+  `std::process::Command::args` or `Iterator::count` call through at most four
+  standard `skip` or `take` adapters.
+- The lint still flags stored iterators, filtered or mixed streams, other
+  consumers, and parsing operations such as `next`, `nth`, and `collect`.
+- Methods named `args` or `count` on other types do not qualify for suppression.
 - Small throwaway binaries that do not need a parser also trigger.
 - Argument reads hidden behind a wrapper function in another crate are not
   detected.
