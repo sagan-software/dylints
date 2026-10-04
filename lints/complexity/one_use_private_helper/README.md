@@ -5,8 +5,8 @@
 Checks for a free function visible only in its own module. Its body must be one
 expression without statements, and its only crate reference must be one direct
 call from another function, closure, or constant. The lint tokenizes each source
-file once and reuses its Rust identifier counts for other candidate helpers. Identifier counts
-use the same Unicode NFC normalization as rustc.
+file once and reuses its Rust identifier counts for other candidate helpers.
+Identifier counts use the same Unicode NFC normalization as rustc.
 
 ## Why is this bad?
 

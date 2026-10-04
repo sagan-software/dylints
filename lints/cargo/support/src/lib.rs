@@ -611,19 +611,6 @@ mod tests {
             .collect()
     }
 
-    /// Return the version text of every `[dependencies]` entry, by name.
-    fn versions(document: &Document<String>) -> Vec<(&str, Option<&str>)> {
-        dependency_tables(document.as_table())
-            .flat_map(dependencies)
-            .map(|dependency| {
-                let literal = dependency
-                    .version()
-                    .and_then(|(_, range)| document.raw().get(range));
-                (dependency.name, literal)
-            })
-            .collect()
-    }
-
     /// The nearest manifest is the first `Cargo.toml` above the file.
     #[test]
     fn finds_nearest_manifest_above_the_crate_root() {
@@ -839,8 +826,20 @@ mod tests {
             "#,
         );
 
+        // Read each version from the manifest spelling used by the dependency.
+        let versions: Vec<_> = dependency_tables(document.as_table())
+            .flat_map(dependencies)
+            .map(|dependency| {
+                let literal = dependency
+                    .version()
+                    .and_then(|(_, range)| document.raw().get(range));
+                (dependency.name, literal)
+            })
+            .collect();
+
+        // Check shorthand and table values, including absent and invalid versions.
         assert_eq!(
-            versions(&document),
+            versions,
             [
                 ("shorthand", Some("\"1\"")),
                 ("inline", Some("'0.1'")),
