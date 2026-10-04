@@ -90,7 +90,9 @@ enum ParentExpression<'hir> {
 
 /// Return whether a standard argument iterator reaches forwarding or counting directly.
 fn is_forwarded_or_counted(cx: &LateContext<'_>, args_call: &Expr<'_>) -> bool {
+    // Start from this source occurrence so a stored alias cannot inherit a later forwarding use.
     let mut current = args_call;
+    // Keep the adapter count separate to enforce the documented maximum.
     let mut adapters = 0;
     let mut parents = cx.tcx.hir_parent_iter(args_call.hir_id);
 
@@ -121,31 +123,49 @@ fn argument_use(
     current: &Expr<'_>,
     adapters: usize,
 ) -> ArgumentUse {
+    // Classify receiver uses before considering an explicit forwarding argument.
     match parent_expression(parent) {
         ParentExpression::Temporary(inner) if inner.hir_id == current.hir_id => {
             ArgumentUse::Temporary
         }
-        ParentExpression::MethodCall(receiver, arguments) => {
-            if receiver.hir_id == current.hir_id && is_standard_iterator_method(cx, parent, "count")
-            {
-                ArgumentUse::Count
-            } else if receiver.hir_id == current.hir_id
-                && arguments.len() == 1
-                && adapters < MAX_ARGUMENT_ADAPTERS
-                && is_supported_iterator_adapter(cx, parent)
-            {
-                ArgumentUse::Adapter
-            } else if arguments
+        ParentExpression::MethodCall(receiver, arguments) if receiver.hir_id == current.hir_id => {
+            iterator_use_policy(cx, parent, arguments, adapters)
+        }
+        // Only the resolved Command::args method accepts the iterator as an explicit argument.
+        ParentExpression::MethodCall(_, arguments)
+            if arguments
                 .iter()
                 .any(|argument| argument.hir_id == current.hir_id)
-                && is_standard_command_args(cx, parent)
-            {
-                ArgumentUse::Forward
-            } else {
-                ArgumentUse::Other
-            }
+                && is_standard_command_args(cx, parent) =>
+        {
+            ArgumentUse::Forward
         }
-        ParentExpression::Temporary(_) | ParentExpression::Other => ArgumentUse::Other,
+        ParentExpression::Temporary(_)
+        | ParentExpression::MethodCall(..)
+        | ParentExpression::Other => ArgumentUse::Other,
+    }
+}
+
+/// Classify iterator receiver uses covered by the direct-use policy.
+fn iterator_use_policy(
+    cx: &LateContext<'_>,
+    parent: &Expr<'_>,
+    arguments: &[Expr<'_>],
+    adapters: usize,
+) -> ArgumentUse {
+    // Count qualifies only when resolution identifies the standard Iterator method.
+    if is_standard_iterator_method(cx, parent, "count") {
+        return ArgumentUse::Count;
+    }
+
+    // Limit adapter exemptions to bounded skip/take chains so transformations remain visible.
+    if arguments.len() == 1
+        && adapters < MAX_ARGUMENT_ADAPTERS
+        && is_supported_iterator_adapter(cx, parent)
+    {
+        ArgumentUse::Adapter
+    } else {
+        ArgumentUse::Other
     }
 }
 
@@ -206,9 +226,11 @@ fn is_standard_command_args(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 
 /// Return whether an expression resolves to a standard Iterator method by name.
 fn is_standard_iterator_method(cx: &LateContext<'_>, expr: &Expr<'_>, name: &str) -> bool {
+    // Resolve method identity first so a custom same-named method cannot qualify.
     let Some(method) = cx.typeck_results().type_dependent_def_id(expr.hir_id) else {
         return false;
     };
+    // Confirm the associated item has a trait owner before checking Iterator identity.
     let Some(associated_item) = cx.tcx.opt_associated_item(method) else {
         return false;
     };
