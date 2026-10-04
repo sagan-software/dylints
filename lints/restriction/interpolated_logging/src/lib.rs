@@ -245,7 +245,15 @@ fn string_literal_expression(argument: &[&TokenTree]) -> Option<(String, Span)> 
             | AstLitKind::Bool(_)
             | AstLitKind::Err(_) => None,
         },
+        _ => concat_macro_arguments(argument).and_then(concat_string_expression),
+    }
+}
+
+/// Read the argument group from a macro invocation whose final path segment is `concat`.
+fn concat_macro_arguments<'tree>(argument: &[&'tree TokenTree]) -> Option<&'tree TokenStream> {
+    match argument {
         [
+            ..,
             TokenTree::Token(
                 Token {
                     kind: TokenKind::Ident(name, _),
@@ -260,8 +268,13 @@ fn string_literal_expression(argument: &[&TokenTree]) -> Option<(String, Span)> 
                 },
                 _,
             ),
-            TokenTree::Delimited(_, _, Delimiter::Parenthesis, nested),
-        ] if name.as_str() == "concat" => concat_string_expression(nested),
+            TokenTree::Delimited(
+                _,
+                _,
+                Delimiter::Parenthesis | Delimiter::Bracket | Delimiter::Brace,
+                nested,
+            ),
+        ] if name.as_str() == "concat" => Some(nested),
         _ => None,
     }
 }

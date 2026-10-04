@@ -20,7 +20,7 @@ fn main() {
 /// Check tracing options, fields, and direct message strings.
 fn tracing_messages(user: u32) {
     tracing::info!(payload = "{json}", "received",);
-    tracing::info!({ payload = "{json}" }, "received");
+    tracing::info!({ payload = std::concat!("field {", "}") }, "received");
     tracing::info!(payload = "{json}");
     tracing::info!(user, "received {user}");
     tracing::info!("received {user}");
@@ -43,7 +43,7 @@ fn tracing_event(user: u32) {
 /// Check the `log` key/value separator and format arguments.
 fn log_key_value_messages(user: u32) {
     log::info!(
-        target: concat!("log-target.", "{user}"),
+        target: std::concat!("log-target.", "{user}"),
         payload = "{json}";
         "received"
     );
@@ -76,6 +76,11 @@ fn concat_messages(user: u32) {
     tracing::warn!(concat!('\x7b', "0}"), user);
     tracing::warn!(concat!("\x7b", "0}"), user);
     tracing::warn!(concat!("\x7b\x7b", "\x7d\x7d"));
+    tracing::info!(std::concat!("qualified {", "}"), user);
+    tracing::info!(core::concat!("qualified {", "}"), user);
+    tracing::info!(concat!["bracket {", "}"], user);
+    tracing::info!(std::concat! {"brace {", "}"}, user);
+    tracing::info!(::std::concat!("absolute {", "}"), user);
 }
 
 /// Check that an empty `concat!` message emits no interpolation warning.

@@ -95,5 +95,45 @@ LL |     tracing::warn!(concat!("/x7b", "0}"), user);
    |
    = help: put runtime values in structured key/value fields and keep the message static
 
-warning: 12 warnings emitted
+warning: logging message uses string interpolation
+  --> $DIR/logging_macro_ui.rs:79:33
+   |
+LL |     tracing::info!(std::concat!("qualified {", "}"), user);
+   |                                 ^^^^^^^^^^^^^
+   |
+   = help: put runtime values in structured key/value fields and keep the message static
+
+warning: logging message uses string interpolation
+  --> $DIR/logging_macro_ui.rs:80:34
+   |
+LL |     tracing::info!(core::concat!("qualified {", "}"), user);
+   |                                  ^^^^^^^^^^^^^
+   |
+   = help: put runtime values in structured key/value fields and keep the message static
+
+warning: logging message uses string interpolation
+  --> $DIR/logging_macro_ui.rs:81:28
+   |
+LL |     tracing::info!(concat!["bracket {", "}"], user);
+   |                            ^^^^^^^^^^^
+   |
+   = help: put runtime values in structured key/value fields and keep the message static
+
+warning: logging message uses string interpolation
+  --> $DIR/logging_macro_ui.rs:82:34
+   |
+LL |     tracing::info!(std::concat! {"brace {", "}"}, user);
+   |                                  ^^^^^^^^^
+   |
+   = help: put runtime values in structured key/value fields and keep the message static
+
+warning: logging message uses string interpolation
+  --> $DIR/logging_macro_ui.rs:83:35
+   |
+LL |     tracing::info!(::std::concat!("absolute {", "}"), user);
+   |                                   ^^^^^^^^^^^^
+   |
+   = help: put runtime values in structured key/value fields and keep the message static
+
+warning: 17 warnings emitted
 
