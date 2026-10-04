@@ -62,3 +62,5 @@ fn keep_public(amount: u64) -> u64 {
 }
 
 fn main() {}
+
+// inline_total remains a one-use helper despite this explanatory comment.

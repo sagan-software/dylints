@@ -4,7 +4,8 @@
 
 Checks for a free function visible only in its own module. Its body must be one
 expression without statements, and its only crate reference must be one direct
-call from another function, closure, or constant.
+call from another function, closure, or constant. The lint tokenizes each source
+file once and reuses its Rust identifier counts for other candidate helpers.
 
 ## Why is this bad?
 
@@ -17,8 +18,9 @@ by the exclusions below.
 
 - Code removed by `cfg`, such as a `#[cfg(test)]` module in a library build, does
   not enter the compiled crate. To preserve helpers called by such code, the
-  lint requires the helper name to appear exactly twice in its source file. A
-  mention in a comment, string, or unrelated item then suppresses the warning.
+  lint requires the helper name to appear exactly twice as a Rust identifier
+  in its source file. Comments and literal contents are excluded. A matching
+  identifier in an unrelated item can still suppress the warning.
 - The lint ignores a helper whose only call comes from a macro expansion.
 - Attributes other than doc comments, `#[inline]`, `#[must_use]`, and lint
   level attributes such as `#[allow]` prevent the lint. So do type or const

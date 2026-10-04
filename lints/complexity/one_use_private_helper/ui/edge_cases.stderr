@@ -102,6 +102,19 @@ LL |         + (|| closure_discount(order))()
    = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
 
 warning: private one-expression helper is only called once
+  --> $DIR/edge_cases.rs:75:1
+   |
+LL | fn mentioned_in_comment(order: &Order) -> u64 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the only call is here
+  --> $DIR/edge_cases.rs:81:5
+   |
+LL |     mentioned_in_comment(order)
+   |     ^^^^^^^^^^^^^^^^^^^^
+   = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
+
+warning: private one-expression helper is only called once
   --> $DIR/edge_cases.rs:106:1
    |
 LL | pub(crate) fn crate_amount(order: &Order) -> u64 {
@@ -127,5 +140,5 @@ LL | const LIMIT: u64 = const_amount(1);
    |                    ^^^^^^^^^^^^
    = help: inline the expression at the call site unless the helper names validation, a hook, fixture setup, or a domain rule
 
-warning: 10 warnings emitted
+warning: 11 warnings emitted
 

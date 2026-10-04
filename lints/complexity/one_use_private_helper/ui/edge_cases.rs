@@ -76,7 +76,7 @@ fn mentioned_in_comment(order: &Order) -> u64 {
     order.amount
 }
 
-// mentioned_in_comment is kept because the source check sees this comment.
+// mentioned_in_comment is still linted when its name occurs in a comment.
 fn calls_mentioned(order: &Order) -> u64 {
     mentioned_in_comment(order)
 }
@@ -139,3 +139,12 @@ fn statement_only(order: &Order) {
 fn uses_statement_only(order: &Order) {
     statement_only(order);
 }
+
+// Literal contents must not count as another call to inline_discount.
+const HELPER_LABELS: (&str, &str, &[u8], &[u8]) = (
+    "inline_discount",
+    r#"inline_discount"#,
+    b"inline_discount",
+    br#"inline_discount"#,
+);
+/* inline_discount /* inline_discount */ inline_discount */

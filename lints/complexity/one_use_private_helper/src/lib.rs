@@ -13,6 +13,7 @@
 
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_lexer;
 extern crate rustc_middle;
 extern crate rustc_span;
 
@@ -25,10 +26,11 @@ use rustc_hir::{
     def::{DefKind, Res},
     intravisit::{FnKind, Visitor, walk_expr},
 };
+use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty::{TyCtxt, Visibility};
 use rustc_span::{
-    Span, Symbol,
+    BytePos, Span, Symbol,
     def_id::{CRATE_DEF_ID, LocalDefId},
     sym,
 };
@@ -47,6 +49,8 @@ dylint_support::documented_late_lint_with_pass! {
 struct OneUsePrivateHelper {
     /// References to each local function, built on the first checked function.
     references: Option<HashMap<LocalDefId, Vec<Reference>>>,
+    /// Identifier counts indexed once for each immutable source file.
+    source_identifiers: HashMap<BytePos, HashMap<Symbol, usize>>,
 }
 
 /// One resolved path to a local function.
@@ -86,7 +90,8 @@ impl<'tcx> LateLintPass<'tcx> for OneUsePrivateHelper {
         let is_outside_call = call.is_call
             && !call.span.from_expansion()
             && cx.tcx.typeck_root_def_id(call.owner.to_def_id()) != local_def_id.to_def_id();
-        if !is_outside_call || !is_named_twice_in_file(cx, span, name) {
+        if !is_outside_call || !is_named_twice_in_file(cx, span, name, &mut self.source_identifiers)
+        {
             return;
         }
 
@@ -297,33 +302,49 @@ impl<'tcx> Visitor<'tcx> for ReferenceCollector {
 /// HIR omits code removed by `cfg`, such as a `#[cfg(test)]` module in a
 /// library build. This source check keeps a helper that such code also calls,
 /// because the definition and the one call are then not the only mentions.
-fn is_named_twice_in_file(cx: &LateContext<'_>, span: Span, name: Symbol) -> bool {
+fn is_named_twice_in_file(
+    cx: &LateContext<'_>,
+    span: Span,
+    name: Symbol,
+    files: &mut HashMap<BytePos, HashMap<Symbol, usize>>,
+) -> bool {
     let source_file = cx.sess().source_map().lookup_source_file(span.lo());
-    source_file
-        .src
-        .as_deref()
-        .is_some_and(|source| identifier_occurrences(source, name.as_str()) == 2)
+    let Some(source) = source_file.src.as_deref() else {
+        return false;
+    };
+
+    // Source files are immutable: tokenize each file once rather than once per helper.
+    let counts = files.entry(source_file.start_pos).or_insert_with(|| {
+        let mut counts = HashMap::new();
+        for identifier in identifier_tokens(source) {
+            *counts.entry(Symbol::intern(identifier)).or_insert(0) += 1;
+        }
+        counts
+    });
+    counts.get(&name) == Some(&2)
 }
 
-/// Counts occurrences of `name` with identifier boundaries on both sides.
+/// Borrows Rust identifier tokens, excluding comments and literal contents.
+fn identifier_tokens(source: &str) -> impl Iterator<Item = &str> {
+    // Token lengths preserve UTF-8 boundaries while raw identifiers share their plain name.
+    let mut offset = 0;
+    tokenize(source, FrontmatterAllowed::No).filter_map(move |token| {
+        let start = offset;
+        offset += token.len as usize;
+        // Read the token through a checked UTF-8 range before borrowing its identifier.
+        matches!(token.kind, TokenKind::Ident | TokenKind::RawIdent)
+            .then(|| source.get(start..offset))
+            .flatten()
+            .map(|identifier| identifier.strip_prefix("r#").unwrap_or(identifier))
+    })
+}
+
+/// Counts identifier tokens for focused lexer boundary tests.
+#[cfg(test)]
 fn identifier_occurrences(source: &str, name: &str) -> usize {
-    source
-        .match_indices(name)
-        .filter(|(start, _)| {
-            let before = source
-                .get(..*start)
-                .and_then(|text| text.chars().next_back());
-            let after = source
-                .get(start + name.len()..)
-                .and_then(|text| text.chars().next());
-            !before.is_some_and(is_ident_continue) && !after.is_some_and(is_ident_continue)
-        })
+    identifier_tokens(source)
+        .filter(|identifier| *identifier == name)
         .count()
-}
-
-/// Returns whether a character can continue an identifier.
-const fn is_ident_continue(ch: char) -> bool {
-    ch == '_' || ch.is_ascii_alphanumeric()
 }
 
 /// Runs the UI fixtures.
@@ -332,11 +353,11 @@ fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");
 }
 
-/// Counts whole identifiers, including mentions in comments.
+/// Counts code identifiers while ignoring a mention in a line comment.
 #[test]
 fn counts_whole_identifiers() {
     assert_eq!(identifier_occurrences("fn total() {} total()", "total"), 2);
-    assert_eq!(identifier_occurrences("x // total\ntotal", "total"), 2);
+    assert_eq!(identifier_occurrences("x // total\ntotal", "total"), 1);
 }
 
 /// Ignores longer identifiers that contain the name.
@@ -346,4 +367,14 @@ fn ignores_partial_identifiers() {
         identifier_occurrences("subtotal totals total_x", "total"),
         0
     );
+}
+
+/// Excludes every comment and literal form while preserving raw and Unicode identifiers.
+#[test]
+fn handles_lexer_boundaries() {
+    let source = r##"/* total /* total */ total */ // total
+"total" r#"total"# b"total" br#"total"# 't' b't'
+r#total total café r#café"##;
+    assert_eq!(identifier_occurrences(source, "total"), 2);
+    assert_eq!(identifier_occurrences(source, "café"), 2);
 }
