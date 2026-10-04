@@ -7,12 +7,13 @@ Checks the message argument in macro calls whose final path segment is `trace`,
 placeholders in cooked or raw string messages and literal `concat!` messages.
 It checks unqualified and qualified `concat!` calls, including absolute paths
 such as `::std::concat!`, by final path segment. It accepts parenthesis,
-bracket, and brace delimiters. It recognizes strings, raw strings, characters,
-booleans, integers, floats, and negative numeric literals. It reads the `log`
-key/value `;` form and the positional level in `tracing::event!`, while
-skipping recognized options and structured fields. Named format arguments
-interpolate into the message text. Rust literal escapes are decoded
-before the resulting message text is checked.
+bracket, and brace delimiters.
+
+It recognizes strings, raw strings, characters, booleans, integers, floats,
+and negative numeric literals. It reads the `log` key/value `;` form and the
+positional level in `tracing::event!`, while skipping recognized options and
+structured fields. Named format arguments interpolate into the message text.
+Rust literal escapes are decoded before the resulting message text is checked.
 
 ## Why is this bad?
 
