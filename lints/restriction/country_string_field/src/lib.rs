@@ -97,7 +97,9 @@ fn country_field_name(name: &str) -> bool {
 }
 
 /// Return type information for string.
-fn string_ty(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> Option<&'static str> {
+fn string_ty<'tcx>(cx: &LateContext<'tcx>, ty: ty::Ty<'tcx>) -> Option<&'static str> {
+    let ty = dylint_support::peel_standard_options(cx.tcx, ty)?;
+
     match ty.kind() {
         ty::Adt(adt, _) if cx.tcx.is_lang_item(adt.did(), LangItem::String) => Some("String"),
         ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Str) => Some("&str"),

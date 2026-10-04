@@ -12,3 +12,8 @@ struct CacheConfig<'a> {
 }
 
 fn main() {}
+
+struct OptionalCacheConfig {
+    cache_dir: Option<String>,
+    typed_cache_dir: Option<PathBuf>,
+}

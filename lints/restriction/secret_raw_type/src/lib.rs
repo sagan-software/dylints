@@ -12,6 +12,10 @@
 //! generated code and unsupported syntax conservative, then reports a focused
 //! diagnostic so callers can choose the documented replacement with confidence.
 
+// The README doctest uses this dependency from its separate compilation unit.
+#[cfg(test)]
+use secrecy as _;
+
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_middle;
@@ -107,7 +111,7 @@ impl<'tcx> LateLintPass<'tcx> for SecretRawType {
 }
 
 /// Check body params for this lint.
-fn check_body_params(cx: &LateContext<'_>, params: &[Param<'_>]) {
+fn check_body_params<'tcx>(cx: &LateContext<'tcx>, params: &[Param<'tcx>]) {
     // Inspect direct parameter bindings and ignore destructuring patterns.
     for param in params {
         let Some(ident) = binding_ident(param.pat) else {
@@ -161,7 +165,13 @@ fn is_trait_impl_method(cx: &LateContext<'_>, local_def_id: LocalDefId) -> bool 
 }
 
 /// Check named ty for this lint.
-fn check_named_ty(cx: &LateContext<'_>, label: &'static str, span: Span, name: &str, ty: Ty<'_>) {
+fn check_named_ty<'tcx>(
+    cx: &LateContext<'tcx>,
+    label: &'static str,
+    span: Span,
+    name: &str,
+    ty: Ty<'tcx>,
+) {
     if let Some(raw_ty) = raw_secret_ty(cx, ty) {
         emit_secret_lint(cx, span, label, name, raw_ty);
     }
@@ -234,7 +244,9 @@ fn secret_name(name: &str) -> bool {
 }
 
 /// Return type information for raw secret.
-fn raw_secret_ty(cx: &LateContext<'_>, ty: Ty<'_>) -> Option<&'static str> {
+fn raw_secret_ty<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Option<&'static str> {
+    let ty = dylint_support::peel_standard_options(cx.tcx, ty)?;
+
     match ty.kind() {
         ty::Adt(adt, args) => raw_adt_secret_ty(cx, *adt, args),
         ty::Ref(_, inner, _) => raw_ref_secret_ty(*inner),

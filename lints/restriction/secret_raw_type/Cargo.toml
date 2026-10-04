@@ -13,6 +13,7 @@ dylint_linting.workspace = true
 dylint_support = { package = "dylint-support", path = "../../../support/dylint" }
 
 [dev-dependencies]
+secrecy = "0.10.3"
 dylint_testing.workspace = true
 
 [features]

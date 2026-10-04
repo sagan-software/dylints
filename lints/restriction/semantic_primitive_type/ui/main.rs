@@ -25,3 +25,16 @@ fn state_slot(state: &str) -> usize {
 }
 
 fn main() {}
+
+struct NestedRequest {
+    nested_account_id: MaybeEight<u64>,
+    beyond_account_id: Maybe<MaybeEight<u64>>,
+    typed_reason_code: Option<ReasonCode>,
+}
+
+type Maybe<T> = Option<T>;
+type MaybeTwo<T> = Maybe<Maybe<T>>;
+type MaybeFour<T> = MaybeTwo<MaybeTwo<T>>;
+type MaybeEight<T> = MaybeFour<MaybeFour<T>>;
+
+struct ReasonCode(String);

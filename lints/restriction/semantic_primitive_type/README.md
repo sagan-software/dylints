@@ -10,9 +10,12 @@ domain value as a primitive. It flags three cases by name:
 - Names `reason`, `reasons`, `reason_code`, `reason_codes`, or ending in
   `_reason_code` or `_reason_codes`, with a `String` or `str` type.
 
-It looks through references, slices, arrays, `Option`, and `Vec`. The lint checks
-a return type against the function name. It also flags a `match` on a string that
-has three or more string-literal arms and a catch-all arm.
+It looks through references, slices, arrays, and `Vec`. The compiler resolves
+type aliases before the lint peels up to eight consecutive
+standard `Option` layers. Longer chains, local `Option` lookalikes,
+and user-defined wrappers remain opaque. The lint checks a return type against the function name. It also
+flags a `match` on a string that has three or more string-literal arms and a
+catch-all arm.
 
 ## Why is this bad?
 

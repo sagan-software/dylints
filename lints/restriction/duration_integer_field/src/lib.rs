@@ -69,6 +69,7 @@ impl<'tcx> LateLintPass<'tcx> for DurationIntegerField {
                     | "weeks"
             )
         }) && let Some(integer_ty) = integer_ty(
+            cx,
             cx.tcx
                 .type_of(field.def_id)
                 .instantiate_identity()
@@ -107,7 +108,9 @@ fn emit_span_lint_with_help(
 }
 
 /// Return type information for integer.
-fn integer_ty(ty: ty::Ty<'_>) -> Option<&'static str> {
+fn integer_ty<'tcx>(cx: &LateContext<'tcx>, ty: ty::Ty<'tcx>) -> Option<&'static str> {
+    let ty = dylint_support::peel_standard_options(cx.tcx, ty)?;
+
     // Resolve aliases before matching so the lint only targets actual primitive integer storage.
     match ty.kind() {
         ty::Uint(uint_ty) => Some(uint_ty.name_str()),

@@ -12,6 +12,10 @@
 //! `verb` only count when the crate links an HTTP library, so command-line and
 //! reflection code that names a method is not reported.
 
+// The README doctest uses this dependency from its separate compilation unit.
+#[cfg(test)]
+use http as _;
+
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_middle;
@@ -159,13 +163,13 @@ impl HttpMethodString {
     }
 
     /// Report a string type whose binding name denotes an HTTP method.
-    fn check_named_ty(
+    fn check_named_ty<'tcx>(
         &self,
-        cx: &LateContext<'_>,
+        cx: &LateContext<'tcx>,
         label: &'static str,
         name: Symbol,
         span: Span,
-        ty: ty::Ty<'_>,
+        ty: ty::Ty<'tcx>,
     ) {
         if !self.http_method_name(name.as_str()) {
             return;
@@ -232,7 +236,9 @@ const fn binding_name(pat: &Pat<'_>) -> Option<Symbol> {
 }
 
 /// Return the written form of a resolved `String` or `&str` type.
-fn string_ty(cx: &LateContext<'_>, ty: ty::Ty<'_>) -> Option<&'static str> {
+fn string_ty<'tcx>(cx: &LateContext<'tcx>, ty: ty::Ty<'tcx>) -> Option<&'static str> {
+    let ty = dylint_support::peel_standard_options(cx.tcx, ty)?;
+
     match ty.kind() {
         ty::Adt(adt, _) if cx.tcx.is_lang_item(adt.did(), LangItem::String) => Some("String"),
         ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Str) => Some("&str"),

@@ -17,9 +17,11 @@ and converts units explicitly.
 
 ## Known problems
 
-The lint checks only primitive integer types, after resolving type aliases and
-`use` renames. It does not flag `Option<u64>` or integer newtypes such as
-`struct BusinessDays(u16)`.
+The compiler resolves type aliases before the lint peels up to eight
+consecutive standard `Option` layers. Longer chains, local `Option`
+lookalikes, and user-defined wrappers remain opaque. After peeling, it checks only primitive
+integer types, including type aliases and `use` renames; integer newtypes such
+as `struct BusinessDays(u16)` remain opaque.
 
 It warns on a raw integer count that uses a unit word but is not an elapsed
 time, such as `business_days: u16`. It does not flag duration names without a

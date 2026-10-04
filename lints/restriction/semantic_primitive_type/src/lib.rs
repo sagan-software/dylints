@@ -276,10 +276,13 @@ fn peel_wrappers<'tcx>(cx: &LateContext<'tcx>, mut ty: Ty<'tcx>) -> Ty<'tcx> {
         // Remove transparent wrappers until the stored semantic primitive is visible.
         ty = match ty.kind() {
             ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => *inner,
-            ty::Adt(adt, args)
-                if cx.tcx.is_diagnostic_item(sym::Option, adt.did())
-                    || cx.tcx.is_diagnostic_item(sym::Vec, adt.did()) =>
-            {
+            ty::Adt(adt, _) if cx.tcx.is_diagnostic_item(sym::Option, adt.did()) => {
+                let Some(inner) = dylint_support::peel_standard_options(cx.tcx, ty) else {
+                    return ty;
+                };
+                inner
+            }
+            ty::Adt(adt, args) if cx.tcx.is_diagnostic_item(sym::Vec, adt.did()) => {
                 let Some(inner) = args.types().next() else {
                     return ty;
                 };

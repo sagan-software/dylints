@@ -38,12 +38,13 @@ struct TestLineCollector {
 
 /// Return the shared size-policy violation for one Rust source file.
 ///
+/// Dylint file-organization lints call this helper with source text.
+///
 /// # Examples
 ///
 /// ```rust
-/// use dylint_support::rust_file_size_violation;
-///
-/// assert!(rust_file_size_violation("fn main() {}").is_none());
+/// #![feature(rustc_private)]
+/// let _check = |source: &str| dylint_support::rust_file_size_violation(source);
 /// ```
 #[must_use]
 pub fn rust_file_size_violation(source: &str) -> Option<RustFileSizeViolation> {

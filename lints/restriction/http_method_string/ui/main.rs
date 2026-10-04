@@ -60,3 +60,8 @@ fn destructured((method, _): (String, u8)) -> String {
 fn uses_http(_: http::Method) {}
 
 fn main() {}
+
+struct OptionalRoute {
+    http_method: Option<String>,
+    typed_http_method: Option<Method>,
+}

@@ -32,3 +32,8 @@ struct Session {
 }
 
 fn main() {}
+
+struct OptionalSession {
+    created_at_ts: Option<i64>,
+    typed_created_at: Option<DateTimeUtc>,
+}

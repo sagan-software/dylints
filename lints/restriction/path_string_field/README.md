@@ -15,9 +15,11 @@ and provide `join`, `parent`, and `extension`.
 
 ## Known problems
 
-The lint checks only the exact types `String` and `&str`, after resolving type
-aliases and `use` renames. It does not flag `Option<String>`, `Vec<String>`,
-`Box<str>`, or `Cow<'_, str>`.
+The compiler resolves type aliases before the lint peels up to eight
+consecutive standard `Option` layers. Longer chains, local `Option`
+lookalikes, and user-defined wrappers remain opaque. After peeling, it checks only `String` and
+`&str`, including type aliases and `use` renames. It does not inspect
+`Vec<String>`, `Box<str>`, or `Cow<'_, str>`.
 
 It warns on any field that contains one of the words, including display text
 such as `display_path_label` or `file_label`. It skips a field whose name also

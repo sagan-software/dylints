@@ -9,3 +9,8 @@ struct ServiceConfig<'a> {
 struct Url;
 
 fn main() {}
+
+struct OptionalServiceConfig {
+    callback_url: Option<String>,
+    typed_url: Option<Url>,
+}

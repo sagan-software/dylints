@@ -25,3 +25,8 @@ struct RedactedCode(String);
 struct DomainMessage(String);
 
 fn main() {}
+
+enum OptionalError {
+    Invalid { message: Option<String> },
+    Typed { message: Option<DomainMessage> },
+}

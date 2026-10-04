@@ -63,5 +63,37 @@ LL |     shipping_country_code: &'a str,
    |
    = help: use a validated country-code type or project-specific country newtype
 
-warning: 8 warnings emitted
+warning: country-code-like field `country` uses `String`
+  --> $DIR/main.rs:23:14
+   |
+LL |     country: Option<String>,
+   |              ^^^^^^^^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `alias_country` uses `String`
+  --> $DIR/main.rs:24:20
+   |
+LL |     alias_country: Maybe<String>,
+   |                    ^^^^^^^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `nested_country` uses `String`
+  --> $DIR/main.rs:25:21
+   |
+LL |     nested_country: MaybeTwo<String>,
+   |                     ^^^^^^^^^^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: country-code-like field `at_limit_country` uses `String`
+  --> $DIR/main.rs:27:23
+   |
+LL |     at_limit_country: MaybeEight<String>,
+   |                       ^^^^^^^^^^^^^^^^^^
+   |
+   = help: use a validated country-code type or project-specific country newtype
+
+warning: 12 warnings emitted
 

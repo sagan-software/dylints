@@ -17,9 +17,11 @@ compares it without string matching.
 
 ## Known problems
 
-The lint checks only the exact types `String` and `&str`, after resolving type
-aliases and `use` renames. It does not flag `Option<String>`, `Box<str>`, or
-closure parameters.
+The compiler resolves type aliases before the lint peels up to eight
+consecutive standard `Option` layers. Longer chains, local `Option`
+lookalikes, and user-defined wrappers remain opaque. After peeling, it checks only `String` and
+`&str`, including type aliases and `use` renames. It does not inspect `Box<str>`
+or closure parameters.
 
 It matches only exact names, so it does not flag `http_verb` or `method_str`.
 In a crate with an HTTP library, it still warns on a `method` that names

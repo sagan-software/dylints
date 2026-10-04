@@ -71,5 +71,13 @@ LL |     machine_timestamp: MachineTimestamp,
    |
    = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
 
-warning: 9 warnings emitted
+warning: timestamp-like field `created_at_ts` uses integer `i64`
+  --> $DIR/main.rs:37:20
+   |
+LL |     created_at_ts: Option<i64>,
+   |                    ^^^^^^^^^^^
+   |
+   = help: use `chrono::DateTime`, `chrono::NaiveDate`, or another semantic datetime type
+
+warning: 10 warnings emitted
 

@@ -12,6 +12,10 @@
 //! generated code and unsupported syntax conservative, then reports a focused
 //! diagnostic so callers can choose the documented replacement with confidence.
 
+// The README doctest uses this dependency from its separate compilation unit.
+#[cfg(test)]
+use chrono as _;
+
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_middle;
@@ -40,6 +44,7 @@ impl<'tcx> LateLintPass<'tcx> for DatetimeIntegerField {
         // Report raw integers at the field type span with a typed replacement.
         if datetime_field_name(&field_name)
             && let Some(integer_ty) = integer_ty(
+                cx,
                 cx.tcx
                     .type_of(field.def_id)
                     .instantiate_identity()
@@ -102,7 +107,9 @@ fn datetime_field_name(name: &str) -> bool {
 }
 
 /// Return the written name of a resolved primitive integer type.
-fn integer_ty(ty: ty::Ty<'_>) -> Option<&'static str> {
+fn integer_ty<'tcx>(cx: &LateContext<'tcx>, ty: ty::Ty<'tcx>) -> Option<&'static str> {
+    let ty = dylint_support::peel_standard_options(cx.tcx, ty)?;
+
     // Resolve aliases before matching so only raw integer storage warns.
     match ty.kind() {
         ty::Uint(uint_ty) => Some(uint_ty.name_str()),

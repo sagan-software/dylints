@@ -52,5 +52,13 @@ LL | |     }
    |
    = help: parse the input into a closed enum and match on its variants
 
-warning: 6 warnings emitted
+warning: field `nested_account_id` uses primitive type `u64` for identity data
+  --> $DIR/main.rs:30:24
+   |
+LL |     nested_account_id: MaybeEight<u64>,
+   |                        ^^^^^^^^^^^^^^^
+   |
+   = help: introduce a validated semantic type and convert at the system boundary
+
+warning: 7 warnings emitted
 

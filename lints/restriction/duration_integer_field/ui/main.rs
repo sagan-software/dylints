@@ -20,3 +20,8 @@ struct PrefixConfig {
 }
 
 fn main() {}
+
+struct OptionalRetryConfig {
+    timeout_ms: Option<u64>,
+    typed_retry_delay: Option<std::time::Duration>,
+}

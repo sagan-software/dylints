@@ -79,5 +79,13 @@ LL | fn request_method(verb: &'static str) -> &'static str {
    |
    = help: use `http::Method` or `reqwest::Method`
 
-warning: 10 warnings emitted
+warning: HTTP method field `http_method` uses `String`
+  --> $DIR/main.rs:65:18
+   |
+LL |     http_method: Option<String>,
+   |                  ^^^^^^^^^^^^^^
+   |
+   = help: use `http::Method` or `reqwest::Method`
+
+warning: 11 warnings emitted
 

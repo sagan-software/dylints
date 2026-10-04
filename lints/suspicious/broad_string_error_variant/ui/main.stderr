@@ -39,5 +39,13 @@ LL |     Failed { reason: String },
    |
    = help: use a concrete source error, a focused variant, or a redacted domain value
 
-warning: 5 warnings emitted
+warning: error variant `Invalid` has broad field `message` using `String`
+  --> $DIR/main.rs:30:24
+   |
+LL |     Invalid { message: Option<String> },
+   |                        ^^^^^^^^^^^^^^
+   |
+   = help: use a concrete source error, a focused variant, or a redacted domain value
+
+warning: 6 warnings emitted
 

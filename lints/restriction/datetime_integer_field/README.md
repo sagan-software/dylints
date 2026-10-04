@@ -16,8 +16,11 @@ type fixes the unit and offers correct comparison and formatting.
 
 ## Known problems
 
-The lint checks only primitive integer types, after resolving type aliases and
-`use` renames. It does not flag `Option<i64>` or integer newtypes.
+The compiler resolves type aliases before the lint peels up to eight
+consecutive standard `Option` layers. Longer chains, local `Option`
+lookalikes, and user-defined wrappers remain opaque. After peeling, it checks only primitive
+integer types, including type aliases and `use` renames; integer newtypes
+remain opaque.
 
 It can warn where a wire format or database column requires an integer epoch.
 It does not flag other timestamp names, such as `created_at` or `modified`.

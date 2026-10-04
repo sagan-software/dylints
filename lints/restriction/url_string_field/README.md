@@ -14,9 +14,11 @@ at the boundary, and gives typed access to the scheme, host, and path.
 
 ## Known problems
 
-The lint checks only the exact types `String` and `&str`, after resolving type
-aliases and `use` renames. It does not flag `Option<String>`, `Vec<String>`,
-`Box<str>`, or `Cow<'_, str>`.
+The compiler resolves type aliases before the lint peels up to eight
+consecutive standard `Option` layers. Longer chains, local `Option`
+lookalikes, and user-defined wrappers remain opaque. After peeling, it checks only `String` and
+`&str`, including type aliases and `use` renames. It does not inspect
+`Vec<String>`, `Box<str>`, or `Cow<'_, str>`.
 
 It skips a field whose last word is `description`, `format`, `label`, `name`,
 `pattern`, `prefix`, `suffix`, `template`, `text`, or `title`, such as

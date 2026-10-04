@@ -37,3 +37,8 @@ fn authenticate(access_token: String, password: &[u8], username: String) {
 }
 
 fn main() {}
+
+struct OptionalCredentials {
+    password: Option<String>,
+    typed_password: Option<SecretString>,
+}

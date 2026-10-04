@@ -13,6 +13,7 @@ dylint_linting.workspace = true
 dylint_support = { package = "dylint-support", path = "../../../support/dylint" }
 
 [dev-dependencies]
+chrono = { version = "0.4.45", default-features = false, features = ["std"] }
 dylint_testing.workspace = true
 
 [features]

@@ -87,5 +87,13 @@ LL |     let secret = [0_u8; 32];
    |
    = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
 
-warning: 11 warnings emitted
+warning: secret-bearing field `password` uses raw `String`
+  --> $DIR/main.rs:42:5
+   |
+LL |     password: Option<String>,
+   |     ^^^^^^^^
+   |
+   = help: use `secrecy::SecretString`, `SecretBox`, or a project-specific secret newtype
+
+warning: 12 warnings emitted
 

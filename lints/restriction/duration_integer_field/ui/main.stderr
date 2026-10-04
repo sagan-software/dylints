@@ -31,5 +31,13 @@ LL |     seconds_between_checks: u16,
    |
    = help: use `std::time::Duration` and convert units at the input boundary
 
-warning: 4 warnings emitted
+warning: duration-like field `timeout_ms` uses integer `u64`
+  --> $DIR/main.rs:25:17
+   |
+LL |     timeout_ms: Option<u64>,
+   |                 ^^^^^^^^^^^
+   |
+   = help: use `std::time::Duration` and convert units at the input boundary
+
+warning: 5 warnings emitted
 

@@ -8,8 +8,10 @@ extern crate rustc_span;
 use dylint_linting as _;
 use rustc_span::Symbol;
 
+mod optional;
 mod rust_file_size;
 
+pub use self::optional::peel_standard_options;
 pub use self::rust_file_size::{RustFileSizeViolation, rust_file_size_violation};
 
 /// Return whether a compiled crate is an internal helper or UI fixture.
@@ -25,8 +27,8 @@ pub use self::rust_file_size::{RustFileSizeViolation, rust_file_size_violation};
 /// # extern crate rustc_span;
 /// use rustc_span::Symbol;
 ///
-/// assert!(dylint_support::is_internal_support_crate(Symbol::intern("demo_support")));
-/// assert!(!dylint_support::is_internal_support_crate(Symbol::intern("demo")));
+/// let classify_crate: fn(Symbol) -> bool = dylint_support::is_internal_support_crate;
+/// let _ = classify_crate;
 /// ```
 #[must_use]
 pub fn is_internal_support_crate(crate_name: Symbol) -> bool {

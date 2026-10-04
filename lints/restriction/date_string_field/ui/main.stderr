@@ -63,5 +63,13 @@ LL |     renewal_date: String,
    |
    = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
 
-warning: 8 warnings emitted
+warning: date-like field `birth_date` uses `String`
+  --> $DIR/main.rs:31:17
+   |
+LL |     birth_date: Option<String>,
+   |                 ^^^^^^^^^^^^^^
+   |
+   = help: use `chrono::NaiveDate`, `time::Date`, or a validated date newtype
+
+warning: 9 warnings emitted
 

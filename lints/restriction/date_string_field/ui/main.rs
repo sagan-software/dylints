@@ -26,3 +26,8 @@ struct Profile<'a> {
 }
 
 fn main() {}
+
+struct OptionalProfile {
+    birth_date: Option<String>,
+    typed_birth_date: Option<chrono::NaiveDate>,
+}

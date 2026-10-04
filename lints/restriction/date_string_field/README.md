@@ -15,9 +15,11 @@ the boundary, and compares dates correctly.
 
 ## Known problems
 
-The lint checks only the exact types `String` and `&str`, after resolving type
-aliases and `use` renames. It does not flag `Option<String>`, `Vec<String>`,
-`Box<str>`, or `Cow<'_, str>`.
+The compiler resolves type aliases before the lint peels up to eight
+consecutive standard `Option` layers. Longer chains, local `Option`
+lookalikes, and user-defined wrappers remain opaque. After peeling, it checks only `String` and
+`&str`, including type aliases and `use` renames. It does not inspect
+`Vec<String>`, `Box<str>`, or `Cow<'_, str>`.
 
 It can warn on a field that holds a formatted date for display. It does not
 flag other date names, such as `created_on` or `date_label`.

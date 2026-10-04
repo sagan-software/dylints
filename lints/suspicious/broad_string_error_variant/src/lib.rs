@@ -55,7 +55,7 @@ impl<'tcx> LateLintPass<'tcx> for BroadStringErrorVariant {
 }
 
 /// Check variant for this lint.
-fn check_variant(cx: &LateContext<'_>, variant: &Variant<'_>) {
+fn check_variant<'tcx>(cx: &LateContext<'tcx>, variant: &Variant<'tcx>) {
     // Dispatch by variant field shape because names carry different semantics.
     match variant.data {
         VariantData::Struct { fields, .. } => check_struct_variant(cx, variant, fields),
@@ -65,7 +65,11 @@ fn check_variant(cx: &LateContext<'_>, variant: &Variant<'_>) {
 }
 
 /// Check struct variant for this lint.
-fn check_struct_variant(cx: &LateContext<'_>, variant: &Variant<'_>, fields: &[FieldDef<'_>]) {
+fn check_struct_variant<'tcx>(
+    cx: &LateContext<'tcx>,
+    variant: &Variant<'tcx>,
+    fields: &[FieldDef<'tcx>],
+) {
     // Check named fields whose vocabulary implies an unrestricted message payload.
     for field in fields {
         let field_name = field.ident.name.to_ident_string();
@@ -78,7 +82,11 @@ fn check_struct_variant(cx: &LateContext<'_>, variant: &Variant<'_>, fields: &[F
 }
 
 /// Check tuple variant for this lint.
-fn check_tuple_variant(cx: &LateContext<'_>, variant: &Variant<'_>, fields: &[FieldDef<'_>]) {
+fn check_tuple_variant<'tcx>(
+    cx: &LateContext<'tcx>,
+    variant: &Variant<'tcx>,
+    fields: &[FieldDef<'tcx>],
+) {
     // A single tuple payload with a broad variant name makes the string the contract.
     let [field] = fields else {
         return;
@@ -156,15 +164,16 @@ fn broad_payload_variant_name(name: &str) -> bool {
 }
 
 /// Return the display name of a field type that resolves to `String` or `&str`.
-fn string_ty(cx: &LateContext<'_>, field: &FieldDef<'_>) -> Option<&'static str> {
+fn string_ty<'tcx>(cx: &LateContext<'tcx>, field: &FieldDef<'tcx>) -> Option<&'static str> {
     // Resolve aliases and paths through the field's semantic type.
-    match cx
+    let ty = cx
         .tcx
         .type_of(field.def_id)
         .instantiate_identity()
-        .skip_norm_wip()
-        .kind()
-    {
+        .skip_norm_wip();
+    let ty = dylint_support::peel_standard_options(cx.tcx, ty)?;
+
+    match ty.kind() {
         ty::Adt(adt, _) if cx.tcx.is_lang_item(adt.did(), LangItem::String) => Some("String"),
         ty::Ref(_, inner, _) if inner.is_str() => Some("&str"),
         _ => None,

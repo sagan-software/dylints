@@ -21,9 +21,12 @@ It warns on values that only mention a secret word, such as a hashed
 `password_hash`, or a parser's `next_token: String`. It does not flag other
 secret names, such as `private_key` or `credentials`.
 
-It does not flag `Option<String>`, `Box<str>`, closure parameters, or
-destructured bindings. The lint skips trait impl method parameters because the
-trait supplies their types; it checks the trait declaration instead.
+The compiler resolves type aliases before the lint peels up to eight
+consecutive standard `Option` layers. Longer chains, local `Option`
+lookalikes, and user-defined wrappers remain opaque. It does not inspect `Box<str>`, closure
+parameters, or destructured bindings. The lint skips trait impl method
+parameters because the trait supplies their types; it checks the trait
+declaration instead.
 
 ## Example
 
