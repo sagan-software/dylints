@@ -19,8 +19,9 @@ It does not infer uniqueness for external plugins, plugin groups, or local plugi
 so mutations, aliases, and reassignment stop the analysis. It does not trace app values across
 blocks or control-flow paths.
 
-When multiple local `Plugin` implementations share a generic ADT, the lint uses a unique exact
-instantiated match and leaves ambiguous instantiations unclassified. Tuple and separate-call
+When local implementations share a generic plugin ADT, the lint resolves each concrete
+instantiation separately, such as `GenericPlugin<u8>` and `GenericPlugin<u16>`. If it cannot select
+one implementation for an instantiation, it leaves that type unclassified. Tuple and separate-call
 diagnostics provide help without a machine fix because removing an expression could change its side
 effects. A chained-call machine fix is limited to a repeated path argument with source spans
 outside macro expansions.
