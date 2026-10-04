@@ -6,5 +6,37 @@ LL |     let _: Router = Router::new().route("", get(|| async {}));
    |
    = note: `#[warn(axum_route_empty_path)]` on by default
 
-warning: 1 warning emitted
+warning: this empty route path panics
+  --> $DIR/main.rs:16:41
+   |
+LL |     let _: Router = Router::new().route(path, get(|| async {}));
+   |                                         ^^^^
+   |
+   = help: use `/` for the root route
+
+warning: this empty route path panics
+  --> $DIR/main.rs:17:41
+   |
+LL |     let _: Router = Router::new().route(path, get(|| async {}));
+   |                                         ^^^^
+   |
+   = help: use `/` for the root route
+
+warning: this empty route path panics
+  --> $DIR/main.rs:29:41
+   |
+LL |     let _: Router = Router::new().route(path7, get(|| async {}));
+   |                                         ^^^^^
+   |
+   = help: use `/` for the root route
+
+warning: this empty route path panics
+  --> $DIR/main.rs:52:45
+   |
+LL |         let _: Router = Router::new().route(path, get(|| async {}));
+   |                                             ^^^^
+   |
+   = help: use `/` for the root route
+
+warning: 5 warnings emitted
 

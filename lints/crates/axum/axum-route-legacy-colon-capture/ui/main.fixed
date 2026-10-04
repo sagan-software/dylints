@@ -38,4 +38,16 @@ fn checks_unknown(router: Router) -> Router {
     router.route("/param/{id}", get(|| async {}))
 }
 
+fn checks_reassignment_uses_current_router_state() {
+    let mut router = Router::new().without_v07_checks();
+    router = Router::new();
+    let _: Router = router.route("/teams/{id}", get(|| async {}));
+}
+
 fn main() {}
+
+fn local_legacy_path() {
+    let path = "/teams/:team";
+    let _: Router = Router::new().route(path, get(|| async {}));
+    let _: Router = Router::new().route(path, get(|| async {}));
+}

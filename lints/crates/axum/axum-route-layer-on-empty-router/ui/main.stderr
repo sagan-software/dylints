@@ -23,5 +23,21 @@ LL |     let _: Router = router.route_layer(middleware::from_fn(pass_through));
    |
    = help: add the routes before calling `Router::route_layer`
 
-warning: 3 warnings emitted
+warning: applying a route layer before adding routes panics
+  --> $DIR/main.rs:83:39
+   |
+LL |     let _: Router = Router::default().route_layer(middleware::from_fn(pass_through));
+   |                                       ^^^^^^^^^^^
+   |
+   = help: add the routes before calling `Router::route_layer`
+
+warning: applying a route layer before adding routes panics
+  --> $DIR/main.rs:88:28
+   |
+LL |     let _: Router = router.route_layer(middleware::from_fn(pass_through));
+   |                            ^^^^^^^^^^^
+   |
+   = help: add the routes before calling `Router::route_layer`
+
+warning: 5 warnings emitted
 

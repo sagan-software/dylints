@@ -7,5 +7,13 @@ LL |     let _: Router = Router::new().nest("/", Router::new());
    = help: compose root routers with `Router::merge`
    = note: `#[warn(axum_nest_at_root)]` on by default
 
-warning: 1 warning emitted
+warning: nesting a router at the root panics
+  --> $DIR/main.rs:14:40
+   |
+LL |     let _: Router = Router::new().nest(path, Router::new());
+   |                                        ^^^^
+   |
+   = help: compose root routers with `Router::merge`
+
+warning: 2 warnings emitted
 

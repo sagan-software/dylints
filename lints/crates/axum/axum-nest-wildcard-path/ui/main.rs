@@ -17,3 +17,8 @@ fn escaped_braces_are_literal() {
 }
 
 fn main() {}
+
+fn local_wildcard_path() {
+    let path = "/api/{*rest}";
+    let _: Router = Router::new().nest(path, Router::new());
+}

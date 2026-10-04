@@ -12,5 +12,27 @@ warning: Axum 0.8 rejects this legacy `*name` capture
 LL |     let _: Router = Router::new().route_service("/files/*rest", get(|| async {}));
    |                                                 ^^^^^^^^^^^^^^ help: write the wildcard as `{*name}`: `"/files/{*rest}"`
 
-warning: 2 warnings emitted
+warning: Axum 0.8 rejects this legacy `*name` capture
+  --> $DIR/main.rs:15:27
+   |
+LL |     router = router.route("/literal/*star", get(|| async {}));
+   |                           ^^^^^^^^^^^^^^^^ help: write the wildcard as `{*name}`: `"/literal/{*star}"`
+
+warning: Axum 0.8 rejects this legacy `*name` capture
+  --> $DIR/main.rs:23:41
+   |
+LL |     let _: Router = Router::new().route(path, get(|| async {}));
+   |                                         ^^^^
+   |
+   = help: write the wildcard as `{*name}`
+
+warning: Axum 0.8 rejects this legacy `*name` capture
+  --> $DIR/main.rs:24:41
+   |
+LL |     let _: Router = Router::new().route(path, get(|| async {}));
+   |                                         ^^^^
+   |
+   = help: write the wildcard as `{*name}`
+
+warning: 5 warnings emitted
 

@@ -2,8 +2,8 @@
 
 ## What it does
 
-Checks for `axum::Router::route` calls whose path is the empty string literal
-`""`.
+Checks for `axum::Router::route` calls whose path resolves to the empty string,
+including immutable local and `const` initializer chains.
 
 ## Why is this bad?
 
@@ -13,9 +13,11 @@ application starts or a test builds that router. The root route is `"/"`.
 
 ## Known problems
 
-The lint checks a string literal passed directly as the path, or a `const`
-defined in the same crate and initialized with a string literal. It does not
-check paths held in variables or built at runtime.
+The lint follows at most eight immutable local or `const` initializer
+references to a string literal. Mutable bindings, destructured bindings,
+`static` values, function results, and runtime-built paths remain unknown. The
+lint reports local or constant values at the call site and offers no
+machine-applicable fix; fixes apply only to direct literals.
 
 ## Example
 

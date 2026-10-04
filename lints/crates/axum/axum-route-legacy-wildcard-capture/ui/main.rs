@@ -17,3 +17,9 @@ fn checks_disabled() {
 }
 
 fn main() {}
+
+fn local_legacy_path() {
+    let path = "/assets/*rest";
+    let _: Router = Router::new().route(path, get(|| async {}));
+    let _: Router = Router::new().route(path, get(|| async {}));
+}

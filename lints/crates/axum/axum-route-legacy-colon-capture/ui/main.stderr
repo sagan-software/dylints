@@ -70,5 +70,27 @@ warning: Axum 0.8 rejects this legacy `:name` capture
 LL |     router.route("/param/:id", get(|| async {}))
    |                  ^^^^^^^^^^^^ help: write the capture as `{name}`: `"/param/{id}"`
 
-warning: 10 warnings emitted
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:44:34
+   |
+LL |     let _: Router = router.route("/teams/:id", get(|| async {}));
+   |                                  ^^^^^^^^^^^^ help: write the capture as `{name}`: `"/teams/{id}"`
+
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:51:41
+   |
+LL |     let _: Router = Router::new().route(path, get(|| async {}));
+   |                                         ^^^^
+   |
+   = help: write the capture as `{name}`
+
+warning: Axum 0.8 rejects this legacy `:name` capture
+  --> $DIR/main.rs:52:41
+   |
+LL |     let _: Router = Router::new().route(path, get(|| async {}));
+   |                                         ^^^^
+   |
+   = help: write the capture as `{name}`
+
+warning: 13 warnings emitted
 

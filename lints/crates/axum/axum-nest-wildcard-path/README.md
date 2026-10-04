@@ -3,7 +3,8 @@
 ## What it does
 
 Checks for `axum::Router::nest` and `axum::Router::nest_service` calls whose
-path has a wildcard capture segment such as `{*rest}`.
+path has a wildcard capture segment such as `{*rest}`, including immutable
+local and `const` initializer chains.
 
 ## Why is this bad?
 
@@ -14,10 +15,12 @@ wildcard route belongs inside the nested router.
 
 ## Known problems
 
-The lint checks a string literal passed directly as the path, or a `const`
-defined in the same crate and initialized with a string literal. It does not
-check paths held in variables or built at runtime. An escaped segment such as
-`{{*rest}}` is a literal path, so the lint does not report it.
+The lint follows at most eight immutable local or `const` initializer
+references to a string literal. Mutable bindings, destructured bindings,
+`static` values, function results, and runtime-built paths remain unknown. The
+lint reports local or constant values at the call site and offers no
+machine-applicable fix. An escaped segment such as `{{*rest}}` is a literal
+path, so the lint does not report it.
 
 ## Example
 

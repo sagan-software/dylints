@@ -8,3 +8,8 @@ fn routes() {
 }
 
 fn main() {}
+
+fn local_root_path() {
+    let path = "/";
+    let _: Router = Router::new().nest(path, Router::new());
+}

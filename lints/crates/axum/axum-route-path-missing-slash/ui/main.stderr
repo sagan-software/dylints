@@ -32,5 +32,29 @@ LL |     let _: Router = Router::new().route(RELATIVE, get(|| async {}));
    |
    = help: prefix the route path with `/`
 
-warning: 5 warnings emitted
+warning: this route path panics because it does not start with `/`
+  --> $DIR/main.rs:21:41
+   |
+LL |     let _: Router = Router::new().route(ALIAS, get(|| async {}));
+   |                                         ^^^^^
+   |
+   = help: prefix the route path with `/`
+
+warning: this route path panics because it does not start with `/`
+  --> $DIR/main.rs:30:41
+   |
+LL |     let _: Router = Router::new().route(path, get(|| async {}));
+   |                                         ^^^^
+   |
+   = help: prefix the route path with `/`
+
+warning: this route path panics because it does not start with `/`
+  --> $DIR/main.rs:31:41
+   |
+LL |     let _: Router = Router::new().route(path, get(|| async {}));
+   |                                         ^^^^
+   |
+   = help: prefix the route path with `/`
+
+warning: 8 warnings emitted
 

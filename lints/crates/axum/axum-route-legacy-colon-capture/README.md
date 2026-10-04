@@ -4,7 +4,8 @@
 
 Checks for `axum::Router::route`, `route_service`, `nest`, and `nest_service`
 calls whose path has a segment that starts with `:`, the capture syntax from
-Axum 0.7 and earlier, such as `"/users/:id"`.
+Axum 0.7 and earlier, such as `"/users/:id"`, including immutable local and
+`const` initializer chains.
 
 ## Why is this bad?
 
@@ -14,13 +15,16 @@ still uses the old syntax after an upgrade fails when the application starts.
 
 ## Known problems
 
-The lint checks a string literal passed directly as the path, or a `const`
-defined in the same crate and initialized with a string literal. It does not
-check paths held in variables or built at runtime. The lint skips a router whose builder
-chain or `let` initializer calls `Router::without_v07_checks`. It still warns
-when that call is out of sight, such as on a router passed in as a parameter.
-The machine-applicable fix applies only to a plain string literal without
-escapes whose capture names are Rust-style identifiers.
+The lint follows at most eight immutable local or `const` initializer
+references to a string literal. Mutable bindings, destructured bindings,
+`static` values, function results, and runtime-built paths remain unknown. It
+reports local or constant values at the call site and offers no
+machine-applicable fix; fixes apply only to direct literals. The lint suppresses
+this warning only when it can trace immutable router builders or local
+bindings to `Router::without_v07_checks`. It can warn when that call is out of
+sight, such as on a mutable binding or a router passed in as a parameter. A
+machine-applicable fix requires a plain string literal without escapes and
+Rust-style capture identifiers.
 
 ## Example
 

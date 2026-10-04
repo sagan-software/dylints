@@ -15,12 +15,12 @@ extern crate rustc_middle;
 extern crate rustc_span;
 
 use rustc_hir::{
-    Expr, ExprKind, Node,
+    BindingMode, ByRef, Expr, ExprKind, HirId, Mutability, Node, PatKind,
     def::{DefKind, Res},
 };
 use rustc_lint::{LateContext, LintContext};
 use rustc_middle::ty;
-use rustc_span::{Span, Symbol, def_id::DefId};
+use rustc_span::{Span, Symbol, def_id::DefId, sym};
 
 use dylint_linting as _;
 
@@ -157,7 +157,8 @@ const ROUTE_FREE_METHODS: &[&str] = &[
 /// Return whether a router expression is proved to have no path routes.
 ///
 /// The walk starts at the expression and follows route-free Axum builder calls and
-/// immutable `let` initializers back to a direct `axum::Router::new()` call.
+/// immutable `let` initializers back to a direct `axum::Router::new()` call. It stops
+/// at mutable bindings because reassignment can change the router's route state.
 #[must_use]
 ///
 /// # Examples
@@ -170,7 +171,7 @@ const ROUTE_FREE_METHODS: &[&str] = &[
 /// ```
 pub fn is_empty_router<'tcx>(cx: &LateContext<'tcx>, mut expr: &'tcx Expr<'tcx>) -> bool {
     loop {
-        if is_router_new_call(cx, expr) {
+        if is_router_new_call(cx, expr) || is_router_default_call(cx, expr) {
             return true;
         }
         // Continue only through steps that cannot add a route.
@@ -218,15 +219,36 @@ fn previous_router_step<'tcx>(
     let ExprKind::Path(ref path) = expr.kind else {
         return None;
     };
-    // Follow a simple `let` binding to its initializer.
-    if let Res::Local(binding) = cx.qpath_res(path, expr.hir_id)
-        && let Some((_, Node::LetStmt(local))) = cx.tcx.hir_parent_iter(binding).next()
-        && local.pat.hir_id == binding
+    // Follow an immutable simple binding, whose router value cannot be reassigned.
+    let Res::Local(binding) = cx.qpath_res(path, expr.hir_id) else {
+        return None;
+    };
+    immutable_local_initializer(cx, binding).map(RouterStep::Binding)
+}
+
+/// Return the initializer of an immutable local identifier binding.
+fn immutable_local_initializer<'tcx>(
+    cx: &LateContext<'tcx>,
+    binding: HirId,
+) -> Option<&'tcx Expr<'tcx>> {
+    let (_, Node::LetStmt(local)) = cx.tcx.hir_parent_iter(binding).next()? else {
+        return None;
+    };
+    // Require one immutable identifier so this exact binding cannot be reassigned.
+    if local.pat.hir_id != binding
+        || !matches!(
+            local.pat.kind,
+            PatKind::Binding(
+                BindingMode(ByRef::No, Mutability::Not),
+                id,
+                _,
+                None
+            ) if id == binding
+        )
     {
-        local.init.map(RouterStep::Binding)
-    } else {
-        None
+        return None;
     }
+    local.init
 }
 
 /// Return whether the router behind an expression has called `without_v07_checks`.
@@ -268,10 +290,27 @@ fn is_router_new_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
         && is_router_type(cx, expr)
 }
 
+/// Return whether an expression calls the standard `Default::default` for an Axum Router.
+fn is_router_default_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    // Require a zero-argument call before resolving the standard trait method.
+    let ExprKind::Call(callee, []) = expr.kind else {
+        return false;
+    };
+    let ExprKind::Path(ref path) = callee.kind else {
+        return false;
+    };
+    let Res::Def(DefKind::AssocFn, def_id) = cx.qpath_res(path, callee.hir_id) else {
+        return false;
+    };
+
+    // Match the standard trait method and concrete Axum Router result.
+    cx.tcx.is_diagnostic_item(sym::default_fn, def_id) && is_router_type(cx, expr)
+}
+
 /// Return the path diagnostic when a resolved router call violates one path contract.
 ///
-/// The path may be a string literal or a local `const` initialized by one. Only a
-/// direct literal can receive a fix; a constant gets a diagnostic at the use site.
+/// The path may be a literal, immutable local initialized by one, or local constant
+/// chain. Only a literal passed directly to the router can receive a source fix.
 #[must_use]
 ///
 /// # Examples
@@ -322,26 +361,44 @@ pub fn router_path_violation<'tcx>(
     })
 }
 
+/// Maximum number of local or constant initializer references followed for one path.
+const MAX_PATH_VALUE_REFERENCES: usize = 8;
+
 /// Return a path argument's string value and whether it is a direct literal.
 ///
-/// A path to a local `const` resolves to the string literal that initializes it.
-fn path_value(cx: &LateContext<'_>, path: &Expr<'_>) -> Option<(Symbol, bool)> {
-    if let ExprKind::Lit(literal) = path.kind {
-        return literal.node.str().map(|value| (value, true));
+/// The walk follows at most eight immutable local or constant references. Only a
+/// literal passed directly to the router can receive a source replacement.
+fn path_value<'tcx>(cx: &LateContext<'tcx>, path: &'tcx Expr<'tcx>) -> Option<(Symbol, bool)> {
+    let mut expression = path;
+    let mut is_direct_literal = true;
+    for _ in 0..=MAX_PATH_VALUE_REFERENCES {
+        if let ExprKind::Lit(literal) = expression.kind {
+            return literal.node.str().map(|value| (value, is_direct_literal));
+        }
+        // Follow immutable local initializers and compile-time constant items.
+        expression = path_initializer(cx, expression)?;
+        is_direct_literal = false;
     }
+    None
+}
 
-    let ExprKind::Path(ref qpath) = path.kind else {
+/// Return one immutable local or constant path initializer.
+fn path_initializer<'tcx>(
+    cx: &LateContext<'tcx>,
+    expression: &'tcx Expr<'tcx>,
+) -> Option<&'tcx Expr<'tcx>> {
+    let ExprKind::Path(ref qpath) = expression.kind else {
         return None;
     };
-    // Read the initializer of a local constant without evaluating it.
-    let Res::Def(DefKind::Const { .. }, def_id) = cx.qpath_res(qpath, path.hir_id) else {
+    let resolution = cx.qpath_res(qpath, expression.hir_id);
+    if let Res::Local(binding) = &resolution {
+        return immutable_local_initializer(cx, *binding);
+    }
+    let Res::Def(DefKind::Const { .. }, def_id) = resolution else {
         return None;
     };
     let body = cx.tcx.hir_maybe_body_owned_by(def_id.as_local()?)?;
-    let ExprKind::Lit(literal) = body.value.kind else {
-        return None;
-    };
-    literal.node.str().map(|value| (value, false))
+    Some(body.value)
 }
 
 /// Return whether a router path literal value breaks the selected path contract.

@@ -33,6 +33,18 @@ fn valid_after_route() {
     let _: Router = router.route_layer(middleware::from_fn(pass_through));
 }
 
+fn valid_after_router_reassignment() {
+    let mut router = Router::new();
+    router = router.route("/", get(|| async {}));
+    let _: Router = router.route_layer(middleware::from_fn(pass_through));
+}
+
+fn unknown_mutable_router() {
+    let mut router = Router::new();
+    router = Router::new().fallback(|| async {});
+    let _: Router = router.route_layer(middleware::from_fn(pass_through));
+}
+
 fn valid_unknown_router(router: Router) -> Router {
     router.route_layer(middleware::from_fn(pass_through))
 }
@@ -66,3 +78,31 @@ fn same_names_are_not_axum() {
 }
 
 fn main() {}
+
+fn empty_default_router() {
+    let _: Router = Router::default().route_layer(middleware::from_fn(pass_through));
+}
+
+fn empty_typed_default_router() {
+    let router: Router = Default::default();
+    let _: Router = router.route_layer(middleware::from_fn(pass_through));
+}
+
+fn valid_after_routed_default() {
+    let _: Router = Router::default()
+        .route("/", get(|| async {}))
+        .route_layer(middleware::from_fn(pass_through));
+}
+
+#[derive(Default)]
+struct OtherDefault;
+
+impl OtherDefault {
+    fn route_layer(self, _layer: ()) -> Self {
+        self
+    }
+}
+
+fn unrelated_default_router() {
+    let _router = OtherDefault::default().route_layer(());
+}

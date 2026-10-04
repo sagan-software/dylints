@@ -4,7 +4,7 @@
 
 Checks for `axum::Router::route`, `route_service`, `nest`, and `nest_service`
 calls whose path is a nonempty string that does not start with `/`, such as
-`"health"`.
+`"health"`, including immutable local and `const` initializer chains.
 
 ## Why is this bad?
 
@@ -14,11 +14,12 @@ application starts or a test builds that router.
 
 ## Known problems
 
-The lint checks a string literal passed directly as the path, or a `const`
-defined in the same crate and initialized with a string literal. It does not
-check paths held in variables or built at runtime. The machine-applicable fix
-applies only to a plain string literal without escapes. The other lints report
-the empty path `""`:
+The lint follows at most eight immutable local or `const` initializer
+references to a string literal. Mutable bindings, destructured bindings,
+`static` values, function results, and runtime-built paths remain unknown. It
+reports local or constant values at the call site and offers no
+machine-applicable fix; fixes apply only to direct literals without escapes.
+The other lints report the empty path `""`:
 `axum-route-empty-path`, `axum-route-service-empty-path`, `axum-nest-at-root`,
 or `axum-nest-service-at-root` instead.
 

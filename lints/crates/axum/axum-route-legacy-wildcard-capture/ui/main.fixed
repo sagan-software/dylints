@@ -12,8 +12,14 @@ fn routes() {
 
 fn checks_disabled() {
     let mut router: Router = Router::new().without_v07_checks();
-    router = router.route("/literal/*star", get(|| async {}));
+    router = router.route("/literal/{*star}", get(|| async {}));
     let _ = router;
 }
 
 fn main() {}
+
+fn local_legacy_path() {
+    let path = "/assets/*rest";
+    let _: Router = Router::new().route(path, get(|| async {}));
+    let _: Router = Router::new().route(path, get(|| async {}));
+}

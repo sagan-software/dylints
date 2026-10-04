@@ -3,9 +3,9 @@
 ## What it does
 
 Checks for `axum::Router::route_layer` called on a router that has no routes
-yet. The lint follows the receiver back through `let` bindings and route-free
-builder calls, such as `layer`, `fallback`, and `with_state`, to
-`Router::new()`.
+yet. The lint follows the receiver through immutable `let` bindings and
+route-free builder calls, such as `layer`, `fallback`, and `with_state`, to
+`Router::new()` or a `Default::default()` call whose result is Axum's `Router`.
 
 ## Why is this bad?
 
@@ -16,9 +16,9 @@ router.
 
 ## Known problems
 
-The lint does not follow an empty router returned by another function, passed as
-a parameter, or merged with `Router::merge`. It does not check
-`Router::default()`.
+The lint does not follow an empty router returned by another function, passed
+as a parameter, merged with `Router::merge`, or held in a mutable binding. It
+reports only when it can prove the receiver traces to an empty router origin.
 
 ## Example
 

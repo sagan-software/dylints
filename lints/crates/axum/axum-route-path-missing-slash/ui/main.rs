@@ -24,3 +24,9 @@ fn not_literal_paths(path: String) {
 }
 
 fn main() {}
+
+fn local_relative_path() {
+    let path = "health";
+    let _: Router = Router::new().route(path, get(|| async {}));
+    let _: Router = Router::new().route(path, get(|| async {}));
+}

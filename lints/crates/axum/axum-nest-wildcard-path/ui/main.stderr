@@ -23,5 +23,13 @@ LL |     let _: Router = Router::new().nest(WILDCARD, Router::new());
    |
    = help: nest at a fixed prefix and route the wildcard inside the nested router
 
-warning: 3 warnings emitted
+warning: wildcards in nested router paths panic
+  --> $DIR/main.rs:23:40
+   |
+LL |     let _: Router = Router::new().nest(path, Router::new());
+   |                                        ^^^^
+   |
+   = help: nest at a fixed prefix and route the wildcard inside the nested router
+
+warning: 4 warnings emitted
 

@@ -7,5 +7,13 @@ LL |     let _: Router = Router::new().nest_service("/", Router::new());
    = help: install a root service with `Router::fallback_service`
    = note: `#[warn(axum_nest_service_at_root)]` on by default
 
-warning: 1 warning emitted
+warning: nesting a service at the root panics
+  --> $DIR/main.rs:13:48
+   |
+LL |     let _: Router = Router::new().nest_service(path, Router::new());
+   |                                                ^^^^
+   |
+   = help: install a root service with `Router::fallback_service`
+
+warning: 2 warnings emitted
 

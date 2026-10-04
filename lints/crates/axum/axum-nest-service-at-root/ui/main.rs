@@ -7,3 +7,8 @@ fn routes() {
 }
 
 fn main() {}
+
+fn local_root_path() {
+    let path = "/";
+    let _: Router = Router::new().nest_service(path, Router::new());
+}
