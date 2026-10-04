@@ -28,6 +28,20 @@ outside macro expansions.
 ## Example
 
 ```rust
+use bevy_app::{App, Plugin};
+
+struct GamePlugin;
+
+impl Plugin for GamePlugin {
+    fn build(&self, _: &mut App) {}
+}
+
+struct AudioPlugin;
+
+impl Plugin for AudioPlugin {
+    fn build(&self, _: &mut App) {}
+}
+
 fn build(app: &mut App) {
     app.add_plugins(GamePlugin).add_plugins(GamePlugin);
     app.add_plugins((AudioPlugin, AudioPlugin));
@@ -37,6 +51,20 @@ fn build(app: &mut App) {
 ## Use instead
 
 ```rust
+use bevy_app::{App, Plugin};
+
+struct GamePlugin;
+
+impl Plugin for GamePlugin {
+    fn build(&self, _: &mut App) {}
+}
+
+struct AudioPlugin;
+
+impl Plugin for AudioPlugin {
+    fn build(&self, _: &mut App) {}
+}
+
 fn build(app: &mut App) {
     app.add_plugins(GamePlugin);
     app.add_plugins(AudioPlugin);
