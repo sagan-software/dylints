@@ -16,7 +16,7 @@ extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_span;
 
-use std::path::Path;
+use std::{path::Path, str::FromStr};
 
 use rustc_ast::attr::data_structures::CfgEntry;
 use rustc_errors::DiagDecorator;
@@ -77,9 +77,9 @@ impl<'tcx> Visitor<'tcx> for EnvReadFinder<'_, 'tcx> {
     /// Report a resolved environment read, then continue into child expressions.
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
         if let ExprKind::Call(callee, _) = expr.kind
-            && let Some(name) = env_read_name(self.cx, callee)
+            && let Some(read) = resolved_env_read(self.cx, callee)
         {
-            emit_env_read_lint(self.cx, callee.span, name);
+            emit_env_read_lint(self.cx, callee.span, read);
         }
 
         // Continue traversal so nested environment reads also receive diagnostics.
@@ -87,8 +87,48 @@ impl<'tcx> Visitor<'tcx> for EnvReadFinder<'_, 'tcx> {
     }
 }
 
-/// Return the function name when a callee resolves to a standard environment read.
-fn env_read_name(cx: &LateContext<'_>, callee: &Expr<'_>) -> Option<&'static str> {
+/// Identifies the standard environment read operations checked by this lint.
+#[derive(Clone, Copy, Debug)]
+enum EnvRead {
+    /// Reads one UTF-8 environment value with `std::env::var`.
+    Var,
+    /// Reads one platform-specific environment value with `std::env::var_os`.
+    VarOs,
+    /// Iterates over UTF-8 environment values with `std::env::vars`.
+    Vars,
+    /// Iterates over platform-specific environment values with `std::env::vars_os`.
+    VarsOs,
+}
+
+impl EnvRead {
+    /// Return the standard-library function name used by the diagnostic.
+    const fn diagnostic_name(self) -> &'static str {
+        match self {
+            Self::Var => "var",
+            Self::VarOs => "var_os",
+            Self::Vars => "vars",
+            Self::VarsOs => "vars_os",
+        }
+    }
+}
+
+impl FromStr for EnvRead {
+    type Err = ();
+
+    /// Parse only the four standard-library environment read names reported here.
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        match name {
+            "var" => Ok(Self::Var),
+            "var_os" => Ok(Self::VarOs),
+            "vars" => Ok(Self::Vars),
+            "vars_os" => Ok(Self::VarsOs),
+            _ => Err(()),
+        }
+    }
+}
+
+/// Resolve a callee to one of the standard environment read operations.
+fn resolved_env_read(cx: &LateContext<'_>, callee: &Expr<'_>) -> Option<EnvRead> {
     let ExprKind::Path(qpath) = callee.kind else {
         return None;
     };
@@ -97,14 +137,11 @@ fn env_read_name(cx: &LateContext<'_>, callee: &Expr<'_>) -> Option<&'static str
     };
 
     // The definition path names the defining crate and module, so renames and aliases match.
+    // Restrict parsing to `std::env` before accepting a function from the closed vocabulary.
     match cx.get_def_path(def_id).as_slice() {
-        [krate, module, name] if *krate == sym::std && *module == sym::env => match name.as_str() {
-            "var" => Some("var"),
-            "var_os" => Some("var_os"),
-            "vars" => Some("vars"),
-            "vars_os" => Some("vars_os"),
-            _ => None,
-        },
+        [krate, module, name] if *krate == sym::std && *module == sym::env => {
+            name.as_str().parse().ok()
+        }
         _ => None,
     }
 }
@@ -238,9 +275,9 @@ fn is_allowed_parent_directory(path: &Path) -> bool {
 
 /// Return whether a name contains a configuration or entry-point word.
 fn name_has_allowed_context(name: &str) -> bool {
-    tokens(name).any(|token| {
-        token_matches_any(
-            token,
+    tokens(name).any(|word| {
+        word_matches_any(
+            word,
             &[
                 "cli",
                 "config",
@@ -257,7 +294,7 @@ fn name_has_allowed_context(name: &str) -> bool {
 
 /// Return whether a name contains a test word.
 fn test_context_name(name: &str) -> bool {
-    tokens(name).any(|token| token_matches_any(token, &["test", "tests", "testing"]))
+    tokens(name).any(|word| word_matches_any(word, &["test", "tests", "testing"]))
 }
 
 /// Split a name lazily into borrowed ASCII alphanumeric words.
@@ -273,6 +310,7 @@ fn tokens(name: &str) -> impl Iterator<Item = &str> {
 /// Return the next borrowed word and advance past its following separator.
 fn next_token<'a>(remaining: &mut &'a str) -> Option<&'a str> {
     loop {
+        // Restart at the unread suffix so earlier words stay out of this scan.
         let mut chars = remaining.char_indices().peekable();
         let (_, first) = chars.next()?;
         if !first.is_ascii_alphanumeric() {
@@ -298,6 +336,7 @@ fn next_token<'a>(remaining: &mut &'a str) -> Option<&'a str> {
             previous = current;
         }
 
+        // With no separator or case transition, the unread suffix is the final word.
         let word = *remaining;
         *remaining = "";
         return Some(word);
@@ -312,21 +351,22 @@ fn is_word_boundary(previous: char, current: char, next: Option<char>) -> bool {
             && next.is_some_and(|next| next.is_ascii_lowercase()))
 }
 
-/// Return whether a token matches any lowercase policy word without allocating.
-fn token_matches_any(token: &str, candidates: &[&str]) -> bool {
+/// Return whether a name word matches any lowercase policy word without allocating.
+fn word_matches_any(word: &str, candidates: &[&str]) -> bool {
     candidates
         .iter()
-        .any(|candidate| token.eq_ignore_ascii_case(candidate))
+        .any(|candidate| word.eq_ignore_ascii_case(candidate))
 }
 
 /// Emit the environment-read diagnostic at the callee.
-fn emit_env_read_lint(cx: &LateContext<'_>, span: Span, name: &'static str) {
+fn emit_env_read_lint(cx: &LateContext<'_>, span: Span, read: EnvRead) {
     cx.emit_span_lint(
         RUNTIME_ENV_READ,
         span,
         DiagDecorator(|diag| {
             let _ = diag.primary_message(format!(
-                "`std::env::{name}` reads runtime environment outside config/bootstrap code"
+                "`std::env::{}` reads runtime environment outside config/bootstrap code",
+                read.diagnostic_name()
             ));
             let _ = diag.help(
                 "read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward",
