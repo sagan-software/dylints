@@ -40,7 +40,7 @@ functions.
 ## Example
 
 ```rust
-fn handle_request() {
+fn handle_request(send: impl FnOnce(&str)) {
     let endpoint = std::env::var("API_ENDPOINT").unwrap();
     send(&endpoint);
 }
@@ -59,7 +59,7 @@ fn load_config() -> AppConfig {
     }
 }
 
-fn handle_request(config: &AppConfig) {
+fn handle_request(config: &AppConfig, send: impl FnOnce(&str)) {
     send(&config.endpoint);
 }
 ```
