@@ -4,7 +4,8 @@
 
 Checks calls to `std::env::var`, `std::env::var_os`, `std::env::vars`, and
 `std::env::vars_os` outside configuration, startup, build-script, and test
-code. Calls through imported aliases of these functions are also reported.
+code. It matches calls by their standard-library definitions, so imported
+aliases remain covered.
 
 ## Why is this bad?
 
