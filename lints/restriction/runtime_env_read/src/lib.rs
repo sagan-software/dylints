@@ -364,9 +364,9 @@ fn emit_env_read_lint(cx: &LateContext<'_>, span: Span, read: EnvRead) {
         RUNTIME_ENV_READ,
         span,
         DiagDecorator(|diag| {
+            let name = read.diagnostic_name();
             let _ = diag.primary_message(format!(
-                "`std::env::{}` reads runtime environment outside config/bootstrap code",
-                read.diagnostic_name()
+                "`std::env::{name}` reads runtime environment outside config/bootstrap code"
             ));
             let _ = diag.help(
                 "read environment variables in config/bootstrap, CLI entrypoints, Cargo scripts, or tests, then pass typed configuration inward",
