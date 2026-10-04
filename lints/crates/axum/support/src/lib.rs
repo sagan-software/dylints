@@ -432,7 +432,7 @@ fn path_replacement(source: &str, value: &str, violation: RouterPathViolation) -
 
     let replacement = match violation {
         RouterPathViolation::Empty => char::from(b'/').to_string(),
-        RouterPathViolation::MissingLeadingSlash => format!("{}{value}", char::from(b'/')),
+        RouterPathViolation::MissingLeadingSlash => format!("/{value}"),
         RouterPathViolation::LegacyColonCapture => replace_legacy_captures(value, ':', "{", "}")?,
         RouterPathViolation::LegacyWildcardCapture => {
             replace_legacy_captures(value, '*', "{*", "}")?

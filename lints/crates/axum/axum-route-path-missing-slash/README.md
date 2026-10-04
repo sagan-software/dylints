@@ -17,8 +17,9 @@ application starts or a test builds that router.
 The lint follows at most eight immutable local or `const` initializer
 references to a string literal. Mutable bindings, destructured bindings,
 `static` values, function results, and runtime-built paths remain unknown. It
-reports local or constant values at the call site and offers no
-machine-applicable fix; fixes apply only to direct literals without escapes.
+reports local or constant values at the call site and leaves their initializers
+unchanged. Machine-applicable fixes apply only to direct string literals without
+escapes.
 The other lints report the empty path `""`:
 `axum-route-empty-path`, `axum-route-service-empty-path`, `axum-nest-at-root`,
 or `axum-nest-service-at-root` instead.
