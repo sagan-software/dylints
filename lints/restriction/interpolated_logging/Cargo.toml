@@ -13,8 +13,8 @@ dylint_linting.workspace = true
 dylint_support = { package = "dylint-support", path = "../../../support/dylint" }
 
 [dev-dependencies]
-log = { version = "0.4.33", features = ["kv"] }
 dylint_testing.workspace = true
+log.workspace = true
 tracing.workspace = true
 
 [features]

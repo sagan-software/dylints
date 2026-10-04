@@ -109,7 +109,7 @@ fn interpolated_message_span(tokens: &TokenStream, macro_name: &str) -> Option<S
     }
 
     let arguments = split_top_level_arguments(trees.into_iter());
-    let mut event_level_pending = macro_name == "event";
+    let mut is_event_level_expected = macro_name == "event";
 
     for argument in arguments {
         // Logging APIs put target, parent, name, or logger options before fields.
@@ -118,8 +118,8 @@ fn interpolated_message_span(tokens: &TokenStream, macro_name: &str) -> Option<S
         }
 
         // `event!` takes its level as the first positional argument.
-        if event_level_pending {
-            event_level_pending = false;
+        if is_event_level_expected {
+            is_event_level_expected = false;
             continue;
         }
 
@@ -144,7 +144,9 @@ fn split_top_level_arguments<'a>(
     let mut arguments = Vec::new();
     let mut argument = Vec::new();
 
+    // Keep source order and leave nested token-tree groups opaque to comma parsing.
     for tree in trees {
+        // Only a top-level comma closes the current macro argument.
         if matches!(
             tree,
             TokenTree::Token(
@@ -155,6 +157,7 @@ fn split_top_level_arguments<'a>(
                 _
             )
         ) {
+            // Ignore empty segments from repeated or trailing commas.
             if !argument.is_empty() {
                 arguments.push(std::mem::take(&mut argument));
             }
@@ -163,6 +166,7 @@ fn split_top_level_arguments<'a>(
         }
     }
 
+    // Preserve the final non-empty argument because no comma follows it.
     if !argument.is_empty() {
         arguments.push(argument);
     }
@@ -222,7 +226,8 @@ fn interpolated_format_argument(argument: &[&TokenTree]) -> Option<Span> {
     format_string_has_placeholder(&message).then_some(span)
 }
 
-/// Read a string literal or a literal `concat!` expression without descending into fields.
+/// Read a string or literal `concat!` message expression without descending
+/// into structured fields.
 fn string_literal_expression(argument: &[&TokenTree]) -> Option<(String, Span)> {
     match argument {
         [
@@ -285,8 +290,13 @@ fn concat_string_expression(tokens: &TokenStream) -> Option<(String, Span)> {
     let mut first_part_span = None;
     let mut first_string_span = None;
 
+    // Convert operands in source order and reject unsupported argument shapes.
     for part in split_top_level_arguments(tokens.iter()) {
-        let (text, span, is_string) = concat_literal_part(&part)?;
+        let (text, span, is_string) = concat_literal_token_part(&part)
+            .or_else(|| concat_boolean_part(&part))
+            .or_else(|| concat_negative_number_part(&part))?;
+
+        // Keep the earliest part span when the message has no string operand.
         if first_part_span.is_none() {
             first_part_span = Some(span);
         }
@@ -294,17 +304,12 @@ fn concat_string_expression(tokens: &TokenStream) -> Option<(String, Span)> {
             // Point at a string part when one exists, including cross-part placeholders.
             first_string_span = Some(span);
         }
+
+        // Join decoded text so placeholders split across operands remain visible.
         combined.push_str(&text);
     }
 
     Some((combined, first_string_span.or(first_part_span)?))
-}
-
-/// Read one literal accepted by the built-in `concat!` macro.
-fn concat_literal_part(argument: &[&TokenTree]) -> Option<(String, Span, bool)> {
-    concat_literal_token_part(argument)
-        .or_else(|| concat_boolean_part(argument))
-        .or_else(|| concat_negative_number_part(argument))
 }
 
 /// Decode a string, character, boolean, integer, or float token from a `concat!` argument.
@@ -324,6 +329,8 @@ fn concat_literal_token_part(argument: &[&TokenTree]) -> Option<(String, Span, b
 
     // Use rustc's semantic conversion so escapes and numeric spellings match macro expansion.
     let literal = AstLitKind::from_token_lit(*literal).ok()?;
+
+    // Mark string operands so span selection can prefer their text position.
     let (text, is_string) = match literal {
         AstLitKind::Str(message, _) => (message.as_str().to_owned(), true),
         AstLitKind::Char(character) => (character.to_string(), false),
