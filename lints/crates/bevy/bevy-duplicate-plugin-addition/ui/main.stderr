@@ -1,5 +1,5 @@
 warning: this unique plugin is added twice in the same chain
-  --> $DIR/main.rs:66:33
+  --> $DIR/main.rs:89:33
    |
 LL |     app.add_plugins(GamePlugin).add_plugins(GamePlugin);
    |                                 ^^^^^^^^^^^
@@ -12,15 +12,47 @@ LL +     app.add_plugins(GamePlugin);
    |
 
 warning: this unique plugin is added twice in the same chain
-  --> $DIR/main.rs:67:36
+  --> $DIR/main.rs:90:36
    |
 LL |     app.add_plugins(game_plugin()).add_plugins(game_plugin());
    |                                    ^^^^^^^^^^^
    |
    = help: remove the duplicate `add_plugins` call
 
+warning: this app already has this unique plugin
+  --> $DIR/main.rs:105:9
+   |
+LL |     app.add_plugins(GenericPlugin::<u8>(PhantomData));
+   |         ^^^^^^^^^^^
+   |
+   = help: remove this duplicate `add_plugins` call
+
+warning: this unique plugin is added twice in the same chain
+  --> $DIR/main.rs:107:10
+   |
+LL |         .add_plugins(GenericPlugin::<u8>(PhantomData));
+   |          ^^^^^^^^^^^
+   |
+   = help: remove the duplicate `add_plugins` call
+
 warning: this tuple adds the same unique plugin type more than once
-  --> $DIR/main.rs:81:9
+  --> $DIR/main.rs:108:9
+   |
+LL |     app.add_plugins((
+   |         ^^^^^^^^^^^
+   |
+   = help: remove one of the duplicate plugins from the tuple
+
+warning: this app already has this unique plugin
+  --> $DIR/main.rs:126:9
+   |
+LL |     app.add_plugins(BlanketGenericPlugin::<u8>(PhantomData));
+   |         ^^^^^^^^^^^
+   |
+   = help: remove this duplicate `add_plugins` call
+
+warning: this tuple adds the same unique plugin type more than once
+  --> $DIR/main.rs:146:9
    |
 LL |     app.add_plugins((GamePlugin, GamePlugin));
    |         ^^^^^^^^^^^
@@ -28,7 +60,7 @@ LL |     app.add_plugins((GamePlugin, GamePlugin));
    = help: remove one of the duplicate plugins from the tuple
 
 warning: this app already has this unique plugin
-  --> $DIR/main.rs:91:11
+  --> $DIR/main.rs:156:11
    |
 LL |     other.add_plugins(AudioPlugin);
    |           ^^^^^^^^^^^
@@ -36,7 +68,7 @@ LL |     other.add_plugins(AudioPlugin);
    = help: remove this duplicate `add_plugins` call
 
 warning: this tuple adds the same unique plugin type more than once
-  --> $DIR/main.rs:90:9
+  --> $DIR/main.rs:155:9
    |
 LL |     app.add_plugins((GamePlugin, GamePlugin));
    |         ^^^^^^^^^^^
@@ -44,7 +76,7 @@ LL |     app.add_plugins((GamePlugin, GamePlugin));
    = help: remove one of the duplicate plugins from the tuple
 
 warning: this app already has this unique plugin
-  --> $DIR/main.rs:97:9
+  --> $DIR/main.rs:162:9
    |
 LL |     app.add_plugins(GamePlugin);
    |         ^^^^^^^^^^^
@@ -52,7 +84,7 @@ LL |     app.add_plugins(GamePlugin);
    = help: remove this duplicate `add_plugins` call
 
 warning: this app already has this unique plugin
-  --> $DIR/main.rs:104:9
+  --> $DIR/main.rs:169:9
    |
 LL |     app.add_plugins(AudioPlugin);
    |         ^^^^^^^^^^^
@@ -60,12 +92,12 @@ LL |     app.add_plugins(AudioPlugin);
    = help: remove this duplicate `add_plugins` call
 
 warning: this app already has this unique plugin
-  --> $DIR/main.rs:110:9
+  --> $DIR/main.rs:175:9
    |
 LL |     app.add_plugins(game_plugin());
    |         ^^^^^^^^^^^
    |
    = help: remove this duplicate `add_plugins` call
 
-warning: 8 warnings emitted
+warning: 12 warnings emitted
 

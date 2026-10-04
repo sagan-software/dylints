@@ -16,6 +16,7 @@
 )]
 
 use bevy_app::{App, Plugin, PluginGroup, PluginGroupBuilder, ScheduleRunnerPlugin};
+use std::marker::PhantomData;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Counts calls to the side-effecting plugin constructor.
@@ -46,6 +47,28 @@ impl Plugin for RepeatablePlugin {
     }
 }
 
+/// Generic plugin instances with distinct uniqueness implementations.
+struct GenericPlugin<T>(PhantomData<T>);
+
+impl Plugin for GenericPlugin<u8> {
+    fn build(&self, _: &mut App) {}
+}
+
+impl Plugin for GenericPlugin<u16> {
+    fn build(&self, _: &mut App) {}
+
+    fn is_unique(&self) -> bool {
+        false
+    }
+}
+
+/// Generic plugin with one implementation that inherits default uniqueness.
+struct BlanketGenericPlugin<T>(PhantomData<T>);
+
+impl<T: Send + Sync + 'static> Plugin for BlanketGenericPlugin<T> {
+    fn build(&self, _: &mut App) {}
+}
+
 /// Local plugin group used to test the unsupported group path.
 struct GamePluginGroup;
 
@@ -74,6 +97,48 @@ fn configure(app: &mut App) {
 /// Keep generic plugin aliases outside direct local-type analysis.
 fn configure_generic<P: Plugin + Clone>(app: &mut App, plugin: P) {
     app.add_plugins(plugin.clone()).add_plugins(plugin);
+}
+
+/// Preserve generic default uniqueness while allowing this `u16` plugin to repeat.
+fn configure_generic_uniqueness(app: &mut App) {
+    app.add_plugins(GenericPlugin::<u8>(PhantomData));
+    app.add_plugins(GenericPlugin::<u8>(PhantomData));
+    app.add_plugins(GenericPlugin::<u8>(PhantomData))
+        .add_plugins(GenericPlugin::<u8>(PhantomData));
+    app.add_plugins((
+        GenericPlugin::<u8>(PhantomData),
+        GenericPlugin::<u8>(PhantomData),
+    ));
+
+    app.add_plugins(GenericPlugin::<u16>(PhantomData));
+    app.add_plugins(GenericPlugin::<u16>(PhantomData));
+    app.add_plugins(GenericPlugin::<u16>(PhantomData))
+        .add_plugins(GenericPlugin::<u16>(PhantomData));
+    app.add_plugins((
+        GenericPlugin::<u16>(PhantomData),
+        GenericPlugin::<u16>(PhantomData),
+    ));
+}
+
+/// Keep a single blanket implementation's generic plugin type unique by default.
+fn configure_blanket_generic_default(app: &mut App) {
+    app.add_plugins(BlanketGenericPlugin::<u8>(PhantomData));
+    app.add_plugins(BlanketGenericPlugin::<u8>(PhantomData));
+}
+
+/// Keep generic values with multiple possible implementations outside uniqueness analysis.
+fn configure_ambiguous_generic<T: Send + Sync + 'static>(app: &mut App)
+where
+    GenericPlugin<T>: Plugin,
+{
+    app.add_plugins(GenericPlugin::<T>(PhantomData));
+    app.add_plugins(GenericPlugin::<T>(PhantomData));
+    app.add_plugins(GenericPlugin::<T>(PhantomData))
+        .add_plugins(GenericPlugin::<T>(PhantomData));
+    app.add_plugins((
+        GenericPlugin::<T>(PhantomData),
+        GenericPlugin::<T>(PhantomData),
+    ));
 }
 
 /// Check duplicate and distinct local plugin types in tuples.

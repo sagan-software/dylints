@@ -310,7 +310,10 @@ impl<'tcx> Visitor<'tcx> for LocalBindingUseCollector<'_, 'tcx> {
 }
 
 /// Return whether one tuple contains the same default-unique local plugin type twice.
-fn tuple_has_duplicate_unique_plugin(cx: &LateContext<'_>, plugins_ty: super::Ty<'_>) -> bool {
+fn tuple_has_duplicate_unique_plugin<'tcx>(
+    cx: &LateContext<'tcx>,
+    plugins_ty: super::Ty<'tcx>,
+) -> bool {
     let ty::Tuple(elements) = plugins_ty.kind() else {
         return false;
     };

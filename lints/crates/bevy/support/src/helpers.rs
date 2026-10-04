@@ -670,7 +670,10 @@ pub(crate) fn local_item_is_unit_struct(cx: &LateContext<'_>, local_def_id: Loca
 }
 
 /// Return whether a local plugin implementation uses default uniqueness.
-pub(crate) fn local_plugin_uses_default_uniqueness(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
+pub(crate) fn local_plugin_uses_default_uniqueness<'tcx>(
+    cx: &LateContext<'tcx>,
+    ty: Ty<'tcx>,
+) -> bool {
     local_plugin_uniqueness(cx, ty) == Some(LocalPluginUniqueness::DefaultUnique)
 }
 
@@ -686,19 +689,39 @@ pub(crate) enum LocalPluginUniqueness {
 /// Return known uniqueness behavior for a local plugin implementation.
 ///
 /// `None` means no local `Plugin` implementation was found for the type.
-pub(crate) fn local_plugin_uniqueness(
-    cx: &LateContext<'_>,
-    ty: Ty<'_>,
+pub(crate) fn local_plugin_uniqueness<'tcx>(
+    cx: &LateContext<'tcx>,
+    ty: Ty<'tcx>,
 ) -> Option<LocalPluginUniqueness> {
     // Only local ADTs can have an implementation body available for inspection.
     let ty::Adt(definition, _) = ty.kind() else {
         return None;
     };
 
-    // Inspect only the local implementation for this exact ADT.
-    let (impl_def_id, _) = local_trait_implementations(cx, "bevy_app", "Plugin")
+    // Keep every impl for this ADT because different generic instantiations may override uniqueness.
+    let implementations = local_trait_implementations(cx, "bevy_app", "Plugin")
         .into_iter()
-        .find(|(_, self_def_id)| *self_def_id == definition.did())?;
+        .filter_map(|(impl_def_id, self_def_id)| {
+            (self_def_id == definition.did()).then_some(impl_def_id)
+        })
+        .collect::<Vec<_>>();
+
+    // Prefer the exact instantiated self type so disjoint impls cannot borrow each other's policy.
+    let mut exact_implementations = implementations.iter().copied().filter(|impl_def_id| {
+        cx.tcx
+            .type_of(*impl_def_id)
+            .instantiate_identity()
+            .skip_norm_wip()
+            == ty
+    });
+    let impl_def_id = match (exact_implementations.next(), exact_implementations.next()) {
+        (Some(impl_def_id), None) => impl_def_id,
+        (None, None) => match implementations.as_slice() {
+            [impl_def_id] => *impl_def_id,
+            _ => return None,
+        },
+        _ => return None,
+    };
 
     // An explicit override may choose either runtime value, so uniqueness is unknown.
     let overrides_uniqueness = cx

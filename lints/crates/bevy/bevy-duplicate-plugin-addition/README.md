@@ -17,9 +17,13 @@ The lint resolves local plugin implementations and direct calls on local `App` o
 It does not infer uniqueness for external plugins, plugin groups, or local plugins that override
 `is_unique`. Separate-call analysis forgets its history when an intervening statement uses the app,
 so mutations, aliases, and reassignment stop the analysis. It does not trace app values across
-blocks or control-flow paths. Tuple and separate-call diagnostics provide help without a machine
-fix because removing an expression could change its side effects. A chained-call machine fix is
-limited to a repeated path argument with source spans outside macro expansions.
+blocks or control-flow paths.
+
+When multiple local `Plugin` implementations share a generic ADT, the lint uses a unique exact
+instantiated match and leaves ambiguous instantiations unclassified. Tuple and separate-call
+diagnostics provide help without a machine fix because removing an expression could change its side
+effects. A chained-call machine fix is limited to a repeated path argument with source spans
+outside macro expansions.
 
 ## Example
 
