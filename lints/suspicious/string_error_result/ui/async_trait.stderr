@@ -1,0 +1,11 @@
+warning: `Result` uses `String` as its error type
+  --> $DIR/async_trait.rs:6:40
+   |
+LL |     async fn read(&self) -> Result<(), String>;
+   |                                        ^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+   = note: `#[warn(string_error_result)]` on by default
+
+warning: 1 warning emitted
+

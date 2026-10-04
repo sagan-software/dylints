@@ -56,6 +56,14 @@ LL | async fn async_string_error() -> Result<(), String> {
    = help: use a concrete error type or a focused `thiserror` enum
 
 warning: `Result` uses `String` as its error type
+  --> $DIR/edge_cases.rs:60:40
+   |
+LL |     async fn load(&self) -> Result<u8, String>;
+   |                                        ^^^^^^
+   |
+   = help: use a concrete error type or a focused `thiserror` enum
+
+warning: `Result` uses `String` as its error type
   --> $DIR/edge_cases.rs:65:21
    |
 LL | fn plain_alias() -> PlainStringResult {
@@ -63,5 +71,5 @@ LL | fn plain_alias() -> PlainStringResult {
    |
    = help: use a concrete error type or a focused `thiserror` enum
 
-warning: 8 warnings emitted
+warning: 9 warnings emitted
 

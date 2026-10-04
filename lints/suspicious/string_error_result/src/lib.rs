@@ -18,8 +18,10 @@ extern crate rustc_span;
 
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
-    Body, FnDecl, FnRetTy, GenericArg, GenericBound, LangItem, OpaqueTyOrigin, QPath, Ty as HirTy,
-    TyKind, intravisit::FnKind,
+    Body, FnDecl, FnRetTy, GenericArg, GenericBound, LangItem, OpaqueTyOrigin, QPath, TraitFn,
+    TraitItem, TraitItemKind, Ty as HirTy, TyKind,
+    def::{DefKind, Res},
+    intravisit::FnKind,
 };
 use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty::{self, Ty};
@@ -69,6 +71,85 @@ impl<'tcx> LateLintPass<'tcx> for StringErrorResult {
             .skip_binder();
         check_result_string_error_ty(cx, output_ty, output);
     }
+
+    /// Check required trait method signatures, which have no function body.
+    fn check_trait_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx TraitItem<'tcx>) {
+        let TraitItemKind::Fn(sig, TraitFn::Required(_)) = item.kind else {
+            return;
+        };
+        let FnRetTy::Return(output) = sig.decl.output else {
+            return;
+        };
+
+        // Resolve bodyless async methods from the opaque future's explicit output bound.
+        if let TyKind::OpaqueDef(opaque) = output.kind
+            && let OpaqueTyOrigin::AsyncFn { .. } = opaque.origin
+            && let Some((semantic_output, written_output)) =
+                async_trait_output(cx, opaque.def_id, opaque.bounds)
+        {
+            check_result_string_error_ty(cx, semantic_output, written_output);
+            return;
+        }
+
+        // Resolve aliases from the declared method signature before inspecting its error type.
+        let output_ty = cx
+            .tcx
+            .fn_sig(item.owner_id.def_id)
+            .instantiate_identity()
+            .skip_norm_wip()
+            .output()
+            .skip_binder();
+        check_result_string_error_ty(cx, output_ty, output);
+    }
+}
+
+/// Resolve the written and semantic output of a required async trait method.
+fn async_trait_output<'tcx>(
+    cx: &LateContext<'tcx>,
+    opaque_def_id: LocalDefId,
+    bounds: &'tcx [GenericBound<'tcx>],
+) -> Option<(Ty<'tcx>, &'tcx HirTy<'tcx>)> {
+    // Keep the written type only from the resolved standard Future bound.
+    let written_output =
+        bounds
+            .iter()
+            .filter_map(GenericBound::trait_ref)
+            .find_map(|trait_ref| {
+                let Res::Def(DefKind::Trait, trait_def_id) = trait_ref.path.res else {
+                    return None;
+                };
+                if !cx.tcx.is_lang_item(trait_def_id, LangItem::Future) {
+                    return None;
+                }
+                trait_ref
+                    .path
+                    .segments
+                    .last()?
+                    .args?
+                    .constraints
+                    .iter()
+                    .find_map(|constraint| constraint.ty())
+            })?;
+
+    // If rustc supplies the Future::Output projection, use its semantic type.
+    let semantic_output = cx
+        .tcx
+        .explicit_item_bounds(opaque_def_id.to_def_id())
+        .map_bound(|bounds| bounds.iter().map(|(clause, _)| *clause))
+        .iter_identity()
+        .map(ty::Unnormalized::skip_norm_wip)
+        .find_map(|bound| {
+            let ty::ClauseKind::Projection(projection) = bound.kind().skip_binder() else {
+                return None;
+            };
+            let future_trait = projection.projection_term.trait_def_id(cx.tcx);
+            if !cx.tcx.is_lang_item(future_trait, LangItem::Future) {
+                return None;
+            }
+            projection.term.as_type()
+        })?;
+
+    Some((semantic_output, written_output))
 }
 
 /// Return the semantic and written `Output` type of an `async fn`.
