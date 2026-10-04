@@ -1,7 +1,7 @@
 #![feature(rustc_private)]
 #![warn(unused_extern_crates)]
 
-//! Checks adjacent duplicate Bevy plugin additions.
+//! Checks duplicate Bevy plugin additions that may panic in one application.
 //!
 //! This Dylint library resolves the relevant API or syntax, reports the
 //! undesired pattern, and provides the replacement documented by its README.
@@ -22,17 +22,50 @@ dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
     pub BEVY_DUPLICATE_PLUGIN_ADDITION,
     Warn,
-    "checks adjacent duplicate Bevy plugin additions",
+    "checks duplicate unique Bevy plugin additions",
     BevyDuplicatePluginAddition
 }
 
 impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyDuplicatePluginAddition {
+    /// Check direct additions to one proven local `App` within a block.
+    fn check_block(
+        &mut self,
+        cx: &rustc_lint::LateContext<'tcx>,
+        block: &'tcx rustc_hir::Block<'tcx>,
+    ) {
+        for duplicate in bevy_support::duplicate_plugin_additions_in_block(cx, block) {
+            cx.emit_span_lint(
+                BEVY_DUPLICATE_PLUGIN_ADDITION,
+                duplicate.method_span,
+                rustc_errors::DiagDecorator(|diagnostic| {
+                    let _configured_diagnostic =
+                        diagnostic.primary_message("this app already has this unique plugin");
+                    let _helped = diagnostic.help("remove this duplicate `add_plugins` call");
+                }),
+            );
+        }
+    }
+
     /// Check chained `add_plugins` calls that repeat one unique plugin.
     fn check_expr(
         &mut self,
         cx: &rustc_lint::LateContext<'tcx>,
         expr: &'tcx rustc_hir::Expr<'tcx>,
     ) {
+        if let Some(method_span) = bevy_support::tuple_duplicate_plugin_addition(cx, expr) {
+            cx.emit_span_lint(
+                BEVY_DUPLICATE_PLUGIN_ADDITION,
+                method_span,
+                rustc_errors::DiagDecorator(|diagnostic| {
+                    let _configured_diagnostic = diagnostic.primary_message(
+                        "this tuple adds the same unique plugin type more than once",
+                    );
+                    let _helped =
+                        diagnostic.help("remove one of the duplicate plugins from the tuple");
+                }),
+            );
+            return;
+        }
         let Some(duplicate) = bevy_support::duplicate_plugin_addition(cx, expr) else {
             return;
         };

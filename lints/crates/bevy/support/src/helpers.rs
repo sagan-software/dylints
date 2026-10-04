@@ -669,23 +669,48 @@ pub(crate) fn local_item_is_unit_struct(cx: &LateContext<'_>, local_def_id: Loca
     )
 }
 
-/// Return whether a local plugin implementation uses `Plugin::is_unique`.
+/// Return whether a local plugin implementation uses default uniqueness.
 pub(crate) fn local_plugin_uses_default_uniqueness(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
+    local_plugin_uniqueness(cx, ty) == Some(LocalPluginUniqueness::DefaultUnique)
+}
+
+/// Uniqueness behavior established from one local `Plugin` implementation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum LocalPluginUniqueness {
+    /// The implementation inherits Bevy's default unique behavior.
+    DefaultUnique,
+    /// The implementation overrides `Plugin::is_unique` with an unknown runtime result.
+    OverridesIsUnique,
+}
+
+/// Return known uniqueness behavior for a local plugin implementation.
+///
+/// `None` means no local `Plugin` implementation was found for the type.
+pub(crate) fn local_plugin_uniqueness(
+    cx: &LateContext<'_>,
+    ty: Ty<'_>,
+) -> Option<LocalPluginUniqueness> {
     // Only local ADTs can have an implementation body available for inspection.
     let ty::Adt(definition, _) = ty.kind() else {
-        return false;
+        return None;
     };
 
-    // Any explicit `is_unique` method replaces the trait's default behavior.
-    local_trait_implementations(cx, "bevy_app", "Plugin")
+    // Inspect only the local implementation for this exact ADT.
+    let (impl_def_id, _) = local_trait_implementations(cx, "bevy_app", "Plugin")
         .into_iter()
-        .find(|(_, self_def_id)| *self_def_id == definition.did())
-        .is_some_and(|(impl_def_id, _)| {
-            !cx.tcx
-                .associated_items(impl_def_id)
-                .in_definition_order()
-                .any(|item| item.name().as_str() == "is_unique")
-        })
+        .find(|(_, self_def_id)| *self_def_id == definition.did())?;
+
+    // An explicit override may choose either runtime value, so uniqueness is unknown.
+    let overrides_uniqueness = cx
+        .tcx
+        .associated_items(impl_def_id)
+        .in_definition_order()
+        .any(|item| item.name().as_str() == "is_unique");
+    Some(if overrides_uniqueness {
+        LocalPluginUniqueness::OverridesIsUnique
+    } else {
+        LocalPluginUniqueness::DefaultUnique
+    })
 }
 
 /// Visitor that finds discarded `App::run` expression statements.

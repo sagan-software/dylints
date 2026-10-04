@@ -16,7 +16,7 @@ use core::ops::ControlFlow;
 
 use rustc_abi::Size;
 use rustc_hir::{
-    Body, Expr, ExprKind, FnDecl, ItemKind, Mutability, VariantData,
+    Block, Body, Expr, ExprKind, FnDecl, ItemKind, Mutability, VariantData,
     def::Res,
     def_id::{DefId, LocalDefId},
     intravisit::{FnKind, Visitor},
@@ -169,7 +169,8 @@ mod traits;
 
 pub use self::bundles::{
     DuplicatePluginAddition, ElapsedSecsWidening, UnitBundleValue, duplicate_plugin_addition,
-    elapsed_secs_widening, unit_bundle_values,
+    duplicate_plugin_additions_in_block, elapsed_secs_widening, tuple_duplicate_plugin_addition,
+    unit_bundle_values,
 };
 pub use self::helpers::{parameter_spans, parameter_types};
 pub use self::methods::{
