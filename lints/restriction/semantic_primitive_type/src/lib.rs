@@ -277,6 +277,7 @@ fn peel_wrappers<'tcx>(cx: &LateContext<'tcx>, mut ty: Ty<'tcx>) -> Ty<'tcx> {
         ty = match ty.kind() {
             ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => *inner,
             ty::Adt(adt, _) if cx.tcx.is_diagnostic_item(sym::Option, adt.did()) => {
+                // Preserve an over-depth standard Option chain as an opaque type.
                 let Some(inner) = dylint_support::peel_standard_options(cx.tcx, ty) else {
                     return ty;
                 };
