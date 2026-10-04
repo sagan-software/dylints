@@ -52,6 +52,7 @@ impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyDuplicatePluginAddition {
         cx: &rustc_lint::LateContext<'tcx>,
         expr: &'tcx rustc_hir::Expr<'tcx>,
     ) {
+        // Keep tuple elements intact because their expressions may have side effects.
         if let Some(method_span) = bevy_support::tuple_duplicate_plugin_addition(cx, expr) {
             cx.emit_span_lint(
                 BEVY_DUPLICATE_PLUGIN_ADDITION,

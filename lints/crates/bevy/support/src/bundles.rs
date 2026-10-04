@@ -246,15 +246,15 @@ fn remember_plugin_types<'tcx>(
     };
 
     // Help only because evaluating a later plugin expression may have effects.
-    let mut repeated = false;
+    let mut has_repeated_plugin = false;
     for plugin_ty in plugin_types {
         if prior_types.contains(&plugin_ty) {
-            repeated = true;
+            has_repeated_plugin = true;
         } else {
             prior_types.push(plugin_ty);
         }
     }
-    repeated.then_some(DuplicatePluginAddition {
+    has_repeated_plugin.then_some(DuplicatePluginAddition {
         method_span,
         removal: None,
     })

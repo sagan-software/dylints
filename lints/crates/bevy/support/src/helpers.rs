@@ -724,12 +724,12 @@ pub(crate) fn local_plugin_uniqueness<'tcx>(
     };
 
     // An explicit override may choose either runtime value, so uniqueness is unknown.
-    let overrides_uniqueness = cx
+    let has_uniqueness_override = cx
         .tcx
         .associated_items(impl_def_id)
         .in_definition_order()
         .any(|item| item.name().as_str() == "is_unique");
-    Some(if overrides_uniqueness {
+    Some(if has_uniqueness_override {
         LocalPluginUniqueness::OverridesIsUnique
     } else {
         LocalPluginUniqueness::DefaultUnique
