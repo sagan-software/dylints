@@ -19,8 +19,9 @@ it. Tracing documents this pattern as producing incorrect traces.
 
 ## Known problems
 
-The analysis joins branch states as may-live facts. It can report a guard when
-it cannot prove that every path released the guard before suspension.
+The analysis joins predecessor ownership and alias facts at each MIR block. It
+can report a guard when it cannot prove that every path released the guard
+before suspension.
 
 When `Option::take` uses an alias that can refer to several wrappers, the
 analysis transfers a possible result and keeps each source as may-live. It can

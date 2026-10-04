@@ -48,6 +48,7 @@ fn check_guard_constructor<'tcx>(
     body: &rustc_middle::mir::Body<'tcx>,
     terminator: &rustc_middle::mir::Terminator<'tcx>,
 ) {
+    // Only successful call edges have a result place that can receive the guard.
     let TerminatorKind::Call {
         func,
         destination,
@@ -57,10 +58,12 @@ fn check_guard_constructor<'tcx>(
     else {
         return;
     };
+    // Resolve the method before interpreting its return type as a tracing guard.
     if !is_tracing_guard_constructor(cx, func) {
         return;
     }
     let guard_ty = destination.ty(body, cx.tcx).ty;
+    // Keep this path limited to the two tracing guard ADTs diagnosed by the lint.
     if !is_tracing_span_guard_type(cx, guard_ty) {
         return;
     }
@@ -121,6 +124,7 @@ fn is_tracing_guard_constructor<'tcx>(
     cx: &LateContext<'tcx>,
     func: &rustc_middle::mir::Operand<'tcx>,
 ) -> bool {
+    // Constant function definitions provide the resolved API identity.
     let Some((def_id, _)) = func.const_fn_def() else {
         return false;
     };
@@ -145,7 +149,7 @@ fn is_tracing_span_guard_type(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
         )
 }
 
-/// Track one constructor result through the coroutine until a pending poll retains it.
+/// Track one constructor result until a pending poll saves it in the coroutine.
 fn live_wrapper_variants<'tcx>(
     cx: &LateContext<'tcx>,
     coroutine: &rustc_middle::mir::CoroutineLayout<'tcx>,
@@ -154,60 +158,84 @@ fn live_wrapper_variants<'tcx>(
     origin: &GuardOrigin<'tcx>,
 ) -> Vec<VariantIdx> {
     // Store the may-live state at each block and revisit blocks only when it grows.
-    let mut incoming = vec![None; body.basic_blocks.len()];
-    let Some(origin_state) = incoming.get_mut(origin.target.index()) else {
+    let mut worklist = GuardWorklist {
+        incoming_states: vec![None; body.basic_blocks.len()],
+        pending_blocks: VecDeque::from([origin.target]),
+        live_variants: Vec::new(),
+    };
+    let Some(origin_state) = worklist.incoming_states.get_mut(origin.target.index()) else {
         return Vec::new();
     };
+    // Seed only the successful constructor edge where this guard first exists.
     *origin_state = Some(GuardFlowState {
         places: vec![origin.destination.clone()],
         references: HashMap::new(),
     });
-    let mut worklist = VecDeque::from([origin.target]);
-    let mut live_variants = Vec::new();
 
-    while let Some(block) = worklist.pop_front() {
-        // Each queue entry reads the joined state accumulated from reachable predecessors.
-        let Some(data) = body.basic_blocks.get(block) else {
-            continue;
-        };
-        let mut state = incoming
-            .get(block.index())
-            .and_then(Option::as_ref)
-            .cloned()
-            .unwrap_or_default();
-        for statement in &data.statements {
-            update_guard_state(body, async_body, statement, &mut state);
-        }
-
-        // A Poll::Pending return with this owned guard in a saved wrapper is the warning case.
-        if let Some(variant) = pending_variant(cx, body, async_body, block)
-            && state.places.iter().any(|place| {
-                saved_wrapper_contains_guard(cx, coroutine, variant, place, origin.guard_ty)
-            })
-            && !live_variants.contains(&variant)
-        {
-            live_variants.push(variant);
-        }
-
-        consume_terminator_operands(
+    while let Some(block) = worklist.pending_blocks.pop_front() {
+        process_guard_block(
             cx,
+            coroutine,
             body,
             async_body,
             origin.guard_ty,
-            &data.terminator().kind,
-            &mut state,
+            block,
+            &mut worklist,
         );
-        // Join successor states so any path that retains the guard remains observable.
-        for successor in data.terminator().successors() {
-            let Some(successor_state) = incoming.get_mut(successor.index()) else {
-                continue;
-            };
-            if merge_guard_state(successor_state, &state) {
-                worklist.push_back(successor);
-            }
+    }
+    worklist.live_variants
+}
+
+/// Apply one block transfer and queue successors whose joined state changed.
+fn process_guard_block<'tcx>(
+    cx: &LateContext<'tcx>,
+    coroutine: &rustc_middle::mir::CoroutineLayout<'tcx>,
+    body: &rustc_middle::mir::Body<'tcx>,
+    async_body: LocalDefId,
+    guard_ty: Ty<'tcx>,
+    block: BasicBlock,
+    worklist: &mut GuardWorklist,
+) {
+    // Each queue entry reads the joined state accumulated from reachable predecessors.
+    let Some(data) = body.basic_blocks.get(block) else {
+        return;
+    };
+    let mut state = worklist
+        .incoming_states
+        .get(block.index())
+        .and_then(Option::as_ref)
+        .cloned()
+        .unwrap_or_default();
+    // Apply statements in MIR order before testing this block's terminator.
+    for statement in &data.statements {
+        update_guard_state(body, async_body, statement, &mut state);
+    }
+
+    // A warning requires this guard in a saved wrapper at a Poll::Pending return.
+    if let Some(variant) =
+        pending_guard_variant(cx, coroutine, body, async_body, block, &state, guard_ty)
+        && !worklist.live_variants.contains(&variant)
+    {
+        worklist.live_variants.push(variant);
+    }
+
+    consume_terminator_operands(
+        cx,
+        body,
+        async_body,
+        guard_ty,
+        &data.terminator().kind,
+        &mut state,
+    );
+    // Revisit successors only when their joined may-live state gains a fact.
+    for successor in data.terminator().successors() {
+        let Some(successor_state) = worklist.incoming_states.get_mut(successor.index()) else {
+            continue;
+        };
+        if has_new_state_facts(successor_state, &state) {
+            worklist.pending_blocks.push_back(successor);
         }
     }
-    live_variants
 }
 
 /// Check that the tracked guard occupies a wrapper field in the pending coroutine state.
@@ -221,6 +249,7 @@ fn saved_wrapper_contains_guard<'tcx>(
     let GuardBase::CoroutineField { variant, field } = place.base else {
         return false;
     };
+    // A field from another saved state does not belong to this pending return.
     if variant != pending {
         return false;
     }
@@ -238,28 +267,54 @@ fn saved_wrapper_contains_guard<'tcx>(
     saved_ty != guard_ty && type_contains_guard(cx, saved_ty, guard_ty)
 }
 
-/// Recognize a return block that constructs `Poll::Pending` for this coroutine state.
-fn pending_variant<'tcx>(
+/// Return the pending state when it saves this guard in an owning wrapper.
+fn pending_guard_variant<'tcx>(
     cx: &LateContext<'tcx>,
+    coroutine: &rustc_middle::mir::CoroutineLayout<'tcx>,
     body: &rustc_middle::mir::Body<'tcx>,
     async_body: LocalDefId,
     block: BasicBlock,
+    state: &GuardFlowState,
+    guard_ty: Ty<'tcx>,
 ) -> Option<VariantIdx> {
     let data = body.basic_blocks.get(block)?;
+    // Require a pending return before reading the saved-state discriminant.
     if !matches!(&data.terminator().kind, TerminatorKind::Return) || !returns_poll_pending(cx, data)
     {
         return None;
     }
 
-    saved_coroutine_variant(cx, body, async_body, data)
+    // The latest discriminant identifies the fields retained by this suspension.
+    let variant = data.statements.iter().rev().find_map(|statement| {
+        let StatementKind::SetDiscriminant {
+            place,
+            variant_index,
+        } = &statement.kind
+        else {
+            return None;
+        };
+        matches!(
+            place.ty(body, cx.tcx).ty.kind(),
+            TyKind::Coroutine(def_id, _) if *def_id == async_body.to_def_id()
+        )
+        .then_some(*variant_index)
+    })?;
+
+    // Only a tracked place in this saved variant can trigger the wrapper diagnostic.
+    state
+        .places
+        .iter()
+        .any(|place| saved_wrapper_contains_guard(cx, coroutine, variant, place, guard_ty))
+        .then_some(variant)
 }
 
-/// Check that the block assigns the language item's pending poll variant to its return place.
+/// Check that the block assigns the language item's pending variant to its return place.
 fn returns_poll_pending<'tcx>(
     cx: &LateContext<'tcx>,
     data: &rustc_middle::mir::BasicBlockData<'tcx>,
 ) -> bool {
     let span = data.terminator().source_info.span;
+    // Resolve Poll and Pending through rustc's language-item table.
     let poll_def_id = cx.tcx.require_lang_item(LangItem::Poll, span);
     let pending_def_id = cx.tcx.require_lang_item(LangItem::PollPending, span);
     let pending_variant = cx
@@ -271,6 +326,7 @@ fn returns_poll_pending<'tcx>(
     let Some(pending_variant) = pending_variant else {
         return false;
     };
+    // The return local must aggregate the exact Pending variant.
     data.statements.iter().any(|statement| {
         let StatementKind::Assign(assignment) = &statement.kind else {
             return false;
@@ -290,30 +346,6 @@ fn returns_poll_pending<'tcx>(
             AggregateKind::Adt(def_id, variant, ..)
                 if *def_id == poll_def_id && *variant == pending_variant
         )
-    })
-}
-
-/// Find the coroutine state saved by a pending return block.
-fn saved_coroutine_variant<'tcx>(
-    cx: &LateContext<'tcx>,
-    body: &rustc_middle::mir::Body<'tcx>,
-    async_body: LocalDefId,
-    data: &rustc_middle::mir::BasicBlockData<'tcx>,
-) -> Option<VariantIdx> {
-    // The saved coroutine discriminant identifies the fields retained by this suspension.
-    data.statements.iter().rev().find_map(|statement| {
-        let StatementKind::SetDiscriminant {
-            place,
-            variant_index,
-        } = &statement.kind
-        else {
-            return None;
-        };
-        matches!(
-            place.ty(body, cx.tcx).ty.kind(),
-            TyKind::Coroutine(def_id, _) if *def_id == async_body.to_def_id()
-        )
-        .then_some(*variant_index)
     })
 }
 
@@ -349,12 +381,23 @@ struct GuardFlowState {
     references: HashMap<Local, Vec<GuardPlace>>,
 }
 
+/// Mutable state for the may-live control-flow worklist.
+struct GuardWorklist {
+    /// Joined ownership and alias facts for each MIR block.
+    incoming_states: Vec<Option<GuardFlowState>>,
+    /// MIR blocks whose joined state changed and needs transfer.
+    pending_blocks: VecDeque<BasicBlock>,
+    /// Pending coroutine variants where the tracked guard remains saved.
+    live_variants: Vec<VariantIdx>,
+}
+
 /// Convert a MIR place into its local or coroutine-field identity.
 fn guard_place<'tcx>(
     body: &rustc_middle::mir::Body<'tcx>,
     async_body: LocalDefId,
     place: Place<'tcx>,
 ) -> GuardPlace {
+    // A root local needs no aggregate projection path.
     if let Some(local) = place.as_local() {
         return local_guard_place(local);
     }
@@ -364,6 +407,7 @@ fn guard_place<'tcx>(
     let second = projection.next();
     let third = projection.next();
     let Some(local_decl) = body.local_decls.get(place.local) else {
+        // Keep tracking rooted locally when rustc supplies no declaration metadata.
         return local_guard_place(place.local);
     };
 
@@ -454,6 +498,7 @@ fn update_guard_state<'tcx>(
 ) {
     match &statement.kind {
         StatementKind::Assign(assignment) => {
+            // Transfer moved fields before replacing the destination's old owner.
             let (destination, value) = &**assignment;
             let destination_place = *destination;
             let destination = guard_place(body, async_body, destination_place);
@@ -468,9 +513,11 @@ fn update_guard_state<'tcx>(
             }
             clear_guard_place(&mut state.places, &destination);
             insert_guard_places(&mut state.places, carried_places);
+            // Reference aliases must observe the ownership state after the assignment.
             update_reference_state(body, async_body, destination_place, value, state);
         }
         StatementKind::StorageDead(local) | StatementKind::StorageLive(local) => {
+            // Storage boundaries end local ownership and any aliases rooted there.
             clear_guard_place(&mut state.places, &local_guard_place(*local));
             let _discarded_reference_targets = state.references.remove(local);
         }
@@ -482,7 +529,9 @@ fn update_guard_state<'tcx>(
         | StatementKind::Intrinsic(_)
         | StatementKind::ConstEvalCounter
         | StatementKind::Nop
-        | StatementKind::BackwardIncompatibleDropHint { .. } => {}
+        | StatementKind::BackwardIncompatibleDropHint { .. } => {
+            // These metadata statements leave owner places and alias sets unchanged.
+        }
     }
 }
 
@@ -494,6 +543,7 @@ fn update_reference_state<'tcx>(
     value: &Rvalue<'tcx>,
     state: &mut GuardFlowState,
 ) {
+    // Only reference-typed locals can carry aliases to existing guard owners.
     let Some(local) = destination.as_local() else {
         return;
     };
@@ -504,6 +554,7 @@ fn update_reference_state<'tcx>(
         let _discarded_reference_targets = state.references.remove(&local);
         return;
     }
+    // Propagate known targets through reborrows and copies of reference locals.
     let targets = if let Rvalue::Ref(_, _, borrowed) = value {
         borrowed_guard_places(body, async_body, *borrowed, &state.references)
     } else if let Rvalue::Use(
@@ -518,6 +569,7 @@ fn update_reference_state<'tcx>(
     } else {
         Vec::new()
     };
+    // An empty set records no proven target, so remove any previous mapping.
     if targets.is_empty() {
         let _discarded_reference_targets = state.references.remove(&local);
     } else {
@@ -540,6 +592,7 @@ fn borrowed_guard_places<'tcx>(
             .filter_map(projection_field)
             .take(MAX_GUARD_FIELD_DEPTH + 1)
             .collect::<Vec<_>>();
+        // Apply fields projected after the dereference to each possible backing place.
         return targets
             .iter()
             .filter_map(|target| {
@@ -614,9 +667,11 @@ fn consume_terminator_operands<'tcx>(
 ) {
     match kind {
         TerminatorKind::Call { .. } => {
+            // Call handling transfers moved operands and invalidates opaque mutable aliases.
             consume_call_operands(cx, body, async_body, guard_ty, kind, state);
         }
         TerminatorKind::Drop { place, .. } => {
+            // A drop removes both the owner and aliases whose backing place is that owner.
             let place = guard_place(body, async_body, *place);
             clear_guard_place(&mut state.places, &place);
             clear_reference_targets(&mut state.references, &place);
@@ -656,15 +711,17 @@ fn consume_call_operands<'tcx>(
         return;
     };
     let destination_path = guard_place(body, async_body, *destination);
+    // Handle the recognized extraction before conservative opaque-call effects.
     let mut carried_places = transfer_option_take(cx, body, async_body, kind, state);
 
     // Opaque calls can consume a guard through a mutable reference; shared borrows remain tracked.
     if !is_mem_drop(cx, func) && !is_option_take(cx, func) {
-        invalidate_mutably_borrowed_guards(cx, body, args, state);
+        apply_opaque_mutable_borrow_policy(cx, body, args, state);
     }
     carried_places.extend(consume_moved_call_inputs(
         cx, body, async_body, guard_ty, kind, state,
     ));
+    // Replace stale destination ownership only after all sources have been examined.
     clear_guard_place(&mut state.places, &destination_path);
     insert_guard_places(&mut state.places, carried_places);
 }
@@ -689,6 +746,7 @@ fn transfer_option_take<'tcx>(
     if !is_option_take(cx, func) {
         return Vec::new();
     }
+    // Resolve the receiver local to the wrappers that a tracked reborrow may target.
     let destination_path = guard_place(body, async_body, *destination);
     let receiver = args.first().and_then(|argument| match &argument.node {
         rustc_middle::mir::Operand::Copy(place) | rustc_middle::mir::Operand::Move(place) => {
@@ -702,8 +760,10 @@ fn transfer_option_take<'tcx>(
         return Vec::new();
     };
 
+    // Clear only a proven single target; joined aliases lose branch correlation.
     let has_one_target = targets.len() == 1;
     let mut carried_places = Vec::new();
+    // Transfer a possible result while preserving ambiguous source correlation.
     for source in targets {
         let moved = transfer_guard_places(&state.places, &source, &destination_path, None);
         if moved.is_empty() {
@@ -738,10 +798,11 @@ fn consume_moved_call_inputs<'tcx>(
     };
     let destination_path = guard_place(body, async_body, *destination);
     let destination_ty = destination.ty(body, cx.tcx).ty;
+    // Confirm the Box result can own this guard before preserving nested paths.
     let result_is_box = is_box_new(cx, func) && type_contains_guard(cx, destination_ty, guard_ty);
     let mut carried_places = Vec::new();
 
-    // Box::new moves its argument into the returned owning Box.
+    // Only moved arguments can transfer tracked ownership to a call result.
     for argument in args {
         let rustc_middle::mir::Operand::Move(place) = &argument.node else {
             continue;
@@ -755,6 +816,7 @@ fn consume_moved_call_inputs<'tcx>(
             continue;
         }
         if result_is_box {
+            // Box::new moves each tracked descendant into the returned owning Box.
             // Preserve the tracked field suffix when `Box::new` owns a wrapper.
             carried_places.extend(transfer_guard_places(
                 &state.places,
@@ -770,12 +832,13 @@ fn consume_moved_call_inputs<'tcx>(
 }
 
 /// Clear guard paths exposed to an opaque mutable-reference argument.
-fn invalidate_mutably_borrowed_guards<'tcx>(
+fn apply_opaque_mutable_borrow_policy<'tcx>(
     cx: &LateContext<'tcx>,
     body: &rustc_middle::mir::Body<'tcx>,
     args: &[Spanned<rustc_middle::mir::Operand<'tcx>>],
     state: &mut GuardFlowState,
 ) {
+    // Shared and by-value arguments do not hide mutation of a tracked owner.
     for argument in args {
         let (rustc_middle::mir::Operand::Copy(place) | rustc_middle::mir::Operand::Move(place)) =
             &argument.node
@@ -788,12 +851,14 @@ fn invalidate_mutably_borrowed_guards<'tcx>(
         ) {
             continue;
         }
+        // Only direct mutable-reference locals have a resolved alias mapping.
         let Some(local) = place.as_local() else {
             continue;
         };
         let Some(targets) = state.references.get(&local).cloned() else {
             continue;
         };
+        // An opaque mutable call may remove a guard reachable through any such alias.
         for target in targets {
             clear_guard_place(&mut state.places, &target);
         }
@@ -849,7 +914,8 @@ fn type_contains_guard_with_seen<'tcx>(
     if seen.len() >= MAX_GUARD_FIELD_DEPTH || !seen.insert(ty) {
         return false;
     }
-    let contains = match ty.kind() {
+    // Inspect only supported owning containers and explicitly excluded type kinds.
+    let has_guard = match ty.kind() {
         TyKind::Adt(..) => type_contains_guard_in_adt(cx, ty, guard_ty, seen),
         TyKind::Tuple(elements) => elements
             .iter()
@@ -882,8 +948,9 @@ fn type_contains_guard_with_seen<'tcx>(
         | TyKind::Infer(_)
         | TyKind::Error(_) => false,
     };
+    // Remove this node from the active path so sibling fields can inspect it.
     let _removed_active_type = seen.remove(&ty);
-    contains
+    has_guard
 }
 
 /// Inspect ADT fields or the type parameter physically owned by `Box`.
@@ -897,11 +964,13 @@ fn type_contains_guard_in_adt<'tcx>(
         return false;
     };
     let path = cx.tcx.def_path_str(adt.did());
+    // Box owns its type argument; other ADTs expose ownership through declared fields.
     if cx.tcx.crate_name(adt.did().krate).as_str() == "alloc" && path.ends_with("boxed::Box") {
         arguments
             .types()
             .any(|argument| type_contains_guard_with_seen(cx, argument, guard_ty, seen))
     } else {
+        // Instantiate each field with this ADT's arguments before checking its type.
         adt.all_fields().any(|field| {
             let field_ty = cx
                 .tcx
@@ -915,36 +984,41 @@ fn type_contains_guard_in_adt<'tcx>(
 
 /// Add new may-live places while keeping the flow state set-like.
 fn insert_guard_places(target: &mut Vec<GuardPlace>, additions: Vec<GuardPlace>) {
-    for place in additions {
-        if !target.contains(&place) {
-            target.push(place);
-        }
+    // Preserve insertion order while keeping the may-live places set-like.
+    let mut additions = additions.into_iter();
+    // Each search sees paths inserted by earlier iterations.
+    while let Some(place) = additions.find(|place| !target.contains(place)) {
+        target.push(place);
     }
 }
 
 /// Join a block's may-live places and aliases from a new predecessor.
-fn merge_guard_state(target: &mut Option<GuardFlowState>, incoming: &GuardFlowState) -> bool {
+fn has_new_state_facts(target: &mut Option<GuardFlowState>, incoming: &GuardFlowState) -> bool {
     let Some(target) = target else {
+        // The first predecessor provides the initial state for this block.
         *target = Some(incoming.clone());
         return true;
     };
-    let mut grew = false;
+    let mut has_new_facts = false;
+    // Ownership facts are joined monotonically until the worklist reaches a fixed point.
     for place in &incoming.places {
         if !target.places.contains(place) {
             target.places.push(place.clone());
-            grew = true;
+            has_new_facts = true;
         }
     }
+    // Reference aliases use the same may-live union as owned guard paths.
     for (local, places) in &incoming.references {
         let targets = target.references.entry(*local).or_default();
         for place in places {
             if !targets.contains(place) {
                 targets.push(place.clone());
-                grew = true;
+                has_new_facts = true;
             }
         }
     }
-    grew
+    // Revisit successors only when this join added a fact.
+    has_new_facts
 }
 
 /// Remove a tracked place and all guard fields nested below it.
