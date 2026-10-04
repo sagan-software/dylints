@@ -24,11 +24,13 @@ lint can still warn at a later `.await` because MIR does not identify which
 element the collection removed.
 
 The standard `PhantomData<T>` carries `T` only in type information and does not
-retain a guard. Values stored in `Option<T>`, `Box<T>`, struct fields, or nested
-futures can retain the guard. Opaque helper calls can still produce false
-positives when a return type mentions the guard but MIR cannot prove that the
-value stores no guard. The lint follows aggregate field paths through a helper
-only when MIR proves that the helper returns its sole argument unchanged.
+retain a guard. The lint recognizes `PhantomData` by the compiler-resolved
+standard item, not by its source spelling. Values stored in `Option<T>`, `Box<T>`,
+struct fields, or nested futures can retain the guard. Opaque helper calls can
+still produce false positives when a return type mentions the guard but MIR
+cannot prove that the value stores no guard. The lint follows aggregate field
+paths through a helper only when MIR proves that the helper returns its sole
+argument unchanged.
 
 ## Example
 
