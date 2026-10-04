@@ -1,5 +1,31 @@
 # AGENTS.md
 
+## Downstream setup documentation
+
+When adding these lints to another project or editing setup documentation,
+read the [quick start](README.md#quick-start) and [setup guide](docs/usage.md).
+Use Dylint's `workspace.metadata.dylint.libraries` in the target workspace's
+root `Cargo.toml` or `dylint.toml`. Keep existing library entries.
+
+Use a pinned Git revision and select library paths with `pattern`. The quick
+start selects `lints/correctness`, `lints/perf`, and `lints/suspicious`.
+`lints/*` selects all top-level groups, including stricter policy checks.
+These settings are not application dependencies.
+
+Install the revision's compiler and Dylint tools. Apply the quick start's
+linker and build-directory setup in the target shell, then run
+`cargo dylint --all --workspace -- --all-targets` in the target project.
+Verify an expected diagnostic and a passing example before claiming setup
+works. Keep Clippy and project tests as separate checks.
+
+When updating the documented pin, verify its `rust-toolchain.toml` and Dylint
+version, then test the copied settings in a separate project. State compiler
+compatibility limits. Keep downstream setup separate from this repository's
+Nix development workflow.
+
+`CLAUDE.md` is a relative symlink to `AGENTS.md`. Edit this file to keep both
+agent entry points in sync.
+
 ## Development workflow
 
 Run Cargo commands inside `nix develop`. The shell supplies the pinned nightly

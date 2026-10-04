@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Sagan lints</title>
+  <desc id="desc">Blue code brackets around a green check on a dark square.</desc>
+  <rect width="96" height="96" rx="20" fill="#0f172a"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="6">
+    <path d="M30 27 12 48l18 21M66 27l18 21-18 21" stroke="#93c5fd"/>
+    <path d="m34 49 10 10 18-22" stroke="#6ee7b7"/>
+  </g>
+</svg>
