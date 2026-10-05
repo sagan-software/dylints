@@ -49,17 +49,19 @@ struct TestLineCollector {
 #[must_use]
 pub fn rust_file_size_violation(source: &str) -> Option<RustFileSizeViolation> {
     let total_line_count = source.lines().count();
+    // Total violations and files below both limits do not require test-region parsing.
+    if total_line_count >= TOTAL_LINE_LIMIT {
+        return Some(RustFileSizeViolation::TotalLines(total_line_count));
+    }
+    if total_line_count < NON_TEST_LINE_LIMIT {
+        return None;
+    }
+
+    // Only the interval between the two limits can depend on test-only line ranges.
     let test_line_count = test_line_count(source, total_line_count);
     let non_test_line_count = total_line_count.saturating_sub(test_line_count);
-
-    // Prefer the unconditional total-line violation when both limits apply.
-    if total_line_count >= TOTAL_LINE_LIMIT {
-        Some(RustFileSizeViolation::TotalLines(total_line_count))
-    } else if non_test_line_count >= NON_TEST_LINE_LIMIT {
-        Some(RustFileSizeViolation::NonTestLines(non_test_line_count))
-    } else {
-        None
-    }
+    (non_test_line_count >= NON_TEST_LINE_LIMIT)
+        .then_some(RustFileSizeViolation::NonTestLines(non_test_line_count))
 }
 
 /// Count unique physical lines spanned by test-only Rust items.
@@ -298,6 +300,37 @@ mod tests {
                 Some(RustFileSizeViolation::TotalLines(TOTAL_LINE_LIMIT)),
             ]
         );
+    }
+
+    /// The optimized policy must match the original calculation at every threshold.
+    #[test_case::test_case(0; "empty")]
+    #[test_case::test_case(1; "single line")]
+    #[test_case::test_case(1499; "below production limit")]
+    #[test_case::test_case(1500; "production limit")]
+    #[test_case::test_case(1501; "above production limit")]
+    #[test_case::test_case(1999; "below total limit")]
+    #[test_case::test_case(2000; "total limit")]
+    #[test_case::test_case(2001; "above total limit")]
+    fn preserves_policy_across_fast_path_boundaries(lines: usize) {
+        // Production, test-only, and malformed sources must retain the original result.
+        assert_original_policy(&non_test_source(lines));
+        assert_original_policy(&test_heavy_source(lines));
+        assert_original_policy(&"{\n".repeat(lines));
+    }
+
+    /// Compare one source with the original unconditional parsing calculation.
+    fn assert_original_policy(source: &str) {
+        let total = source.lines().count();
+        let production = total.saturating_sub(test_line_count(source, total));
+        // Preserve total-line precedence and parse-failure handling.
+        let expected = if total >= TOTAL_LINE_LIMIT {
+            Some(RustFileSizeViolation::TotalLines(total))
+        } else if production >= NON_TEST_LINE_LIMIT {
+            Some(RustFileSizeViolation::NonTestLines(production))
+        } else {
+            None
+        };
+        assert_eq!(rust_file_size_violation(source), expected);
     }
 
     /// `cfg` conjunctions and disjunctions follow whether `test` is required.

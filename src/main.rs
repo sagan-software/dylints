@@ -39,6 +39,10 @@ use std::{env, path::PathBuf, process::ExitCode};
 use clap::Parser as _;
 use tempfile as _;
 
+// The runner unit-test target shares the benchmark-only development dependency.
+#[cfg(test)]
+use criterion as _;
+
 use self::{cli::Cli, runner::run};
 
 /// Parse the command line and preserve the runner's numeric exit status.

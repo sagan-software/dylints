@@ -23,7 +23,7 @@ use crate::{
     },
     driver,
     error::RunnerError,
-    runtime::Runtime,
+    runtime::{self, Runtime},
 };
 use serde::Serialize;
 
@@ -210,6 +210,26 @@ fn prune_target(path: &Path, maximum_bytes: u64) -> Result<Option<u64>, RunnerEr
     Ok(Some(size))
 }
 
+/// Share workspace configuration with each private compiler phase.
+fn preload_configuration(args: &Cli, runtime: &Runtime, repo: &Path, phases: &mut [Phase]) {
+    // Preserve inherited overrides and custom Cargo discovery.
+    if runtime::should_preload(
+        args,
+        env::var_os("DYLINT_TOML").as_deref(),
+        env::var_os("RUSTC_WRAPPER").as_deref(),
+    ) && let Some(source) =
+        runtime::load_configuration(&runtime.cargo, repo, args.manifest_path.as_deref())
+    {
+        // Clippy retains its own environment; only Dylint consumes this override.
+        phases
+            .iter_mut()
+            .filter(|phase| phase.name.starts_with("dylint"))
+            .for_each(|phase| {
+                set_environment(&mut phase.environment, "DYLINT_TOML", source.as_str());
+            });
+    }
+}
+
 /// Execute the selected lint phases and return their stable process exit code.
 #[expect(
     clippy::too_many_lines,
@@ -242,7 +262,7 @@ pub(super) fn run(args: &Cli, cache_roots: &[PathBuf]) -> Result<u8, RunnerError
     // Load the Cargo-installed compiler runtime before constructing phase commands.
     let runtime = Runtime::load()?;
     // Preserve the CLI phase order in execution and timing output.
-    let phases = build_phases(
+    let mut phases = build_phases(
         args,
         &repo,
         &cache,
@@ -273,6 +293,8 @@ pub(super) fn run(args: &Cli, cache_roots: &[PathBuf]) -> Result<u8, RunnerError
         }
         return Ok(0);
     }
+    // Reuse existing workspace configuration while retaining overrides and custom Cargo discovery.
+    preload_configuration(args, &runtime, &repo, &mut phases);
     // Arm cache cleanup only after planning modes have returned, because they never build.
     let mut target_cache_guard = TargetCacheGuard::new(&target)?;
     // Resolve changed hunks once so every phase uses the same revision boundary.

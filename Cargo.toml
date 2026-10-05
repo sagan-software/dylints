@@ -5,6 +5,7 @@ description = "Sagan's Rust lint runner and Dylint library bundle"
 edition.workspace = true
 publish.workspace = true
 build = "build.rs"
+autobenches = false
 
 [dependencies]
 axum-lints = { package = "axum", path = "lints/crates/axum", features = ["rlib"] }
@@ -36,6 +37,14 @@ thiserror = { workspace = true, features = ["std"] }
 thiserror-lints = { package = "thiserror", path = "lints/crates/thiserror", features = ["rlib"] }
 tokio-lints = { package = "tokio", path = "lints/crates/tokio", features = ["rlib"] }
 tracing-lints = { package = "tracing", path = "lints/crates/tracing", features = ["rlib"] }
+
+[dev-dependencies]
+criterion.workspace = true
+test-case.workspace = true
+
+[[bench]]
+name = "lint_passes"
+harness = false
 
 [lints]
 workspace = true
@@ -413,6 +422,7 @@ bevy_transform = "0.19.0"
 bevy_ui       = "=0.19.0"
 chrono        = { version = "0.4.45", default-features = false, features = ["std"] }
 clap          = { version = "4.6.1", features = ["derive"] }
+criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support", "plotters", "html_reports"] }
 dylint_linting = "6.0.3"
 dylint_testing = "6.0.3"
 heck           = "0.5.0"
