@@ -14,6 +14,7 @@ extern crate rustc_span;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use rumdl_lib::{
@@ -47,9 +48,11 @@ dylint_support::documented_late_lint_with_pass! {
 /// Stateful pass that caches the rumdl settings for each source directory.
 #[derive(Default)]
 struct RumdlDocComments {
+    /// Canonical directories keyed by the source path rustc reports.
+    canonical_directories: HashMap<PathBuf, Option<Arc<PathBuf>>>,
     /// Settings keyed by the directory of a documented source file, or `None` for
     /// generated sources without a local path.
-    settings: HashMap<Option<PathBuf>, RumdlSettings>,
+    settings: HashMap<Option<Arc<PathBuf>>, RumdlSettings>,
 }
 
 /// One loaded rumdl configuration and the doc-comment rules it enables.
@@ -107,17 +110,34 @@ impl RumdlDocComments {
         };
 
         // Load the project configuration once per directory, as `rumdl check` would see it.
-        let directory = cx
+        let reported_source_path = cx
             .sess()
             .source_map()
             .span_to_filename(span)
-            .into_local_path()
-            .and_then(|path| path.parent().and_then(|parent| parent.canonicalize().ok()));
+            .into_local_path();
+        let directory = reported_source_path
+            .as_deref()
+            .and_then(Path::parent)
+            .and_then(|directory| self.canonical_directory(directory));
         let settings = self
             .settings
             .entry(directory)
-            .or_insert_with_key(|directory| RumdlSettings::load(directory.as_deref()));
+            .or_insert_with_key(|directory| {
+                RumdlSettings::load(directory.as_deref().map(PathBuf::as_path))
+            });
         check_doc_source(cx, &source, settings);
+    }
+
+    /// Canonicalize each reported source directory once per compiler pass.
+    fn canonical_directory(&mut self, directory: &Path) -> Option<Arc<PathBuf>> {
+        if let Some(canonical) = self.canonical_directories.get(directory) {
+            return canonical.clone();
+        }
+        let canonical = directory.canonicalize().ok().map(Arc::new);
+        let _previous = self
+            .canonical_directories
+            .insert(directory.to_path_buf(), canonical.clone());
+        canonical
     }
 }
 
@@ -206,28 +226,30 @@ fn doc_comment_source(
 
 /// Return source text for exact doc comment.
 fn exact_doc_comment_source(cx: &LateContext<'_>, attrs: &[Attribute]) -> Option<(Span, String)> {
-    let doc_spans = attrs
-        .iter()
-        .filter(|attr| doc_attr_text(attr).is_some())
-        .map(Attribute::span)
-        .filter(|span| !span.from_expansion())
-        .collect::<Vec<_>>();
-
-    let first = doc_spans.first().copied()?;
     let source_map = cx.sess().source_map();
+    let mut span: Option<Span> = None;
 
     // Only exact line-doc-comment source is safe to replace. Attribute and block forms still lint
     // through the normalized fallback because rumdl cannot restore those Rust syntaxes here.
-    let has_non_line_doc_span = doc_spans.iter().any(|span| {
-        source_map.span_to_snippet(*span).map_or(true, |source| {
-            !matches!(source.trim_start().get(..3), Some("///" | "//!"))
-        })
-    });
-    if has_non_line_doc_span {
-        return None;
+    for attr in attrs {
+        if doc_attr_text(attr).is_none() {
+            continue;
+        }
+        let attr_span = attr.span();
+        if attr_span.from_expansion() {
+            continue;
+        }
+        let source = source_map.span_to_snippet(attr_span).ok();
+        if !source
+            .as_deref()
+            .is_some_and(|source| matches!(source.trim_start().get(..3), Some("///" | "//!")))
+        {
+            return None;
+        }
+        span = Some(span.map_or(attr_span, |first| first.to(attr_span)));
     }
 
-    let span = doc_spans.iter().copied().skip(1).fold(first, Span::to);
+    let span = span?;
     let source = source_map.span_to_snippet(span).ok()?;
 
     // rumdl's exact doc-comment path only supports line comments. Keep block comments and
@@ -436,9 +458,9 @@ fn ui() {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, process};
+    use std::{fs, process, sync::Arc};
 
-    use super::RumdlSettings;
+    use super::{RumdlDocComments, RumdlSettings};
 
     /// Return whether the loaded settings enable one rule.
     fn has_rule(settings: &RumdlSettings, rule: &str) -> bool {
@@ -476,5 +498,50 @@ mod tests {
         assert!(!has_rule(&configured, "MD037"));
         assert!(!has_rule(&unconfigured, "MD037"));
         assert!(has_rule(&defaults, "MD037"));
+    }
+
+    /// Reuse the shared canonical path after the first lookup.
+    #[test]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "this synchronous test creates a temporary source directory for canonicalization"
+    )]
+    fn canonical_directory_cache_shares_successful_paths() {
+        let directory =
+            std::env::temp_dir().join(format!("rumdl-doc-comments-canonical-{}", process::id()));
+        fs::create_dir_all(&directory).expect("create the source directory");
+        let mut pass = RumdlDocComments::default();
+
+        let first = pass.canonical_directory(&directory);
+        let second = pass.canonical_directory(&directory);
+        fs::remove_dir_all(&directory).expect("remove the source directory");
+
+        let first = first.expect("canonicalize the source directory");
+        let second = second.expect("reuse the canonical source directory");
+        assert!(Arc::ptr_eq(&first, &second));
+    }
+
+    /// Reuse failed canonicalization instead of retrying a missing source path.
+    #[test]
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "this synchronous test creates a temporary source directory for canonicalization"
+    )]
+    fn canonical_directory_cache_shares_failed_paths() {
+        let root =
+            std::env::temp_dir().join(format!("rumdl-doc-comments-missing-{}", process::id()));
+        fs::create_dir_all(&root).expect("create the source root");
+        let missing = root.join("missing");
+        let mut pass = RumdlDocComments::default();
+
+        let first = pass.canonical_directory(&missing);
+        fs::create_dir_all(&missing).expect("create the source directory after the failed lookup");
+        let was_cached = pass.canonical_directories.contains_key(&missing);
+        let second = pass.canonical_directory(&missing);
+        fs::remove_dir_all(&root).expect("remove the source root");
+
+        assert!(first.is_none());
+        assert!(was_cached);
+        assert!(second.is_none());
     }
 }

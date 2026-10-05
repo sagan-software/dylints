@@ -27,6 +27,9 @@ use criterion::{Criterion, SamplingMode, criterion_group, criterion_main};
 use dylint_support::rust_file_size_violation;
 use tempfile::TempDir;
 
+/// Select the compact workload used by the under-one-minute inventory sweep.
+const FAST_SWEEP_ENV: &str = "SAGAN_BENCH_FAST_SWEEP";
+
 /// Execute one compiler check and reject failures instead of timing failed
 /// compilations.
 fn compile(command: &mut Command) {
@@ -133,27 +136,46 @@ fn lint_passes(criterion: &mut Criterion) {
     println!(
         "Registered {count} lint-library benchmarks. Execution, triggering-case, and branch coverage are separate metrics."
     );
+    let fast_sweep = env::var_os(FAST_SWEEP_ENV).is_some();
+    let group_name = if fast_sweep {
+        "compiler_fast"
+    } else {
+        "compiler"
+    };
+    let (small_functions, large_modules, large_functions) =
+        if fast_sweep { (1, 4, 8) } else { (32, 8, 128) };
     let small = TempDir::new().expect("small workload directory");
-    let small_source = workload(small.path(), 1, 32).expect("small compiler workload");
+    let small_source = workload(small.path(), 1, small_functions).expect("small compiler workload");
     let large = TempDir::new().expect("suite workload directory");
-    let large_source = workload(large.path(), 8, 128).expect("suite compiler workload");
+    let large_source =
+        workload(large.path(), large_modules, large_functions).expect("suite compiler workload");
     let all: Vec<_> = lints.iter().collect();
-    let mut group = criterion.benchmark_group("compiler");
+    let mut group = criterion.benchmark_group(group_name);
+    let aggregate_measurement_time = if fast_sweep {
+        Duration::from_millis(10)
+    } else {
+        Duration::from_secs(5)
+    };
     let _configured = group
         .sample_size(30)
         .sampling_mode(SamplingMode::Flat)
         .warm_up_time(Duration::from_secs(1))
-        .measurement_time(Duration::from_secs(5));
+        .measurement_time(aggregate_measurement_time);
     for (name, libraries) in [("plain", &[][..]), ("all_lints", all.as_slice())] {
         let mut command = compiler(&driver, &large_source, libraries);
         let _configured = group.bench_function(name, |bencher| {
             bencher.iter(|| compile(&mut command));
         });
     }
+    let per_lint_measurement_time = if fast_sweep {
+        Duration::from_millis(10)
+    } else {
+        Duration::from_millis(300)
+    };
     let _configured = group
         .sample_size(10)
         .warm_up_time(Duration::from_millis(100))
-        .measurement_time(Duration::from_millis(300));
+        .measurement_time(per_lint_measurement_time);
     for lint in &lints {
         let mut command = compiler(&driver, &small_source, &[lint]);
         let _configured = group.bench_function(&lint.name, |bencher| {
@@ -176,6 +198,9 @@ fn lint_passes(criterion: &mut Criterion) {
 /// edges.
 fn file_size(criterion: &mut Criterion) {
     let mut group = criterion.benchmark_group("file_size");
+    if env::var_os(FAST_SWEEP_ENV).is_some() {
+        let _configured = group.measurement_time(Duration::from_millis(10));
+    }
     for (name, source) in [
         ("runner", include_str!("../src/runner.rs").to_owned()),
         ("driver", include_str!("../src/driver.rs").to_owned()),
@@ -273,9 +298,19 @@ fn repository(criterion: &mut Criterion) {
     group.finish();
 }
 
+/// Keep quick-sweep analysis cheaper while retaining full resampling by default.
+fn criterion_config() -> Criterion {
+    let resamples = if env::var_os(FAST_SWEEP_ENV).is_some() {
+        1_000
+    } else {
+        10_000
+    };
+    Criterion::default().nresamples(resamples)
+}
+
 criterion_group! {
     name = benches;
-    config = Criterion::default().nresamples(10_000);
+    config = criterion_config();
     targets = lint_passes, file_size, repository
 }
 criterion_main!(benches);

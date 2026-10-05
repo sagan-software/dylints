@@ -8,7 +8,26 @@ particularly for crate-specific APIs.
 
 ## Run
 
-Run Cargo inside the pinned development shell:
+Run the full lint inventory sweep inside the pinned development shell:
+
+```sh
+nix develop --command env SAGAN_BENCH_FAST_SWEEP=1 \
+  cargo bench -p sagan-lints --bench lint_passes --profile dev -- --quick --noplot
+```
+
+This runs all 295 named lint cases, the compiler controls, and the six
+`file_size` cases. It writes compiler results under `compiler_fast/` so they
+remain separate from standard workload results. Each named lint compiles one
+documented function. The all-lints case compiles four modules with eight
+functions each. Criterion's quick mode and 10 ms measurement ceiling keep the
+run short. The command skips plot and HTML generation while keeping the estimates.
+
+The sweep uses 1,000 bootstrap resamples instead of the standard
+10,000. Its estimates do not support statistical confidence claims.
+One verified run took 13.193 seconds with all `target/lint-bench` libraries already
+built. A cold library build adds setup time and may exceed this limit.
+
+The standard workload uses the original sizes and longer Criterion samples:
 
 ```sh
 nix develop --command cargo bench -p sagan-lints --bench lint_passes --profile dev
@@ -25,10 +44,14 @@ metadata discovery, library compilation, and source generation are untimed.
 Analysis workloads use an empty `DYLINT_TOML` override. A separate
 `compiler/config_discovery` workload retains default discovery.
 
-The individual workload has one module with 32 functions. The combined
+The standard individual workload has one module with 32 functions. The combined
 `compiler/all_lints` workload has eight modules with 128 functions each.
 `compiler/plain` provides a compiler-only control. The `file_size` group
 checks repository source files, empty input, and exact line-limit boundaries.
+
+The optional `repository/lint` case runs only when `SAGAN_BENCH_RUNNER` is set.
+It clears workspace artifacts before each sample and measures both repository
+lint passes, so it is excluded from the under-one-minute inventory sweep.
 
 ## Repository comparison
 
