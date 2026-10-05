@@ -1,2 +1,6 @@
 [alias]
 web = "run --package sagan-lints-web --"
+
+# Build lint libraries with the filename Dylint needs.
+[target.'cfg(all())']
+linker = "dylint-link"

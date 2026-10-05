@@ -15,6 +15,9 @@ that loads extra checks into the Rust compiler. A lint is a check that reports
 a possible problem in your code. You choose which groups to run alongside
 Clippy, Rust's usual lint tool.
 
+If you use Nix, the [bundled runner](#bundled-runner) supplies the tools and
+compiler with one command.
+
 [Browse all lints](https://sagan-software.github.io/dylints/) ·
 [Setup guide](docs/usage.md) · [Contributing](docs/development.md)
 
@@ -45,7 +48,8 @@ cargo +nightly-2026-07-15 install --locked --version 6.0.3 cargo-dylint dylint-l
 ```
 
 `cargo-dylint` runs the checks. `dylint-link` prepares the lint libraries for
-loading. These versions match this repository's tested setup.
+loading. These versions match this repository's tested setup. The lint
+repository configures its own linker, so no shell setup is needed.
 
 ### 2. Add the lints to your project
 
@@ -55,32 +59,20 @@ crates, use the workspace's root file.
 ```toml
 [[workspace.metadata.dylint.libraries]]
 git = "https://github.com/sagan-software/dylints"
-rev = "483b64d83e38352994d509eacf4a56db1892f1a3"
+branch = "main"
 pattern = ["lints/correctness", "lints/perf", "lints/suspicious"]
 ```
 
-This selects three groups and pins them to a known commit. If you already have
-library entries, add this entry beside them. These are tool settings, not
-application dependencies.
+This selects three groups from `main`. If you already have library entries,
+add this entry beside them. These are tool settings, not application dependencies.
+You can omit `branch` to use the repository's default branch. Following a branch
+can change the rules and required compiler as the project develops.
 
 The same block can go in a root `dylint.toml` instead. Choose one file for the
 entry. Dylint explains this format in its
 [workspace metadata guide](https://github.com/trailofbits/dylint/tree/v6.0.3#workspace-metadata).
 
 ### 3. Run the checks
-
-In the same terminal, select the lint linker for your machine:
-
-```sh
-unset CARGO_BUILD_BUILD_DIR
-lint_host=$(rustc +nightly-2026-07-15 -vV | sed -n 's/^host: //p')
-lint_host=$(printf '%s' "$lint_host" | tr '[:lower:]-' '[:upper:]_')
-export "CARGO_TARGET_${lint_host}_LINKER=dylint-link"
-```
-
-This lets Dylint find the libraries it builds. It also clears a custom Cargo
-build-directory setting that Dylint 6.0.3 cannot use. Repeat this setup in each
-new terminal where you run Dylint. Your project's files stay unchanged.
 
 Run this from your project's root:
 
@@ -137,12 +129,27 @@ pub fn count_errors(lines: &[String]) -> usize {
 ## Lint groups
 
 Each group has its own library. Use its path in the `pattern` setting.
+The full hierarchy is listed below. A parent group includes its child groups.
+For example, `lints/crates/bevy` selects only the Bevy group.
+Select a parent or its children; loading both can register a lint twice.
 
 - [`cargo`](lints/cargo): Cargo and Rust project settings.
 - [`complexity`](lints/complexity): code that can become simpler.
 - [`correctness`](lints/correctness): likely bugs.
-- [`crates`](lints/crates): checks for specific crate APIs, including Serde,
-  Tokio, SQLx, Clap, and Reqwest.
+- [`crates`](lints/crates): checks for specific crate APIs.
+  - [`axum`](lints/crates/axum).
+  - [`bevy`](lints/crates/bevy).
+  - [`clap`](lints/crates/clap).
+  - [`insta`](lints/crates/insta).
+  - [`reqwest`](lints/crates/reqwest).
+  - [`schemars`](lints/crates/schemars).
+  - [`serde`](lints/crates/serde).
+  - [`sqlx`](lints/crates/sqlx).
+  - [`strum`](lints/crates/strum).
+  - [`test-case`](lints/crates/test-case).
+  - [`thiserror`](lints/crates/thiserror).
+  - [`tokio`](lints/crates/tokio).
+  - [`tracing`](lints/crates/tracing).
 - [`maintainability`](lints/maintainability): limits on code complexity and
   dependencies between parts of the code.
 - [`perf`](lints/perf): needless allocation, copying, and repeated work.
@@ -159,7 +166,7 @@ If you use [Nix](https://nixos.org/download/), you can run strict Clippy and
 the bundled lints with one command, without adding Dylint settings:
 
 ```sh
-nix run github:sagan-software/dylints -- --repo /path/to/your/project --fast
+nix run github:sagan-software/dylints/main -- --repo /path/to/your/project --fast
 ```
 
 Nix needs flakes enabled. The package includes the compiler, lint libraries,
@@ -172,8 +179,8 @@ to changed lines. See the [runner guide](docs/usage.md#bundled-runner).
 
 ## Documentation
 
-- [Setup and use](docs/usage.md): select lints, pin versions, run CI and editor
-  checks, and solve setup errors.
+- [Setup and use](docs/usage.md): select lints, follow a branch or pin a version,
+  run CI and editor checks, and solve setup errors.
 - [Lint catalog](https://sagan-software.github.io/dylints/): every lint's rule,
   examples, limits, and fix support.
 - [Development](docs/development.md): build, test, coverage, and catalog generation.

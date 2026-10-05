@@ -13,7 +13,7 @@ Dylint reads library entries from your workspace's root `Cargo.toml` or
 `dylint.toml`. The entries work for a single-crate project too. Add each entry
 once, in one file. Keep existing entries when adding these lints.
 
-Use `git` for the source repository, `rev` for a fixed commit, and `pattern`
+Use `git` for the source repository, `branch` to follow development, and `pattern`
 for library directories. Paths are relative to the lint repository, not your
 project. These settings do not belong under `[dependencies]`.
 
@@ -24,7 +24,7 @@ To load all nine top-level groups, use:
 ```toml
 [[workspace.metadata.dylint.libraries]]
 git = "https://github.com/sagan-software/dylints"
-rev = "483b64d83e38352994d509eacf4a56db1892f1a3"
+branch = "main"
 pattern = "lints/*"
 ```
 
@@ -40,7 +40,7 @@ To load only `ownership_at_boundaries`, use:
 ```toml
 [[workspace.metadata.dylint.libraries]]
 git = "https://github.com/sagan-software/dylints"
-rev = "483b64d83e38352994d509eacf4a56db1892f1a3"
+branch = "main"
 pattern = "lints/perf/ownership_at_boundaries"
 ```
 
@@ -60,21 +60,26 @@ path = "../dylints/lints/perf"
 The path is relative to your project root. Run Cargo commands in this
 repository's `nix develop` shell when building or testing its lint source.
 
-### Update the pin
+### Follow a branch or pin a version
 
-The examples pin a commit to keep lint behavior and the compiler version
-repeatable. Before changing `rev`, read the chosen revision's
-[`rust-toolchain.toml`](../rust-toolchain.toml) and Dylint version in
-[`flake.nix`](../flake.nix). Install those versions, update the pin, and run
-checks locally before updating CI.
+The examples use `branch = "main"`. Dylint supports `branch`, `tag`, and `rev`, following
+[Cargo's Git settings](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choice-of-commit).
+If you omit all three, it uses the repository's default branch. Use only one of these fields in each
+entry.
 
-You can replace `rev` with `branch = "main"` to follow development. A branch
-can change the rules and required compiler between runs. Use a commit pin for
-repeatable team and CI checks.
+A branch can change the rules and required compiler between runs. When the
+compiler changes, install the version in
+[`rust-toolchain.toml`](../rust-toolchain.toml) and the Dylint version in
+[`flake.nix`](../flake.nix). Test locally before updating CI.
+
+If you need fixed lint behavior, replace `branch` with `rev = "COMMIT_SHA"`.
+Replace `COMMIT_SHA` with a full commit ID you have tested. A fixed commit
+keeps lint behavior and compiler requirements repeatable.
 
 ## Run and inspect
 
-Use the linker setup from the quick start in each terminal.
+The lint repository configures `dylint-link` in its own `.cargo/config.toml`.
+You do not need to add linker settings to your project.
 Run from your project root:
 
 ```sh
@@ -144,16 +149,12 @@ explains the special case for checks that run before macros expand.
 
 ## CI
 
-Use the same lint pin, Dylint version, and compiler locally and in CI.
+Use the same library settings, Dylint version, and compiler locally and in CI.
 On a Linux runner with Rust and a native linker installed, run:
 
 ```sh
 rustup toolchain install nightly-2026-07-15 --component rustc-dev --component llvm-tools-preview
 cargo +nightly-2026-07-15 install --locked --version 6.0.3 cargo-dylint dylint-link
-unset CARGO_BUILD_BUILD_DIR
-lint_host=$(rustc +nightly-2026-07-15 -vV | sed -n 's/^host: //p')
-lint_host=$(printf '%s' "$lint_host" | tr '[:lower:]-' '[:upper:]_')
-export "CARGO_TARGET_${lint_host}_LINKER=dylint-link"
 RUSTFLAGS="-D warnings" cargo dylint --all --workspace -- --all-targets
 ```
 
@@ -189,24 +190,26 @@ files unless you pass `--include-repo-policy-lints`.
 With Nix and flakes enabled, run:
 
 ```sh
-nix run github:sagan-software/dylints -- --repo /path/to/your/project --fast
+nix run github:sagan-software/dylints/main -- --repo /path/to/your/project --fast
 ```
 
-Replace `/path/to/your/project` with your project's directory. To pin the Nix
-package too, use `github:sagan-software/dylints/483b64d83e38352994d509eacf4a56db1892f1a3`.
+Replace `/path/to/your/project` with your project's directory. The command
+follows `main`. For a fixed Nix package, replace `main` with a tested commit ID.
+No Rust or Dylint installation is needed. Nix supplies the compiler, driver,
+and lint libraries. Your project's system dependencies must still be available.
 
 Use one package, one group, or automatic fixes:
 
 ```sh
-nix run github:sagan-software/dylints -- --repo /path/to/your/project --package my_crate
-nix run github:sagan-software/dylints -- \
+nix run github:sagan-software/dylints/main -- --repo /path/to/your/project --package my_crate
+nix run github:sagan-software/dylints/main -- \
   --repo /path/to/your/project --skip-clippy --dylint-category perf
-nix run github:sagan-software/dylints -- --repo /path/to/your/project --fix
+nix run github:sagan-software/dylints/main -- --repo /path/to/your/project --fix
 ```
 
 Before using `--fix`, save your work. After using `--fix`, review the diff.
 After using `--fix`, run your project's tests.
-Run `nix run github:sagan-software/dylints -- --help`
+Run `nix run github:sagan-software/dylints/main -- --help`
 for all options, including changed-line checks and log paths.
 
 ## Setup errors
@@ -227,7 +230,7 @@ as described in its
 ### Project needs a newer compiler
 
 Dylint uses the lint library's compiler to check your project. If your project
-or a dependency requires a newer compiler, this pinned revision cannot check
+or a dependency requires a newer compiler, these lint libraries cannot check
 it. Choose a lint revision built for a compatible compiler. Changing only
 your project's toolchain does not update the lint libraries.
 
@@ -237,14 +240,14 @@ Install your platform's native compiler and linker. If your project needs
 system libraries, build scripts, or environment variables, provide those as
 you would for `cargo check`. Dylint also builds the project's dependencies.
 
-The quick start selects `dylint-link` through an environment variable for
-your machine's target. This repository's development shell supplies that
-setting for building lint libraries and running their UI tests.
+The lint repository selects `dylint-link` through its own Cargo configuration, matching
+[upstream Dylint's example](https://github.com/trailofbits/dylint/blob/v6.0.3/examples/general/.cargo/config.toml).
+If you override the linker for your target, that setting takes precedence. Check that the override
+can build Dylint libraries.
 
 ### Successful build but library not found
 
-Dylint needs the library copy that `dylint-link` creates with a compiler
-version in its filename. If Cargo uses a separate build directory through
-`CARGO_BUILD_BUILD_DIR`, that copy can remain outside the directory Dylint
-searches. Run `unset CARGO_BUILD_BUILD_DIR` and repeat the linker setup from
-the quick start, then rerun the check.
+If you use Cargo's separate build-directory setting, Dylint 6.0.3 may fail to
+find the library copy with a compiler version in its filename. Disable that
+setting for the Dylint run or use the Nix bundled runner, which supplies
+prebuilt libraries. The default Cargo build layout needs no extra setup.

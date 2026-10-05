@@ -7,21 +7,25 @@ read the [quick start](README.md#quick-start) and [setup guide](docs/usage.md).
 Use Dylint's `workspace.metadata.dylint.libraries` in the target workspace's
 root `Cargo.toml` or `dylint.toml`. Keep existing library entries.
 
-Use a pinned Git revision and select library paths with `pattern`. The quick
+Use `branch = "main"` and select library paths with `pattern`. The quick
 start selects `lints/correctness`, `lints/perf`, and `lints/suspicious`.
 `lints/*` selects all top-level groups, including stricter policy checks.
 These settings are not application dependencies.
 
-Install the revision's compiler and Dylint tools. Apply the quick start's
-linker and build-directory setup in the target shell, then run
+Install the compiler and Dylint tools shown in the quick start, then run
 `cargo dylint --all --workspace -- --all-targets` in the target project.
 Verify an expected diagnostic and a passing example before claiming setup
 works. Keep Clippy and project tests as separate checks.
 
-When updating the documented pin, verify its `rust-toolchain.toml` and Dylint
+The lint repository configures its own linker. Keep the quick start free of
+linker exports and build-directory commands. Document custom build settings
+only under setup errors. Offer the Nix bundled runner as a separate setup path.
+
+When changing setup instructions, verify `rust-toolchain.toml` and the Dylint
 version, then test the copied settings in a separate project. State compiler
-compatibility limits. Keep downstream setup separate from this repository's
-Nix development workflow.
+compatibility limits. Keep the full group hierarchy in the README, including
+crate groups. Preserve the distinction between downstream Nix use and this
+repository's Nix development workflow.
 
 `CLAUDE.md` is a relative symlink to `AGENTS.md`. Edit this file to keep both
 agent entry points in sync.
