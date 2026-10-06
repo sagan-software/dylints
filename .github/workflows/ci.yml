@@ -74,7 +74,7 @@ jobs:
           name: coverage
           path: target/coverage/report
       - name: Benchmark independently loadable lints
-        run: cargo xtask bench
+        run: DYLINT_DRIVER_PATH="$HOME/.dylint_drivers" cargo xtask bench
       - uses: actions/upload-artifact@v7
         with:
           name: benches

@@ -5,7 +5,7 @@ members = ["lints", "lints/[!su]*", "lints/s[tu]*", "lints/crates/[!s]*", "lints
 resolver = "3"
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 # Dylint builds Git-selected libraries with the pinned rustc_private toolchain.
 # These libraries are distributed through Git tags instead of crates.io.
