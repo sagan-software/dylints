@@ -9,12 +9,11 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-broad_string_error_variant = { path = "broad_string_error_variant", features = ["rlib"] }
-collection_bool_result = { path = "collection_bool_result", features = ["rlib"] }
-logged_conversion_impl = { path = "logged_conversion_impl", features = ["rlib"] }
-string_error_result = { path = "string_error_result", features = ["rlib"] }
-
+broad_string_error_variant = { workspace = true, features = ["rlib"] }
+collection_bool_result = { workspace = true, features = ["rlib"] }
 dylint_linting.workspace = true
+logged_conversion_impl = { workspace = true, features = ["rlib"] }
+string_error_result = { workspace = true, features = ["rlib"] }
 
 [features]
 rlib = ["dylint_linting/constituent"]

@@ -20,6 +20,8 @@ paths. It skips methods, closures, and functions that pass the world to other co
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Position;
 fn count_positions(world: &mut World) {
     let mut query = world.query::<&Position>();
     let count = query.iter(world).count();
@@ -34,6 +36,8 @@ fn build(app: &mut App) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Position;
 fn count_positions(query: Query<&Position>) {
     let count = query.iter().count();
     info!("{count} positions");

@@ -2,8 +2,8 @@
 
 //! UI cases for derived Bevy query-data field ownership.
 
-use bevy_ecs::prelude::*;
-use bevy_ecs::query::QueryData;
+use bevy::ecs::prelude::*;
+use bevy::ecs::query::QueryData;
 use bevy_partially_used_query_data as _;
 use bevy_support as _;
 use dylint_linting as _;

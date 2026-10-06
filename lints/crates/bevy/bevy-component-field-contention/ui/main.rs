@@ -1,5 +1,5 @@
-use bevy_app::{App, FixedUpdate, Update};
-use bevy_ecs::prelude::*;
+use bevy::app::{App, FixedUpdate, Update};
+use bevy::ecs::prelude::*;
 
 #[derive(Component)]
 struct Motion {

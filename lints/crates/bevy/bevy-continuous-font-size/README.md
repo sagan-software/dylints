@@ -23,10 +23,11 @@ The lint does not simplify algebraic cancellation, so a tracked value such as `s
 ## Example
 
 ```rust
-# use bevy_app::{App, Update};
-# use bevy_ecs::prelude::{Query, Res};
-# use bevy_text::{FontSize, TextFont};
-# use bevy_time::Time;
+# use bevy::prelude::*;
+# use bevy::app::{App, Update};
+# use bevy::ecs::prelude::{Query, Res};
+# use bevy::text::{FontSize, TextFont};
+# use bevy::time::Time;
 fn main() {
     let mut app = App::new();
     app.add_systems(Update, animate_nameplates);

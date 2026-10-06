@@ -79,13 +79,15 @@ pub enum Argument {
 
 impl ErrorAttr {
     /// Parse the text of one attribute; return `None` for other attributes.
-    #[must_use]
     ///
     /// # Examples
     ///
     /// ```rust
+    /// # #![feature(rustc_private)]
+    /// # use thiserror_support::format::ErrorAttr;
     /// let _ = ErrorAttr::parse("#[error(\"{source}\")]");
     /// ```
+    #[must_use]
     pub fn parse(text: &str) -> Option<Self> {
         let attributes = Attribute::parse_outer.parse_str(text).ok()?;
         let [attribute] = attributes.as_slice() else {
@@ -112,14 +114,16 @@ impl ErrorAttr {
     }
 
     /// Return the format-string arguments, if any.
-    #[must_use]
     ///
     /// # Examples
     ///
     /// ```rust
+    /// # #![feature(rustc_private)]
+    /// # use thiserror_support::format::ErrorAttr;
     /// # let attribute = ErrorAttr::parse("#[error(\"{source}\")]").unwrap();
     /// let _ = attribute.format();
     /// ```
+    #[must_use]
     pub const fn format(&self) -> Option<&FormatAttr> {
         match &self.kind {
             ErrorAttrKind::Format(format) => Some(format),
@@ -151,29 +155,34 @@ impl FormatAttr {
     }
 
     /// Return every placeholder in the format string.
-    #[must_use]
     ///
     /// # Examples
     ///
     /// ```rust
+    /// # #![feature(rustc_private)]
+    /// # use thiserror_support::format::ErrorAttr;
+    /// # use thiserror_support::format::placeholders;
     /// # let attribute = ErrorAttr::parse("#[error(\"{source}\")]").unwrap();
     /// # let format = attribute.format().unwrap();
     /// let _ = format.placeholders();
     /// ```
+    #[must_use]
     pub fn placeholders(&self) -> Vec<Placeholder> {
         placeholders(&self.value)
     }
 
     /// Map a byte range of the format string value to the attribute text.
-    #[must_use]
     ///
     /// # Examples
     ///
     /// ```rust
+    /// # #![feature(rustc_private)]
+    /// # use thiserror_support::format::ErrorAttr;
     /// # let attribute = ErrorAttr::parse("#[error(\"{source}\")]").unwrap();
     /// # let format = attribute.format().unwrap();
     /// let _ = format.source_range(&(0..1));
     /// ```
+    #[must_use]
     pub fn source_range(&self, range: &Range<usize>) -> Option<Range<usize>> {
         self.body.map(|body| body + range.start..body + range.end)
     }
@@ -183,6 +192,8 @@ impl FormatAttr {
     /// # Examples
     ///
     /// ```rust
+    /// # #![feature(rustc_private)]
+    /// # use thiserror_support::format::ErrorAttr;
     /// # let attribute = ErrorAttr::parse("#[error(\"{source}\", source)]").unwrap();
     /// # let format = attribute.format().unwrap();
     /// let _ = format.positional_args().count();
@@ -241,13 +252,15 @@ fn split_args(tokens: &[TokenTree], literal_end: usize) -> Vec<FormatArg> {
 }
 
 /// Scan a format string with thiserror's placeholder rules.
-#[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(rustc_private)]
+/// # use thiserror_support::format::placeholders;
 /// let _ = placeholders("{source}");
 /// ```
+#[must_use]
 pub fn placeholders(value: &str) -> Vec<Placeholder> {
     let mut found = Vec::new();
     let mut index = 0;
@@ -300,13 +313,15 @@ fn split_argument(inner: &str) -> (Argument, &str) {
 }
 
 /// Return whether a placeholder spec formats with `Display`, as thiserror decides.
-#[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(rustc_private)]
+/// # use thiserror_support::format::is_display_spec;
 /// assert!(!is_display_spec(":?"));
 /// ```
+#[must_use]
 pub fn is_display_spec(spec: &str) -> bool {
     !matches!(
         spec.chars().next_back(),

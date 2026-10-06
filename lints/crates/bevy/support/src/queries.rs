@@ -495,7 +495,6 @@ pub fn large_component_change_filter_parameters<'tcx>(
 }
 
 /// Return field access for a function with one mutable local component query.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -505,6 +504,7 @@ pub fn large_component_change_filter_parameters<'tcx>(
 ///     let _ = bevy_support::mutable_component_field_access(cx, kind, body, local_def_id);
 /// };
 /// ```
+#[must_use]
 pub fn mutable_component_field_access<'tcx>(
     cx: &LateContext<'tcx>,
     kind: FnKind<'tcx>,

@@ -7,17 +7,17 @@
     unused_variables
 )]
 
+use bevy::app::{App, Update};
+use bevy::ecs::entity_disabling::Disabled;
+use bevy::ecs::prelude::*;
+use bevy::ecs::query::{QueryData, QueryFilter};
+use bevy::ecs::resource::IsResource;
 use bevy_018 as old_bevy;
 use bevy_018_system_fixture::OldPosition;
-use bevy_app::{App, Update};
-use bevy_ecs::entity_disabling::Disabled;
-use bevy_ecs::prelude::*;
-use bevy_ecs::query::{QueryData, QueryFilter};
-use bevy_ecs::resource::IsResource;
 
 mod lookalike_query {
-    use bevy_ecs::component::Mutable;
-    use bevy_ecs::{
+    use bevy::ecs::component::Mutable;
+    use bevy::ecs::{
         prelude::{ResMut, Resource},
         system::SystemParam,
     };

@@ -7,7 +7,7 @@
     unused_results
 )]
 
-use bevy_ecs::{entity::Entity, world::World};
+use bevy::ecs::{entity::Entity, world::World};
 
 fn access(world: &World) {
     let id = Entity::PLACEHOLDER;

@@ -10,13 +10,11 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dylint_linting.workspace = true
-dylint_support = { package = "dylint-support", path = "../../../../support/dylint" }
-sqlx_support = { package = "sqlx-support", path = "../support" }
-
+dylint_support.workspace = true
+sqlx_support.workspace = true
 [dev-dependencies]
 dylint_testing.workspace = true
-sqlx = { package = "sqlx-fixture", path = "../fixture" }
-
+sqlx.workspace = true
 [[example]]
 name = "main"
 path = "ui/main.rs"

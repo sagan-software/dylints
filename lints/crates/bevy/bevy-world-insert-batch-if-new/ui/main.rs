@@ -7,7 +7,7 @@
     unused_results
 )]
 
-use bevy_ecs::{component::Component, entity::Entity, world::World};
+use bevy::ecs::{component::Component, entity::Entity, world::World};
 
 #[derive(Component)]
 struct Marker;

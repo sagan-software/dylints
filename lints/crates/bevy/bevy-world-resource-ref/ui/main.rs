@@ -7,7 +7,7 @@
     unused_results
 )]
 
-use bevy_ecs::{resource::Resource, world::World};
+use bevy::ecs::{resource::Resource, world::World};
 
 #[derive(Resource)]
 struct Score(u32);

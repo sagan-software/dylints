@@ -2,7 +2,7 @@
 #![warn(unused_extern_crates)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for Axum-specific private lints.
+//! Shared semantic helpers for Axum-specific lints.
 //!
 //! The helpers resolve Axum router methods through rustc metadata, validate literal
 //! route contracts, and preserve exact source text for machine-applicable fixes.
@@ -80,7 +80,6 @@ pub struct RouterMethodCall<'hir> {
 ///
 /// Resolution requires the external Axum crate, the requested method name, and a
 /// Router receiver, excluding extension methods and application-defined lookalikes.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -90,6 +89,7 @@ pub struct RouterMethodCall<'hir> {
 ///     let _ = axum_support::router_method_call(cx, expr, expected_method);
 /// };
 /// ```
+#[must_use]
 pub fn router_method_call<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -124,7 +124,6 @@ fn is_axum_item(cx: &LateContext<'_>, def_id: DefId) -> bool {
 ///
 /// References are peeled before the nominal definition is checked, while unrelated
 /// local structs named `Router` remain outside the semantic match.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -134,6 +133,7 @@ fn is_axum_item(cx: &LateContext<'_>, def_id: DefId) -> bool {
 ///     let _ = axum_support::is_router_type(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_router_type(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     matches!(
         cx.typeck_results().expr_ty(expr).peel_refs().kind(),
@@ -159,7 +159,6 @@ const ROUTE_FREE_METHODS: &[&str] = &[
 /// The walk starts at the expression and follows route-free Axum builder calls and
 /// immutable `let` initializers back to a direct `axum::Router::new()` call. It stops
 /// at mutable bindings because reassignment can change the router's route state.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -169,6 +168,7 @@ const ROUTE_FREE_METHODS: &[&str] = &[
 ///     let _ = axum_support::is_empty_router(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_empty_router<'tcx>(cx: &LateContext<'tcx>, mut expr: &'tcx Expr<'tcx>) -> bool {
     loop {
         if is_router_new_call(cx, expr) || is_router_default_call(cx, expr) {
@@ -311,7 +311,6 @@ fn is_router_default_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///
 /// The path may be a literal, immutable local initialized by one, or local constant
 /// chain. Only a literal passed directly to the router can receive a source fix.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -321,6 +320,7 @@ fn is_router_default_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///     let _ = axum_support::router_path_violation(cx, expr, expected_methods, violation);
 /// };
 /// ```
+#[must_use]
 pub fn router_path_violation<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,

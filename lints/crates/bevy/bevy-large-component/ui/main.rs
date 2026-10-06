@@ -1,4 +1,4 @@
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 
 #[derive(Component)]
 struct LargeAgent {

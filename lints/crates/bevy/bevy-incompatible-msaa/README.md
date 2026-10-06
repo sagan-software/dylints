@@ -27,9 +27,10 @@ The runtime details here are checked against Bevy 0.19.0: the [Core3d MSAA check
 This OIT bundle is reported in Bevy 0.19.0 even though it has no camera, because the plugin's MSAA check filters only on its settings component.
 
 ```rust
-use bevy_core_pipeline::oit::OrderIndependentTransparencySettings;
-use bevy_ecs::world::World;
-use bevy_render::view::Msaa;
+# use bevy::prelude::*;
+use bevy::core_pipeline::oit::OrderIndependentTransparencySettings;
+use bevy::ecs::world::World;
+use bevy::render::view::Msaa;
 
 fn main() {
     let mut world = World::new();
@@ -42,10 +43,11 @@ fn main() {
 Set `Msaa::Off` on the same entity as each incompatible render component. Deferred rendering and SSAO require a matching camera; Bevy's standard OIT setup puts its settings on the camera.
 
 ```rust
-use bevy_camera::Camera3d;
-use bevy_core_pipeline::oit::OrderIndependentTransparencySettings;
-use bevy_ecs::world::World;
-use bevy_render::view::Msaa;
+# use bevy::prelude::*;
+use bevy::camera::Camera3d;
+use bevy::core_pipeline::oit::OrderIndependentTransparencySettings;
+use bevy::ecs::world::World;
+use bevy::render::view::Msaa;
 
 fn main() {
     let mut world = World::new();

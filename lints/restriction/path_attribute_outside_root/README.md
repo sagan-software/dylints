@@ -21,7 +21,9 @@ files that the compiler cannot map to a real path.
 
 ## Example
 
-```rust
+The abbreviated snippets require their separate module files and omitted implementation.
+
+```rust,ignore
 // src/parser.rs
 #[path = "shared/parser_support.rs"]
 mod parser_support;
@@ -29,7 +31,7 @@ mod parser_support;
 
 ## Use instead
 
-```rust
+```rust,ignore
 // src/parser.rs
 mod parser_support;
 ```

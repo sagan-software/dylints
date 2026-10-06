@@ -18,6 +18,7 @@ follow the span through a local binding, a field, or another function.
 ## Example
 
 ```rust
+# fn work() {}
 fn handle() {
     let _ = tracing::Span::current().enter();
     work();
@@ -29,6 +30,7 @@ fn handle() {
 Remove the guard:
 
 ```rust
+# fn work() {}
 fn handle() {
     work();
 }

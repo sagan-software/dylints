@@ -1,6 +1,11 @@
 [alias]
-web = "run --package sagan-lints-web --"
+xtask = "run --package xtask --"
 
-# Build lint libraries with the filename Dylint needs.
+# Development build policy. Cargo configuration supports profile overrides.
+# https://doc.rust-lang.org/cargo/reference/config.html#profile
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
 [target.'cfg(all())']
 linker = "dylint-link"

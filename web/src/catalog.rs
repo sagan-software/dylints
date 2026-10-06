@@ -27,7 +27,7 @@ pub(crate) struct Lint {
     pub(crate) name: String,
     /// Semantic category derived from the source path.
     pub(crate) category: LintCategory,
-    /// Default level registered by the runner bundle.
+    /// Default level registered by the Dylint libraries.
     pub(crate) level: LintLevel,
     /// Whether the lint emits machine-applicable suggestions.
     pub(crate) applicability: Applicability,
@@ -148,7 +148,7 @@ fn require_documented(lints: &[Lint], registered: &RegisteredLints) -> Result<()
 struct Context<'input> {
     /// Canonical repository root.
     root: &'input Path,
-    /// Default levels from the runner.
+    /// Default levels from Dylint.
     registered: &'input RegisteredLints,
     /// Support macros that emit machine-applicable suggestions.
     macros: SuggestingMacros,
@@ -175,7 +175,7 @@ impl Context<'_> {
         self.build_lint(&readme, relative)
     }
 
-    /// Join the README with the runner registry and the lint's suggestion evidence.
+    /// Join the README with the Dylint registry and the lint's suggestion evidence.
     fn build_lint(&self, readme: &Readme, relative: &Path) -> Result<Lint, SiteError> {
         // The category comes from the crate's position below `lints/`.
         let category =

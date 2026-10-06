@@ -143,6 +143,19 @@ mod tests {
     /// README body that satisfies the shared section contract.
     const BODY: &str = "## What it does\n\nA.\n\n## Why is this bad?\n\nB.\n\n## Known problems\n\nC.\n\n## Example\n\nD.\n\n## Use instead\n\nE.\n";
 
+    /// Additional interpretation and source sections remain visible after required sections.
+    #[test]
+    fn retains_additional_sections() {
+        let document =
+            format!("# sample\n\n{BODY}\n## Interpretation and sources\n\nRetained source.\n");
+        let readme = parse(&document, "sample").expect("extended README");
+        assert!(
+            readme
+                .body
+                .ends_with("## Interpretation and sources\n\nRetained source.\n")
+        );
+    }
+
     /// Parse a README for a lint crate named `name`.
     fn parse(document: &str, name: &str) -> Result<Readme, SiteError> {
         Readme::parse(document, &Path::new("lints/style").join(name))

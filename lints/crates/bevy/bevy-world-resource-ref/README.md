@@ -17,6 +17,8 @@ exists.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Resource)] struct Score(u32);
 fn score_changed(world: &World) -> bool {
     world.resource_ref::<Score>().is_changed()
 }
@@ -25,6 +27,8 @@ fn score_changed(world: &World) -> bool {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Resource)] struct Score(u32);
 fn score_changed(world: &World) -> bool {
     world
         .get_resource_ref::<Score>()

@@ -1,7 +1,7 @@
 #![feature(rustc_private)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for Tokio-specific private lints.
+//! Shared semantic helpers for Tokio-specific lints.
 //!
 //! These functions resolve Tokio methods and free functions to their definition
 //! paths, which name the defining module rather than any re-export, and expose
@@ -42,7 +42,6 @@ pub struct TokioMethod {
 }
 
 /// Resolve a method call only when the method is defined by Tokio.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -52,6 +51,7 @@ pub struct TokioMethod {
 ///     let _ = tokio_support::tokio_method(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn tokio_method(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<TokioMethod> {
     // Type-dependent resolution rejects extension traits and user methods with the same spelling.
     let ExprKind::MethodCall(segment, ..) = expr.kind else {
@@ -69,7 +69,6 @@ pub fn tokio_method(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<TokioMethod
 ///
 /// `expected_path` is the definition path, which names the defining module,
 /// such as `tokio::sync::mpsc::bounded::channel` for `tokio::sync::mpsc::channel`.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -79,6 +78,7 @@ pub fn tokio_method(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<TokioMethod
 ///     let _ = tokio_support::tokio_function_call(cx, expr, expected_path);
 /// };
 /// ```
+#[must_use]
 pub fn tokio_function_call<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -110,7 +110,6 @@ fn def_path(cx: &LateContext<'_>, def_id: DefId) -> String {
 ///
 /// The search stops at the nearest closure or item, so an async block spawned
 /// from a loop is not itself in that loop.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -120,6 +119,7 @@ fn def_path(cx: &LateContext<'_>, def_id: DefId) -> String {
 ///     let _ = tokio_support::is_in_loop(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     for (_, node) in cx.tcx.hir_parent_iter(expr.hir_id) {
         if let Node::Expr(parent) = node {
@@ -138,7 +138,6 @@ pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 }
 
 /// Return whether an expression is an integer literal equal to zero.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -148,12 +147,12 @@ pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///     let _ = tokio_support::is_zero_integer(expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_zero_integer(expr: &Expr<'_>) -> bool {
     matches!(expr.kind, ExprKind::Lit(literal) if matches!(literal.node, LitKind::Int(value, _) if value.get() == 0))
 }
 
 /// Recognize the compile-time spellings of a zero `core::time::Duration`.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -163,6 +162,7 @@ pub fn is_zero_integer(expr: &Expr<'_>) -> bool {
 ///     let _ = tokio_support::is_zero_duration(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_zero_duration(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // First recognize the associated constant through name resolution.
     if let ExprKind::Path(ref path) = expr.kind
@@ -200,7 +200,6 @@ pub fn is_zero_duration(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 /// The nearest closure decides: an async block, async closure, or async
 /// function body is async, and a plain closure is not. A nested item is never
 /// async through its parent.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -210,6 +209,7 @@ pub fn is_zero_duration(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///     let _ = tokio_support::is_in_async_body(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_in_async_body(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     for (_, node) in cx.tcx.hir_parent_iter(expr.hir_id) {
         if let Node::Expr(Expr {
@@ -234,7 +234,6 @@ pub fn is_in_async_body(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///
 /// The suggestion is `MaybeIncorrect`: the enclosing future gains an await
 /// point, which can change whether it is `Send`.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -244,6 +243,7 @@ pub fn is_in_async_body(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///     let _ = tokio_support::await_suggestion(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn await_suggestion(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -315,7 +315,6 @@ pub fn emit(
 /// The evaluator follows local non-trait constants and supports `+`, `-`, `*`,
 /// `/`, and `%` to sixteen levels. It skips calls, casts, external constants,
 /// runtime values, and operations that overflow or underflow their integer type.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -325,6 +324,7 @@ pub fn emit(
 ///     let _ = tokio_support::is_zero_integer_constant(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_zero_integer_constant(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     integer_constant(cx, expr, 0) == Some(0)
 }

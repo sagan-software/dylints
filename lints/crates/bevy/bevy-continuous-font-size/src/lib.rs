@@ -28,10 +28,7 @@ use rustc_middle::ty;
 use rustc_span::{Span, Symbol};
 
 #[cfg(test)]
-use {
-    bevy_app as _, bevy_ecs as _, bevy_math as _, bevy_text as _, bevy_time as _,
-    bevy_transform as _,
-};
+use bevy as _;
 
 dylint_support::documented_late_lint_with_pass! {
     #[doc = include_str!("../README.md")]
@@ -925,7 +922,7 @@ fn is_repeating_schedule(cx: &LateContext<'_>, expr: &Expr<'_>, schedule: &str) 
 
 #[cfg(test)]
 mod tests {
-    use bevy_text::{FontAtlasKey, FontHinting, FontSmoothing};
+    use bevy::text::{FontAtlasKey, FontHinting, FontSmoothing};
 
     /// Confirm that the public Bevy atlas key distinguishes raster font-size bits on CPU.
     #[test]

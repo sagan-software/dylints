@@ -1,8 +1,6 @@
 //! Runtime checks for query-access conflicts reported by Bevy 0.18 and 0.19.
 
-use bevy_018 as old_bevy;
-use bevy_018_system_fixture::OldPosition;
-use bevy_ecs::{
+use bevy::ecs::{
     component::Component,
     entity_disabling::{DefaultQueryFilters, Disabled},
     prelude::{NonSendMut, Or, ParamSet, Query, ResMut, Resource, With, Without},
@@ -10,7 +8,9 @@ use bevy_ecs::{
     system::SystemState,
     world::World,
 };
-use bevy_reflect::Reflect;
+use bevy::reflect::Reflect;
+use bevy_018 as old_bevy;
+use bevy_018_system_fixture::OldPosition;
 use std::{any::Any, panic::AssertUnwindSafe};
 
 /// A component used by query-access fixtures.

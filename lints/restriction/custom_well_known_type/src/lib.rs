@@ -23,6 +23,11 @@ use rustc_lint::{LateContext, LateLintPass, Lint, LintContext};
 use rustc_middle::ty;
 use rustc_span::{Span, Symbol, def_id::DefId};
 
+#[cfg(test)]
+use http as _;
+#[cfg(test)]
+use url as _;
+
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
     pub CUSTOM_WELL_KNOWN_TYPE,

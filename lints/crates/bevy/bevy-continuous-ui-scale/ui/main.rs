@@ -1,15 +1,15 @@
 #![allow(dead_code, unused_variables, unused_mut)]
 
-use bevy_app::{App, Startup, Update};
-use bevy_ecs::prelude::*;
-use bevy_ecs::schedule::common_conditions::{resource_exists, run_once};
-use bevy_math::Vec3;
-use bevy_time::{Fixed, Time};
-use bevy_transform::components::Transform;
-use bevy_ui::UiScale as BevyUiScale;
+use bevy::app::{App, Startup, Update};
+use bevy::ecs::prelude::*;
+use bevy::ecs::schedule::common_conditions::{resource_exists, run_once};
+use bevy::math::Vec3;
+use bevy::time::{Fixed, Time};
+use bevy::transform::components::Transform;
+use bevy::ui::UiScale as BevyUiScale;
 
 mod custom_schedule {
-    use bevy_ecs::schedule::ScheduleLabel;
+    use bevy::ecs::schedule::ScheduleLabel;
 
     #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
     pub struct Update;

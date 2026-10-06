@@ -31,6 +31,7 @@ adds a call that a reader must check, only to find that it changes nothing that
 ## Example
 
 ```rust
+# type Error = std::num::ParseIntError;
 fn parse_port(raw: &str) -> Result<u16, Error> {
     let port = raw.parse::<u16>().map_err(Error::from)?;
     Ok(port)
@@ -40,6 +41,7 @@ fn parse_port(raw: &str) -> Result<u16, Error> {
 ## Use instead
 
 ```rust
+# type Error = std::num::ParseIntError;
 fn parse_port(raw: &str) -> Result<u16, Error> {
     let port = raw.parse::<u16>()?;
     Ok(port)

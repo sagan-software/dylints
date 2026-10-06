@@ -42,6 +42,7 @@ impl JsonSchema for Wrapper {
 Let the generator create the reference with `subschema_for`:
 
 ```rust
+# #[derive(schemars::JsonSchema)] struct Other { value: String }
 use schemars::{JsonSchema, Schema, SchemaGenerator};
 
 struct Wrapper;

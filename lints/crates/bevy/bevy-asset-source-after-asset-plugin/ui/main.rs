@@ -10,8 +10,8 @@
     reason = "This fixture keeps each lint case small and independent."
 )]
 
-use bevy_app::{App, Plugin, PluginGroup, PluginGroupBuilder};
-use bevy_asset::{
+use bevy::app::{App, Plugin, PluginGroup, PluginGroupBuilder};
+use bevy::asset::{
     AssetApp, AssetPlugin,
     io::{AssetSourceBuilder, memory::MemoryAssetReader, web::WebAssetPlugin},
 };

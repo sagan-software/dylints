@@ -7,7 +7,7 @@
     unused_variables
 )]
 
-use bevy_ecs::message::{Message, MessageReader as BevyReader};
+use bevy::ecs::message::{Message, MessageReader as BevyReader};
 
 #[derive(Message)]
 struct Ping;

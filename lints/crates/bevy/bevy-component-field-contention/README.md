@@ -22,8 +22,8 @@ or when the function uses a component as a whole value. Field accesses inside cl
 ## Example
 
 ```rust
-# use bevy_app::{App, Update};
-# use bevy_ecs::prelude::{Component, Query};
+# use bevy::app::{App, Update};
+# use bevy::ecs::prelude::{Component, Query};
 #[derive(Component)]
 struct Motion {
     x: f32,
@@ -50,7 +50,7 @@ fn build(app: &mut App) {
 ## Use instead
 
 ```rust
-# use bevy_ecs::prelude::{Component, Query};
+# use bevy::ecs::prelude::{Component, Query};
 #[derive(Component)]
 struct MotionX(f32);
 

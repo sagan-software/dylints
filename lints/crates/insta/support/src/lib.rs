@@ -2,7 +2,7 @@
 #![warn(unused_extern_crates)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for Insta-specific private lints.
+//! Shared semantic helpers for Insta-specific lints.
 //!
 //! These helpers resolve Insta macros and methods through rustc metadata, recover
 //! source-preserving arguments, and expose small results for individual lint rules.
@@ -65,7 +65,6 @@ pub struct InstaMacroInvocation {
 ///
 /// Expansion metadata identifies the public macro, while source parsing retains
 /// argument boundaries without evaluating arbitrary user code.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -75,6 +74,7 @@ pub struct InstaMacroInvocation {
 ///     let _ = insta_support::insta_macro_invocation(cx, expr, expected_names);
 /// };
 /// ```
+#[must_use]
 pub fn insta_macro_invocation(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -96,7 +96,6 @@ pub fn insta_macro_invocation(
 /// The replacement succeeds only when the recorded source contains the expected
 /// macro name immediately before the invocation bang, behind an `insta::` or
 /// `::insta::` path. An imported or re-exported name may not cover the replacement.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -109,6 +108,7 @@ pub fn insta_macro_invocation(
 /// };
 /// let _ = replace_snapshot;
 /// ```
+#[must_use]
 pub fn insta_macro_replacement(
     invocation: &InstaMacroInvocation,
     replacement_name: &str,
@@ -138,7 +138,6 @@ fn macro_name_range(source: &str, name: &str) -> Option<std::ops::Range<usize>> 
 /// so callers see only source-level loops written around the snapshot assertion.
 /// The walk stops at the enclosing item, so a loop around a nested function
 /// definition does not count.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -148,6 +147,7 @@ fn macro_name_range(source: &str, name: &str) -> Option<std::ops::Range<usize>> 
 ///     let _ = insta_support::is_in_loop(cx, expr, invocation_span);
 /// };
 /// ```
+#[must_use]
 pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>, invocation_span: Span) -> bool {
     cx.tcx
         .hir_parent_iter(expr.hir_id)
@@ -168,7 +168,6 @@ pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>, invocation_span: Span) 
 ///
 /// The check finds the helper call that both `allow_duplicates!` and a direct
 /// `with_allow_duplicates` call produce.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -178,6 +177,7 @@ pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>, invocation_span: Span) 
 ///     let _ = insta_support::is_in_allow_duplicates(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_in_allow_duplicates(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // `allow_duplicates!` expands to a call of this helper around its body.
     cx.tcx.hir_parent_iter(expr.hir_id).any(|(_, node)| {
@@ -199,7 +199,6 @@ const STRING_LITERAL_RESOLUTION_LIMIT: usize = 8;
 /// associated-constant references to a string literal. Trait-associated constants
 /// remain unknown because an implementation may override a trait default. Mutable
 /// bindings, destructuring, calls, and other computed expressions also remain unknown.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -209,6 +208,7 @@ const STRING_LITERAL_RESOLUTION_LIMIT: usize = 8;
 ///     let _ = insta_support::string_literal(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn string_literal(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<String> {
     string_literal_with_remaining(cx, expr, STRING_LITERAL_RESOLUTION_LIMIT)
 }
@@ -273,7 +273,6 @@ fn string_literal_with_remaining(
 ///
 /// The parser preserves literal contents and validates raw-string hash delimiters,
 /// allowing callers to compare source text without rewriting escape sequences.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -283,6 +282,7 @@ fn string_literal_with_remaining(
 ///     let _ = insta_support::source_string_literal(source);
 /// };
 /// ```
+#[must_use]
 pub fn source_string_literal(source: &str) -> Option<String> {
     // Trim surrounding source whitespace before classifying the literal form.
     let source = source.trim();
@@ -316,7 +316,6 @@ pub fn source_string_literal(source: &str) -> Option<String> {
 ///
 /// The resolved nominal type must belong to Insta and be named `Content`,
 /// excluding local structs that happen to use the same type name.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -326,6 +325,7 @@ pub fn source_string_literal(source: &str) -> Option<String> {
 ///     let _ = insta_support::is_content_expression(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_content_expression(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     is_insta_type(cx, cx.typeck_results().expr_ty(expr).peel_refs(), "Content")
 }
@@ -399,7 +399,6 @@ fn is_insta_method(cx: &LateContext<'_>, def_id: DefId, owner: &str, method_name
 ///
 /// The helper returns the receiver only for the exact external owner and requested
 /// method, allowing callers to inspect the value without repeating resolution.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -409,6 +408,7 @@ fn is_insta_method(cx: &LateContext<'_>, def_id: DefId, owner: &str, method_name
 ///     let _ = insta_support::content_method_call(cx, expr, expected_method);
 /// };
 /// ```
+#[must_use]
 pub fn content_method_call<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -438,7 +438,6 @@ pub struct SettingsMethodCall<'hir> {
 ///
 /// Type-dependent lookup and owner matching exclude local methods that reuse an
 /// Insta setting name without implementing the external Settings contract.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -448,6 +447,7 @@ pub struct SettingsMethodCall<'hir> {
 ///     let _ = insta_support::settings_method_call(cx, expr, expected_method);
 /// };
 /// ```
+#[must_use]
 pub fn settings_method_call<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -468,7 +468,6 @@ pub fn settings_method_call<'hir>(
 /// Insta settings methods such as `Settings::bind` return their callable's
 /// output type directly. Inspecting the inferred call result covers closures,
 /// function items, and local callable bindings without relying on their syntax.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -478,6 +477,7 @@ pub fn settings_method_call<'hir>(
 ///     let _ = insta_support::call_returns_future(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn call_returns_future(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // Resolve the standard Future trait before asking the type solver about this result.
     let Some(future_trait) = cx.tcx.lang_items().future_trait() else {
@@ -498,7 +498,6 @@ pub fn call_returns_future(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 /// simple immutable local bindings, same-crate non-associated constants, or same-crate
 /// inherent associated constants. Trait-associated constants remain unknown because
 /// an implementation may override a trait default.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -508,6 +507,7 @@ pub fn call_returns_future(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///     let _ = insta_support::empty_string_settings_call(cx, expr, expected_method);
 /// };
 /// ```
+#[must_use]
 pub fn empty_string_settings_call<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -538,7 +538,6 @@ pub enum SettingsMethodCondition {
 ///
 /// The helper combines exact method resolution with the selected argument or
 /// async-context predicate, returning the original method span for diagnostics.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -548,6 +547,7 @@ pub enum SettingsMethodCondition {
 ///     let _ = insta_support::settings_method_violation(cx, expr, expected_method, condition);
 /// };
 /// ```
+#[must_use]
 pub fn settings_method_violation<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -584,7 +584,6 @@ pub fn settings_method_violation<'hir>(
 ///
 /// A synchronous nested closure intentionally breaks inheritance from its outer
 /// async function, matching the execution context observed by the settings call.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -594,6 +593,7 @@ pub fn settings_method_violation<'hir>(
 ///     let _ = insta_support::is_in_async_body(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_in_async_body(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // The nearest closure boundary decides the expression's async context.
     for (_, node) in cx.tcx.hir_parent_iter(expr.hir_id) {
@@ -620,7 +620,6 @@ pub struct SettingsDefaultsCall {
 ///
 /// The constructor name can be replaced only when the call names the type, as in
 /// `Settings::new()`. A trait path such as `Default::default()` gets no name span.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -630,6 +629,7 @@ pub struct SettingsDefaultsCall {
 ///     let _ = insta_support::settings_defaults_call(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn settings_defaults_call(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -868,7 +868,6 @@ macro_rules! declare_discouraged_macro_replacement_lint {
 }
 
 /// Return whether a closure is explicitly async or immediately returns an async block.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -878,6 +877,7 @@ macro_rules! declare_discouraged_macro_replacement_lint {
 ///     let _ = insta_support::is_explicit_async_closure(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_explicit_async_closure(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // Reject non-closure expressions before reading coroutine metadata.
     let ExprKind::Closure(closure) = expr.kind else {
@@ -1166,7 +1166,6 @@ fn is_raw_string_close(bytes: &[u8], index: usize, expected_hashes: &[u8]) -> bo
 ///
 /// The returned static slice is shared by loop checks so every lint uses the same
 /// closed list of public snapshot assertion macros.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -1176,6 +1175,7 @@ fn is_raw_string_close(bytes: &[u8], index: usize, expected_hashes: &[u8]) -> bo
 ///     let _ = insta_support::snapshot_macro_names();
 /// };
 /// ```
+#[must_use]
 pub const fn snapshot_macro_names() -> &'static [&'static str] {
     SNAPSHOT_MACROS
 }

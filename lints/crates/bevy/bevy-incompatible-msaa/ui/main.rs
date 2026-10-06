@@ -10,15 +10,15 @@
 
 //! Exercise Bevy MSAA bundle recognition with compile-time fixtures.
 
-use bevy_camera::{Camera, Camera2d, Camera3d};
-use bevy_core_pipeline::{
+use bevy::camera::{Camera, Camera2d, Camera3d};
+use bevy::core_pipeline::{
     oit::OrderIndependentTransparencySettings, prepass::DeferredPrepass as RealDeferredPrepass,
 };
-use bevy_ecs::{
+use bevy::ecs::{
     bundle::Bundle, component::Component, entity::Entity, system::Commands, world::World,
 };
-use bevy_pbr::ScreenSpaceAmbientOcclusion;
-use bevy_render::view::Msaa as RenderMsaa;
+use bevy::pbr::ScreenSpaceAmbientOcclusion;
+use bevy::render::view::Msaa as RenderMsaa;
 
 /// Alias used to verify resolved MSAA enum paths.
 type Samples = RenderMsaa;
@@ -142,7 +142,7 @@ fn world_entity_mut_bundles(world: &mut World) {
     ));
     world
         .spawn_empty()
-        .with_related_entities::<bevy_ecs::hierarchy::ChildOf>(|related| {
+        .with_related_entities::<bevy::ecs::hierarchy::ChildOf>(|related| {
             related.spawn((
                 Camera3d::default(),
                 RenderMsaa::Sample4,
@@ -170,7 +170,7 @@ fn commands(mut commands: Commands, entity: Entity) {
     ));
     commands
         .spawn_empty()
-        .with_related_entities::<bevy_ecs::hierarchy::ChildOf>(|related| {
+        .with_related_entities::<bevy::ecs::hierarchy::ChildOf>(|related| {
             related.spawn((
                 Camera3d::default(),
                 RenderMsaa::Sample4,

@@ -9,10 +9,9 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-clap_support = { package = "clap-support", path = "../support" }
+clap_support.workspace = true
 dylint_linting.workspace = true
-dylint_support = { package = "dylint-support", path = "../../../../support/dylint" }
-
+dylint_support.workspace = true
 [dev-dependencies]
 clap = { workspace = true, features = ["unstable-v5"] }
 dylint_testing.workspace = true

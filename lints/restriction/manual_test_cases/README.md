@@ -24,6 +24,7 @@ loop in each test.
 ## Example
 
 ```rust
+# fn parse(raw: &str) -> bool { raw == "ok" }
 #[test]
 fn parses_status() {
     for (raw, expected) in [("ok", true), ("no", false)] {
@@ -35,6 +36,7 @@ fn parses_status() {
 ## Use instead
 
 ```rust
+# fn parse(raw: &str) -> bool { raw == "ok" }
 use test_case::test_case;
 
 #[test_case("ok", true)]

@@ -9,18 +9,13 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-boxed_future_return = { path = "boxed_future_return", features = ["rlib"] }
-expensive_as_method = { path = "expensive_as_method", features = ["rlib"] }
-expensive_sort_key = { path = "expensive_sort_key", features = ["rlib"] }
-owned_input_field_clones = { path = "owned_input_field_clones", features = [
-    "rlib",
-] }
-ownership_at_boundaries = { path = "ownership_at_boundaries", features = [
-    "rlib",
-] }
-vec_front_removal_in_loop = { path = "vec_front_removal_in_loop", features = ["rlib"] }
-
+boxed_future_return = { workspace = true, features = ["rlib"] }
 dylint_linting.workspace = true
+expensive_as_method = { workspace = true, features = ["rlib"] }
+expensive_sort_key = { workspace = true, features = ["rlib"] }
+owned_input_field_clones = { workspace = true, features = ["rlib"] }
+ownership_at_boundaries = { workspace = true, features = ["rlib"] }
+vec_front_removal_in_loop = { workspace = true, features = ["rlib"] }
 
 [features]
 rlib = ["dylint_linting/constituent"]

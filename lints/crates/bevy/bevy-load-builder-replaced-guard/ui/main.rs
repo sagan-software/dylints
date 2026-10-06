@@ -12,8 +12,8 @@
     reason = "This fixture keeps each lint case small and independent."
 )]
 
-use bevy_asset::{AssetServer, DirectAssetAccessExt, LoadBuilder};
-use bevy_ecs::world::World;
+use bevy::asset::{AssetServer, DirectAssetAccessExt, LoadBuilder};
+use bevy::ecs::world::World;
 
 struct Guard;
 

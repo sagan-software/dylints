@@ -19,6 +19,8 @@ The lint only checks references directly in the query data or in tuples. It does
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Player;
 fn move_players(mut query: Query<(&mut Transform, &Player)>) {
     for (mut transform, _player) in &mut query {
         transform.translation.x += 1.0;
@@ -29,6 +31,8 @@ fn move_players(mut query: Query<(&mut Transform, &Player)>) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Player;
 fn move_players(mut query: Query<&mut Transform, With<Player>>) {
     for mut transform in &mut query {
         transform.translation.x += 1.0;

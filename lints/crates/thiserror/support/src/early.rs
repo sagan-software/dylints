@@ -28,8 +28,11 @@ pub struct EarlyShape<'a> {
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(rustc_private)]
 /// # use thiserror_support::early::for_each_module;
-/// let _ = for_each_module;
+/// # extern crate rustc_ast;
+/// # use rustc_ast::ast::Item;
+/// let _visit = |items: &[Box<Item>]| for_each_module(items, &mut |_items| {});
 /// ```
 pub fn for_each_module<'a>(items: &'a [Box<Item>], check: &mut impl FnMut(&'a [Box<Item>])) {
     check(items);
@@ -41,14 +44,15 @@ pub fn for_each_module<'a>(items: &'a [Box<Item>], check: &mut impl FnMut(&'a [B
 }
 
 /// Return the shapes of every type in one module that derives `thiserror::Error`.
-#[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(rustc_private)]
 /// # use thiserror_support::early::thiserror_shapes;
 /// let _ = thiserror_shapes;
 /// ```
+#[must_use]
 pub fn thiserror_shapes(items: &[Box<Item>]) -> Vec<EarlyShape<'_>> {
     let derived = items
         .iter()
@@ -114,14 +118,15 @@ fn thiserror_impl_self_name(item: &Item) -> Option<Symbol> {
 }
 
 /// Return the parsed `#[error(...)]` attributes in an attribute list.
-#[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(rustc_private)]
 /// # use thiserror_support::early::error_attrs;
 /// let _ = error_attrs;
 /// ```
+#[must_use]
 pub fn error_attrs(source_map: &SourceMap, attrs: &[Attribute]) -> Vec<(Span, ErrorAttr)> {
     let mut parsed = Vec::new();
     for attr in attrs
@@ -140,14 +145,15 @@ pub fn error_attrs(source_map: &SourceMap, attrs: &[Attribute]) -> Vec<(Span, Er
 }
 
 /// Return whether a field has a single-segment attribute with this name.
-#[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(rustc_private)]
 /// # use thiserror_support::early::has_attr;
 /// let _ = has_attr;
 /// ```
+#[must_use]
 pub fn has_attr(field: &FieldDef, name: &str) -> bool {
     field
         .attrs
@@ -156,14 +162,15 @@ pub fn has_attr(field: &FieldDef, name: &str) -> bool {
 }
 
 /// Return whether a field is named exactly `name`, without raw-identifier syntax.
-#[must_use]
 ///
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(rustc_private)]
 /// # use thiserror_support::early::is_field_named;
 /// let _ = is_field_named;
 /// ```
+#[must_use]
 pub fn is_field_named(source_map: &SourceMap, field: &FieldDef, name: &str) -> bool {
     field.ident.is_some_and(|ident| {
         ident.name.as_str() == name

@@ -22,6 +22,7 @@ synchronous function do not trigger the lint either.
 ## Example
 
 ```rust
+# async fn fetch() -> u32 { 1 }
 async fn load(runtime: &tokio::runtime::Runtime) -> u32 {
     runtime.block_on(fetch())
 }
@@ -30,6 +31,7 @@ async fn load(runtime: &tokio::runtime::Runtime) -> u32 {
 ## Use instead
 
 ```rust
+# async fn fetch() -> u32 { 1 }
 async fn load() -> u32 {
     fetch().await
 }

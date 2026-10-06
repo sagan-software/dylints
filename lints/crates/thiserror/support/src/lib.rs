@@ -2,7 +2,7 @@
 #![warn(unused_extern_crates)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for thiserror-specific private lints.
+//! Shared semantic helpers for thiserror-specific lints.
 //!
 //! Late lints prove that a type derives `thiserror::Error` through the
 //! `std::error::Error` implementation that thiserror's derive macro generated,
@@ -52,7 +52,6 @@ pub struct ErrorShape<'tcx> {
 /// Return the structs and variants of a type that derives `thiserror::Error`.
 ///
 /// The result is empty for any other item.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -62,6 +61,7 @@ pub struct ErrorShape<'tcx> {
 ///     let _ = thiserror_support::thiserror_shapes(cx, item);
 /// };
 /// ```
+#[must_use]
 pub fn thiserror_shapes<'tcx>(
     cx: &LateContext<'tcx>,
     item: &'tcx Item<'tcx>,
@@ -122,7 +122,6 @@ fn is_thiserror_expansion(cx: &LateContext<'_>, span: Span) -> bool {
 }
 
 /// Return the parsed `#[error(...)]` attributes on a struct, variant, or enum.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -132,6 +131,7 @@ fn is_thiserror_expansion(cx: &LateContext<'_>, span: Span) -> bool {
 ///     let _ = thiserror_support::error_attrs(cx, hir_id);
 /// };
 /// ```
+#[must_use]
 pub fn error_attrs(cx: &LateContext<'_>, hir_id: HirId) -> Vec<(Span, ErrorAttr)> {
     let source_map = cx.sess().source_map();
     let mut attrs = Vec::new();
@@ -148,7 +148,6 @@ pub fn error_attrs(cx: &LateContext<'_>, hir_id: HirId) -> Vec<(Span, ErrorAttr)
 }
 
 /// Return the span of the first single-segment attribute with this name.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -158,6 +157,7 @@ pub fn error_attrs(cx: &LateContext<'_>, hir_id: HirId) -> Vec<(Span, ErrorAttr)
 ///     let _ = thiserror_support::find_attr(cx, hir_id, "source");
 /// };
 /// ```
+#[must_use]
 pub fn find_attr(cx: &LateContext<'_>, hir_id: HirId, name: &str) -> Option<Span> {
     attr_spans(cx, hir_id, name).into_iter().next()
 }
@@ -177,7 +177,6 @@ fn attr_spans(cx: &LateContext<'_>, hir_id: HirId, name: &str) -> Vec<Span> {
 ///
 /// thiserror treats `r#source` as an ordinary field and `source` as the source,
 /// so the raw spelling matters even though both name the same field.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -187,6 +186,7 @@ fn attr_spans(cx: &LateContext<'_>, hir_id: HirId, name: &str) -> Vec<Span> {
 ///     let _ = thiserror_support::is_field_named(cx, field, "source");
 /// };
 /// ```
+#[must_use]
 pub fn is_field_named(cx: &LateContext<'_>, field: &FieldDef<'_>, name: &str) -> bool {
     field.ident.name.as_str() == name
         && !field.is_positional()
@@ -198,7 +198,6 @@ pub fn is_field_named(cx: &LateContext<'_>, field: &FieldDef<'_>, name: &str) ->
 }
 
 /// Map a byte range of an attribute's text to a source span.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -208,6 +207,7 @@ pub fn is_field_named(cx: &LateContext<'_>, field: &FieldDef<'_>, name: &str) ->
 ///     let _ = thiserror_support::subspan(span, 0..1);
 /// };
 /// ```
+#[must_use]
 pub fn subspan(span: Span, range: Range<usize>) -> Span {
     let lo = span.lo();
     span.with_lo(lo + BytePos::from_usize(range.start))
@@ -231,6 +231,7 @@ pub struct Fix {
 ///
 /// ```rust
 /// # #![feature(rustc_private)]
+/// # extern crate rustc_lint;
 /// let _call = |cx: &rustc_lint::LateContext<'_>, lint, span| {
 ///     thiserror_support::emit(cx, lint, span, "message", "help", None);
 /// };

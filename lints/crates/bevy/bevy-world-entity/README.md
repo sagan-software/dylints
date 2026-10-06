@@ -17,6 +17,8 @@ exists.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Health(u32);
 fn has_health(world: &World, id: Entity) -> bool {
     world.entity(id).contains::<Health>()
 }
@@ -25,6 +27,8 @@ fn has_health(world: &World, id: Entity) -> bool {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Health(u32);
 fn has_health(world: &World, id: Entity) -> bool {
     world
         .get_entity(id)

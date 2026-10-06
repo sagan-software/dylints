@@ -7,8 +7,8 @@
     unused_results
 )]
 
-use bevy_app::App;
-use bevy_ecs::{
+use bevy::app::App;
+use bevy::ecs::{
     message::{Message, Messages},
     resource::Resource,
 };

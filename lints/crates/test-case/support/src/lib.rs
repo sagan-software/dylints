@@ -2,7 +2,7 @@
 #![warn(unused_extern_crates)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for test-case-specific private lints.
+//! Shared semantic helpers for test-case-specific lints.
 //!
 //! The helpers resolve generated test suites through rustc expansion metadata,
 //! recover every `#[test_case]` and `#[test_matrix]` attribute that the macro
@@ -119,7 +119,6 @@ impl Finding {
 ///
 /// The result holds one finding per offending attribute, or one finding at the
 /// first attribute for suite-wide rules.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -129,6 +128,7 @@ impl Finding {
 ///     let _ = test_case_support::suite_violations(cx, item, violation);
 /// };
 /// ```
+#[must_use]
 pub fn suite_violations<'tcx>(
     cx: &LateContext<'tcx>,
     item: &'tcx Item<'tcx>,

@@ -8,8 +8,8 @@
 )]
 #![warn(bevy_missing_reflect)]
 
-use bevy_ecs::component::Component;
-use bevy_reflect::Reflect;
+use bevy::ecs::component::Component;
+use bevy::reflect::Reflect;
 
 #[derive(Component)]
 struct Missing;

@@ -15,7 +15,7 @@ extern crate rustc_hir;
 use dylint_linting as _;
 
 #[cfg(test)]
-use bevy_ecs as _;
+use bevy as _;
 
 bevy_support::declare_world_method_lint! {
     BEVY_WORLD_SCHEDULE_SCOPE,

@@ -35,8 +35,9 @@ use rustc_span::{
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// # #![feature(rustc_private)]
+/// # extern crate rustc_hir;
 /// # use rustc_hir::Body;
 /// # let body: &Body<'_> = unimplemented!();
 /// let _score = maintainability_support::cyclomatic_complexity(body);
@@ -55,8 +56,9 @@ pub fn cyclomatic_complexity(body: &Body<'_>) -> u32 {
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// # #![feature(rustc_private)]
+/// # extern crate rustc_hir;
 /// # use rustc_hir::Body;
 /// # let body: &Body<'_> = unimplemented!();
 /// let _score = maintainability_support::cognitive_complexity(body);
@@ -75,8 +77,9 @@ pub fn cognitive_complexity(body: &Body<'_>) -> u32 {
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// # #![feature(rustc_private)]
+/// # extern crate rustc_hir;
 /// # use rustc_hir::Body;
 /// # let body: &Body<'_> = unimplemented!();
 /// let _score = maintainability_support::npath_complexity(body);
@@ -93,8 +96,9 @@ pub fn npath_complexity(body: &Body<'_>) -> u128 {
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// # #![feature(rustc_private)]
+/// # extern crate rustc_hir;
 /// # use rustc_hir::Body;
 /// # let body: &Body<'_> = unimplemented!();
 /// let _score = maintainability_support::abc_size(body);
@@ -113,8 +117,9 @@ pub fn abc_size(body: &Body<'_>) -> AbcSize {
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// # #![feature(rustc_private)]
+/// # extern crate rustc_hir;
 /// # use rustc_hir::Body;
 /// # let body: &Body<'_> = unimplemented!();
 /// let _exits = maintainability_support::exit_point_count(body);
@@ -143,6 +148,7 @@ impl AbcSize {
     /// # Examples
     ///
     /// ```rust
+    /// # #![feature(rustc_private)]
     /// # use maintainability_support::AbcSize;
     /// let _count = AbcSize::default().assignments();
     /// ```
@@ -156,6 +162,7 @@ impl AbcSize {
     /// # Examples
     ///
     /// ```rust
+    /// # #![feature(rustc_private)]
     /// # use maintainability_support::AbcSize;
     /// let _count = AbcSize::default().calls();
     /// ```
@@ -169,6 +176,7 @@ impl AbcSize {
     /// # Examples
     ///
     /// ```rust
+    /// # #![feature(rustc_private)]
     /// # use maintainability_support::AbcSize;
     /// let _count = AbcSize::default().conditions();
     /// ```
@@ -185,6 +193,7 @@ impl AbcSize {
     /// # Examples
     ///
     /// ```rust
+    /// # #![feature(rustc_private)]
     /// # use maintainability_support::AbcSize;
     /// let _magnitude = AbcSize::default().magnitude();
     /// ```
@@ -208,6 +217,8 @@ impl AbcSize {
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(rustc_private)]
+/// # extern crate rustc_span;
 /// # use maintainability_support::is_macro_expansion;
 /// # use rustc_span::DUMMY_SP;
 /// let _generated = is_macro_expansion(DUMMY_SP);
@@ -240,8 +251,10 @@ pub fn is_macro_expansion(span: Span) -> bool {
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// # #![feature(rustc_private)]
+/// # extern crate rustc_hir;
+/// # extern crate rustc_middle;
 /// # use std::collections::HashSet;
 /// # use maintainability_support::record_path_edge;
 /// # use rustc_hir::{HirId, Path};
@@ -276,8 +289,11 @@ pub fn record_path_edge<S: BuildHasher>(
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// # #![feature(rustc_private)]
+/// # extern crate rustc_hir;
+/// # extern crate rustc_middle;
+/// # extern crate rustc_span;
 /// # use std::collections::HashSet;
 /// # use maintainability_support::record_definition_edge;
 /// # use rustc_hir::{HirId, def_id::DefId};
@@ -315,6 +331,7 @@ pub fn record_definition_edge<S: BuildHasher>(
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(rustc_private)]
 /// # use std::collections::HashSet;
 /// # use maintainability_support::fan_out_by_module;
 /// let edges = HashSet::new();
@@ -344,6 +361,7 @@ pub fn fan_out_by_module<S: BuildHasher>(
 /// # Examples
 ///
 /// ```rust
+/// # #![feature(rustc_private)]
 /// # use std::collections::HashSet;
 /// # use maintainability_support::dependency_cycles;
 /// let edges = HashSet::new();

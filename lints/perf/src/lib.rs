@@ -21,7 +21,6 @@ extern crate rustc_session;
 /// Dylint calls this entry point once per compilation. It forwards the compiler
 /// session and lint store to each constituent registration function, then returns
 /// after every performance lint is installed.
-#[cfg_attr(not(feature = "rlib"), unsafe(no_mangle))]
 ///
 /// # Examples
 ///
@@ -31,6 +30,7 @@ extern crate rustc_session;
 ///     let _ = perf::register_lints(sess, lint_store);
 /// };
 /// ```
+#[cfg_attr(not(feature = "rlib"), unsafe(no_mangle))]
 pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint::LintStore) {
     // Each constituent crate owns its lint pass; this crate only defines the group.
     boxed_future_return::register_lints(sess, lint_store);

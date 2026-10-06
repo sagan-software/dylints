@@ -143,7 +143,6 @@ pub struct PoolConnection;
 
 impl PoolConnection {
     /// Permanently remove the connection from its pool.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -152,12 +151,12 @@ impl PoolConnection {
     ///
     /// let _connection = PoolConnection.leak();
     /// ```
+    #[must_use]
     pub const fn leak(self) -> Connection {
         Connection
     }
 
     /// Detach the connection while allowing the pool to replace it.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -166,6 +165,7 @@ impl PoolConnection {
     ///
     /// let _connection = PoolConnection.detach();
     /// ```
+    #[must_use]
     pub const fn detach(self) -> Connection {
         Connection
     }
@@ -267,7 +267,6 @@ pub struct PoolOptions;
 
 impl PoolOptions {
     /// Set the maximum pool size.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -276,6 +275,7 @@ impl PoolOptions {
     ///
     /// let _options = PoolOptions.max_connections(5);
     /// ```
+    #[must_use]
     pub const fn max_connections(self, _value: u32) -> Self {
         self
     }

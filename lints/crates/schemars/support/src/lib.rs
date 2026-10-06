@@ -1,7 +1,7 @@
 #![feature(rustc_private)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for Schemars-specific private lints.
+//! Shared semantic helpers for Schemars-specific lints.
 //!
 //! The helpers resolve Schemars definitions through rustc metadata and inspect
 //! attributes in source order. They keep each lint focused on one public API
@@ -64,7 +64,6 @@ pub fn redundant_serde_attribute_spans(
 /// Attribute keys match exactly, so `rename` does not match `rename_all`.
 /// String values compare after Rust unescapes them. The visitor preserves source
 /// order and descends into local items, variants, fields, and loaded modules.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -74,6 +73,7 @@ pub fn redundant_serde_attribute_spans(
 ///     let _ = schemars_support::redundant_serde_attributes(cx, krate, &["rename"]);
 /// };
 /// ```
+#[must_use]
 pub fn redundant_serde_attributes(
     cx: &EarlyContext<'_>,
     krate: &Crate,
@@ -567,7 +567,6 @@ macro_rules! declare_redundant_serde_attribute_lint {
 ///
 /// Resolution is crate-aware, so a local trait with the same name cannot produce
 /// a false positive for a lint that targets the external Schemars contract.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -577,6 +576,7 @@ macro_rules! declare_redundant_serde_attribute_lint {
 ///     let _ = schemars_support::is_json_schema_trait(cx, def_id);
 /// };
 /// ```
+#[must_use]
 pub fn is_json_schema_trait(cx: &LateContext<'_>, def_id: DefId) -> bool {
     cx.tcx.crate_name(def_id.krate).as_str() == "schemars"
         && cx.tcx.item_name(def_id).as_str() == "JsonSchema"
@@ -586,7 +586,6 @@ pub fn is_json_schema_trait(cx: &LateContext<'_>, def_id: DefId) -> bool {
 ///
 /// The method name and defining crate must both match, which excludes unrelated
 /// extension traits and local methods that happen to use the same spelling.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -596,6 +595,7 @@ pub fn is_json_schema_trait(cx: &LateContext<'_>, def_id: DefId) -> bool {
 ///     let _ = schemars_support::is_schemars_method_call(cx, expr, expected_name);
 /// };
 /// ```
+#[must_use]
 pub fn is_schemars_method_call(cx: &LateContext<'_>, expr: &Expr<'_>, expected_name: &str) -> bool {
     // Reject non-method expressions before requesting type-dependent resolution.
     let ExprKind::MethodCall(segment, ..) = expr.kind else {
@@ -615,7 +615,6 @@ pub fn is_schemars_method_call(cx: &LateContext<'_>, expr: &Expr<'_>, expected_n
 ///
 /// Only direct path calls are considered because closures and method calls have
 /// different resolution contracts and are handled by separate helpers.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -625,6 +624,7 @@ pub fn is_schemars_method_call(cx: &LateContext<'_>, expr: &Expr<'_>, expected_n
 ///     let _ = schemars_support::is_schemars_function_call(cx, expr, expected_name);
 /// };
 /// ```
+#[must_use]
 pub fn is_schemars_function_call(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -654,7 +654,6 @@ pub fn is_schemars_function_call(
 ///
 /// The result contains unique local definition identifiers in traversal order,
 /// allowing callers to inspect only application types that implement the target.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -664,6 +663,7 @@ pub fn is_schemars_function_call(
 ///     let _ = schemars_support::local_json_schema_impls(cx);
 /// };
 /// ```
+#[must_use]
 pub fn local_json_schema_impls(cx: &LateContext<'_>) -> Vec<LocalDefId> {
     // Accumulate unique local types while walking all local trait implementations.
     let mut implementations = Vec::new();

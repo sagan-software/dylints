@@ -22,6 +22,7 @@ thiserror itself reads the written type name, so a type alias for
 ## Example
 
 ```rust
+# #![feature(error_generic_member_access)]
 #[derive(thiserror::Error, Debug)]
 #[error("failed")]
 pub struct Error {
@@ -33,6 +34,7 @@ pub struct Error {
 ## Use instead
 
 ```rust
+# #![feature(error_generic_member_access)]
 #[derive(thiserror::Error, Debug)]
 #[error("failed")]
 pub struct Error {

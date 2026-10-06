@@ -19,7 +19,7 @@ single shared component reference, `&T`, as query data.
 ## Example
 
 ```rust
-# use bevy_ecs::prelude::{Component, Query};
+# use bevy::ecs::prelude::{Component, Query};
 # #[derive(Component)]
 # struct Enemy(u32);
 # macro_rules! info { ($($args:tt)*) => { println!($($args)*); }; }
@@ -32,7 +32,7 @@ fn count_enemies(query: Query<&Enemy>) {
 ## Use instead
 
 ```rust
-# use bevy_ecs::prelude::{Component, Entity, Query, With};
+# use bevy::ecs::prelude::{Component, Entity, Query, With};
 # #[derive(Component)]
 # struct Enemy(u32);
 # macro_rules! info { ($($args:tt)*) => { println!($($args)*); }; }

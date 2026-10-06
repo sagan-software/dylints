@@ -14,7 +14,7 @@ extern crate rustc_errors;
 use dylint_linting as _;
 
 #[cfg(test)]
-use bevy_ecs as _;
+use bevy as _;
 
 bevy_support::declare_missing_unit_component_trait_lint! {
     BEVY_MISSING_CLONE_FOR_UNIT_COMPONENT,

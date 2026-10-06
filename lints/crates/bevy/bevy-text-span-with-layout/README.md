@@ -19,8 +19,9 @@ The runtime behavior here is checked against [Bevy 0.19.0's text processing sour
 ## Example
 
 ```rust
-use bevy_ecs::world::World;
-use bevy_text::{TextLayout, TextSpan};
+# use bevy::prelude::*;
+use bevy::ecs::world::World;
+use bevy::text::{TextLayout, TextSpan};
 
 fn main() {
     let mut world = World::new();
@@ -33,9 +34,10 @@ fn main() {
 Put `TextLayout` on the root entity with `Text` or `Text2d`, then parent each span under that root.
 
 ```rust
-use bevy_ecs::{hierarchy::ChildOf, world::World};
-use bevy_text::{TextLayout, TextSpan};
-use bevy_ui::widget::Text;
+# use bevy::prelude::*;
+use bevy::ecs::{hierarchy::ChildOf, world::World};
+use bevy::text::{TextLayout, TextSpan};
+use bevy::ui::widget::Text;
 
 fn main() {
     let mut world = World::new();

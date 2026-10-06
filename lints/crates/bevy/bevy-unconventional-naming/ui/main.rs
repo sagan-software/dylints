@@ -7,8 +7,8 @@
     unused_results
 )]
 
-use bevy_app::{App, Plugin};
-use bevy_ecs::schedule::SystemSet;
+use bevy::app::{App, Plugin};
+use bevy::ecs::schedule::SystemSet;
 
 struct Gameplay;
 

@@ -9,17 +9,14 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bevy-support = { path = "../support" }
-dylint-support = { path = "../../../../support/dylint" }
+bevy-support.workspace = true
+dylint-support.workspace = true
 dylint_linting.workspace = true
 
 [dev-dependencies]
-bevy_app.workspace = true
-bevy_ecs.workspace = true
-bevy_input = { workspace = true, features = ["keyboard"] }
-bevy_reflect.workspace = true
 dylint_testing.workspace = true
 
+bevy = { workspace = true, features = ["keyboard", "std"] }
 [[example]]
 name = "main"
 path = "ui/main.rs"

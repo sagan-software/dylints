@@ -1,0 +1,17 @@
+warning: function has CRAP score 42.00 (complexity 6, measured line coverage 0.00%), which exceeds 30.00
+  --> $DIR/main.rs:1:1
+   |
+LL | / fn decisions(values: [bool; 5]) -> usize {
+LL | |     let mut count = 0;
+LL | |     if values[0] {
+LL | |         count += 1;
+...  |
+LL | |     count
+LL | | }
+   | |_^
+   |
+   = help: test the uncovered decisions or split independent responsibilities; verify that the coverage report matches this source revision
+   = note: `#[warn(crap_score)]` on by default
+
+warning: 1 warning emitted
+

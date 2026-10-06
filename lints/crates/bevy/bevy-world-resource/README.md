@@ -17,6 +17,8 @@ exists.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Resource)] struct Score(u32);
 fn current_score(world: &World) -> u32 {
     world.resource::<Score>().0
 }
@@ -25,6 +27,8 @@ fn current_score(world: &World) -> u32 {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Resource)] struct Score(u32);
 fn current_score(world: &World) -> u32 {
     world.get_resource::<Score>().map_or(0, |score| score.0)
 }

@@ -10,9 +10,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dylint_linting.workspace = true
-dylint_support = { package = "dylint-support", path = "../../../../support/dylint" }
-reqwest_support = { package = "reqwest-support", path = "../support" }
-
+dylint_support.workspace = true
+reqwest_support.workspace = true
 [dev-dependencies]
 dylint_testing.workspace = true
 reqwest.workspace = true

@@ -7,7 +7,7 @@
 - Existing baseline: this repository enables Clippy `all`, `complexity`,
   `nursery`, `pedantic`, `perf`, `style`, and `suspicious`. It also enables
   `option_if_let_else` explicitly.
-- Existing private lints: `manual_iterator_loop` already covers a new `Vec`
+- Existing lints: `manual_iterator_loop` already covers a new `Vec`
   filled with `push`, predicate counting, `any`, and `all`.
   `let_some_return_err` already covers one `Option::ok_or_else` case.
 - Implementation status: all 12 ranked proposals have implementations. The
@@ -124,7 +124,7 @@ as `chars`, `char_indices`, `bytes`, `lines`, `split`, `matches`, and
 
 The stable `Future` trait only provides `poll`. `IntoFuture` only provides
 `into_future`. Standard Rust therefore has no general `Future::map` or
-`Future::and_then` target for a private lint. Async chaining requires a named
+`Future::and_then` target for a lint. Async chaining requires a named
 ecosystem extension trait and belongs in a separate crate-specific proposal.
 
 ## Existing Clippy coverage

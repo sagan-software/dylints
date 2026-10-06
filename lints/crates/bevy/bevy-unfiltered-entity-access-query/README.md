@@ -32,6 +32,8 @@ later uses unknown.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Position(f32);
 fn log_positions(query: Query<EntityRef>) {
     for entity in &query {
         if let Some(position) = entity.get::<Position>() {
@@ -44,6 +46,8 @@ fn log_positions(query: Query<EntityRef>) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Position(f32);
 fn log_positions(query: Query<&Position>) {
     for position in &query {
         info!("{}", position.0);

@@ -1,12 +1,22 @@
-[workspace.metadata.dylint]
-libraries = [
-    { path = "lints/cargo" },
-    { path = "lints/complexity" },
-    { path = "lints/correctness" },
-    { path = "lints/crates" },
-    { path = "lints/maintainability" },
-    { path = "lints/perf" },
-    { path = "lints/restriction" },
-    { path = "lints/style" },
-    { path = "lints/suspicious" },
-]
+# Library discovery belongs only in Cargo.toml; Dylint rejects duplicate discovery tables.
+
+# Physical source lines per crate; includes every loaded local Rust file.
+[large_rust_crate]
+# Lines outside test-only items. Zero permits no non-test lines.
+non_test_line_limit = 20000
+# All lines, including test-only items. Zero permits no lines.
+total_line_limit = 40000
+
+# Rust doctest examples required on functions and methods.
+[missing_doctest_examples]
+# "public" checks exported definitions; "all" also checks private definitions.
+scope = "public"
+
+# CRAP uses measured executable-line coverage. Missing input disables the lint.
+[crap_score]
+# Warn strictly above this finite, nonnegative, dimensionless score.
+threshold = 30.0
+# Optional LCOV file resolved from the compiler working directory.
+# coverage_path = "/absolute/path/to/representative/lcov.info"
+
+# rumdl_doc_comments uses rumdl.toml for Markdown rules; it has no Dylint options.

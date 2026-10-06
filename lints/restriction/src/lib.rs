@@ -21,7 +21,6 @@ extern crate rustc_session;
 /// Dylint calls this function once per compilation. It forwards the compiler
 /// session and lint store to focused helpers so each policy family remains
 /// independently auditable.
-#[cfg_attr(not(feature = "rlib"), unsafe(no_mangle))]
 ///
 /// # Examples
 ///
@@ -31,6 +30,7 @@ extern crate rustc_session;
 ///     let _ = restriction::register_lints(sess, lint_store);
 /// };
 /// ```
+#[cfg_attr(not(feature = "rlib"), unsafe(no_mangle))]
 pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint::LintStore) {
     // Register semantic type and metadata boundaries before source policies.
     register_restriction_domain_lints(sess, lint_store);

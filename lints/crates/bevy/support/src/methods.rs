@@ -3,7 +3,6 @@
 use super::{BevyMethodCall, DefId, Expr, ExprKind, LateContext, Ty, ty};
 
 /// Resolve an exact Bevy method on a named receiver type.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -13,6 +12,7 @@ use super::{BevyMethodCall, DefId, Expr, ExprKind, LateContext, Ty, ty};
 ///     let _ = bevy_support::bevy_method_call(cx, expr, receiver_crate, receiver_name, method_name);
 /// };
 /// ```
+#[must_use]
 pub fn bevy_method_call<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -42,7 +42,6 @@ pub fn bevy_method_call<'hir>(
 }
 
 /// Resolve an exact `World` method.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -52,6 +51,7 @@ pub fn bevy_method_call<'hir>(
 ///     let _ = bevy_support::world_method_call(cx, expr, method_name);
 /// };
 /// ```
+#[must_use]
 pub fn world_method_call<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -61,7 +61,6 @@ pub fn world_method_call<'hir>(
 }
 
 /// Return whether an expression has one exact ADT type.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -71,6 +70,7 @@ pub fn world_method_call<'hir>(
 ///     let _ = bevy_support::expression_has_type(cx, expr, crate_name, type_name);
 /// };
 /// ```
+#[must_use]
 pub fn expression_has_type(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -86,7 +86,6 @@ pub fn expression_has_type(
 }
 
 /// Return whether a type is one exact ADT.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -96,6 +95,7 @@ pub fn expression_has_type(
 ///     let _ = bevy_support::type_is_named(cx, ty, crate_name, type_name);
 /// };
 /// ```
+#[must_use]
 pub fn type_is_named(cx: &LateContext<'_>, ty: Ty<'_>, crate_name: &str, type_name: &str) -> bool {
     let ty::Adt(definition, _) = ty.peel_refs().kind() else {
         return false;
@@ -107,7 +107,6 @@ pub fn type_is_named(cx: &LateContext<'_>, ty: Ty<'_>, crate_name: &str, type_na
 }
 
 /// Return whether a definition is one exact trait.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -117,6 +116,7 @@ pub fn type_is_named(cx: &LateContext<'_>, ty: Ty<'_>, crate_name: &str, type_na
 ///     let _ = bevy_support::trait_is_named(cx, def_id, crate_name, trait_name);
 /// };
 /// ```
+#[must_use]
 pub fn trait_is_named(
     cx: &LateContext<'_>,
     def_id: DefId,

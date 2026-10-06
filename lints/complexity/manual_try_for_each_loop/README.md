@@ -29,6 +29,7 @@ failure, and returns the result in one expression.
 ## Example
 
 ```rust
+# fn write_value(value: &i32) -> std::io::Result<()> { use std::io::Write as _; writeln!(std::io::sink(), "{value}") }
 use std::io;
 
 fn write_all(values: &[i32]) -> io::Result<()> {
@@ -42,6 +43,7 @@ fn write_all(values: &[i32]) -> io::Result<()> {
 ## Use instead
 
 ```rust
+# fn write_value(value: &i32) -> std::io::Result<()> { use std::io::Write as _; writeln!(std::io::sink(), "{value}") }
 use std::io;
 
 fn write_all(values: &[i32]) -> io::Result<()> {

@@ -17,6 +17,8 @@ exists.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# type WindowRegistry = std::collections::BTreeMap<usize, std::rc::Rc<()>>;
 fn window_count(world: &World) -> usize {
     world.non_send::<WindowRegistry>().len()
 }
@@ -25,6 +27,8 @@ fn window_count(world: &World) -> usize {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# type WindowRegistry = std::collections::BTreeMap<usize, std::rc::Rc<()>>;
 fn window_count(world: &World) -> usize {
     world
         .get_non_send::<WindowRegistry>()

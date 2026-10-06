@@ -2,7 +2,7 @@
 #![warn(unused_extern_crates)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for Bevy-specific private lints.
+//! Shared semantic helpers for Bevy-specific lints.
 
 extern crate rustc_abi;
 extern crate rustc_driver as _;
@@ -72,7 +72,6 @@ pub enum MarkerTrait {
 
 impl MarkerTrait {
     /// Return the standard trait name.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -82,6 +81,7 @@ impl MarkerTrait {
     ///     let _ = bevy_support::MarkerTrait::name(value);
     /// };
     /// ```
+    #[must_use]
     pub const fn name(self) -> &'static str {
         match self {
             Self::Clone => "Clone",
@@ -131,7 +131,6 @@ pub enum Reborrowable {
 
 impl Reborrowable {
     /// Return the user-facing type name.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -141,6 +140,7 @@ impl Reborrowable {
     ///     let _ = bevy_support::Reborrowable::name(value);
     /// };
     /// ```
+    #[must_use]
     pub const fn name(self) -> &'static str {
         match self {
             Self::Commands => "Commands",

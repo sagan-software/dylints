@@ -15,7 +15,7 @@ extern crate rustc_hir;
 use dylint_linting as _;
 
 #[cfg(test)]
-use bevy_app as _;
+use bevy as _;
 
 bevy_support::declare_disallowed_schedule_lint! {
     BEVY_DISALLOW_FIXED_UPDATE_SCHEDULE,

@@ -22,7 +22,6 @@ pub struct UnitBundleValue {
 }
 
 /// Return unit values passed to known Bevy bundle methods.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -32,6 +31,7 @@ pub struct UnitBundleValue {
 ///     let _ = bevy_support::unit_bundle_values(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn unit_bundle_values(cx: &LateContext<'_>, expr: &Expr<'_>) -> Vec<UnitBundleValue> {
     // Resolve only method calls before inspecting receiver-specific bundle behavior.
     let ExprKind::MethodCall(segment, receiver, [bundle, ..], _) = expr.kind else {
@@ -96,7 +96,6 @@ pub struct DuplicatePluginAddition {
 }
 
 /// Return the duplicate `add_plugins` call for adjacent chained calls.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -106,6 +105,7 @@ pub struct DuplicatePluginAddition {
 ///     let _ = bevy_support::duplicate_plugin_addition(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn duplicate_plugin_addition(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -144,7 +144,6 @@ pub fn duplicate_plugin_addition(
 }
 
 /// Return the method span for a tuple that repeats one local unique plugin type.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -154,6 +153,7 @@ pub fn duplicate_plugin_addition(
 ///     let _ = bevy_support::tuple_duplicate_plugin_addition(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn tuple_duplicate_plugin_addition(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Span> {
     // Resolve only Bevy's App or SubApp registration method.
     let call = app_method_call(cx, expr, "add_plugins")?;
@@ -167,7 +167,6 @@ pub fn tuple_duplicate_plugin_addition(cx: &LateContext<'_>, expr: &Expr<'_>) ->
 }
 
 /// Return repeated direct local plugin additions within one block.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -177,6 +176,7 @@ pub fn tuple_duplicate_plugin_addition(cx: &LateContext<'_>, expr: &Expr<'_>) ->
 ///     let _ = bevy_support::duplicate_plugin_additions_in_block(cx, block);
 /// };
 /// ```
+#[must_use]
 pub fn duplicate_plugin_additions_in_block<'tcx>(
     cx: &LateContext<'tcx>,
     block: &Block<'tcx>,
@@ -343,7 +343,6 @@ pub struct ElapsedSecsWidening {
 }
 
 /// Return a `Time::elapsed_secs()` value widened to `f64` by `as`, `From`, or `Into`.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -353,6 +352,7 @@ pub struct ElapsedSecsWidening {
 ///     let _ = bevy_support::elapsed_secs_widening(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn elapsed_secs_widening(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<ElapsedSecsWidening> {
     // Every accepted form produces an `f64` from one `elapsed_secs` call.
     if !matches!(

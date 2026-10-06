@@ -10,8 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dylint_linting.workspace = true
-strum_enum_representation = { package = "strum-enum-representation", path = "strum-enum-representation", features = ["rlib"] }
-
+strum_enum_representation = { workspace = true, features = ["rlib"] }
 [features]
 rlib = ["dylint_linting/constituent"]
 

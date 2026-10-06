@@ -9,23 +9,22 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-clap_allow_hyphen_values_without_num_args = { package = "clap-allow-hyphen-values-without-num-args", path = "clap-allow-hyphen-values-without-num-args", features = ["rlib"] }
-clap_allow_negative_numbers_without_num_args = { package = "clap-allow-negative-numbers-without-num-args", path = "clap-allow-negative-numbers-without-num-args", features = ["rlib"] }
-clap_command_with_arguments_option = { package = "clap-command-with-arguments-option", path = "clap-command-with-arguments-option", features = ["rlib"] }
-clap_derive_author_without_help_template = { package = "clap-derive-author-without-help-template", path = "clap-derive-author-without-help-template", features = ["rlib"] }
-clap_derive_bool_default_true = { package = "clap-derive-bool-default-true", path = "clap-derive-bool-default-true", features = ["rlib"] }
-clap_derive_redundant_action = { package = "clap-derive-redundant-action", path = "clap-derive-redundant-action", features = ["rlib"] }
-clap_derive_redundant_value_parser = { package = "clap-derive-redundant-value-parser", path = "clap-derive-redundant-value-parser", features = ["rlib"] }
-clap_derive_vec_vec_without_num_args = { package = "clap-derive-vec-vec-without-num-args", path = "clap-derive-vec-vec-without-num-args", features = ["rlib"] }
-clap_derive_verbatim_doc_comment_without_doc = { package = "clap-derive-verbatim-doc-comment-without-doc", path = "clap-derive-verbatim-doc-comment-without-doc", features = ["rlib"] }
-clap_external_subcommand_parser_without_external_subcommands = { package = "clap-external-subcommand-parser-without-external-subcommands", path = "clap-external-subcommand-parser-without-external-subcommands", features = ["rlib"] }
-clap_index_on_option = { package = "clap-index-on-option", path = "clap-index-on-option", features = ["rlib"] }
-clap_last_option = { package = "clap-last-option", path = "clap-last-option", features = ["rlib"] }
-clap_multicall_no_binary_name = { package = "clap-multicall-no-binary-name", path = "clap-multicall-no-binary-name", features = ["rlib"] }
-clap_require_equals_without_num_args = { package = "clap-require-equals-without-num-args", path = "clap-require-equals-without-num-args", features = ["rlib"] }
-clap_required_conditional_conflict = { package = "clap-required-conditional-conflict", path = "clap-required-conditional-conflict", features = ["rlib"] }
-clap_trailing_var_arg_without_num_args = { package = "clap-trailing-var-arg-without-num-args", path = "clap-trailing-var-arg-without-num-args", features = ["rlib"] }
-
+clap_allow_hyphen_values_without_num_args = { workspace = true, features = ["rlib"] }
+clap_allow_negative_numbers_without_num_args = { workspace = true, features = ["rlib"] }
+clap_command_with_arguments_option = { workspace = true, features = ["rlib"] }
+clap_derive_author_without_help_template = { workspace = true, features = ["rlib"] }
+clap_derive_bool_default_true = { workspace = true, features = ["rlib"] }
+clap_derive_redundant_action = { workspace = true, features = ["rlib"] }
+clap_derive_redundant_value_parser = { workspace = true, features = ["rlib"] }
+clap_derive_vec_vec_without_num_args = { workspace = true, features = ["rlib"] }
+clap_derive_verbatim_doc_comment_without_doc = { workspace = true, features = ["rlib"] }
+clap_external_subcommand_parser_without_external_subcommands = { workspace = true, features = ["rlib"] }
+clap_index_on_option = { workspace = true, features = ["rlib"] }
+clap_last_option = { workspace = true, features = ["rlib"] }
+clap_multicall_no_binary_name = { workspace = true, features = ["rlib"] }
+clap_require_equals_without_num_args = { workspace = true, features = ["rlib"] }
+clap_required_conditional_conflict = { workspace = true, features = ["rlib"] }
+clap_trailing_var_arg_without_num_args = { workspace = true, features = ["rlib"] }
 dylint_linting.workspace = true
 
 [features]

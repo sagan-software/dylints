@@ -23,6 +23,7 @@ behavior. It gives help text but no automatic fix.
 ## Example
 
 ```rust
+# use thiserror_v1 as thiserror;
 fn expected() -> &'static str {
     "expected"
 }
@@ -35,6 +36,7 @@ pub struct Error(String);
 ## Use instead
 
 ```rust
+# use thiserror_v1 as thiserror;
 fn expected() -> &'static str {
     "expected"
 }

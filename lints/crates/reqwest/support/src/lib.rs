@@ -1,7 +1,7 @@
 #![feature(rustc_private)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for Reqwest-specific private lints.
+//! Shared semantic helpers for Reqwest-specific lints.
 //!
 //! The helpers resolve Reqwest methods and functions through rustc metadata,
 //! preserve diagnostic spans, and reject local lookalikes with identical names.
@@ -63,7 +63,6 @@ pub struct ReqwestFunction {
 ///
 /// Type-dependent resolution excludes extension traits and local methods that
 /// merely reuse a Reqwest method spelling in application code.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -73,6 +72,7 @@ pub struct ReqwestFunction {
 ///     let _ = reqwest_support::reqwest_method(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn reqwest_method(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<ReqwestMethod> {
     // Type-dependent resolution rejects extension traits and user methods with the same spelling.
     let ExprKind::MethodCall(segment, ..) = expr.kind else {
@@ -90,7 +90,6 @@ pub fn reqwest_method(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<ReqwestMe
 ///
 /// The helper accepts only a path callee and a resolved Reqwest definition, so
 /// closures and same-named local functions remain outside the lint contract.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -100,6 +99,7 @@ pub fn reqwest_method(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<ReqwestMe
 ///     let _ = reqwest_support::reqwest_function(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn reqwest_function(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<ReqwestFunction> {
     // Restrict semantic resolution to direct calls with path callees.
     let ExprKind::Call(callee, _) = expr.kind else {
@@ -124,7 +124,6 @@ pub fn reqwest_function(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Reqwest
 ///
 /// The expected method name is checked after semantic resolution, preserving the
 /// receiver and argument slices needed by the caller without cloning HIR nodes.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -134,6 +133,7 @@ pub fn reqwest_function(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Reqwest
 ///     let _ = reqwest_support::reqwest_method_parts(cx, expr, expected_name);
 /// };
 /// ```
+#[must_use]
 pub fn reqwest_method_parts<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -150,7 +150,6 @@ pub fn reqwest_method_parts<'hir>(
 ///
 /// Parent traversal identifies an enclosing HIR loop even when compiler wrappers
 /// occur between the expression and its source-level loop body.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -160,6 +159,7 @@ pub fn reqwest_method_parts<'hir>(
 ///     let _ = reqwest_support::is_in_loop(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     cx.tcx.hir_parent_iter(expr.hir_id).any(
         |(_, node)| matches!(node, Node::Expr(parent) if matches!(parent.kind, ExprKind::Loop(..))),
@@ -170,7 +170,6 @@ pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///
 /// The nearest closure boundary determines the result, preventing synchronous
 /// nested closures from inheriting asynchronous state from their parent function.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -180,6 +179,7 @@ pub fn is_in_loop(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///     let _ = reqwest_support::is_in_async_body(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_in_async_body(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // Stop at the nearest closure so a spawn-blocking closure stays synchronous.
     for (_, node) in cx.tcx.hir_parent_iter(expr.hir_id) {
@@ -205,7 +205,6 @@ pub fn is_in_async_body(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///
 /// Only the exact boolean literal matches; names, constant expressions, and
 /// converted values are intentionally outside this source-level helper's scope.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -215,6 +214,7 @@ pub fn is_in_async_body(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///     let _ = reqwest_support::is_true_literal(expr);
 /// };
 /// ```
+#[must_use]
 pub const fn is_true_literal(expr: &Expr<'_>) -> bool {
     matches!(expr.kind, ExprKind::Lit(literal) if matches!(literal.node, LitKind::Bool(true)))
 }
@@ -224,7 +224,6 @@ pub const fn is_true_literal(expr: &Expr<'_>) -> bool {
 /// The analysis accepts boolean literals, local boolean `const` items, `!`,
 /// `&&`, and `||`. It follows short-circuit order and leaves runtime values,
 /// associated constants, external constants, and over-budget expressions unknown.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -234,6 +233,7 @@ pub const fn is_true_literal(expr: &Expr<'_>) -> bool {
 ///     let _ = reqwest_support::is_true_boolean_expression(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_true_boolean_expression(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     let mut remaining_nodes = MAX_BOOLEAN_EXPR_NODES;
     known_boolean_value(cx, expr, &mut remaining_nodes) == Some(true)
@@ -315,7 +315,6 @@ fn local_boolean_constant(
 ///
 /// The check peels references and rejects Reqwest's blocking client namespace so
 /// asynchronous client lints cannot confuse the two public APIs.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -325,6 +324,7 @@ fn local_boolean_constant(
 ///     let _ = reqwest_support::is_async_reqwest_client(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_async_reqwest_client(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // Peel references before comparing the resolved nominal client type.
     let ty = cx.typeck_results().expr_ty_adjusted(expr).peel_refs();
@@ -342,7 +342,6 @@ pub fn is_async_reqwest_client(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///
 /// Resolution requires the standard allocation definitions, which prevents a
 /// local constructor named `new` from being treated as reference-count wrapping.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -352,6 +351,7 @@ pub fn is_async_reqwest_client(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///     let _ = reqwest_support::arc_or_rc_argument(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn arc_or_rc_argument<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -379,7 +379,6 @@ pub fn arc_or_rc_argument<'hir>(
 ///
 /// Both the case-insensitive literal and the canonical `http` constant are
 /// supported because Reqwest callers commonly use either representation.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -389,6 +388,7 @@ pub fn arc_or_rc_argument<'hir>(
 ///     let _ = reqwest_support::is_content_type_header(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_content_type_header(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // Accept the literal spelling before attempting constant resolution.
     if let ExprKind::Lit(literal) = expr.kind
@@ -449,7 +449,6 @@ fn is_reqwest_def(cx: &LateContext<'_>, def_id: DefId) -> bool {
 /// and `+`, `-`, `*`, `/`, and `%` to sixteen levels. It recognizes the core
 /// `f32::NAN`, `f32::INFINITY`, and `f32::NEG_INFINITY` constants. Calls, casts,
 /// runtime values, and other external constants remain unknown.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -459,6 +458,7 @@ fn is_reqwest_def(cx: &LateContext<'_>, def_id: DefId) -> bool {
 ///     let _ = reqwest_support::reqwest_f32_constant(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn reqwest_f32_constant(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<f32> {
     constant_f32(cx, expr, 0)
 }

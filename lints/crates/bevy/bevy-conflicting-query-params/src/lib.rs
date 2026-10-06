@@ -27,9 +27,7 @@ use rustc_span::{
 };
 
 #[cfg(test)]
-use {
-    bevy_018 as _, bevy_018_system_fixture as _, bevy_app as _, bevy_ecs as _, bevy_support as _,
-};
+use {bevy as _, bevy_018 as _, bevy_018_system_fixture as _, bevy_support as _};
 
 dylint_support::documented_late_lint_with_pass! {
     #[doc = include_str!("../README.md")]

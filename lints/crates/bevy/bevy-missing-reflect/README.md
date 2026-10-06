@@ -18,6 +18,7 @@ The lint reports every such type, including internal types that no tool needs to
 ## Example
 
 ```rust
+# use bevy::prelude::*;
 #[derive(Component)]
 struct Health(u32);
 ```
@@ -25,6 +26,7 @@ struct Health(u32);
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 struct Health(u32);

@@ -19,7 +19,6 @@ enum RegistrationMode {
 }
 
 /// Return local systems from one resolved `App::add_systems` call.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -29,6 +28,7 @@ enum RegistrationMode {
 ///     let _ = bevy_support::directly_registered_systems(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn directly_registered_systems(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -51,7 +51,6 @@ pub fn directly_registered_systems(
 }
 
 /// Return local systems in a direct registration that may run repeatedly.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -61,6 +60,7 @@ pub fn directly_registered_systems(
 ///     let _ = bevy_support::directly_registered_repeating_systems(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn directly_registered_repeating_systems(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -180,7 +180,6 @@ fn condition_is_one_shot(cx: &LateContext<'_>, condition: &Expr<'_>) -> bool {
 }
 
 /// Return whether a system function mutably queries camera-filtered entities.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -190,6 +189,7 @@ fn condition_is_one_shot(cx: &LateContext<'_>, condition: &Expr<'_>) -> bool {
 ///     let _ = bevy_support::is_system_mutably_querying_camera(cx, def_id);
 /// };
 /// ```
+#[must_use]
 pub fn is_system_mutably_querying_camera(cx: &LateContext<'_>, def_id: DefId) -> bool {
     cx.tcx
         .fn_sig(def_id)
@@ -242,7 +242,6 @@ pub fn camera_fixed_update_system_spans(cx: &LateContext<'_>, expr: &Expr<'_>) -
 }
 
 /// Return the disallowed schedule argument span for one `App::add_systems` call.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -252,6 +251,7 @@ pub fn camera_fixed_update_system_spans(cx: &LateContext<'_>, expr: &Expr<'_>) -
 ///     let _ = bevy_support::disallowed_schedule_span(cx, expr, schedule_name);
 /// };
 /// ```
+#[must_use]
 pub fn disallowed_schedule_span(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -263,7 +263,6 @@ pub fn disallowed_schedule_span(
 }
 
 /// Return the message-resource misuse span for `App::insert_resource` or `init_resource`.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -273,6 +272,7 @@ pub fn disallowed_schedule_span(
 ///     let _ = bevy_support::inserted_message_resource_span(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn inserted_message_resource_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Span> {
     // Handle value insertion before the generic type-based initialization form.
     if let Some(call) = app_method_call(cx, expr, "insert_resource") {
@@ -295,7 +295,6 @@ pub fn inserted_message_resource_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> 
 }
 
 /// Return the exact discouraged `Messages` iterator method span.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -305,6 +304,7 @@ pub fn inserted_message_resource_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> 
 ///     let _ = bevy_support::iter_current_update_messages_span(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn iter_current_update_messages_span(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Span> {
     bevy_method_call(
         cx,
@@ -317,7 +317,6 @@ pub fn iter_current_update_messages_span(cx: &LateContext<'_>, expr: &Expr<'_>) 
 }
 
 /// Return discarded `App::run` spans in the crate's unit-returning entry function.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -327,6 +326,7 @@ pub fn iter_current_update_messages_span(cx: &LateContext<'_>, expr: &Expr<'_>) 
 ///     let _ = bevy_support::discarded_app_run_spans(cx, declaration, body, local_def_id);
 /// };
 /// ```
+#[must_use]
 pub fn discarded_app_run_spans<'tcx>(
     cx: &LateContext<'tcx>,
     declaration: &FnDecl<'tcx>,

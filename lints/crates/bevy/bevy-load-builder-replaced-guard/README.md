@@ -19,7 +19,7 @@ The lint clears tracked facts when it invokes a closure value or passes one to a
 ## Example
 
 ```no_run
-# use bevy_asset::AssetServer;
+# use bevy::asset::AssetServer;
 # fn example(asset_server: &AssetServer) {
 let _handle = asset_server
     .load_builder()
@@ -32,7 +32,7 @@ let _handle = asset_server
 ## Use instead
 
 ```no_run
-# use bevy_asset::AssetServer;
+# use bevy::asset::AssetServer;
 # fn example(asset_server: &AssetServer) {
 let _handle = asset_server
     .load_builder()

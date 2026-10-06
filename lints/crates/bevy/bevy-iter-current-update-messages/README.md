@@ -15,6 +15,8 @@ The lint reports every call, including code that runs at a point where that wind
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Message)] struct Ping;
 fn count_pings(messages: Res<Messages<Ping>>) -> usize {
     messages.iter_current_update_messages().count()
 }
@@ -23,6 +25,8 @@ fn count_pings(messages: Res<Messages<Ping>>) -> usize {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Message)] struct Ping;
 fn count_pings(mut pings: MessageReader<Ping>) -> usize {
     pings.read().count()
 }

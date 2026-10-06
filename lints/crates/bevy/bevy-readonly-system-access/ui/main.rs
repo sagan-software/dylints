@@ -7,7 +7,7 @@
     unused_results
 )]
 
-use bevy_ecs::{component::Component, entity::Entity, system::Query};
+use bevy::ecs::{component::Component, entity::Entity, system::Query};
 
 #[derive(Component)]
 struct Position(f32);

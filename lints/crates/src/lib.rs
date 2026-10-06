@@ -20,7 +20,6 @@ extern crate rustc_session;
 /// Dylint calls this entry point once per compilation. It forwards the compiler
 /// session and lint store to each family helper, which installs constituent lints
 /// without changing their individual diagnostics or configuration.
-#[cfg_attr(not(feature = "rlib"), unsafe(no_mangle))]
 ///
 /// # Examples
 ///
@@ -30,6 +29,7 @@ extern crate rustc_session;
 ///     let _ = crates::register_lints(sess, lint_store);
 /// };
 /// ```
+#[cfg_attr(not(feature = "rlib"), unsafe(no_mangle))]
 pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint::LintStore) {
     // Register route and scheduling families before general crate APIs.
     register_axum_lints(sess, lint_store);

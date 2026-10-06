@@ -1,7 +1,7 @@
 //! Web interface generation for the custom Rust lint catalog.
 //!
 //! The binary discovers lint README files, validates their shared documentation
-//! contract, joins them with the runner's registered lint levels, and writes a
+//! contract, joins them with Dylint's registered lint levels, and writes a
 //! static site modeled on the Clippy lint list. Typed category, level, and
 //! applicability values keep the client-side filters closed, while filesystem
 //! and rendering failures retain the path that caused them.
@@ -38,7 +38,7 @@ struct Cli {
     #[arg(long, default_value = ".")]
     root: PathBuf,
 
-    /// Output of `sagan-lints --list-private-lints`, used for default lint levels.
+    /// Output of `cargo dylint list --all`, used for default lint levels.
     #[arg(long)]
     lint_list: PathBuf,
 

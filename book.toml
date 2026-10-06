@@ -1,0 +1,12 @@
+[book]
+title = "Sagan Lints"
+authors = ["Bill Curry"]
+language = "en"
+src = "docs"
+
+[build]
+build-dir = "public/book"
+
+[output.html]
+site-url = "/dylints/book/"
+git-repository-url = "https://github.com/sagan-software/dylints"

@@ -34,7 +34,9 @@ cannot parse a file, every line counts as non-test. When code exceeds both limit
 
 ## Example
 
-```rust
+The abbreviated snippets require their separate module files and omitted implementation.
+
+```rust,ignore
 // src/lib.rs of a crate whose modules total 25,000 non-test lines
 pub mod billing;
 pub mod reporting;
@@ -45,7 +47,7 @@ pub mod storage;
 
 Move independent modules into their own workspace crates and re-export them:
 
-```rust
+```rust,ignore
 // src/lib.rs
 pub use billing;
 pub use reporting;

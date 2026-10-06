@@ -17,6 +17,8 @@ exists.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Resource)] struct Score(u32);
 fn add_point(world: &mut World) {
     world.resource_mut::<Score>().0 += 1;
 }
@@ -25,6 +27,8 @@ fn add_point(world: &mut World) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Resource)] struct Score(u32);
 fn add_point(world: &mut World) {
     if let Some(mut score) = world.get_resource_mut::<Score>() {
         score.0 += 1;

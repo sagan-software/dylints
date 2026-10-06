@@ -27,6 +27,7 @@ enforce any invariant that the struct literal skips.
 ## Example
 
 ```rust
+# pub struct UserId(u64);
 pub struct User {
     pub id: UserId,
     pub name: String,
@@ -42,6 +43,7 @@ impl User {
 ## Use instead
 
 ```rust
+# pub struct UserId(u64);
 pub struct User {
     pub id: UserId,
     pub name: String,

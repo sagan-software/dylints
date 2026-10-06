@@ -29,7 +29,7 @@ functions, local variables, explicit `drop`, or control flow.
 ## Example
 
 ```rust
-use bevy_ecs::message::{Message, MessageReader};
+use bevy::ecs::message::{Message, MessageReader};
 
 #[derive(Message)]
 struct Collision;
@@ -45,7 +45,7 @@ fn play_sound(mut collisions: MessageReader<Collision>) {
 ## Use instead
 
 ```rust
-use bevy_ecs::message::{Message, MessageReader};
+use bevy::ecs::message::{Message, MessageReader};
 
 #[derive(Message)]
 struct Collision;

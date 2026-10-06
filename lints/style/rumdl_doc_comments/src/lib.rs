@@ -130,6 +130,7 @@ impl RumdlDocComments {
 
     /// Canonicalize each reported source directory once per compiler pass.
     fn canonical_directory(&mut self, directory: &Path) -> Option<Arc<PathBuf>> {
+        // Reuse canonical identities across files before resolving another directory.
         if let Some(canonical) = self.canonical_directories.get(directory) {
             return canonical.clone();
         }
@@ -507,11 +508,13 @@ mod tests {
         reason = "this synchronous test creates a temporary source directory for canonicalization"
     )]
     fn canonical_directory_cache_shares_successful_paths() {
+        // Create one source directory before measuring shared canonical path identity.
         let directory =
             std::env::temp_dir().join(format!("rumdl-doc-comments-canonical-{}", process::id()));
         fs::create_dir_all(&directory).expect("create the source directory");
         let mut pass = RumdlDocComments::default();
 
+        // Both lookups precede cleanup and must retain the same cached allocation.
         let first = pass.canonical_directory(&directory);
         let second = pass.canonical_directory(&directory);
         fs::remove_dir_all(&directory).expect("remove the source directory");
@@ -528,20 +531,23 @@ mod tests {
         reason = "this synchronous test creates a temporary source directory for canonicalization"
     )]
     fn canonical_directory_cache_shares_failed_paths() {
+        // Keep the source absent until the initial lookup has cached its failure.
         let root =
             std::env::temp_dir().join(format!("rumdl-doc-comments-missing-{}", process::id()));
         fs::create_dir_all(&root).expect("create the source root");
         let missing = root.join("missing");
         let mut pass = RumdlDocComments::default();
 
+        // Creating the source later must not replace the compilation's cached failure.
         let first = pass.canonical_directory(&missing);
         fs::create_dir_all(&missing).expect("create the source directory after the failed lookup");
-        let was_cached = pass.canonical_directories.contains_key(&missing);
+        let has_cached_missing_path = pass.canonical_directories.contains_key(&missing);
         let second = pass.canonical_directory(&missing);
         fs::remove_dir_all(&root).expect("remove the source root");
 
+        // Observe the retained failure after cleanup without another filesystem lookup.
         assert!(first.is_none());
-        assert!(was_cached);
+        assert!(has_cached_missing_path);
         assert!(second.is_none());
     }
 }

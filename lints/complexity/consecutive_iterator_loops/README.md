@@ -29,6 +29,7 @@ one ordered sequence and keeps one copy of the body.
 ## Example
 
 ```rust
+# fn consume(value: &i32) { let _ = std::hint::black_box(value); }
 fn report(first: &[i32], second: &[i32]) {
     for value in first {
         consume(value);
@@ -42,6 +43,7 @@ fn report(first: &[i32], second: &[i32]) {
 ## Use instead
 
 ```rust
+# fn consume(value: &i32) { let _ = std::hint::black_box(value); }
 fn report(first: &[i32], second: &[i32]) {
     for value in first.iter().chain(second) {
         consume(value);

@@ -79,3 +79,19 @@ fn score(a: bool, b: bool, c: bool, d: bool, e: bool, f: bool) -> usize {
     score
 }
 ```
+
+## Interpretation and sources
+
+Cyclomatic Complexity measures the number of linearly independent paths through
+a control-flow graph. McCabe defined it as `v(G) = E - N + 2P`, where `E` is the
+edge count, `N` is the node count, and `P` is the number of connected components.
+For one structured function, tools commonly calculate an equivalent form of one
+plus the number of decisions.
+
+It estimates the minimum basis-path testing burden. It does not count every
+possible execution path, and it does not distinguish a flat decision table from
+deep nesting. Counting details for `match`, guards, `?`, boolean operators,
+closures, macros, and generated code differ between analyzers. Pin the analyzer
+version and test its Rust grammar before making the value a gate.
+
+McCabe described 10 as a reasonable starting bound. This lint's documented limit is local policy. [McCabe's 1976 paper](https://doi.org/10.1109/TSE.1976.233837).

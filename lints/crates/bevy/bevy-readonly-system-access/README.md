@@ -20,7 +20,7 @@ mutable references directly in the query data or in tuples.
 ## Example
 
 ```rust
-# use bevy_ecs::{component::Component, system::Query};
+# use bevy::ecs::{component::Component, system::Query};
 # #[derive(Component)]
 # struct Position(f32);
 fn log_positions(query: Query<&mut Position>) {
@@ -33,7 +33,7 @@ fn log_positions(query: Query<&mut Position>) {
 ## Use instead
 
 ```rust
-# use bevy_ecs::{component::Component, system::Query};
+# use bevy::ecs::{component::Component, system::Query};
 # #[derive(Component)]
 # struct Position(f32);
 fn log_positions(query: Query<&Position>) {

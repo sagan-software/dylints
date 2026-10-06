@@ -22,7 +22,7 @@ not. It does not warn for other data types such as `Option<String>`.
 
 ## Example
 
-```rust
+```rust,compile_fail
 #[derive(thiserror::Error, Debug)]
 #[error("{source} -> {destination}")]
 pub struct RouteError {

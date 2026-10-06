@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'release/**']
   pull_request:
   workflow_dispatch:
 
@@ -15,135 +15,92 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  # The workspace links about 280 rustc_private crates; debug info and
-  # incremental artifacts would exceed the runner's disk.
   CARGO_INCREMENTAL: "0"
   CARGO_PROFILE_DEV_DEBUG: "0"
   DYLINT_VERSION: 6.0.3
 
 jobs:
   check:
-    name: Format, Clippy, and tests
+    name: Tests, lints and reports
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Free runner disk space
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
       - name: Install the pinned toolchain
         run: rustup show active-toolchain || rustup toolchain install
+      # Dylint 6.0.3 upstream caches tools, registry, Git sources, drivers and toolchains.
+      # https://github.com/trailofbits/dylint/blob/v6.0.3/.github/workflows/ci.yml
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.dylint_drivers
+            ~/.rustup/toolchains
+          key: dylint-${{ runner.os }}-${{ env.DYLINT_VERSION }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.lock') }}
+          restore-keys: dylint-${{ runner.os }}-${{ env.DYLINT_VERSION }}-
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: workspace
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Install Dylint tools
+      - name: Install Dylint tools and mdBook
         run: |
           cargo install --locked --version "$DYLINT_VERSION" cargo-dylint dylint-link
-          # Dylint libraries must be linked through dylint-link, which exists only after this step.
+          cargo install --locked mdbook
           echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=dylint-link" >>"$GITHUB_ENV"
+      - name: Require a semver increase for the change
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        run: cargo xtask release --base "$RELEASE_BASE"
+        env:
+          RELEASE_BASE: ${{ github.event.before || github.event.pull_request.base.sha }}
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run Clippy
         run: cargo clippy --workspace --lib --bins --tests -- -D warnings
       - name: Run tests
         run: cargo test --workspace --lib --bins --tests
-
-  self-lint:
-    name: Bundled lints on this repository
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Free runner disk space
-        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-      - name: Install the pinned toolchain
-        run: rustup show active-toolchain || rustup toolchain install
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: workspace
-          save-if: false
-      - name: Install Dylint tools
-        run: |
-          cargo install --locked --version "$DYLINT_VERSION" cargo-dylint dylint-link
-          # Dylint libraries must be linked through dylint-link, which exists only after this step.
-          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=dylint-link" >>"$GITHUB_ENV"
-      - name: Build the runner
-        run: cargo build --bin sagan-lints
-      # Lint library, binary, and test targets. UI example targets are fixtures
-      # that exist to trigger lints, so they are excluded.
-      - name: Run strict Clippy and the bundled lints
-        run: >-
-          cargo run --bin sagan-lints -- --repo . --heartbeat-seconds 0
-          --use-repo-clippy-config --no-all-targets
-          --extra-cargo-arg=--lib --extra-cargo-arg=--bins --extra-cargo-arg=--tests
-
-  coverage:
-    name: Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Free runner disk space
-        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-      - name: Install the pinned toolchain
-        run: rustup show active-toolchain || rustup toolchain install
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: workspace
-          save-if: false
-      - name: Install Dylint tools
-        run: |
-          cargo install --locked --version "$DYLINT_VERSION" cargo-dylint dylint-link
-          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=dylint-link" >>"$GITHUB_ENV"
-      - name: Install coverage tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y jq ripgrep
-      - name: Validate coverage reporting
-        run: bash scripts/coverage_test.sh
-      - name: Measure coverage
-        run: scripts/coverage.sh --min-lines "$COVERAGE_MIN_LINES" -- --workspace --lib --bins --tests
-        env:
-          COVERAGE_MIN_LINES: "97"
+      # UI and Cargo example fixtures deliberately violate lint contracts.
+      - name: Lint ordinary library, binary and integration-test targets
+        run: cargo xtask lint
+      - name: Measure canonical executable-line coverage
+        run: cargo xtask coverage --min-lines 97 -- --workspace --lib --bins --tests
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage
           path: target/coverage/report
-
-  pages:
-    name: Build the lint catalog
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Free runner disk space
-        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-      - name: Install the pinned toolchain
-        run: rustup show active-toolchain || rustup toolchain install
-      - uses: Swatinem/rust-cache@v2
+      - name: Benchmark independently loadable lints
+        run: cargo xtask bench
+      - uses: actions/upload-artifact@v7
         with:
-          shared-key: workspace
-          save-if: false
-      - name: Install Dylint tools
+          name: benches
+          path: target/criterion
+      - name: Check documentation and the command guide
         run: |
-          cargo install --locked --version "$DYLINT_VERSION" cargo-dylint dylint-link
-          # Dylint libraries must be linked through dylint-link, which exists only after this step.
-          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=dylint-link" >>"$GITHUB_ENV"
-      - name: List registered lints
-        run: |
-          scratch="$(mktemp -d)"
-          printf '[workspace]\nresolver = "2"\nmembers = []\n' >"$scratch/Cargo.toml"
-          git -C "$scratch" init -q
-          cargo run --bin sagan-lints -- --repo "$scratch" --list-private-lints >"$RUNNER_TEMP/lints.txt"
-      - name: Generate the catalog
-        run: cargo run -p sagan-lints-web -- --lint-list "$RUNNER_TEMP/lints.txt" --out-dir public
+          cargo test --workspace --doc
+          cargo run -p xtask --example help
+      - name: Generate catalog, book and reports
+        run: cargo xtask site
       - uses: actions/upload-pages-artifact@v5
         with:
           path: public
 
+  nix:
+    name: Nix packages and checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31.11.1
+      - run: nix flake check
+
   deploy-pages:
-    name: Deploy the lint catalog
-    # Set the repository variable DEPLOY_PAGES to `true` once GitHub Pages is
-    # available for this repository (public, or a plan that allows private Pages).
+    name: Deploy documentation and reports
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_PAGES == 'true'
-    needs: [check, self-lint, coverage, pages]
+    needs: [check, nix]
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -154,3 +111,24 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  release:
+    name: Tag validated semver and retain maintenance branches
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+    needs: [check, nix]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: cachix/install-nix-action@v31.11.1
+      - name: Use the committed user identity for release tags
+        run: |
+          git config user.name "$(git log -1 --format=%an)"
+          git config user.email "$(git log -1 --format=%ae)"
+      - name: Publish the validated version
+        run: nix develop -c cargo xtask release --publish
+        env:
+          GH_TOKEN: ${{ github.token }}

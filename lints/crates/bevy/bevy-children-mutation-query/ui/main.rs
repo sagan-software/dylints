@@ -7,7 +7,7 @@
     unused_results
 )]
 
-use bevy_ecs::{
+use bevy::ecs::{
     change_detection::Mut,
     entity::Entity,
     hierarchy::{ChildOf, Children},

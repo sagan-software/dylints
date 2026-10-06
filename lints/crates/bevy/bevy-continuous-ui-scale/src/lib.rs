@@ -28,9 +28,7 @@ use rustc_middle::ty;
 use rustc_span::{Span, Symbol};
 
 #[cfg(test)]
-use {
-    bevy_app as _, bevy_ecs as _, bevy_math as _, bevy_time as _, bevy_transform as _, bevy_ui as _,
-};
+use bevy as _;
 
 dylint_support::documented_late_lint_with_pass! {
     #[doc = include_str!("../README.md")]

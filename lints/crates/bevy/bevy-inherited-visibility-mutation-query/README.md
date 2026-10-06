@@ -18,6 +18,8 @@ The lint does not look inside `Option<&mut InheritedVisibility>` or custom `Quer
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Enemy;
 fn hide(mut query: Query<&mut InheritedVisibility, With<Enemy>>) {
     for mut visibility in &mut query {
         *visibility = InheritedVisibility::HIDDEN;
@@ -28,6 +30,8 @@ fn hide(mut query: Query<&mut InheritedVisibility, With<Enemy>>) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Enemy;
 fn hide(mut query: Query<&mut Visibility, With<Enemy>>) {
     for mut visibility in &mut query {
         *visibility = Visibility::Hidden;

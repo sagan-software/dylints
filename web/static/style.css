@@ -774,3 +774,6 @@ article > input[type="checkbox"]:checked ~ .lint-docs {
         animation: octocat-wave 560ms ease-in-out;
     }
 }
+
+/* Keep report navigation readable without narrowing the catalog filters. */
+.report-links { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0 0 1rem; }

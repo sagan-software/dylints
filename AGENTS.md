@@ -9,7 +9,7 @@ root `Cargo.toml` or `dylint.toml`. Keep existing library entries.
 
 Use `branch = "main"` and select library paths with `pattern`. The quick
 start selects `lints/correctness`, `lints/perf`, and `lints/suspicious`.
-`lints/*` selects all top-level groups, including stricter policy checks.
+The `lints` aggregate selects all groups, including stricter policy checks.
 These settings are not application dependencies.
 
 Install the compiler and Dylint tools shown in the quick start, then run
@@ -19,7 +19,7 @@ works. Keep Clippy and project tests as separate checks.
 
 The lint repository configures its own linker. Keep the quick start free of
 linker exports and build-directory commands. Document custom build settings
-only under setup errors. Offer the Nix bundled runner as a separate setup path.
+only under setup errors. Document downstream Nix environments separately.
 
 When changing setup instructions, verify `rust-toolchain.toml` and the Dylint
 version, then test the copied settings in a separate project. State compiler
@@ -44,30 +44,31 @@ Use these commands:
 - `cargo test --workspace --lib --bins --tests` runs every unit, UI, and
   integration test.
 - `cargo test -p LINT_NAME --lib` runs one lint's UI test.
-- `cargo test -p sagan-lints --test runner` runs the runner integration tests.
+- `cargo test -p xtask --tests` runs development-command integration tests.
 - `nix run .#site` generates the lint catalog in `public/`.
 - `nix flake check` builds the Nix packages and checks formatting.
 
 ## Dependency management
 
 - Keep Rust dependencies in `Cargo.toml` and `Cargo.lock`.
-- Keep toolchain and packaging dependencies in `flake.nix` and
-  `nix/default.nix`.
+- Keep toolchain and packaging dependencies in `flake.nix`.
 - Prefer `inputs.<dep>.inputs.nixpkgs.follows = "nixpkgs"` for flake inputs.
 
 ## Creating Dylint lints
 
 - Put lints under `lints/<category>/<lint_name>/`, or under
   `lints/crates/<crate>/<lint-name>/` for crate-specific lints. Add the crate to
-  the root `Cargo.toml` `workspace.members`.
+  workspace dependencies and its parent group. Verify that the workspace globs
+  and path dependency discovery include the crate.
 - Categories are Dylint group crates modeled on Clippy group names: `cargo`,
   `complexity`, `correctness`, `crates`, `maintainability`, `perf`,
   `restriction`, `style`, and `suspicious`. Add each new lint to its category
   crate's `Cargo.toml` dependencies and `src/lib.rs` `register_lints` calls.
-- Keep category discovery intact: root `dylint.toml` and root `Cargo.toml`
-  `[workspace.metadata.dylint]` list the category crate paths.
-- When adding a category, also update `src/category.rs`, the category map in
-  `nix/default.nix`, and `LintCategory` in `web/src/main.rs`.
+- Keep category discovery intact: root `Cargo.toml`
+  `[workspace.metadata.dylint]` lists the category crate paths. Keep lint options
+  in `dylint.toml`; Dylint rejects duplicate discovery tables.
+- When adding a category, also update the discovery and category map in
+  `flake.nix`, and `LintCategory` in `web/src/category.rs`.
 - Declare every lint with the `Warn` default level.
 - Model new lint crates on `lints/perf/ownership_at_boundaries` and
   `lints/suspicious/string_error_result`.
@@ -145,8 +146,8 @@ case must be a Cargo example target with its own dependencies.
 
 - Use `# <lint_name>` as the title. The title must match the crate directory.
 - Use these level-two sections in order: `What it does`, `Why is this bad?`,
-  `Known problems`, `Example`, and `Use instead`. The catalog generator rejects
-  any other structure.
+  `Known problems`, `Example`, and `Use instead`. The catalog generator requires
+  these sections first; additional interpretation and sources may follow.
 - Keep examples small and representative of the UI tests.
 
 UI test requirements:
@@ -164,6 +165,23 @@ Before considering a new lint done:
 1. Run `cargo fmt --all`.
 2. Run `cargo test -p LINT_NAME --lib`.
 3. Run the Clippy gate.
-4. Run `cargo run --bin sagan-lints -- --list-private-lints` and confirm that
+4. Run `cargo dylint list --all` and confirm that
    the lint appears.
 5. Run `nix run .#site` and confirm that generation succeeds.
+
+## Workspace and releases
+
+The root is a virtual workspace. Use native Dylint discovery and `cargo xtask`;
+there is no portable runner. The optional `lints` library aggregates categories.
+Do not discover parent groups and their constituent libraries together.
+
+Increment the shared workspace semver for every push. Use a patch
+for compatible repairs, a minor for compatible additions, and a major for
+breaking changes. Before 1.0, a minor increment marks a breaking change.
+CI creates immutable tags and releases only after every validation and report
+gate passes. Keep maintenance branches at `release/MAJOR` and
+`release/MAJOR.MINOR`; do not move existing maintenance branches automatically.
+
+Use reasoned `expect` attributes. Keep dependency sources in workspace
+configuration and features with consumers. Replace standalone shell scripts
+with tested Rust xtask commands. Preserve deliberate UI fixture violations.

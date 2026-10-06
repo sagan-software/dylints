@@ -16,7 +16,9 @@ The lint flags calls even when it knows the index is valid.
 
 ## Example
 
-```rust
+The snippets use SQLx's PostgreSQL API. UI tests use a local SQLx fixture that omits this API.
+
+```rust,ignore
 use sqlx::Statement;
 
 fn first_column(statement: &sqlx::postgres::PgStatement<'_>) -> &sqlx::postgres::PgColumn {
@@ -26,7 +28,7 @@ fn first_column(statement: &sqlx::postgres::PgStatement<'_>) -> &sqlx::postgres:
 
 ## Use instead
 
-```rust
+```rust,ignore
 use sqlx::Statement;
 
 fn first_column(

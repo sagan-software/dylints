@@ -18,6 +18,8 @@ The lint does not look inside `Option<&mut GlobalTransform>` or custom `QueryDat
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Player;
 fn raise(mut query: Query<&mut GlobalTransform, With<Player>>) {
     for mut transform in &mut query {
         *transform = transform.mul_transform(Transform::from_xyz(0.0, 1.0, 0.0));
@@ -28,6 +30,8 @@ fn raise(mut query: Query<&mut GlobalTransform, With<Player>>) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Player;
 fn raise(mut query: Query<&mut Transform, With<Player>>) {
     for mut transform in &mut query {
         transform.translation.y += 1.0;

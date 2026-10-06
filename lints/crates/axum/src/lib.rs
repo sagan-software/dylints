@@ -20,7 +20,6 @@ extern crate rustc_session;
 ///
 /// Dylint calls this function once per compilation. It forwards the compiler
 /// session and lint store to every constituent Axum registration function.
-#[cfg_attr(not(feature = "rlib"), unsafe(no_mangle))]
 ///
 /// # Examples
 ///
@@ -30,6 +29,7 @@ extern crate rustc_session;
 ///     let _ = axum::register_lints(sess, lint_store);
 /// };
 /// ```
+#[cfg_attr(not(feature = "rlib"), unsafe(no_mangle))]
 pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint::LintStore) {
     // Each constituent crate owns one Axum-specific rule; this crate only groups them.
     axum_nest_at_root::register_lints(sess, lint_store);

@@ -9,19 +9,19 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-abc_size = { path = "abc_size", features = ["rlib"] }
-cyclomatic_complexity = { path = "cyclomatic_complexity", features = ["rlib"] }
+abc_size = { workspace = true, features = ["rlib"] }
+crap_score = { workspace = true, features = ["rlib"] }
+cyclomatic_complexity = { workspace = true, features = ["rlib"] }
 dylint_linting.workspace = true
-field_usage_cohesion = { path = "field_usage_cohesion", features = ["rlib"] }
-impl_method_count = { path = "impl_method_count", features = ["rlib"] }
-many_exit_points = { path = "many_exit_points", features = ["rlib"] }
-module_dependency_cycle = { path = "module_dependency_cycle", features = ["rlib"] }
-module_fan_out = { path = "module_fan_out", features = ["rlib"] }
-npath_complexity = { path = "npath_complexity", features = ["rlib"] }
-public_surface_size = { path = "public_surface_size", features = ["rlib"] }
-source_cognitive_complexity = { path = "source_cognitive_complexity", features = ["rlib"] }
-type_method_complexity = { path = "type_method_complexity", features = ["rlib"] }
-
+field_usage_cohesion = { workspace = true, features = ["rlib"] }
+impl_method_count = { workspace = true, features = ["rlib"] }
+many_exit_points = { workspace = true, features = ["rlib"] }
+module_dependency_cycle = { workspace = true, features = ["rlib"] }
+module_fan_out = { workspace = true, features = ["rlib"] }
+npath_complexity = { workspace = true, features = ["rlib"] }
+public_surface_size = { workspace = true, features = ["rlib"] }
+source_cognitive_complexity = { workspace = true, features = ["rlib"] }
+type_method_complexity = { workspace = true, features = ["rlib"] }
 [features]
 rlib = ["dylint_linting/constituent"]
 

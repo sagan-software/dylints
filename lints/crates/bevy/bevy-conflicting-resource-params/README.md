@@ -15,8 +15,8 @@ The lint skips closures, indirect registrations, custom `SystemParam` implementa
 ## Example
 
 ```rust,no_run
-use bevy_app::{App, Update};
-use bevy_ecs::prelude::{Res, ResMut, Resource};
+use bevy::app::{App, Update};
+use bevy::ecs::prelude::{Res, ResMut, Resource};
 
 #[derive(Resource)]
 struct State;
@@ -32,8 +32,8 @@ fn main() {
 ## Use instead
 
 ```rust,no_run
-use bevy_app::{App, Update};
-use bevy_ecs::prelude::{ResMut, Resource};
+use bevy::app::{App, Update};
+use bevy::ecs::prelude::{ResMut, Resource};
 
 #[derive(Resource)]
 struct State;

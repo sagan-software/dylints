@@ -1,5 +1,5 @@
-use bevy_ecs::prelude::*;
-use bevy_ecs::query::QueryData;
+use bevy::ecs::prelude::*;
+use bevy::ecs::query::QueryData;
 
 #[derive(Component)]
 struct A;

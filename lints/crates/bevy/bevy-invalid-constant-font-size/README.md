@@ -15,7 +15,8 @@ The lint checks statically evaluable `f32` literals and local `f32` constant pat
 ## Example
 
 ```rust
-# use bevy_text::FontSize;
+# use bevy::prelude::*;
+# use bevy::text::FontSize;
 fn main() {
     let font_size = FontSize::Px(1001.0);
     let _ = font_size;

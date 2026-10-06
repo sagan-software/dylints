@@ -47,6 +47,13 @@ fn deserialize_id<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u64, D::
 Call the `deserialize_*` method for the type the visitor expects:
 
 ```rust
+# use serde::de::Visitor;
+# struct IdVisitor;
+# impl<'de> Visitor<'de> for IdVisitor {
+#     type Value = u64;
+#     fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { formatter.write_str("an id") }
+#     fn visit_u64<E>(self, value: u64) -> Result<u64, E> { Ok(value) }
+# }
 use serde::de::Deserializer;
 
 fn deserialize_id<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u64, D::Error> {

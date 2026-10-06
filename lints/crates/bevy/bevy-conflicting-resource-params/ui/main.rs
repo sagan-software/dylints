@@ -6,11 +6,11 @@
     unused_variables
 )]
 
-use bevy_app::{App, Update};
-use bevy_ecs::prelude::*;
+use bevy::app::{App, Update};
+use bevy::ecs::prelude::*;
 
 mod lookalike {
-    use bevy_ecs::{
+    use bevy::ecs::{
         prelude::{Res, Resource},
         system::SystemParam,
     };

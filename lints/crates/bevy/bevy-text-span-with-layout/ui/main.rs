@@ -10,12 +10,12 @@
 
 //! Exercise Bevy text span and layout recognition with compile-time fixtures.
 
-use bevy_ecs::{
+use bevy::ecs::{
     bundle::Bundle, component::Component, entity::Entity, system::Commands, world::World,
 };
-use bevy_sprite::Text2d;
-use bevy_text::{TextLayout as Layout, TextSpan as Span};
-use bevy_ui::widget::Text;
+use bevy::sprite::Text2d;
+use bevy::text::{TextLayout as Layout, TextSpan as Span};
+use bevy::ui::widget::Text;
 
 /// Alias used to verify the resolved Bevy text-span type.
 type TextSpan = Span;
@@ -73,7 +73,7 @@ fn text_bundles(world: &mut World) {
         .insert_if_new((Span::new("inserted if new"), Layout::default()));
     world
         .spawn_empty()
-        .with_related_entities::<bevy_ecs::hierarchy::ChildOf>(|related| {
+        .with_related_entities::<bevy::ecs::hierarchy::ChildOf>(|related| {
             related.spawn((Span::new("related span"), Layout::default()));
         });
 }
@@ -89,7 +89,7 @@ fn commands(mut commands: Commands, entity: Entity) {
         .insert_if_new((Span::new("inserted if new"), Layout::default()));
     commands
         .spawn_empty()
-        .with_related_entities::<bevy_ecs::hierarchy::ChildOf>(|related| {
+        .with_related_entities::<bevy::ecs::hierarchy::ChildOf>(|related| {
             related.spawn((Span::new("related span"), Layout::default()));
         });
 }

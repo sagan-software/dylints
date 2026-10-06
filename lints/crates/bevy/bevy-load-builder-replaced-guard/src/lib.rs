@@ -25,11 +25,11 @@ use rustc_span::Span;
 use std::collections::HashMap;
 
 #[cfg(test)]
-use bevy_app::{App, TaskPoolPlugin};
+use bevy as _;
 #[cfg(test)]
-use bevy_asset::{AssetServer, LoadBuilder};
+use bevy::app::{App, TaskPoolPlugin};
 #[cfg(test)]
-use bevy_ecs as _;
+use bevy::asset::{AssetServer, LoadBuilder};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -508,7 +508,7 @@ mod tests {
         let mut app = App::new();
         let app = app.add_plugins((
             TaskPoolPlugin::default(),
-            bevy_asset::AssetPlugin::default(),
+            bevy::asset::AssetPlugin::default(),
         ));
         app.world()
             .get_resource::<AssetServer>()

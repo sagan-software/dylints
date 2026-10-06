@@ -29,6 +29,8 @@ separate steps.
 ## Example
 
 ```rust
+# fn parse(raw: &str) -> Option<i32> { raw.parse().ok() }
+# fn consume(value: i32) { let _ = std::hint::black_box(value); }
 fn consume_numbers(values: &[&str]) {
     for value in values {
         if let Some(number) = parse(value) {
@@ -41,6 +43,8 @@ fn consume_numbers(values: &[&str]) {
 ## Use instead
 
 ```rust
+# fn parse(raw: &str) -> Option<i32> { raw.parse().ok() }
+# fn consume(value: i32) { let _ = std::hint::black_box(value); }
 fn consume_numbers(values: &[&str]) {
     values
         .iter()

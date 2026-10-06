@@ -63,3 +63,17 @@ fn report(a: bool, b: bool, c: bool, d: bool, e: bool, f: bool) {
     }
 }
 ```
+
+## Interpretation and sources
+
+SonarSource designed Cognitive Complexity to approximate understandability. The
+algorithm increments for breaks in linear flow, increments again for nesting,
+and discounts some readable shorthand. A deeply nested branch scores more than
+a flat sequence with the same Cyclomatic Complexity.
+
+This makes it useful for review burden, but it is still a syntax heuristic. A
+small score does not prove clear names, good domain boundaries, or simple data
+flow. Rust analyzer behavior must cover `match`, guards, `?`, async blocks,
+closures, labeled control flow, macros, and iterator chains.
+
+The documented local source profile controls the threshold. Clippy's `cognitive_complexity` is a separate heuristic. [SonarSource's paper](https://www.sonarsource.com/resources/cognitive-complexity/) and [Clippy's caveat](https://rust-lang.github.io/rust-clippy/master/index.html#cognitive_complexity).

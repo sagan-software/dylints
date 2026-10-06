@@ -26,6 +26,7 @@ mod helpers {
 }
 
 use helpers::Thing;
+# fn main() {}
 ```
 
 ## Use instead
@@ -36,4 +37,5 @@ mod helpers {
 }
 
 use self::helpers::Thing;
+# fn main() {}
 ```

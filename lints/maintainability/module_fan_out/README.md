@@ -28,6 +28,14 @@ The lint does not count references inside macro invocations or dependencies crea
 ## Example
 
 ```rust
+# mod input { pub fn read() {} }
+# mod policy { pub fn check() {} }
+# mod storage { pub fn load() {} }
+# mod auth { pub fn authorize() {} }
+# mod schedule { pub fn plan() {} }
+# mod output { pub fn write() {} }
+# mod telemetry { pub fn record() {} }
+# mod recovery { pub fn checkpoint() {} }
 mod coordinator {
     pub fn run() {
         crate::input::read();
@@ -40,6 +48,7 @@ mod coordinator {
         crate::recovery::checkpoint();
     }
 }
+# fn main() {}
 ```
 
 `coordinator` refers to 8 top-level modules.
@@ -49,6 +58,14 @@ mod coordinator {
 Move related steps behind modules that each own one stage.
 
 ```rust
+# mod input { pub fn read() {} }
+# mod policy { pub fn check() {} }
+# mod storage { pub fn load() {} }
+# mod auth { pub fn authorize() {} }
+# mod schedule { pub fn plan() {} }
+# mod output { pub fn write() {} }
+# mod telemetry { pub fn record() {} }
+# mod recovery { pub fn checkpoint() {} }
 mod intake {
     pub fn run() {
         crate::input::read();
@@ -73,4 +90,9 @@ mod coordinator {
         crate::delivery::run();
     }
 }
+# fn main() {}
 ```
+
+## Interpretation and sources
+
+Module fan-out counts distinct outgoing module dependencies. A high value can identify an orchestration module, while generated adapters and facades need review. Compare changes with accepted code before interpreting a threshold as architectural evidence. [Code Maat](https://github.com/adamtornhill/code-maat) supplies separate history-based coupling measurements; this compiler lint measures static dependencies.

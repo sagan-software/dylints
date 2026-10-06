@@ -7,8 +7,8 @@
     unused_results
 )]
 
-use bevy_ecs::system::Query;
-use bevy_transform::components::{GlobalTransform, Transform};
+use bevy::ecs::system::Query;
+use bevy::transform::components::{GlobalTransform, Transform};
 
 fn bad(_: Query<&mut GlobalTransform>) {}
 fn good(_: Query<&mut Transform>) {}

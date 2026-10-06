@@ -3,10 +3,11 @@
 ## What it does
 
 Checks the nearest `Cargo.toml` above the crate root file of a workspace
-package for dependencies that set their own `version` instead of using
+package for dependencies that set their own `version`, `path` or `git` source instead of using
 `workspace = true`. It checks `[dependencies]`, `[dev-dependencies]`,
 `[build-dependencies]`, and their `[target.'...']` variants. The warning points
-at the version value.
+at the source value. When a dependency declares both version and path,
+the version diagnostic takes precedence.
 
 The lint applies only when the workspace root declares
 `[workspace.dependencies]`. The workspace root is the package manifest itself
@@ -23,7 +24,11 @@ manifest instead of one entry in `[workspace.dependencies]`.
 
 ## Known problems
 
-Dependencies with only `path` or `git` and no `version` do not warn.
+The lint reports explicit sources even when the workspace has no entry for
+that dependency. Move the source into `[workspace.dependencies]` first.
+
+Cargo validates malformed dependency values. This lint reports string
+`version`, `path` and `git` values.
 
 A package that needs two versions of one crate must give each version its own
 renamed key in `[workspace.dependencies]`, such as

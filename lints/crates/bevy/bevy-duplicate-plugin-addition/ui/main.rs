@@ -15,7 +15,7 @@
     reason = "Cargo passes the Dylint package dependencies to this example target."
 )]
 
-use bevy_app::{App, Plugin, PluginGroup, PluginGroupBuilder, ScheduleRunnerPlugin};
+use bevy::app::{App, Plugin, PluginGroup, PluginGroupBuilder, ScheduleRunnerPlugin};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicUsize, Ordering};
 

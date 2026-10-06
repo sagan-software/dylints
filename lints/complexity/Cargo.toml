@@ -9,52 +9,29 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-collect_return = { path = "collect_return", features = ["rlib"] }
-complicated_conditional = { path = "complicated_conditional", features = ["rlib"] }
-consecutive_iterator_loops = { path = "consecutive_iterator_loops", features = [
-    "rlib",
-] }
-contains_key_before_any = { path = "contains_key_before_any", features = [
-    "rlib",
-] }
-let_some_return_err = { path = "let_some_return_err", features = ["rlib"] }
-manual_adjacent_window_loop = { path = "manual_adjacent_window_loop", features = [
-    "rlib",
-] }
-manual_arg_parsing = { path = "manual_arg_parsing", features = ["rlib"] }
-manual_entry_update = { path = "manual_entry_update", features = ["rlib"] }
-manual_extend_loop = { path = "manual_extend_loop", features = ["rlib"] }
-manual_fallible_collect_loop = { path = "manual_fallible_collect_loop", features = [
-    "rlib",
-] }
-manual_filter_for_each_loop = { path = "manual_filter_for_each_loop", features = [
-    "rlib",
-] }
-manual_filter_map_for_each_loop = { path = "manual_filter_map_for_each_loop", features = [
-    "rlib",
-] }
-manual_iterator_loop = { path = "manual_iterator_loop", features = ["rlib"] }
-manual_option_take_if = { path = "manual_option_take_if", features = ["rlib"] }
-manual_partition_loop = { path = "manual_partition_loop", features = ["rlib"] }
-manual_passthrough_inspect = { path = "manual_passthrough_inspect", features = [
-    "rlib",
-] }
-manual_try_for_each_loop = { path = "manual_try_for_each_loop", features = [
-    "rlib",
-] }
-manual_unzip_loop = { path = "manual_unzip_loop", features = ["rlib"] }
-one_use_predicate_binding = { path = "one_use_predicate_binding", features = [
-    "rlib",
-] }
-one_use_private_helper = { path = "one_use_private_helper", features = [
-    "rlib",
-] }
-trivial_public_constructor = { path = "trivial_public_constructor", features = [
-    "rlib",
-] }
-unnecessary_map_err = { path = "unnecessary_map_err", features = ["rlib"] }
-
+collect_return = { workspace = true, features = ["rlib"] }
+complicated_conditional = { workspace = true, features = ["rlib"] }
+consecutive_iterator_loops = { workspace = true, features = ["rlib"] }
+contains_key_before_any = { workspace = true, features = ["rlib"] }
 dylint_linting.workspace = true
+let_some_return_err = { workspace = true, features = ["rlib"] }
+manual_adjacent_window_loop = { workspace = true, features = ["rlib"] }
+manual_arg_parsing = { workspace = true, features = ["rlib"] }
+manual_entry_update = { workspace = true, features = ["rlib"] }
+manual_extend_loop = { workspace = true, features = ["rlib"] }
+manual_fallible_collect_loop = { workspace = true, features = ["rlib"] }
+manual_filter_for_each_loop = { workspace = true, features = ["rlib"] }
+manual_filter_map_for_each_loop = { workspace = true, features = ["rlib"] }
+manual_iterator_loop = { workspace = true, features = ["rlib"] }
+manual_option_take_if = { workspace = true, features = ["rlib"] }
+manual_partition_loop = { workspace = true, features = ["rlib"] }
+manual_passthrough_inspect = { workspace = true, features = ["rlib"] }
+manual_try_for_each_loop = { workspace = true, features = ["rlib"] }
+manual_unzip_loop = { workspace = true, features = ["rlib"] }
+one_use_predicate_binding = { workspace = true, features = ["rlib"] }
+one_use_private_helper = { workspace = true, features = ["rlib"] }
+trivial_public_constructor = { workspace = true, features = ["rlib"] }
+unnecessary_map_err = { workspace = true, features = ["rlib"] }
 
 [features]
 rlib = ["dylint_linting/constituent"]

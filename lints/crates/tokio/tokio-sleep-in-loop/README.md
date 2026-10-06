@@ -28,6 +28,7 @@ do not trigger it.
 ## Example
 
 ```rust
+# async fn work() {}
 async fn run(period: std::time::Duration) {
     loop {
         work().await;
@@ -39,6 +40,7 @@ async fn run(period: std::time::Duration) {
 ## Use instead
 
 ```rust
+# async fn work() {}
 async fn run(period: std::time::Duration) {
     let mut ticker = tokio::time::interval(period);
     loop {

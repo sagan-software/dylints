@@ -6,7 +6,6 @@ use super::helpers::{
 use super::{LateContext, LocalDefId, MarkerTrait, Span};
 
 /// Return local component-like types that lack `Reflect`.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -16,6 +15,7 @@ use super::{LateContext, LocalDefId, MarkerTrait, Span};
 ///     let _ = bevy_support::local_bevy_types_missing_reflect(cx);
 /// };
 /// ```
+#[must_use]
 pub fn local_bevy_types_missing_reflect(cx: &LateContext<'_>) -> Vec<LocalDefId> {
     // Build the exclusion set once before scanning each Bevy marker trait.
     let reflected = local_trait_targets(cx, "bevy_reflect", "Reflect");
@@ -96,7 +96,6 @@ pub fn missing_trait_derive(
 }
 
 /// Return local Bevy trait implementations whose names violate conventions.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -106,6 +105,7 @@ pub fn missing_trait_derive(
 ///     let _ = bevy_support::unconventional_bevy_type_names(cx);
 /// };
 /// ```
+#[must_use]
 pub fn unconventional_bevy_type_names(
     cx: &LateContext<'_>,
 ) -> Vec<(LocalDefId, &'static str, &'static str)> {
@@ -137,7 +137,6 @@ pub fn unconventional_bevy_type_names(
 }
 
 /// Count direct dependencies whose original crate name is `bevy`.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -147,6 +146,7 @@ pub fn unconventional_bevy_type_names(
 ///     let _ = bevy_support::direct_bevy_facades(cx);
 /// };
 /// ```
+#[must_use]
 pub fn direct_bevy_facades(cx: &LateContext<'_>) -> usize {
     cx.tcx
         .crates(())

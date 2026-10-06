@@ -21,7 +21,7 @@ destructuring patterns.
 ## Example
 
 ```rust
-# use bevy_ecs::prelude::{Changed, Component, Query};
+# use bevy::ecs::prelude::{Changed, Component, Query};
 # #[derive(Component)]
 # struct Agent {
 #     health: u64,
@@ -48,7 +48,7 @@ fn react_to_health(query: Query<&Agent, Changed<Agent>>) {
 Move the field into its own component and filter on that component.
 
 ```rust
-# use bevy_ecs::prelude::{Changed, Component, Query};
+# use bevy::ecs::prelude::{Changed, Component, Query};
 # #[derive(Component)]
 # struct Health(u64);
 # macro_rules! info { ($($args:tt)*) => { println!($($args)*); }; }

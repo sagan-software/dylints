@@ -18,7 +18,7 @@ destructuring patterns.
 ## Example
 
 ```rust
-# use bevy_ecs::{prelude::{Component, Query}, query::QueryData};
+# use bevy::ecs::{prelude::{Component, Query}, query::QueryData};
 # #[derive(Component)] struct Position(pub f32);
 # #[derive(Component)] struct Velocity(pub f32);
 # #[derive(Component)] struct Health;
@@ -52,7 +52,7 @@ fn integrate(mut query: Query<AgentQuery>) {
 ## Use instead
 
 ```rust
-# use bevy_ecs::{prelude::{Component, Query}, query::QueryData};
+# use bevy::ecs::{prelude::{Component, Query}, query::QueryData};
 # #[derive(Component)] struct Position(pub f32);
 # #[derive(Component)] struct Velocity(pub f32);
 fn integrate(mut query: Query<(&mut Position, &Velocity)>) {

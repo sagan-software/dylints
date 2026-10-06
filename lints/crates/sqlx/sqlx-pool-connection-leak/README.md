@@ -17,7 +17,9 @@ pool on purpose. It misses calls inside a macro expansion.
 
 ## Example
 
-```rust
+The snippets use SQLx's PostgreSQL API. UI tests use a local SQLx fixture that omits this API.
+
+```rust,ignore
 fn take_connection(
     connection: sqlx::pool::PoolConnection<sqlx::Postgres>,
 ) -> sqlx::PgConnection {
@@ -29,7 +31,7 @@ fn take_connection(
 
 `detach` also returns the connection but lets the pool open a replacement:
 
-```rust
+```rust,ignore
 fn take_connection(
     connection: sqlx::pool::PoolConnection<sqlx::Postgres>,
 ) -> sqlx::PgConnection {

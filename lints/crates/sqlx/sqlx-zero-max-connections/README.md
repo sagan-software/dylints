@@ -23,7 +23,9 @@ remain unknown.
 
 ## Example
 
-```rust
+The snippets use SQLx's PostgreSQL API. UI tests use a local SQLx fixture that omits this API.
+
+```rust,ignore
 fn pool_options() -> sqlx::pool::PoolOptions<sqlx::Postgres> {
     sqlx::pool::PoolOptions::new().max_connections(0)
 }
@@ -31,7 +33,7 @@ fn pool_options() -> sqlx::pool::PoolOptions<sqlx::Postgres> {
 
 ## Use instead
 
-```rust
+```rust,ignore
 fn pool_options() -> sqlx::pool::PoolOptions<sqlx::Postgres> {
     sqlx::pool::PoolOptions::new().max_connections(8)
 }

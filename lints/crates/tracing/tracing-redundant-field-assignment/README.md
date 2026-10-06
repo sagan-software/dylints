@@ -24,6 +24,7 @@ automatic fix.
 ## Example
 
 ```rust
+# #[derive(Debug)] struct User { id: u64 }
 fn handle(request_id: u64, user: &User) {
     tracing::info!(request_id = request_id, user.id = user.id);
     let _span = tracing::debug_span!("request", user = ?user);
@@ -35,6 +36,7 @@ fn handle(request_id: u64, user: &User) {
 Keep the `%` or `?` sigil before the shorthand field.
 
 ```rust
+# #[derive(Debug)] struct User { id: u64 }
 fn handle(request_id: u64, user: &User) {
     tracing::info!(request_id, user.id);
     let _span = tracing::debug_span!("request", ?user);

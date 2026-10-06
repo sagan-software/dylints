@@ -2,12 +2,12 @@
 
 //! Systems and registration forms for camera fixed-update UI cases.
 
-use bevy_app::{App, FixedUpdate, Update};
-use bevy_camera::Camera;
+use bevy::app::{App, FixedUpdate, Update};
+use bevy::camera::Camera;
+use bevy::ecs::{query::With, schedule::IntoScheduleConfigs, system::Query};
+use bevy::transform::components::Transform;
 use bevy_camera_modification_in_fixed_update as _;
-use bevy_ecs::{query::With, schedule::IntoScheduleConfigs, system::Query};
 use bevy_support as _;
-use bevy_transform::components::Transform;
 use dylint_linting as _;
 use dylint_support as _;
 use dylint_testing as _;

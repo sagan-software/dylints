@@ -16,6 +16,7 @@ None known.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
 #[derive(Component, Clone)]
 struct Player;
 ```
@@ -23,6 +24,7 @@ struct Player;
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
 #[derive(Component, Clone, Copy)]
 struct Player;
 ```

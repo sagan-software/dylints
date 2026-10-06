@@ -20,7 +20,7 @@ use rustc_lint::{LateContext, LintContext as _};
 use bevy_support as _;
 
 #[cfg(test)]
-use {bevy_ecs as _, bevy_sprite as _, bevy_text as _, bevy_ui as _};
+use bevy as _;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -119,8 +119,8 @@ fn ui() {
 mod tests {
     //! Check the local text component combination without loading fonts or a renderer.
 
-    use bevy_ecs::{bundle::Bundle, entity::Entity, world::World};
-    use bevy_text::{TextLayout, TextSpan};
+    use bevy::ecs::{bundle::Bundle, entity::Entity, world::World};
+    use bevy::text::{TextLayout, TextSpan};
 
     /// Store a test bundle without exposing its tuple syntax to the lint under test.
     fn spawn_for_test<B: Bundle>(world: &mut World, bundle: B) -> Entity {

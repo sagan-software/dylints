@@ -17,9 +17,9 @@ The lint follows value-producing arithmetic, casts, field access and indexing, b
 ## Example
 
 ```rust
-# use bevy_ecs::{message::MessageReader, system::Res};
-# use bevy_input::mouse::MouseMotion;
-# use bevy_time::Time;
+# use bevy::ecs::{message::MessageReader, system::Res};
+# use bevy::input::mouse::MouseMotion;
+# use bevy::time::Time;
 
 fn rotate_camera(mut motion: MessageReader<MouseMotion>, time: Res<Time>) {
     for event in motion.read() {
@@ -31,13 +31,13 @@ fn rotate_camera(mut motion: MessageReader<MouseMotion>, time: Res<Time>) {
 ## Use instead
 
 ```rust
-# use bevy_ecs::{
+# use bevy::ecs::{
 #     message::MessageReader,
 #     resource::Resource,
 #     system::Res,
 # };
-# use bevy_input::mouse::MouseMotion;
-# use bevy_time::Time;
+# use bevy::input::mouse::MouseMotion;
+# use bevy::time::Time;
 
 #[derive(Resource)]
 struct MouseSensitivity(f32);

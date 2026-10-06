@@ -16,7 +16,7 @@ use dylint_linting as _;
 use rustc_lint::LintContext as _;
 
 #[cfg(test)]
-use {bevy_app as _, bevy_camera as _, bevy_ecs as _, bevy_transform as _};
+use bevy as _;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]

@@ -18,6 +18,7 @@ the span through a local binding, a field, or another function.
 ## Example
 
 ```rust
+# fn work() {}
 fn handle() {
     let _ = tracing::Span::none().enter();
     work();
@@ -29,6 +30,7 @@ fn handle() {
 Remove the guard. If the work needs a span, enter an enabled span instead:
 
 ```rust
+# fn work() {}
 fn handle() {
     work();
 }

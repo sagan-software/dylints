@@ -45,6 +45,7 @@ mod model {
         let _limit = crate::parser::token_limit();
     }
 }
+# fn main() {}
 ```
 
 `parser` and `model` depend on each other.
@@ -71,4 +72,5 @@ mod model {
         let _limit = crate::limits::token_limit();
     }
 }
+# fn main() {}
 ```

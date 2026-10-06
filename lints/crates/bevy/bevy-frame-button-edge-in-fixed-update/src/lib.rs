@@ -25,15 +25,15 @@ use rustc_span::{Span, def_id::LocalDefId};
 
 #[cfg(test)]
 mod fixed_schedule_behavior {
-    use bevy_app::FixedUpdate;
-    use bevy_ecs::{
+    use bevy::app::FixedUpdate;
+    use bevy::ecs::{
         resource::Resource,
         schedule::Schedule,
         system::{Res, ResMut},
         world::World,
     };
-    use bevy_input::{ButtonInput, keyboard::KeyCode};
-    use bevy_reflect::Reflect;
+    use bevy::input::{ButtonInput, keyboard::KeyCode};
+    use bevy::reflect::Reflect;
 
     /// Counts edge-driven actions performed by one fixed update.
     #[derive(Default, Reflect, Resource)]

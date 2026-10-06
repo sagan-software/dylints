@@ -10,8 +10,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dylint_linting.workspace = true
-dylint_support = { package = "dylint-support", path = "../../../../support/dylint" }
-thiserror_support = { package = "thiserror-support", path = "../support" }
+dylint_support.workspace = true
+thiserror_support.workspace = true
 toml.workspace = true
 
 [dev-dependencies]

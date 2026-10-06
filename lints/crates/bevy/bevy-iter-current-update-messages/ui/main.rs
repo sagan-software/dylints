@@ -7,7 +7,7 @@
     unused_results
 )]
 
-use bevy_ecs::message::{Message, Messages};
+use bevy::ecs::message::{Message, Messages};
 
 #[derive(Message)]
 struct Ping;

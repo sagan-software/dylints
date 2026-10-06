@@ -1,7 +1,7 @@
 #![allow(dead_code, unused_variables, unused_mut)]
 
-use bevy_text::FontSize;
-use bevy_text::FontSize as PixelScale;
+use bevy::text::FontSize;
+use bevy::text::FontSize as PixelScale;
 
 const TOO_SMALL: f32 = -1.0;
 const TOO_LARGE: f32 = 1000.0 + 1.0;

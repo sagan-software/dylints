@@ -16,6 +16,8 @@ The lint does not check other bundle-taking APIs, such as `with_child` or the `c
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Player;
 fn spawn_player(mut commands: Commands) {
     commands.spawn((Player, ()));
 }
@@ -27,6 +29,8 @@ Remove the `()` value. To spawn an entity without components, call `spawn_empty`
 `spawn(())`.
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Player;
 fn spawn_player(mut commands: Commands) {
     commands.spawn(Player);
 }

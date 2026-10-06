@@ -24,6 +24,7 @@ the selection and the action as separate steps.
 ## Example
 
 ```rust
+# fn consume(value: i32) { let _ = std::hint::black_box(value); }
 fn consume_positive(values: &[i32]) {
     for value in values {
         if *value > 0 {
@@ -36,6 +37,7 @@ fn consume_positive(values: &[i32]) {
 ## Use instead
 
 ```rust
+# fn consume(value: i32) { let _ = std::hint::black_box(value); }
 fn consume_positive(values: &[i32]) {
     values
         .iter()

@@ -2,7 +2,7 @@
 
 //! UI cases for component-field ownership and closure traversal.
 
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use bevy_large_component_change_filter as _;
 use bevy_support as _;
 use dylint_linting as _;

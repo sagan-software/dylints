@@ -1,7 +1,7 @@
 #![feature(rustc_private)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for clap-specific private lints.
+//! Shared semantic helpers for clap-specific lints.
 
 extern crate rustc_ast;
 extern crate rustc_driver as _;
@@ -68,7 +68,6 @@ pub struct ClapDerives {
 
 impl ClapDerives {
     /// Return whether an item participates in Clap's derive API.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -78,12 +77,12 @@ impl ClapDerives {
     ///     let _ = clap_support::ClapDerives::has_clap(value);
     /// };
     /// ```
+    #[must_use]
     pub const fn has_clap(&self) -> bool {
         !self.derives.is_empty()
     }
 
     /// Return whether fields on this item define command-line arguments.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -93,6 +92,7 @@ impl ClapDerives {
     ///     let _ = clap_support::ClapDerives::has_arg_fields(value);
     /// };
     /// ```
+    #[must_use]
     pub fn has_arg_fields(&self) -> bool {
         self.has_derive(ClapDerive::Parser)
             || self.has_derive(ClapDerive::Args)
@@ -170,7 +170,6 @@ pub enum ClapFieldType {
 
 impl ClapFieldType {
     /// Return the action Clap infers for this exact field-type spelling.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -180,6 +179,7 @@ impl ClapFieldType {
     ///     let _ = clap_support::ClapFieldType::inferred_action(value);
     /// };
     /// ```
+    #[must_use]
     pub const fn inferred_action(self) -> &'static str {
         match self {
             Self::Bool => "SetTrue",
@@ -189,7 +189,6 @@ impl ClapFieldType {
     }
 
     /// Return whether the type groups values by argument occurrence.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -199,13 +198,13 @@ impl ClapFieldType {
     ///     let _ = clap_support::ClapFieldType::has_grouped_occurrences(value);
     /// };
     /// ```
+    #[must_use]
     pub const fn has_grouped_occurrences(self) -> bool {
         matches!(self, Self::VecVec | Self::OptionVecVec)
     }
 }
 
 /// Collect all cfg-active items using Clap's derive API.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -215,6 +214,7 @@ impl ClapFieldType {
 ///     let _ = clap_support::clap_ast_items(cx, krate);
 /// };
 /// ```
+#[must_use]
 pub fn clap_ast_items<'ast>(cx: &EarlyContext<'_>, krate: &'ast Crate) -> Vec<ClapAstItem<'ast>> {
     // Walk cfg-active items in source order and retain only Clap-derived definitions.
     let mut collector = ClapAstCollector {
@@ -369,7 +369,6 @@ fn ast_variant(variant: &Variant) -> ClapAstVariant<'_> {
 }
 
 /// Find a named Clap derive-helper attribute entry.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -379,6 +378,7 @@ fn ast_variant(variant: &Variant) -> ClapAstVariant<'_> {
 ///     let _ = clap_support::ast_clap_attr(cx, attrs, attribute_name, key);
 /// };
 /// ```
+#[must_use]
 pub fn ast_clap_attr<'attr>(
     cx: &EarlyContext<'_>,
     attrs: &'attr [Attribute],
@@ -395,7 +395,6 @@ pub fn ast_clap_attr<'attr>(
 /// When the entry is the attribute's only entry, the span covers the whole
 /// attribute. Otherwise it covers the entry and the comma that separates it from
 /// a neighbor, so the remaining entries stay valid.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -405,6 +404,7 @@ pub fn ast_clap_attr<'attr>(
 ///     let _ = clap_support::ast_clap_attr_entry_removal(cx, attrs, attribute_name, key);
 /// };
 /// ```
+#[must_use]
 pub fn ast_clap_attr_entry_removal(
     cx: &EarlyContext<'_>,
     attrs: &[Attribute],
@@ -440,7 +440,6 @@ pub fn ast_clap_attr_entry_removal(
 }
 
 /// Return whether a named Clap derive-helper attribute contains a key.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -450,6 +449,7 @@ pub fn ast_clap_attr_entry_removal(
 ///     let _ = clap_support::ast_has_clap_attr(cx, attrs, attribute_name, key);
 /// };
 /// ```
+#[must_use]
 pub fn ast_has_clap_attr(
     cx: &EarlyContext<'_>,
     attrs: &[Attribute],
@@ -460,7 +460,6 @@ pub fn ast_has_clap_attr(
 }
 
 /// Return the source for one named entry in a Clap derive-helper attribute.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -470,6 +469,7 @@ pub fn ast_has_clap_attr(
 ///     let _ = clap_support::ast_clap_attr_entry_source(cx, attrs, attribute_name, key);
 /// };
 /// ```
+#[must_use]
 pub fn ast_clap_attr_entry_source(
     cx: &EarlyContext<'_>,
     attrs: &[Attribute],
@@ -484,7 +484,6 @@ pub fn ast_clap_attr_entry_source(
 }
 
 /// Return whether one set of attributes still includes a `doc` attribute.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -494,12 +493,12 @@ pub fn ast_clap_attr_entry_source(
 ///     let _ = clap_support::ast_has_doc(attrs);
 /// };
 /// ```
+#[must_use]
 pub fn ast_has_doc(attrs: &[Attribute]) -> bool {
     attrs.iter().any(|attr| attr.has_name(sym::doc))
 }
 
 /// Return whether original source before a target contains a doc comment.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -509,6 +508,7 @@ pub fn ast_has_doc(attrs: &[Attribute]) -> bool {
 ///     let _ = clap_support::source_has_doc_before(cx, span);
 /// };
 /// ```
+#[must_use]
 pub fn source_has_doc_before(cx: &EarlyContext<'_>, span: Span) -> bool {
     source_segment_before_span(cx, span, &['{', '}', ';', ',']).is_some_and(|source| {
         source
@@ -520,7 +520,6 @@ pub fn source_has_doc_before(cx: &EarlyContext<'_>, span: Span) -> bool {
 }
 
 /// Classify a field type using Clap's documented exact syntactic inference.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -530,6 +529,7 @@ pub fn source_has_doc_before(cx: &EarlyContext<'_>, span: Span) -> bool {
 ///     let _ = clap_support::clap_field_type(ty);
 /// };
 /// ```
+#[must_use]
 pub fn clap_field_type(ty: &Ty) -> ClapFieldType {
     // Classify only Clap's documented Option and Vec wrapper combinations.
     let Some((outer_name, outer_type)) = one_type_wrapper(ty) else {
@@ -558,7 +558,6 @@ pub fn clap_field_type(ty: &Ty) -> ClapFieldType {
 }
 
 /// Return the type passed to Clap's inferred `value_parser!` call.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -568,6 +567,7 @@ pub fn clap_field_type(ty: &Ty) -> ClapFieldType {
 ///     let _ = clap_support::clap_value_parser_type(ty);
 /// };
 /// ```
+#[must_use]
 pub fn clap_value_parser_type(mut ty: &Ty) -> &Ty {
     // Peel every inferred Option or Vec wrapper in outer-to-inner order.
     loop {
@@ -584,7 +584,6 @@ pub fn clap_value_parser_type(mut ty: &Ty) -> &Ty {
 }
 
 /// Return source with insignificant whitespace removed.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -594,6 +593,7 @@ pub fn clap_value_parser_type(mut ty: &Ty) -> &Ty {
 ///     let _ = clap_support::compact_source(source);
 /// };
 /// ```
+#[must_use]
 pub fn compact_source(source: &str) -> String {
     source
         .chars()
@@ -602,7 +602,6 @@ pub fn compact_source(source: &str) -> String {
 }
 
 /// Return source for an AST type.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -612,12 +611,12 @@ pub fn compact_source(source: &str) -> String {
 ///     let _ = clap_support::ast_type_source(cx, ty);
 /// };
 /// ```
+#[must_use]
 pub fn ast_type_source(cx: &EarlyContext<'_>, ty: &Ty) -> Option<String> {
     cx.sess().source_map().span_to_snippet(ty.span).ok()
 }
 
 /// Return whether a field is handled specially rather than as a regular argument.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -627,6 +626,7 @@ pub fn ast_type_source(cx: &EarlyContext<'_>, ty: &Ty) -> Option<String> {
 ///     let _ = clap_support::ast_is_special_clap_field(cx, attrs);
 /// };
 /// ```
+#[must_use]
 pub fn ast_is_special_clap_field(cx: &EarlyContext<'_>, attrs: &[Attribute]) -> bool {
     // Check command-level field roles before ordinary argument helpers.
     ["flatten", "subcommand"]
@@ -847,7 +847,6 @@ pub struct BuilderCall<'hir> {
 }
 
 /// Return whether this expression is the outermost method in its fluent chain.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -857,6 +856,7 @@ pub struct BuilderCall<'hir> {
 ///     let _ = clap_support::is_outermost_builder_call(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_outermost_builder_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     !cx.tcx
         .hir_parent_iter(expr.hir_id)
@@ -875,7 +875,6 @@ pub fn is_outermost_builder_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool 
 }
 
 /// Collect resolved clap builder calls from the constructor outward.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -885,6 +884,7 @@ pub fn is_outermost_builder_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool 
 ///     let _ = clap_support::builder_calls(cx, expr, builder_type);
 /// };
 /// ```
+#[must_use]
 pub fn builder_calls<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
@@ -916,7 +916,6 @@ pub fn builder_calls<'tcx>(
 ///
 /// The path must resolve to a variant constructor whose enum is the named type in
 /// `clap_builder`, such as `ArgAction` or `ValueHint`.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -926,6 +925,7 @@ pub fn builder_calls<'tcx>(
 ///     let _ = clap_support::clap_enum_variant(cx, expr, enum_name);
 /// };
 /// ```
+#[must_use]
 pub fn clap_enum_variant(cx: &LateContext<'_>, expr: &Expr<'_>, enum_name: &str) -> Option<Symbol> {
     // Resolve the constructor, then its variant and enum definitions.
     let ExprKind::Path(ref path) = expr.kind else {
@@ -948,7 +948,6 @@ pub fn clap_enum_variant(cx: &LateContext<'_>, expr: &Expr<'_>, enum_name: &str)
 /// Returns `Some(false)` for the literal `None`, which resets the setting, and
 /// `Some(true)` for any value whose type is not `Option`. An `Option` value
 /// computed at runtime returns `None` because its effect is unknown.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -958,6 +957,7 @@ pub fn clap_enum_variant(cx: &LateContext<'_>, expr: &Expr<'_>, enum_name: &str)
 ///     let _ = clap_support::resettable_state(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn resettable_state(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<bool> {
     // Recognize the `None` constructor before looking at the argument type.
     if let ExprKind::Path(ref path) = expr.kind
@@ -996,7 +996,6 @@ fn final_resettable_state(
 ///
 /// Each name is checked by its final call, so `.long(None)` removes a name set
 /// earlier. A name passed as an `Option` computed at runtime does not count.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -1006,6 +1005,7 @@ fn final_resettable_state(
 ///     let _ = clap_support::has_option_name(cx, calls);
 /// };
 /// ```
+#[must_use]
 pub fn has_option_name(cx: &LateContext<'_>, calls: &[BuilderCall<'_>]) -> bool {
     ["long", "short"]
         .into_iter()
@@ -1013,7 +1013,6 @@ pub fn has_option_name(cx: &LateContext<'_>, calls: &[BuilderCall<'_>]) -> bool 
 }
 
 /// Return a literal boolean argument when the call has exactly one.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -1023,6 +1022,7 @@ pub fn has_option_name(cx: &LateContext<'_>, calls: &[BuilderCall<'_>]) -> bool 
 ///     let _ = clap_support::bool_argument(call);
 /// };
 /// ```
+#[must_use]
 pub const fn bool_argument(call: BuilderCall<'_>) -> Option<bool> {
     // Require one literal boolean and reject computed expressions.
     if let [argument] = call.args
@@ -1056,7 +1056,6 @@ pub struct BuilderRequirement {
 ///
 /// The final trigger call must be active, and neither the final requirement call
 /// nor the final `action` call may satisfy the requirement.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -1066,6 +1065,7 @@ pub struct BuilderRequirement {
 ///     let _ = clap_support::builder_call_without_requirement(cx, expr, requirement);
 /// };
 /// ```
+#[must_use]
 pub fn builder_call_without_requirement<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
@@ -1105,7 +1105,6 @@ pub fn builder_call_without_requirement<'tcx>(
 }
 
 /// Return an `index` span when a clap argument chain also configures an option name.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -1115,6 +1114,7 @@ pub fn builder_call_without_requirement<'tcx>(
 ///     let _ = clap_support::index_on_option(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn index_on_option<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Option<Span> {
     // Inspect each argument builder chain once from its outermost call.
     if !is_outermost_builder_call(cx, expr) {

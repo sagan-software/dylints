@@ -7,7 +7,7 @@
     unused_results
 )]
 
-use bevy_ecs::{schedule::ScheduleLabel, world::World};
+use bevy::ecs::{schedule::ScheduleLabel, world::World};
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 struct Gameplay;

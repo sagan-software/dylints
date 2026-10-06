@@ -10,7 +10,7 @@
     reason = "UI fixture intentionally contains standalone lint examples"
 )]
 
-use bevy_app::App;
+use bevy::app::App;
 
 fn helper() {
     App::new().run();
@@ -21,7 +21,7 @@ fn helper_with_closure() {
 }
 
 mod nested {
-    use bevy_app::App;
+    use bevy::app::App;
 
     pub fn main() {
         App::new().run();

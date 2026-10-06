@@ -37,6 +37,8 @@ the `Option` into a `Result`, and `?` returns the error, in one line.
 ## Example
 
 ```rust
+# enum Error { Missing }
+# fn find_user(_id: u64) -> Option<&'static str> { None }
 fn user_name(id: u64) -> Result<&'static str, Error> {
     let Some(user) = find_user(id) else {
         return Err(Error::Missing);
@@ -48,6 +50,8 @@ fn user_name(id: u64) -> Result<&'static str, Error> {
 ## Use instead
 
 ```rust
+# enum Error { Missing }
+# fn find_user(_id: u64) -> Option<&'static str> { None }
 fn user_name(id: u64) -> Result<&'static str, Error> {
     let user = find_user(id).ok_or(Error::Missing)?;
     Ok(user)

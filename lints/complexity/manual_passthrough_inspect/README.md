@@ -28,6 +28,7 @@ statements hide that the value passes through unchanged. `inspect` and
 ## Example
 
 ```rust
+# fn operation(ok: bool) -> Result<i32, String> { if ok { Ok(1) } else { Err("failed".to_owned()) } }
 fn load(ok: bool) -> Result<i32, String> {
     let result = operation(ok);
     if let Err(error) = &result {
@@ -40,6 +41,7 @@ fn load(ok: bool) -> Result<i32, String> {
 ## Use instead
 
 ```rust
+# fn operation(ok: bool) -> Result<i32, String> { if ok { Ok(1) } else { Err("failed".to_owned()) } }
 fn load(ok: bool) -> Result<i32, String> {
     operation(ok).inspect_err(|error| println!("{error}"))
 }

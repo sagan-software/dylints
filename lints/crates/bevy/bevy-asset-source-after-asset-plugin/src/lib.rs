@@ -26,9 +26,9 @@ use rustc_span::Span;
 use std::collections::{HashMap, HashSet};
 
 #[cfg(test)]
-use bevy_app::{App, TaskPoolPlugin};
+use bevy::app::{App, TaskPoolPlugin};
 #[cfg(test)]
-use bevy_asset::{
+use bevy::asset::{
     AssetApp, AssetPlugin, AssetServer,
     io::{AssetSourceBuilder, memory::MemoryAssetReader, web::WebAssetPlugin},
 };

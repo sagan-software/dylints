@@ -23,7 +23,7 @@ use rustc_span::Span;
 use rustc_span::def_id::LocalDefId;
 
 #[cfg(test)]
-use {bevy_app as _, bevy_ecs as _};
+use bevy as _;
 
 dylint_support::documented_late_lint_with_pass! {
     #[doc = include_str!("../README.md")]
@@ -307,11 +307,11 @@ fn check_resource_conflicts(
 #[cfg(test)]
 /// Runtime checks for Bevy's resource access initialization contract.
 mod tests {
-    use bevy_ecs::{
+    use bevy::ecs::{
         prelude::*,
         system::{SystemParam, SystemState},
     };
-    use bevy_reflect::Reflect;
+    use bevy::reflect::Reflect;
 
     /// A send resource used by access tests.
     #[derive(Resource, Clone, Copy, Debug, Default, Reflect)]

@@ -84,7 +84,7 @@ pub(crate) fn report(index: &Path, lints: &[Lint]) -> (String, Option<String>) {
     // Warn only when at least one lint is unregistered.
     let warning = (!unregistered.is_empty()).then(|| {
         let names = unregistered.join(", ");
-        format!("warning: documented lints are not registered by the runner: {names}\n")
+        format!("warning: documented lints are not registered by Dylint: {names}\n")
     });
 
     // The summary names the page and the number of documented lints.
@@ -150,9 +150,7 @@ mod tests {
         );
         assert_eq!(
             warning.as_deref(),
-            Some(
-                "warning: documented lints are not registered by the runner: serde_unregistered\n"
-            )
+            Some("warning: documented lints are not registered by Dylint: serde_unregistered\n")
         );
     }
 

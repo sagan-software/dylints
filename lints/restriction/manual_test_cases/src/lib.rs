@@ -17,6 +17,9 @@ extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_span;
 
+#[cfg(test)]
+use ::test_case as _;
+
 use rustc_errors::DiagDecorator;
 use rustc_hir::{
     Attribute, Body, Expr, ExprKind, HirId, ItemKind, LangItem, LetStmt, MatchSource, Pat, PatKind,

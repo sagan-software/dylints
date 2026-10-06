@@ -19,9 +19,9 @@ Held-state reads such as `pressed` are not frame edges and do not trigger it. Cu
 ## Example
 
 ```rust
-# use bevy_app::{App, FixedUpdate};
-# use bevy_ecs::system::Res;
-# use bevy_input::{ButtonInput, keyboard::KeyCode};
+# use bevy::app::{App, FixedUpdate};
+# use bevy::ecs::system::Res;
+# use bevy::input::{ButtonInput, keyboard::KeyCode};
 # let mut app = App::new();
 
 fn jump(keys: Res<ButtonInput<KeyCode>>) {
@@ -36,15 +36,15 @@ app.add_systems(FixedUpdate, jump);
 ## Use instead
 
 ```rust
-# use bevy_app::{
+# use bevy::app::{
 #     App, FixedUpdate, RunFixedMainLoop, RunFixedMainLoopSystems,
 # };
-# use bevy_ecs::{
+# use bevy::ecs::{
 #     prelude::IntoScheduleConfigs,
 #     resource::Resource,
 #     system::{Res, ResMut},
 # };
-# use bevy_input::{ButtonInput, keyboard::KeyCode};
+# use bevy::input::{ButtonInput, keyboard::KeyCode};
 # let mut app = App::new();
 
 #[derive(Resource, Default)]
@@ -69,4 +69,4 @@ app.add_systems(
 app.add_systems(FixedUpdate, apply_jump);
 ```
 
-Register the capture system in `RunFixedMainLoopSystems::BeforeFixedMainLoop`, which runs after `PreUpdate`. If capture runs in `PreUpdate` instead, order it after `bevy_input::InputSystems`. The boolean buffer preserves one pending jump across zero-tick frames and consumes it once, but it coalesces multiple presses while one jump is pending.
+Register the capture system in `RunFixedMainLoopSystems::BeforeFixedMainLoop`, which runs after `PreUpdate`. If capture runs in `PreUpdate` instead, order it after `bevy::input::InputSystems`. The boolean buffer preserves one pending jump across zero-tick frames and consumes it once, but it coalesces multiple presses while one jump is pending.

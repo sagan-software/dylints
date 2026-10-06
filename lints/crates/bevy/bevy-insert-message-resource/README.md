@@ -16,6 +16,8 @@ The lint does not check `World::insert_resource`, `World::init_resource`, or `Co
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Message)] struct Ping;
 fn build(app: &mut App) {
     app.init_resource::<Messages<Ping>>();
 }
@@ -24,6 +26,8 @@ fn build(app: &mut App) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Message)] struct Ping;
 fn build(app: &mut App) {
     app.add_message::<Ping>();
 }

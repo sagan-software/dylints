@@ -22,6 +22,8 @@ label parameter.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# fn animate() {}
 fn build(app: &mut App) {
     app.add_systems(FixedUpdate, animate);
 }
@@ -30,6 +32,8 @@ fn build(app: &mut App) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# fn animate() {}
 fn build(app: &mut App) {
     app.add_systems(Update, animate);
 }

@@ -18,7 +18,9 @@ optionally borrowed. It misses a collection that is empty only at runtime.
 
 ## Example
 
-```rust
+The snippets use SQLx's PostgreSQL API. UI tests use a local SQLx fixture that omits this API.
+
+```rust,ignore
 fn find_pairs(query: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>) {
     query.push("SELECT * FROM pairs WHERE (a, b) IN ");
     query.push_tuples([] as [(i32, i32); 0], |mut tuple, (a, b)| {
@@ -31,7 +33,7 @@ fn find_pairs(query: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>) {
 
 Handle the empty case before building the query:
 
-```rust
+```rust,ignore
 fn find_pairs(query: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>, pairs: Vec<(i32, i32)>) {
     if pairs.is_empty() {
         return;

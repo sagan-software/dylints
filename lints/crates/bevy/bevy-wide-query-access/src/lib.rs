@@ -16,7 +16,7 @@ extern crate rustc_span;
 use dylint_linting as _;
 
 #[cfg(test)]
-use bevy_ecs as _;
+use bevy as _;
 
 bevy_support::declare_function_parameter_type_lint! {
     BEVY_WIDE_QUERY_ACCESS,

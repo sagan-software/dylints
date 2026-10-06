@@ -31,7 +31,9 @@ a plain `mod tests;`, also count as non-test.
 
 ## Example
 
-```rust
+The abbreviated snippets require their separate module files and omitted implementation.
+
+```rust,ignore
 // src/main.rs, 1,800 lines long
 fn main() {
     let config = load_config();
@@ -49,7 +51,7 @@ fn run_commands(config: &Config) {
 
 ## Use instead
 
-```rust
+```rust,ignore
 // src/main.rs
 mod commands;
 mod config;

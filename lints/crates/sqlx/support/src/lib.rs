@@ -1,7 +1,7 @@
 #![feature(rustc_private)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for `SQLx`-specific private lints.
+//! Shared semantic helpers for `SQLx`-specific lints.
 //!
 //! These helpers resolve `SQLx` methods, constructors, and macro expansions with
 //! rustc metadata. They preserve source spans and reject local lookalikes so
@@ -59,7 +59,6 @@ pub struct SqlxMacroCall {
 ///
 /// Type-dependent resolution and owner matching exclude extension traits, local
 /// methods, and unrelated APIs that happen to share the same source spelling.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -69,6 +68,7 @@ pub struct SqlxMacroCall {
 ///     let _ = sqlx_support::sqlx_method_call(cx, expr, &["Row"], &["get"]);
 /// };
 /// ```
+#[must_use]
 pub fn sqlx_method_call<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -112,7 +112,6 @@ pub enum MethodArgumentViolation {
 ///
 /// The returned call is available only when the owner, method name, and selected
 /// argument pattern all match the resolved `SQLx` API contract.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -122,6 +121,7 @@ pub enum MethodArgumentViolation {
 ///     let _ = sqlx_support::sqlx_method_argument_violation(cx, expr, owner, expected_method, violation);
 /// };
 /// ```
+#[must_use]
 pub fn sqlx_method_argument_violation<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -366,7 +366,6 @@ macro_rules! declare_method_argument_lint {
 ///
 /// The constructor is resolved semantically, allowing aliases while excluding
 /// local tuple constructors that merely reuse the same type name.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -376,6 +375,7 @@ macro_rules! declare_method_argument_lint {
 ///     let _ = sqlx_support::assert_sql_safe_argument(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn assert_sql_safe_argument<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -402,7 +402,6 @@ pub fn assert_sql_safe_argument<'hir>(
 ///
 /// Expansion traversal follows `SQLx`'s public macro into its implementation until
 /// it finds the unchecked definition, preserving the public call-site span.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -412,6 +411,7 @@ pub fn assert_sql_safe_argument<'hir>(
 ///     let _ = sqlx_support::unchecked_query_macro(cx, span);
 /// };
 /// ```
+#[must_use]
 pub fn unchecked_query_macro(cx: &LateContext<'_>, span: Span) -> Option<SqlxMacroCall> {
     let mut expansion = span.ctxt().outer_expn_data();
 
@@ -440,7 +440,6 @@ pub fn unchecked_query_macro(cx: &LateContext<'_>, span: Span) -> Option<SqlxMac
 ///
 /// The conversion removes only `SQLx`'s `_unchecked` suffix and returns `None` for
 /// names that do not use that exact macro naming convention.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -450,6 +449,7 @@ pub fn unchecked_query_macro(cx: &LateContext<'_>, span: Span) -> Option<SqlxMac
 ///     let _ = sqlx_support::checked_query_macro_name(name);
 /// };
 /// ```
+#[must_use]
 pub fn checked_query_macro_name(name: &str) -> Option<&str> {
     name.strip_suffix("_unchecked")
 }

@@ -13,16 +13,16 @@
 #![deny(unfulfilled_lint_expectations)]
 #![warn(bevy_frame_button_edge_in_fixed_update)]
 
-use bevy_app::{App, FixedUpdate, Update};
-use bevy_ecs::{
+use bevy::app::{App, FixedUpdate, Update};
+use bevy::ecs::{
     resource::Resource,
     schedule::{IntoScheduleConfigs, common_conditions::run_once},
     system::{Res, ResMut},
 };
-use bevy_input::{ButtonInput, keyboard::KeyCode};
+use bevy::input::{ButtonInput, keyboard::KeyCode};
 
 mod custom_schedule {
-    use bevy_ecs::schedule::ScheduleLabel;
+    use bevy::ecs::schedule::ScheduleLabel;
 
     #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
     pub(crate) struct FixedUpdate;

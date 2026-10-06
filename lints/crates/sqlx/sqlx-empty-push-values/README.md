@@ -18,7 +18,9 @@ optionally borrowed. It misses a collection that is empty only at runtime.
 
 ## Example
 
-```rust
+The snippets use SQLx's PostgreSQL API. UI tests use a local SQLx fixture that omits this API.
+
+```rust,ignore
 fn insert_users(query: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>) {
     query.push("INSERT INTO users (id) ");
     query.push_values([] as [i32; 0], |mut row, id| {
@@ -31,7 +33,7 @@ fn insert_users(query: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>) {
 
 Handle the empty case before building the query:
 
-```rust
+```rust,ignore
 fn insert_users(query: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>, ids: Vec<i32>) {
     if ids.is_empty() {
         return;

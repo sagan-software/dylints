@@ -9,22 +9,21 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-tracing_async_block_in_sync_scope = { package = "tracing-async-block-in-sync-scope", path = "tracing-async-block-in-sync-scope", features = ["rlib"] }
-tracing_await_holding_span_guard = { package = "tracing-await-holding-span-guard", path = "tracing-await-holding-span-guard", features = ["rlib"] }
-tracing_current_span_enter = { package = "tracing-current-span-enter", path = "tracing-current-span-enter", features = ["rlib"] }
-tracing_current_span_or_current = { package = "tracing-current-span-or-current", path = "tracing-current-span-or-current", features = ["rlib"] }
-tracing_direct_record_all = { package = "tracing-direct-record-all", path = "tracing-direct-record-all", features = ["rlib"] }
-tracing_format_field = { package = "tracing-format-field", path = "tracing-format-field", features = ["rlib"] }
-tracing_instrument_current_span = { package = "tracing-instrument-current-span", path = "tracing-instrument-current-span", features = ["rlib"] }
-tracing_message_interpolation = { package = "tracing-message-interpolation", path = "tracing-message-interpolation", features = ["rlib"] }
-tracing_none_enter = { package = "tracing-none-enter", path = "tracing-none-enter", features = ["rlib"] }
-tracing_none_or_current = { package = "tracing-none-or-current", path = "tracing-none-or-current", features = ["rlib"] }
-tracing_none_record = { package = "tracing-none-record", path = "tracing-none-record", features = ["rlib"] }
-tracing_redundant_field_assignment = { package = "tracing-redundant-field-assignment", path = "tracing-redundant-field-assignment", features = ["rlib"] }
-tracing_redundant_in_current_span = { package = "tracing-redundant-in-current-span", path = "tracing-redundant-in-current-span", features = ["rlib"] }
-tracing_to_string_field = { package = "tracing-to-string-field", path = "tracing-to-string-field", features = ["rlib"] }
-
 dylint_linting.workspace = true
+tracing_async_block_in_sync_scope = { workspace = true, features = ["rlib"] }
+tracing_await_holding_span_guard = { workspace = true, features = ["rlib"] }
+tracing_current_span_enter = { workspace = true, features = ["rlib"] }
+tracing_current_span_or_current = { workspace = true, features = ["rlib"] }
+tracing_direct_record_all = { workspace = true, features = ["rlib"] }
+tracing_format_field = { workspace = true, features = ["rlib"] }
+tracing_instrument_current_span = { workspace = true, features = ["rlib"] }
+tracing_message_interpolation = { workspace = true, features = ["rlib"] }
+tracing_none_enter = { workspace = true, features = ["rlib"] }
+tracing_none_or_current = { workspace = true, features = ["rlib"] }
+tracing_none_record = { workspace = true, features = ["rlib"] }
+tracing_redundant_field_assignment = { workspace = true, features = ["rlib"] }
+tracing_redundant_in_current_span = { workspace = true, features = ["rlib"] }
+tracing_to_string_field = { workspace = true, features = ["rlib"] }
 
 [features]
 rlib = ["dylint_linting/constituent"]

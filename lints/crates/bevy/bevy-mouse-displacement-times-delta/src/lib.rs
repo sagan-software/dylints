@@ -19,7 +19,7 @@ use rustc_hir::intravisit::Visitor;
 use rustc_lint::LintContext as _;
 
 #[cfg(test)]
-use {bevy_ecs as _, bevy_input as _, bevy_time as _};
+use bevy as _;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]

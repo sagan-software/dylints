@@ -17,6 +17,9 @@ exists.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# use bevy::ecs::error::BevyError;
+# #[derive(Component)] struct Marker;
 fn mark_all(world: &mut World, ids: Vec<Entity>) {
     world.insert_batch_if_new(ids.into_iter().map(|id| (id, Marker)));
 }
@@ -25,6 +28,9 @@ fn mark_all(world: &mut World, ids: Vec<Entity>) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# use bevy::ecs::error::BevyError;
+# #[derive(Component)] struct Marker;
 fn mark_all(world: &mut World, ids: Vec<Entity>) -> Result<(), BevyError> {
     world.try_insert_batch_if_new(ids.into_iter().map(|id| (id, Marker)))?;
     Ok(())

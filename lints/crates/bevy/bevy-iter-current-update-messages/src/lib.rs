@@ -15,7 +15,7 @@ extern crate rustc_hir;
 use dylint_linting as _;
 
 #[cfg(test)]
-use bevy_ecs as _;
+use bevy as _;
 
 bevy_support::declare_expression_span_lint! {
     BEVY_ITER_CURRENT_UPDATE_MESSAGES,

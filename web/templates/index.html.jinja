@@ -48,6 +48,12 @@ MIT OR Apache-2.0; see LICENSE-CLIPPY-MIT.
     <div class="container"> {# #}
         <h1 class="page-header">Sagan Lints <span class="badge">Total number: {{+ lints.len() }}</span></h1> {# #}
 
+        <nav class="report-links" aria-label="Documentation and reports"> {# #}
+            <a href="book/">Guide</a> {# #}
+            <a href="coverage/">Coverage</a> {# #}
+            <a href="benches/report/">Benchmarks</a> {# #}
+        </nav> {# #}
+
         <noscript> {# #}
             <div class="alert alert-danger" role="alert"> {# #}
                 Lints search and filtering only works with JS enabled. :( {# #}

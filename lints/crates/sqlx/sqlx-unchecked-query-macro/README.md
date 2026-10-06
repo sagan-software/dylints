@@ -22,7 +22,9 @@ The checked macro can reject a query that the unchecked macro accepts, so
 
 ## Example
 
-```rust
+The snippets use SQLx's PostgreSQL API. UI tests use a local SQLx fixture that omits this API.
+
+```rust,ignore
 async fn user_exists(pool: &sqlx::PgPool, id: i64) -> Result<bool, sqlx::Error> {
     let row = sqlx::query_unchecked!("SELECT id FROM users WHERE id = $1", id)
         .fetch_optional(pool)
@@ -33,7 +35,7 @@ async fn user_exists(pool: &sqlx::PgPool, id: i64) -> Result<bool, sqlx::Error> 
 
 ## Use instead
 
-```rust
+```rust,ignore
 async fn user_exists(pool: &sqlx::PgPool, id: i64) -> Result<bool, sqlx::Error> {
     let row = sqlx::query!("SELECT id FROM users WHERE id = $1", id)
         .fetch_optional(pool)

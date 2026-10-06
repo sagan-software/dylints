@@ -18,7 +18,7 @@ use rustc_lint::LintContext as _;
 use rustc_span::def_id::LocalDefId;
 
 #[cfg(test)]
-use {bevy_app as _, bevy_ecs as _};
+use bevy as _;
 
 dylint_support::documented_late_lint_with_pass! {
     #[doc = include_str!("../README.md")]

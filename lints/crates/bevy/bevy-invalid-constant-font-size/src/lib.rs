@@ -22,7 +22,7 @@ use rustc_lint::{LateContext, LateLintPass, LintContext as _};
 use rustc_middle::ty;
 
 #[cfg(test)]
-use bevy_text as _;
+use bevy as _;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]

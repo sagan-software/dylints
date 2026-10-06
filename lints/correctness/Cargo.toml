@@ -9,10 +9,9 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-logged_error_continue = { path = "logged_error_continue", features = ["rlib"] }
-panic_in_main = { path = "panic_in_main", features = ["rlib"] }
-
 dylint_linting.workspace = true
+logged_error_continue = { workspace = true, features = ["rlib"] }
+panic_in_main = { workspace = true, features = ["rlib"] }
 
 [features]
 rlib = ["dylint_linting/constituent"]

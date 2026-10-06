@@ -25,6 +25,7 @@ not trigger the lint either.
 ## Example
 
 ```rust
+# async fn work() {}
 async fn start() -> std::io::Result<()> {
     let runtime = tokio::runtime::Runtime::new()?;
     runtime.spawn(work());
@@ -35,6 +36,7 @@ async fn start() -> std::io::Result<()> {
 ## Use instead
 
 ```rust
+# async fn work() {}
 async fn start() -> std::io::Result<()> {
     tokio::spawn(work());
     Ok(())

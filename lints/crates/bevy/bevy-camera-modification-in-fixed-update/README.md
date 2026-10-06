@@ -19,10 +19,10 @@ not report queries filtered on `Camera2d` or `Camera3d`.
 ## Example
 
 ```rust
-# use bevy_app::{App, FixedUpdate};
-# use bevy_camera::Camera;
-# use bevy_ecs::{query::With, system::Query};
-# use bevy_transform::components::Transform;
+# use bevy::app::{App, FixedUpdate};
+# use bevy::camera::Camera;
+# use bevy::ecs::{query::With, system::Query};
+# use bevy::transform::components::Transform;
 fn move_camera(mut cameras: Query<&mut Transform, With<Camera>>) {
     for mut transform in &mut cameras {
         transform.translation.x += 1.0;
@@ -37,7 +37,7 @@ fn build(app: &mut App) {
 ## Use instead
 
 ```rust
-# use bevy_app::{App, Update};
+# use bevy::app::{App, Update};
 # fn move_camera() {}
 fn build(app: &mut App) {
     app.add_systems(Update, move_camera);

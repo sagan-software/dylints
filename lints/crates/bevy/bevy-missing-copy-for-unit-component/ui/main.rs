@@ -10,7 +10,7 @@
 )]
 #![warn(bevy_missing_copy_for_unit_component)]
 
-use bevy_ecs::component::Component;
+use bevy::ecs::component::Component;
 
 macro_rules! marker {
     ($name:ident) => {

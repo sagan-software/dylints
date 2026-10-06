@@ -19,6 +19,7 @@ The lint skips resources, tuple structs, enums, and generic components.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
 #[derive(Component)]
 struct Agent {
     position: Vec3,
@@ -36,6 +37,7 @@ struct Agent {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
 #[derive(Component)]
 struct Kinematics {
     position: Vec3,

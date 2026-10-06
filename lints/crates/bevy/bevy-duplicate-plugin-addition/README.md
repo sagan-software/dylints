@@ -29,7 +29,7 @@ outside macro expansions.
 ## Example
 
 ```rust
-use bevy_app::{App, Plugin};
+use bevy::app::{App, Plugin};
 
 struct GamePlugin;
 
@@ -52,7 +52,7 @@ fn build(app: &mut App) {
 ## Use instead
 
 ```rust
-use bevy_app::{App, Plugin};
+use bevy::app::{App, Plugin};
 
 struct GamePlugin;
 

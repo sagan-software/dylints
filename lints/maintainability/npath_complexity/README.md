@@ -63,3 +63,7 @@ fn count_enabled(flags: [bool; 9]) -> usize {
     flags.into_iter().filter(|&flag| flag).count()
 }
 ```
+
+## Interpretation and sources
+
+NPath estimates acyclic execution paths. Sequential independent decisions multiply their path counts, so five independent two-way decisions can produce 32 paths despite a cyclomatic complexity of six. This estimates combinations to examine, not defect probability. The local Rust profile and fixtures control counting for `match`, guards, `?`, short-circuit operators, loops, closures and macros. Compare only values from that profile. [Nejmeh's original paper](https://doi.org/10.1145/42372.42379) and [ACPATH's analysis of limitations](https://arxiv.org/abs/1610.07914).

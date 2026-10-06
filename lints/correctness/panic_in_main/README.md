@@ -28,7 +28,7 @@ The lint does not look inside closures, `async` blocks, or functions that
 
 ## Example
 
-```rust
+```rust,no_run
 fn main() {
     let config = std::fs::read_to_string("config.toml").expect("config exists");
     println!("{config}");
@@ -37,7 +37,7 @@ fn main() {
 
 ## Use instead
 
-```rust
+```rust,no_run
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = std::fs::read_to_string("config.toml")?;
     println!("{config}");

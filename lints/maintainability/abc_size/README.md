@@ -54,3 +54,7 @@ fn run_pipeline() {
     }
 }
 ```
+
+## Interpretation and sources
+
+ABC counts assignments, branches as calls, and conditions. Its magnitude combines three dimensionless counts as `sqrt(A² + B² + C²)`. Inspect the components to distinguish mechanical work from branching. Compare values within the same analyzer profile. The Maintainability Index combines correlated size and complexity measurements; it is a separate report rather than this lint's score. [Metric definitions](https://dekobon.github.io/big-code-analysis/metrics.html).

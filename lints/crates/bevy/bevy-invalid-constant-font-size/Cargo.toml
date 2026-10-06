@@ -9,13 +9,13 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dylint-support = { path = "../../../../support/dylint" }
+dylint-support.workspace = true
 dylint_linting.workspace = true
 
 [dev-dependencies]
-bevy_text.workspace = true
 dylint_testing.workspace = true
 
+bevy = { workspace = true, features = ["bevy_text", "std"] }
 [[example]]
 name = "main"
 path = "ui/main.rs"

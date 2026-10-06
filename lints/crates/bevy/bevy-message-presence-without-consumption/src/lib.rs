@@ -23,7 +23,7 @@ use rustc_lint::LintContext as _;
 use rustc_span::Span;
 
 #[cfg(test)]
-use bevy_ecs as _;
+use bevy as _;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -89,12 +89,12 @@ fn ui() {
 
 #[cfg(test)]
 mod tests {
-    use bevy_ecs::{
+    use bevy::ecs::{
         message::{Message, MessageReader, Messages},
         system::SystemState,
         world::World,
     };
-    use bevy_reflect::Reflect;
+    use bevy::reflect::Reflect;
 
     #[derive(Message, Reflect)]
     struct Ping;

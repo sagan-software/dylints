@@ -7,6 +7,14 @@ LL | dotted_dep.version = "0.1.0"
    = help: move the version for `dotted_dep` into `[workspace.dependencies]` and use `dotted_dep.workspace = true` here
    = note: `#[warn(workspace_dependency_versions)]` on by default
 
+warning: dependency `path_only_dep` specifies an explicit path instead of inheriting from `[workspace.dependencies]`
+  --> $DIR/Cargo.toml:10:26
+   |
+LL | path_only_dep = { path = "../path_only_dep" }
+   |                          ^^^^^^^^^^^^^^^^^^
+   |
+   = help: move the path for `path_only_dep` into `[workspace.dependencies]` and use `path_only_dep.workspace = true` here
+
 warning: dependency `quoted-dep` specifies an explicit version instead of inheriting from `[workspace.dependencies]`
   --> $DIR/Cargo.toml:11:70
    |
@@ -39,5 +47,5 @@ LL | target_bad = { package = "bad_dep", path = "../bad_dep", version = "0.1.0" 
    |
    = help: move the version for `target_bad` into `[workspace.dependencies]` and use `target_bad.workspace = true` here
 
-warning: 5 warnings emitted
+warning: 6 warnings emitted
 

@@ -27,6 +27,9 @@ use rustc_lint::{LateContext, LateLintPass, LintContext};
 use rustc_middle::ty;
 use rustc_span::{Span, Symbol, def_id::DefId, sym};
 
+#[cfg(test)]
+use thiserror as _;
+
 dylint_support::documented_late_lint_with_pass! {
     #[doc = include_str!("../README.md")]
     pub MANUAL_ERROR_IMPL,

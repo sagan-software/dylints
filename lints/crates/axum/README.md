@@ -1,6 +1,6 @@
 # axum
 
-Axum-specific private lints backed by the Axum 0.8.9 rustdocs and official
+Axum-specific lints backed by the Axum 0.8.9 rustdocs and official
 README.
 
 ## Lints

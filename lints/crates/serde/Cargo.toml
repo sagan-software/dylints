@@ -9,21 +9,20 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-serde_all_fields_default = { package = "serde-all-fields-default", path = "serde-all-fields-default", features = ["rlib"] }
-serde_borrow_redundant_str_bytes = { package = "serde-borrow-redundant-str-bytes", path = "serde-borrow-redundant-str-bytes", features = ["rlib"] }
-serde_cow_missing_borrow = { package = "serde-cow-missing-borrow", path = "serde-cow-missing-borrow", features = ["rlib"] }
-serde_deserialize_any_portability = { package = "serde-deserialize-any-portability", path = "serde-deserialize-any-portability", features = ["rlib"] }
-serde_expecting_style = { package = "serde-expecting-style", path = "serde-expecting-style", features = ["rlib"] }
-serde_fallback_missing_other = { package = "serde-fallback-missing-other", path = "serde-fallback-missing-other", features = ["rlib"] }
-serde_flatten_deny_unknown_fields = { package = "serde-flatten-deny-unknown-fields", path = "serde-flatten-deny-unknown-fields", features = ["rlib"] }
-serde_inert_directional_attr = { package = "serde-inert-directional-attr", path = "serde-inert-directional-attr", features = ["rlib"] }
-serde_manual_rename_all = { package = "serde-manual-rename-all", path = "serde-manual-rename-all", features = ["rlib"] }
-serde_serialize_str_to_string = { package = "serde-serialize-str-to-string", path = "serde-serialize-str-to-string", features = ["rlib"] }
-serde_skip_serializing_roundtrip = { package = "serde-skip-serializing-roundtrip", path = "serde-skip-serializing-roundtrip", features = ["rlib"] }
-serde_skip_serializing_variant_error = { package = "serde-skip-serializing-variant-error", path = "serde-skip-serializing-variant-error", features = ["rlib"] }
-serde_untagged_missing_expecting = { package = "serde-untagged-missing-expecting", path = "serde-untagged-missing-expecting", features = ["rlib"] }
-
 dylint_linting.workspace = true
+serde_all_fields_default = { workspace = true, features = ["rlib"] }
+serde_borrow_redundant_str_bytes = { workspace = true, features = ["rlib"] }
+serde_cow_missing_borrow = { workspace = true, features = ["rlib"] }
+serde_deserialize_any_portability = { workspace = true, features = ["rlib"] }
+serde_expecting_style = { workspace = true, features = ["rlib"] }
+serde_fallback_missing_other = { workspace = true, features = ["rlib"] }
+serde_flatten_deny_unknown_fields = { workspace = true, features = ["rlib"] }
+serde_inert_directional_attr = { workspace = true, features = ["rlib"] }
+serde_manual_rename_all = { workspace = true, features = ["rlib"] }
+serde_serialize_str_to_string = { workspace = true, features = ["rlib"] }
+serde_skip_serializing_roundtrip = { workspace = true, features = ["rlib"] }
+serde_skip_serializing_variant_error = { workspace = true, features = ["rlib"] }
+serde_untagged_missing_expecting = { workspace = true, features = ["rlib"] }
 
 [features]
 rlib = ["dylint_linting/constituent"]

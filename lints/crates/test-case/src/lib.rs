@@ -20,7 +20,6 @@ extern crate rustc_session;
 ///
 /// Dylint calls this function once per compilation. It forwards the compiler
 /// session and lint store to every constituent test-case registration function.
-#[cfg_attr(not(feature = "rlib"), unsafe(no_mangle))]
 ///
 /// # Examples
 ///
@@ -30,6 +29,7 @@ extern crate rustc_session;
 ///     let _ = test_case::register_lints(sess, lint_store);
 /// };
 /// ```
+#[cfg_attr(not(feature = "rlib"), unsafe(no_mangle))]
 pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint::LintStore) {
     // Each constituent crate owns one test-case-specific rule; this crate only groups them.
     test_case_async_without_test_harness::register_lints(sess, lint_store);

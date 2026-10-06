@@ -18,6 +18,7 @@ report `let _ = app.run();`.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
 fn main() {
     App::new().run();
 }
@@ -26,6 +27,7 @@ fn main() {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
 fn main() -> AppExit {
     App::new().run()
 }

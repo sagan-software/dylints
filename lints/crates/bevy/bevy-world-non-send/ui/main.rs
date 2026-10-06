@@ -7,7 +7,7 @@
     unused_results
 )]
 
-use bevy_ecs::world::World;
+use bevy::ecs::world::World;
 
 struct LocalState;
 

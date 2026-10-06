@@ -8,7 +8,7 @@
 )]
 #![warn(bevy_disallow_update_schedule)]
 
-use bevy_app::{App, FixedUpdate, Update};
+use bevy::app::{App, FixedUpdate, Update};
 
 fn tick() {}
 

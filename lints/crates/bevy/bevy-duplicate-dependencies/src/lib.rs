@@ -16,7 +16,7 @@ use dylint_linting as _;
 use rustc_lint::LintContext as _;
 
 #[cfg(test)]
-use {bevy_018 as _, bevy_019 as _};
+use {bevy as _, bevy_018 as _};
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]

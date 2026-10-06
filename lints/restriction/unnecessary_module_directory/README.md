@@ -25,7 +25,9 @@ modules instead of moving it.
 
 ## Example
 
-```rust
+The abbreviated snippets require their separate module files and omitted implementation.
+
+```rust,ignore
 // src/lib.rs
 mod worker;
 
@@ -37,7 +39,7 @@ pub fn run() {}
 
 Move the module to a file named after it and remove the directory:
 
-```rust
+```rust,ignore
 // src/lib.rs
 mod worker;
 

@@ -3,8 +3,8 @@
 #![feature(rustc_private)]
 //! Checks casts from Bevy elapsed seconds against the lint.
 
+use bevy::time::{Real, Time};
 use bevy_support as _;
-use bevy_time::{Real, Time};
 use bevy_time_elapsed_secs_cast_f64 as _;
 use dylint_linting as _;
 use dylint_support as _;

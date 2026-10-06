@@ -17,6 +17,8 @@ exists.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# type WindowRegistry = std::collections::BTreeMap<usize, std::rc::Rc<()>>;
 fn clear_windows(world: &mut World) {
     world.non_send_mut::<WindowRegistry>().clear();
 }
@@ -25,6 +27,8 @@ fn clear_windows(world: &mut World) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# type WindowRegistry = std::collections::BTreeMap<usize, std::rc::Rc<()>>;
 fn clear_windows(world: &mut World) {
     if let Some(mut registry) = world.get_non_send_mut::<WindowRegistry>() {
         registry.clear();

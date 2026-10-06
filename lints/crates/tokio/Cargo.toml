@@ -9,18 +9,17 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-tokio_blocking_call_in_async = { package = "tokio-blocking-call-in-async", path = "tokio-blocking-call-in-async", features = ["rlib"] }
-tokio_handle_block_on_in_async = { package = "tokio-handle-block-on-in-async", path = "tokio-handle-block-on-in-async", features = ["rlib"] }
-tokio_runtime_block_on_in_async = { package = "tokio-runtime-block-on-in-async", path = "tokio-runtime-block-on-in-async", features = ["rlib"] }
-tokio_runtime_new_in_async = { package = "tokio-runtime-new-in-async", path = "tokio-runtime-new-in-async", features = ["rlib"] }
-tokio_sleep_in_loop = { package = "tokio-sleep-in-loop", path = "tokio-sleep-in-loop", features = ["rlib"] }
-tokio_spawn_blocking_async_closure = { package = "tokio-spawn-blocking-async-closure", path = "tokio-spawn-blocking-async-closure", features = ["rlib"] }
-tokio_unbounded_channel = { package = "tokio-unbounded-channel", path = "tokio-unbounded-channel", features = ["rlib"] }
-tokio_zero_capacity_channel = { package = "tokio-zero-capacity-channel", path = "tokio-zero-capacity-channel", features = ["rlib"] }
-tokio_zero_duration_interval = { package = "tokio-zero-duration-interval", path = "tokio-zero-duration-interval", features = ["rlib"] }
-tokio_zero_runtime_thread_count = { package = "tokio-zero-runtime-thread-count", path = "tokio-zero-runtime-thread-count", features = ["rlib"] }
-
 dylint_linting.workspace = true
+tokio_blocking_call_in_async = { workspace = true, features = ["rlib"] }
+tokio_handle_block_on_in_async = { workspace = true, features = ["rlib"] }
+tokio_runtime_block_on_in_async = { workspace = true, features = ["rlib"] }
+tokio_runtime_new_in_async = { workspace = true, features = ["rlib"] }
+tokio_sleep_in_loop = { workspace = true, features = ["rlib"] }
+tokio_spawn_blocking_async_closure = { workspace = true, features = ["rlib"] }
+tokio_unbounded_channel = { workspace = true, features = ["rlib"] }
+tokio_zero_capacity_channel = { workspace = true, features = ["rlib"] }
+tokio_zero_duration_interval = { workspace = true, features = ["rlib"] }
+tokio_zero_runtime_thread_count = { workspace = true, features = ["rlib"] }
 
 [features]
 rlib = ["dylint_linting/constituent"]

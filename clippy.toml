@@ -2,7 +2,7 @@
 # See: https://doc.rust-lang.org/clippy/lint_configuration.html
 
 # Effective Rust version for the pinned nightly in rust-toolchain.toml
-msrv = "1.98.0"
+msrv = "1.99.0"
 
 # Allow dbg! macros in test code for debugging
 allow-dbg-in-tests = true
@@ -23,7 +23,7 @@ allow-indexing-slicing-in-tests = true
 # Cognitive complexity threshold - stricter than Clippy's default
 cognitive-complexity-threshold = 15
 
-# Keep the repository's canonical Clippy gate aligned with the private strict profile.
+# Bound ordinary functions in this workspace.
 too-many-lines-threshold = 50
 
 # Too many arguments threshold
@@ -43,24 +43,7 @@ array-size-threshold = 32768
 
 # Doc valid identifiers - technical terms that don't need backticks
 # Using ".." extends the default list rather than replacing it
-doc-valid-idents = [
-  "acrab",
-  "Acrab",
-  "LanceDB",
-  "LanceStore",
-  "MCP",
-  "MCPs",
-  "RAG",
-  "AST",
-  "ONNX",
-  "fastembed",
-  "RagIndex",
-  "TreeSitter",
-  "protoc",
-  "protobuf",
-  "rustdoc",
-  "..",
-]
+doc-valid-idents = ["AST", "rustdoc", ".."]
 
 # Avoid breaking exported API - this is a library, be conservative
 avoid-breaking-exported-api = true

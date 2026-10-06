@@ -1,6 +1,6 @@
 # insta
 
-Insta-specific private lints backed by the Insta 1.48.0 rustdocs, official
+Insta-specific lints backed by the Insta 1.48.0 rustdocs, official
 guide, README, and release notes.
 
 ## Lints

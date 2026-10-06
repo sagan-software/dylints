@@ -1,0 +1,27 @@
+warning: non-documentation attribute interrupts a documentation block
+  --> $DIR/main.rs:3:1
+   |
+LL | #[must_use]
+   | ^^^^^^^^^^^
+   |
+   = note: `#[warn(interleaved_doc_attributes)]` on by default
+help: keep the documentation block contiguous
+   |
+LL + /// The caller retains ownership.
+LL + #[must_use]
+   |
+
+warning: non-documentation attribute interrupts a documentation block
+  --> $DIR/main.rs:23:1
+   |
+LL | #[inline]
+   | ^^^^^^^^^
+   |
+help: keep the documentation block contiguous
+   |
+LL + #[doc = "Explicit documentation after the attribute."]
+LL + #[inline]
+   |
+
+warning: 2 warnings emitted
+

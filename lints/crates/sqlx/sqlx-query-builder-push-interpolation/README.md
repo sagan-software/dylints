@@ -19,7 +19,9 @@ It also flags `format!` calls that only insert fixed SQL fragments.
 
 ## Example
 
-```rust
+The snippets use SQLx's PostgreSQL API. UI tests use a local SQLx fixture that omits this API.
+
+```rust,ignore
 fn filter_by_id(query: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>, id: i64) {
     query.push(format!("WHERE id = {id}"));
 }
@@ -27,7 +29,7 @@ fn filter_by_id(query: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>, id: i64) {
 
 ## Use instead
 
-```rust
+```rust,ignore
 fn filter_by_id(query: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>, id: i64) {
     query.push("WHERE id = ").push_bind(id);
 }

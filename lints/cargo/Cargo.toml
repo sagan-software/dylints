@@ -9,16 +9,15 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dependency_full_semver_versions = { path = "dependency_full_semver_versions", features = ["rlib"] }
-dependency_key_order = { path = "dependency_key_order", features = ["rlib"] }
-missing_clippy_toml = { path = "missing_clippy_toml", features = ["rlib"] }
-missing_rust_toolchain_toml = { path = "missing_rust_toolchain_toml", features = ["rlib"] }
-package_lints_section = { path = "package_lints_section", features = ["rlib"] }
-rust_toolchain_toml = { path = "rust_toolchain_toml", features = ["rlib"] }
-workspace_dependency_versions = { path = "workspace_dependency_versions", features = ["rlib"] }
-workspace_lints_inheritance = { path = "workspace_lints_inheritance", features = ["rlib"] }
-
+dependency_full_semver_versions = { workspace = true, features = ["rlib"] }
+dependency_key_order = { workspace = true, features = ["rlib"] }
 dylint_linting.workspace = true
+missing_clippy_toml = { workspace = true, features = ["rlib"] }
+missing_rust_toolchain_toml = { workspace = true, features = ["rlib"] }
+package_lints_section = { workspace = true, features = ["rlib"] }
+rust_toolchain_toml = { workspace = true, features = ["rlib"] }
+workspace_dependency_versions = { workspace = true, features = ["rlib"] }
+workspace_lints_inheritance = { workspace = true, features = ["rlib"] }
 
 [features]
 rlib = ["dylint_linting/constituent"]

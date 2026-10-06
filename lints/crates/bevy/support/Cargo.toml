@@ -1,7 +1,7 @@
 [package]
 name = "bevy-support"
 version.workspace = true
-description = "Shared semantic helpers for Bevy-specific private lints"
+description = "Shared semantic helpers for Bevy-specific lints"
 edition.workspace = true
 publish.workspace = true
 
@@ -9,7 +9,7 @@ publish.workspace = true
 crate-type = ["rlib"]
 
 [dependencies]
-dylint-support = { path = "../../../../support/dylint" }
+dylint-support.workspace = true
 dylint_linting.workspace = true
 
 [lints]

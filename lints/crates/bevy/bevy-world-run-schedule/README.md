@@ -16,6 +16,9 @@ exists.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# use bevy::ecs::{error::BevyError, schedule::ScheduleLabel};
+# #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)] struct Gameplay;
 fn run_gameplay(world: &mut World) {
     world.run_schedule(Gameplay);
 }
@@ -24,6 +27,9 @@ fn run_gameplay(world: &mut World) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# use bevy::ecs::{error::BevyError, schedule::ScheduleLabel};
+# #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)] struct Gameplay;
 fn run_gameplay(world: &mut World) -> Result<(), BevyError> {
     world.try_run_schedule(Gameplay)?;
     Ok(())

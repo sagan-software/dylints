@@ -1,7 +1,7 @@
-/target/
+target/
 /result
 /public/
-/.direnv/
+.direnv/
 /.rustup-dylint/
 /.envrc.local
 /.claude/worktrees/

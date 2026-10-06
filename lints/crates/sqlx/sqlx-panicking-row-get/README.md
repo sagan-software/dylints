@@ -17,7 +17,9 @@ type. It misses calls inside a macro expansion.
 
 ## Example
 
-```rust
+The snippets use SQLx's PostgreSQL API. UI tests use a local SQLx fixture that omits this API.
+
+```rust,ignore
 use sqlx::Row;
 
 fn user_name(row: &sqlx::postgres::PgRow) -> String {
@@ -27,7 +29,7 @@ fn user_name(row: &sqlx::postgres::PgRow) -> String {
 
 ## Use instead
 
-```rust
+```rust,ignore
 use sqlx::Row;
 
 fn user_name(row: &sqlx::postgres::PgRow) -> Result<String, sqlx::Error> {

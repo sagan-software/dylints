@@ -7,7 +7,7 @@
     unused_results
 )]
 
-use bevy_ecs::{component::Component, query::With, system::Query};
+use bevy::ecs::{component::Component, query::With, system::Query};
 
 #[derive(Component)]
 struct Marker;

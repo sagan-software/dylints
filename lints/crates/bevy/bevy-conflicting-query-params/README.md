@@ -23,8 +23,8 @@ Bevy 0.19 checks `NonSend` access differently. When `NonSend<T>` precedes a quer
 ## Example
 
 ```rust,no_run
-use bevy_app::{App, Update};
-use bevy_ecs::prelude::{Component, Query};
+use bevy::app::{App, Update};
+use bevy::ecs::prelude::{Component, Query};
 
 #[derive(Component)]
 struct Position;
@@ -40,8 +40,8 @@ fn main() {
 ## Use instead
 
 ```rust,no_run
-use bevy_app::{App, Update};
-use bevy_ecs::prelude::{Component, Query, With, Without};
+use bevy::app::{App, Update};
+use bevy::ecs::prelude::{Component, Query, With, Without};
 
 #[derive(Component)]
 struct Position;

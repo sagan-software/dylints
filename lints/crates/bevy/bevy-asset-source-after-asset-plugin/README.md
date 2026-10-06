@@ -21,8 +21,8 @@ The lint clears tracked facts when it invokes a closure value or passes one to a
 ## Example
 
 ```no_run
-# use bevy_app::App;
-# use bevy_asset::{
+# use bevy::app::App;
+# use bevy::asset::{
 #     AssetApp, AssetPlugin,
 #     io::{AssetSourceBuilder, memory::MemoryAssetReader},
 # };
@@ -38,8 +38,8 @@ app.register_asset_source("remote", source_builder());
 ## Use instead
 
 ```no_run
-# use bevy_app::App;
-# use bevy_asset::{
+# use bevy::app::App;
+# use bevy::asset::{
 #     AssetApp, AssetPlugin,
 #     io::{AssetSourceBuilder, memory::MemoryAssetReader},
 # };

@@ -7,8 +7,8 @@
     unused_results
 )]
 
-use bevy_camera::visibility::{InheritedVisibility, Visibility};
-use bevy_ecs::system::Query;
+use bevy::camera::visibility::{InheritedVisibility, Visibility};
+use bevy::ecs::system::Query;
 
 fn bad(_: Query<&mut InheritedVisibility>) {}
 fn good(_: Query<&mut Visibility>) {}

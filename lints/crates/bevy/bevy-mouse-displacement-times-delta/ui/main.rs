@@ -13,13 +13,13 @@
 #![deny(unfulfilled_lint_expectations)]
 #![warn(bevy_mouse_displacement_times_delta)]
 
-use bevy_ecs::{
+use bevy::ecs::{
     message::MessageReader,
     resource::Resource,
     system::{Res, ResMut},
 };
-use bevy_input::mouse::{AccumulatedMouseMotion, MouseMotion};
-use bevy_time::{Fixed, Time};
+use bevy::input::mouse::{AccumulatedMouseMotion, MouseMotion};
+use bevy::time::{Fixed, Time};
 use core::hint::black_box;
 use core::marker::PhantomData;
 

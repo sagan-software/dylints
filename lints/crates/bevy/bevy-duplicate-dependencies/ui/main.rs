@@ -7,7 +7,7 @@
     unused_results
 )]
 
+use bevy as _;
 use bevy_018 as _;
-use bevy_019 as _;
 
 fn main() {}

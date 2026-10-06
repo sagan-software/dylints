@@ -1,130 +1,34 @@
-# Sagan's Rust lints
+# Sagan Lints
 
-![Sagan lints logo](docs/assets/logo.svg)
+Rust compiler lints loaded through [Dylint](https://github.com/trailofbits/dylint). General categories and crate-specific groups provide type-aware diagnostics. The catalog documents each lint, its limits and examples.
 
-[![CI](https://github.com/sagan-software/dylints/actions/workflows/ci.yml/badge.svg)](https://github.com/sagan-software/dylints/actions/workflows/ci.yml)
-[![Lint catalog](https://img.shields.io/badge/docs-lint_catalog-2563eb)](https://sagan-software.github.io/dylints/)
-[![Dylint 6.0.3](https://img.shields.io/badge/Dylint-6.0.3-334155)](https://github.com/trailofbits/dylint/tree/v6.0.3)
-[![Rust nightly](https://img.shields.io/badge/Rust-nightly--2026--07--15-334155)](rust-toolchain.toml)
-
-Extra Rust checks for code, project settings, and crate APIs. Catch needless
-copies, weak error handling, and common API mistakes while you build.
-
-These lints run through [Dylint](https://github.com/trailofbits/dylint), a tool
-that loads extra checks into the Rust compiler. A lint is a check that reports
-a possible problem in your code. You choose which groups to run alongside
-Clippy, Rust's usual lint tool.
-
-If you use Nix, the [bundled runner](#bundled-runner) supplies the tools and
-compiler with one command.
-
-[Browse all lints](https://sagan-software.github.io/dylints/) ·
-[Setup guide](docs/usage.md) · [Contributing](docs/development.md)
-
-## Contents
-
-- [Quick start](#quick-start)
-- [Features](#features)
-- [Lint groups](#lint-groups)
-- [Bundled runner](#bundled-runner)
-- [Documentation](#documentation)
-- [Development](#development)
-- [License notes](#license-notes)
+[Catalog](https://sagan-software.github.io/dylints/) · [Guide](https://sagan-software.github.io/dylints/book/) · [Coverage](https://sagan-software.github.io/dylints/coverage/) · [Benchmarks](https://sagan-software.github.io/dylints/benches/report/)
 
 ## Quick start
 
-On Linux or macOS, you need a Rust project, [rustup](https://rustup.rs/), and a native linker
-such as `cc`. You do not need to clone this repository or install Nix.
-
-These lints use `nightly-2026-07-15`. Dylint checks your project with that
-compiler, so your project and its dependencies must build with it. Your usual
-build can keep using its current toolchain.
-
-### 1. Install the tools
+These lints use `nightly-2026-07-15`. Your project and its dependencies must build with that compiler. Your usual build can retain its current toolchain. Linux and macOS need a native linker such as `cc`. Linux also needs `pkg-config` and OpenSSL development libraries when Dylint builds its driver.
 
 ```sh
-rustup toolchain install nightly-2026-07-15 --component rustc-dev --component llvm-tools-preview
+rustup toolchain install nightly-2026-07-15 --component rustc-dev --component llvm-tools-preview --component rust-src
 cargo +nightly-2026-07-15 install --locked --version 6.0.3 cargo-dylint dylint-link
 ```
 
-`cargo-dylint` runs the checks. `dylint-link` prepares the lint libraries for
-loading. These versions match this repository's tested setup. The lint
-repository configures its own linker, so no shell setup is needed.
-
-### 2. Add the lints to your project
-
-Add this to your project's root `Cargo.toml`. In a workspace with several
-crates, use the workspace's root file.
+Add Git library discovery to your workspace root. Keep existing library entries:
 
 ```toml
-[[workspace.metadata.dylint.libraries]]
-git = "https://github.com/sagan-software/dylints"
-branch = "main"
-pattern = ["lints/correctness", "lints/perf", "lints/suspicious"]
+[workspace.metadata.dylint]
+libraries = [
+    { git = "https://github.com/sagan-software/dylints", branch = "main", pattern = ["lints/correctness", "lints/perf", "lints/suspicious"] },
+]
 ```
-
-This selects three groups from `main`. If you already have library entries,
-add this entry beside them. These are tool settings, not application dependencies.
-You can omit `branch` to use the repository's default branch. Following a branch
-can change the rules and required compiler as the project develops.
-
-The same block can go in a root `dylint.toml` instead. Choose one file for the
-entry. Dylint explains this format in its
-[workspace metadata guide](https://github.com/trailofbits/dylint/tree/v6.0.3#workspace-metadata).
-
-### 3. Run the checks
-
-Run this from your project's root:
 
 ```sh
-cargo dylint --all --workspace -- --all-targets
+cargo +nightly-2026-07-15 dylint --all --workspace -- --all-targets
 ```
 
-Dylint downloads and builds the selected lint groups on the first run. Later
-runs reuse the build. Diagnostics show the lint name and source location.
-Every lint defaults to a warning.
+Select another category by changing `pattern`. The `lints/crates` group registers every nested crate-specific group. Listing nested groups alongside their parent registers lints twice. The optional `lints` aggregate registers every category; use it instead of separate category entries.
 
-`--all` loads all configured lint libraries. `--workspace` checks every project
-crate. `--all-targets` also checks tests, examples, and benches.
-
-To make lint warnings fail a CI check, use:
-
-```sh
-RUSTFLAGS="-D warnings" cargo dylint --all --workspace -- --all-targets
-```
-
-This also treats the compiler's other warnings as errors. Keep running
-`cargo clippy` separately. See the [setup guide](docs/usage.md) for all groups,
-one-lint setup, CI, editor use, and fixes for setup errors.
-
-## Features
-
-- Choose a whole group or a single lint through project settings.
-- Check resolved Rust types and APIs where the rule needs that information.
-- Read each lint's purpose, limits, and before-and-after examples in the
-  [lint catalog](https://sagan-software.github.io/dylints/).
-- Apply automatic fixes where a lint provides a compiler-approved suggestion.
-  The catalog marks these as `MachineApplicable`.
-- Use focused tests that check both code that triggers a lint and code that
-  should pass. Some tests also compile the suggested fix.
-- Run strict Clippy and the bundled lints together with `sagan-lints`.
-
-For example, [`ownership_at_boundaries`](lints/perf/ownership_at_boundaries/README.md)
-flags a public function that takes ownership of a vector but only reads it:
-
-```rust
-pub fn count_errors(lines: Vec<String>) -> usize {
-    lines.iter().filter(|line| line.contains("ERROR")).count()
-}
-```
-
-Accept a slice so callers can pass their data without copying it:
-
-```rust
-pub fn count_errors(lines: &[String]) -> usize {
-    lines.iter().filter(|line| line.contains("ERROR")).count()
-}
-```
+For reproducible use, replace `branch` with a validated release `tag` or exact commit `rev`. Dylint libraries depend on compiler internals and must match the selected nightly. These Git-loaded libraries use `publish = false`; a crates.io package cannot make a compiler-specific binary portable across Rust toolchains.
 
 ## Lint groups
 
@@ -160,56 +64,16 @@ Select a parent or its children; loading both can register a lint twice.
 Start with the quick-start groups and add others that fit your project.
 Read each lint's known limits before adopting a strict group.
 
-## Bundled runner
-
-If you use [Nix](https://nixos.org/download/), you can run strict Clippy and
-the bundled lints with one command, without adding Dylint settings:
-
-```sh
-nix run github:sagan-software/dylints/main -- --repo /path/to/your/project --fast
-```
-
-Nix needs flakes enabled. The package includes the compiler, lint libraries,
-and driver. The first build can take time. The runner still needs access to
-your project's dependencies and uses its pinned compiler.
-
-The runner enforces more rules than the quick start, including strict Clippy.
-It supports package and group selection, automatic fixes, and checks limited
-to changed lines. See the [runner guide](docs/usage.md#bundled-runner).
-
-## Documentation
-
-- [Setup and use](docs/usage.md): select lints, follow a branch or pin a version,
-  run CI and editor checks, and solve setup errors.
-- [Lint catalog](https://sagan-software.github.io/dylints/): every lint's rule,
-  examples, limits, and fix support.
-- [Development](docs/development.md): build, test, coverage, and catalog generation.
-- [Agent instructions](AGENTS.md): repository workflow and downstream setup
-  guidance. `CLAUDE.md` is a symlink to this file.
-- [Upstream Dylint](https://github.com/trailofbits/dylint): the tool that loads
-  these lint libraries.
-
 ## Development
 
-Clone the repository and enter its development shell:
-
 ```sh
-git clone https://github.com/sagan-software/dylints.git
-cd dylints
 nix develop
+cargo xtask --help
 ```
 
-The shell supplies the pinned compiler, Dylint tools, driver, and linker
-settings. Run the repository checks inside it:
+The shell provides the compiler, Dylint tools, a prebuilt driver and mdBook. See [contributing](docs/development.md), [performance](docs/performance.md) and [metric interpretation](docs/metrics.md).
 
-```sh
-cargo fmt --all -- --check
-cargo clippy --workspace --lib --bins --tests -- -D warnings
-cargo test --workspace --lib --bins --tests
-```
-
-See [development details](docs/development.md) for the repository layout,
-coverage reports, and building the catalog.
+The former portable runner and its profiles have been removed. Use native Dylint library discovery and Cargo target selection.
 
 ## License notes
 

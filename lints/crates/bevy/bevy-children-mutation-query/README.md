@@ -21,7 +21,7 @@ The query analysis does not look inside `Option<&mut Children>` or custom `Query
 ## Example
 
 ```rust
-# use bevy_ecs::{hierarchy::Children, prelude::Query, relationship::RelationshipTarget};
+# use bevy::ecs::{hierarchy::Children, prelude::Query, relationship::RelationshipTarget};
 
 fn detach_all(mut parents: Query<&mut Children>) {
     for mut children in &mut parents {
@@ -33,7 +33,7 @@ fn detach_all(mut parents: Query<&mut Children>) {
 ## Use instead
 
 ```rust
-# use bevy_ecs::{hierarchy::Children, prelude::{Commands, Entity, Query, With}};
+# use bevy::ecs::{hierarchy::Children, prelude::{Commands, Entity, Query, With}};
 
 fn detach_all(mut commands: Commands, parents: Query<Entity, With<Children>>) {
     for parent in &parents {

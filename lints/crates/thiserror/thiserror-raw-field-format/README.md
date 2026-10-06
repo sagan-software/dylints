@@ -27,6 +27,7 @@ gets help text but no rewrite.
 ## Example
 
 ```rust
+# use thiserror_v1 as thiserror;
 #[derive(thiserror::Error, Debug)]
 #[error("bad {r#type}")]
 pub struct Error {
@@ -35,6 +36,8 @@ pub struct Error {
 ```
 
 ## Use instead
+
+After upgrading to thiserror 2, use the unraw placeholder.
 
 ```rust
 #[derive(thiserror::Error, Debug)]

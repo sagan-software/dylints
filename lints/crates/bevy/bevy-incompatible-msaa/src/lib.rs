@@ -23,7 +23,7 @@ use rustc_lint::{LateContext, LintContext as _};
 use bevy_support as _;
 
 #[cfg(test)]
-use {bevy_camera as _, bevy_core_pipeline as _, bevy_ecs as _, bevy_pbr as _, bevy_render as _};
+use bevy as _;
 
 dylint_support::documented_late_lint! {
     #[doc = include_str!("../README.md")]
@@ -215,14 +215,14 @@ fn ui() {
 mod tests {
     //! Check Bevy's component insertion contract without starting a renderer.
 
-    use bevy_camera::{Camera, Camera3d};
-    use bevy_core_pipeline::{
+    use bevy::camera::{Camera, Camera3d};
+    use bevy::core_pipeline::{
         oit::OrderIndependentTransparencySettings,
         prepass::{DeferredPrepass, DepthPrepass, NormalPrepass},
     };
-    use bevy_ecs::{bundle::Bundle, entity::Entity, world::World};
-    use bevy_pbr::ScreenSpaceAmbientOcclusion;
-    use bevy_render::view::Msaa;
+    use bevy::ecs::{bundle::Bundle, entity::Entity, world::World};
+    use bevy::pbr::ScreenSpaceAmbientOcclusion;
+    use bevy::render::view::Msaa;
 
     /// Insert a test bundle through the generic seam.
     ///

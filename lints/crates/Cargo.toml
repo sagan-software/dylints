@@ -9,205 +9,204 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-axum_nest_at_root = { package = "axum-nest-at-root", path = "axum/axum-nest-at-root", features = ["rlib"] }
-axum_nest_service_at_root = { package = "axum-nest-service-at-root", path = "axum/axum-nest-service-at-root", features = ["rlib"] }
-axum_nest_wildcard_path = { package = "axum-nest-wildcard-path", path = "axum/axum-nest-wildcard-path", features = ["rlib"] }
-axum_route_empty_path = { package = "axum-route-empty-path", path = "axum/axum-route-empty-path", features = ["rlib"] }
-axum_route_layer_on_empty_router = { package = "axum-route-layer-on-empty-router", path = "axum/axum-route-layer-on-empty-router", features = ["rlib"] }
-axum_route_legacy_colon_capture = { package = "axum-route-legacy-colon-capture", path = "axum/axum-route-legacy-colon-capture", features = ["rlib"] }
-axum_route_legacy_wildcard_capture = { package = "axum-route-legacy-wildcard-capture", path = "axum/axum-route-legacy-wildcard-capture", features = ["rlib"] }
-axum_route_path_missing_slash = { package = "axum-route-path-missing-slash", path = "axum/axum-route-path-missing-slash", features = ["rlib"] }
-axum_route_service_empty_path = { package = "axum-route-service-empty-path", path = "axum/axum-route-service-empty-path", features = ["rlib"] }
-axum_route_service_router = { package = "axum-route-service-router", path = "axum/axum-route-service-router", features = ["rlib"] }
-bevy_asset_source_after_asset_plugin = { package = "bevy-asset-source-after-asset-plugin", path = "bevy/bevy-asset-source-after-asset-plugin", features = ["rlib"] }
-bevy_borrowed_reborrowable = { package = "bevy-borrowed-reborrowable", path = "bevy/bevy-borrowed-reborrowable", features = ["rlib"] }
-bevy_camera_modification_in_fixed_update = { package = "bevy-camera-modification-in-fixed-update", path = "bevy/bevy-camera-modification-in-fixed-update", features = ["rlib"] }
-bevy_children_mutation_query = { package = "bevy-children-mutation-query", path = "bevy/bevy-children-mutation-query", features = ["rlib"] }
-bevy_component_field_contention = { package = "bevy-component-field-contention", path = "bevy/bevy-component-field-contention", features = ["rlib"] }
-bevy_conflicting_query_params = { package = "bevy-conflicting-query-params", path = "bevy/bevy-conflicting-query-params", features = ["rlib"] }
-bevy_conflicting_resource_params = { package = "bevy-conflicting-resource-params", path = "bevy/bevy-conflicting-resource-params", features = ["rlib"] }
-bevy_continuous_font_size = { package = "bevy-continuous-font-size", path = "bevy/bevy-continuous-font-size", features = ["rlib"] }
-bevy_continuous_ui_scale = { package = "bevy-continuous-ui-scale", path = "bevy/bevy-continuous-ui-scale", features = ["rlib"] }
-bevy_disallow_fixed_update_schedule = { package = "bevy-disallow-fixed-update-schedule", path = "bevy/bevy-disallow-fixed-update-schedule", features = ["rlib"] }
-bevy_disallow_update_schedule = { package = "bevy-disallow-update-schedule", path = "bevy/bevy-disallow-update-schedule", features = ["rlib"] }
-bevy_duplicate_dependencies = { package = "bevy-duplicate-dependencies", path = "bevy/bevy-duplicate-dependencies", features = ["rlib"] }
-bevy_duplicate_plugin_addition = { package = "bevy-duplicate-plugin-addition", path = "bevy/bevy-duplicate-plugin-addition", features = ["rlib"] }
-bevy_frame_button_edge_in_fixed_update = { package = "bevy-frame-button-edge-in-fixed-update", path = "bevy/bevy-frame-button-edge-in-fixed-update", features = ["rlib"] }
-bevy_global_transform_mutation_query = { package = "bevy-global-transform-mutation-query", path = "bevy/bevy-global-transform-mutation-query", features = ["rlib"] }
-bevy_incompatible_msaa = { package = "bevy-incompatible-msaa", path = "bevy/bevy-incompatible-msaa", features = ["rlib"] }
-bevy_inherited_visibility_mutation_query = { package = "bevy-inherited-visibility-mutation-query", path = "bevy/bevy-inherited-visibility-mutation-query", features = ["rlib"] }
-bevy_insert_message_resource = { package = "bevy-insert-message-resource", path = "bevy/bevy-insert-message-resource", features = ["rlib"] }
-bevy_invalid_constant_font_size = { package = "bevy-invalid-constant-font-size", path = "bevy/bevy-invalid-constant-font-size", features = ["rlib"] }
-bevy_iter_current_update_messages = { package = "bevy-iter-current-update-messages", path = "bevy/bevy-iter-current-update-messages", features = ["rlib"] }
-bevy_large_component = { package = "bevy-large-component", path = "bevy/bevy-large-component", features = ["rlib"] }
-bevy_large_component_change_filter = { package = "bevy-large-component-change-filter", path = "bevy/bevy-large-component-change-filter", features = ["rlib"] }
-bevy_load_builder_replaced_guard = { package = "bevy-load-builder-replaced-guard", path = "bevy/bevy-load-builder-replaced-guard", features = ["rlib"] }
-bevy_main_return_without_app_exit = { package = "bevy-main-return-without-app-exit", path = "bevy/bevy-main-return-without-app-exit", features = ["rlib"] }
-bevy_message_presence_without_consumption = { package = "bevy-message-presence-without-consumption", path = "bevy/bevy-message-presence-without-consumption", features = ["rlib"] }
-bevy_missing_clone_for_unit_component = { package = "bevy-missing-clone-for-unit-component", path = "bevy/bevy-missing-clone-for-unit-component", features = ["rlib"] }
-bevy_missing_copy_for_unit_component = { package = "bevy-missing-copy-for-unit-component", path = "bevy/bevy-missing-copy-for-unit-component", features = ["rlib"] }
-bevy_missing_default_for_unit_component = { package = "bevy-missing-default-for-unit-component", path = "bevy/bevy-missing-default-for-unit-component", features = ["rlib"] }
-bevy_missing_reflect = { package = "bevy-missing-reflect", path = "bevy/bevy-missing-reflect", features = ["rlib"] }
-bevy_mouse_displacement_times_delta = { package = "bevy-mouse-displacement-times-delta", path = "bevy/bevy-mouse-displacement-times-delta", features = ["rlib"] }
-bevy_narrow_exclusive_system = { package = "bevy-narrow-exclusive-system", path = "bevy/bevy-narrow-exclusive-system", features = ["rlib"] }
-bevy_partially_used_query_data = { package = "bevy-partially-used-query-data", path = "bevy/bevy-partially-used-query-data", features = ["rlib"] }
-bevy_presence_only_query_fetch = { package = "bevy-presence-only-query-fetch", path = "bevy/bevy-presence-only-query-fetch", features = ["rlib"] }
-bevy_readonly_system_access = { package = "bevy-readonly-system-access", path = "bevy/bevy-readonly-system-access", features = ["rlib"] }
-bevy_text_span_with_layout = { package = "bevy-text-span-with-layout", path = "bevy/bevy-text-span-with-layout", features = ["rlib"] }
-bevy_time_elapsed_secs_cast_f64 = { package = "bevy-time-elapsed-secs-cast-f64", path = "bevy/bevy-time-elapsed-secs-cast-f64", features = ["rlib"] }
-bevy_unconventional_naming = { package = "bevy-unconventional-naming", path = "bevy/bevy-unconventional-naming", features = ["rlib"] }
-bevy_unfiltered_entity_access_query = { package = "bevy-unfiltered-entity-access-query", path = "bevy/bevy-unfiltered-entity-access-query", features = ["rlib"] }
-bevy_unit_in_bundle = { package = "bevy-unit-in-bundle", path = "bevy/bevy-unit-in-bundle", features = ["rlib"] }
-bevy_wide_query_access = { package = "bevy-wide-query-access", path = "bevy/bevy-wide-query-access", features = ["rlib"] }
-bevy_world_entity = { package = "bevy-world-entity", path = "bevy/bevy-world-entity", features = ["rlib"] }
-bevy_world_entity_mut = { package = "bevy-world-entity-mut", path = "bevy/bevy-world-entity-mut", features = ["rlib"] }
-bevy_world_insert_batch = { package = "bevy-world-insert-batch", path = "bevy/bevy-world-insert-batch", features = ["rlib"] }
-bevy_world_insert_batch_if_new = { package = "bevy-world-insert-batch-if-new", path = "bevy/bevy-world-insert-batch-if-new", features = ["rlib"] }
-bevy_world_non_send = { package = "bevy-world-non-send", path = "bevy/bevy-world-non-send", features = ["rlib"] }
-bevy_world_non_send_mut = { package = "bevy-world-non-send-mut", path = "bevy/bevy-world-non-send-mut", features = ["rlib"] }
-bevy_world_resource = { package = "bevy-world-resource", path = "bevy/bevy-world-resource", features = ["rlib"] }
-bevy_world_resource_mut = { package = "bevy-world-resource-mut", path = "bevy/bevy-world-resource-mut", features = ["rlib"] }
-bevy_world_resource_ref = { package = "bevy-world-resource-ref", path = "bevy/bevy-world-resource-ref", features = ["rlib"] }
-bevy_world_run_schedule = { package = "bevy-world-run-schedule", path = "bevy/bevy-world-run-schedule", features = ["rlib"] }
-bevy_world_schedule_scope = { package = "bevy-world-schedule-scope", path = "bevy/bevy-world-schedule-scope", features = ["rlib"] }
-bevy_zst_query = { package = "bevy-zst-query", path = "bevy/bevy-zst-query", features = ["rlib"] }
-clap_allow_hyphen_values_without_num_args = { package = "clap-allow-hyphen-values-without-num-args", path = "clap/clap-allow-hyphen-values-without-num-args", features = ["rlib"] }
-clap_allow_negative_numbers_without_num_args = { package = "clap-allow-negative-numbers-without-num-args", path = "clap/clap-allow-negative-numbers-without-num-args", features = ["rlib"] }
-clap_command_with_arguments_option = { package = "clap-command-with-arguments-option", path = "clap/clap-command-with-arguments-option", features = ["rlib"] }
-clap_derive_author_without_help_template = { package = "clap-derive-author-without-help-template", path = "clap/clap-derive-author-without-help-template", features = ["rlib"] }
-clap_derive_bool_default_true = { package = "clap-derive-bool-default-true", path = "clap/clap-derive-bool-default-true", features = ["rlib"] }
-clap_derive_redundant_action = { package = "clap-derive-redundant-action", path = "clap/clap-derive-redundant-action", features = ["rlib"] }
-clap_derive_redundant_value_parser = { package = "clap-derive-redundant-value-parser", path = "clap/clap-derive-redundant-value-parser", features = ["rlib"] }
-clap_derive_vec_vec_without_num_args = { package = "clap-derive-vec-vec-without-num-args", path = "clap/clap-derive-vec-vec-without-num-args", features = ["rlib"] }
-clap_derive_verbatim_doc_comment_without_doc = { package = "clap-derive-verbatim-doc-comment-without-doc", path = "clap/clap-derive-verbatim-doc-comment-without-doc", features = ["rlib"] }
-clap_external_subcommand_parser_without_external_subcommands = { package = "clap-external-subcommand-parser-without-external-subcommands", path = "clap/clap-external-subcommand-parser-without-external-subcommands", features = ["rlib"] }
-clap_index_on_option = { package = "clap-index-on-option", path = "clap/clap-index-on-option", features = ["rlib"] }
-clap_last_option = { package = "clap-last-option", path = "clap/clap-last-option", features = ["rlib"] }
-clap_multicall_no_binary_name = { package = "clap-multicall-no-binary-name", path = "clap/clap-multicall-no-binary-name", features = ["rlib"] }
-clap_require_equals_without_num_args = { package = "clap-require-equals-without-num-args", path = "clap/clap-require-equals-without-num-args", features = ["rlib"] }
-clap_required_conditional_conflict = { package = "clap-required-conditional-conflict", path = "clap/clap-required-conditional-conflict", features = ["rlib"] }
-clap_trailing_var_arg_without_num_args = { package = "clap-trailing-var-arg-without-num-args", path = "clap/clap-trailing-var-arg-without-num-args", features = ["rlib"] }
-insta_allow_empty_glob = { package = "insta-allow-empty-glob", path = "insta/insta-allow-empty-glob", features = ["rlib"] }
-insta_binary_snapshot_missing_extension = { package = "insta-binary-snapshot-missing-extension", path = "insta/insta-binary-snapshot-missing-extension", features = ["rlib"] }
-insta_bind_to_scope_in_async = { package = "insta-bind-to-scope-in-async", path = "insta/insta-bind-to-scope-in-async", features = ["rlib"] }
-insta_compact_json_snapshot = { package = "insta-compact-json-snapshot", path = "insta/insta-compact-json-snapshot", features = ["rlib"] }
-insta_content_direct_match = { package = "insta-content-direct-match", path = "insta/insta-content-direct-match", features = ["rlib"] }
-insta_deprecated_assert_display = { package = "insta-deprecated-assert-display", path = "insta/insta-deprecated-assert-display", features = ["rlib"] }
-insta_empty_description = { package = "insta-empty-description", path = "insta/insta-empty-description", features = ["rlib"] }
-insta_empty_filter_pattern = { package = "insta-empty-filter-pattern", path = "insta/insta-empty-filter-pattern", features = ["rlib"] }
-insta_empty_input_file = { package = "insta-empty-input-file", path = "insta/insta-empty-input-file", features = ["rlib"] }
-insta_empty_snapshot_path = { package = "insta-empty-snapshot-path", path = "insta/insta-empty-snapshot-path", features = ["rlib"] }
-insta_empty_snapshot_suffix = { package = "insta-empty-snapshot-suffix", path = "insta/insta-empty-snapshot-suffix", features = ["rlib"] }
-insta_glob_parent_traversal = { package = "insta-glob-parent-traversal", path = "insta/insta-glob-parent-traversal", features = ["rlib"] }
-insta_json_snapshot = { package = "insta-json-snapshot", path = "insta/insta-json-snapshot", features = ["rlib"] }
-insta_no_module_prefix = { package = "insta-no-module-prefix", path = "insta/insta-no-module-prefix", features = ["rlib"] }
-insta_noop_filter = { package = "insta-noop-filter", path = "insta/insta-noop-filter", features = ["rlib"] }
-insta_redundant_content_resolve_inner = { package = "insta-redundant-content-resolve-inner", path = "insta/insta-redundant-content-resolve-inner", features = ["rlib"] }
-insta_settings_bind_future = { package = "insta-settings-bind-future", path = "insta/insta-settings-bind-future", features = ["rlib"] }
-insta_settings_new = { package = "insta-settings-new", path = "insta/insta-settings-new", features = ["rlib"] }
-insta_settings_raw_info = { package = "insta-settings-raw-info", path = "insta/insta-settings-raw-info", features = ["rlib"] }
-insta_snapshot_in_loop = { package = "insta-snapshot-in-loop", path = "insta/insta-snapshot-in-loop", features = ["rlib"] }
-reqwest_blocking_in_async = { package = "reqwest-blocking-in-async", path = "reqwest/reqwest-blocking-in-async", features = ["rlib"] }
-reqwest_client_in_loop = { package = "reqwest-client-in-loop", path = "reqwest/reqwest-client-in-loop", features = ["rlib"] }
-reqwest_client_wrapped_in_shared_pointer = { package = "reqwest-client-wrapped-in-shared-pointer", path = "reqwest/reqwest-client-wrapped-in-shared-pointer", features = ["rlib"] }
-reqwest_cookie_provider_overridden = { package = "reqwest-cookie-provider-overridden", path = "reqwest/reqwest-cookie-provider-overridden", features = ["rlib"] }
-reqwest_get_in_loop = { package = "reqwest-get-in-loop", path = "reqwest/reqwest-get-in-loop", features = ["rlib"] }
-reqwest_multipart_manual_content_type = { package = "reqwest-multipart-manual-content-type", path = "reqwest/reqwest-multipart-manual-content-type", features = ["rlib"] }
-reqwest_retry_invalid_max_extra_load = { package = "reqwest-retry-invalid-max-extra-load", path = "reqwest/reqwest-retry-invalid-max-extra-load", features = ["rlib"] }
-reqwest_retry_no_budget = { package = "reqwest-retry-no-budget", path = "reqwest/reqwest-retry-no-budget", features = ["rlib"] }
-reqwest_tls_danger_invalid_certs = { package = "reqwest-tls-danger-invalid-certs", path = "reqwest/reqwest-tls-danger-invalid-certs", features = ["rlib"] }
-reqwest_tls_danger_invalid_hostnames = { package = "reqwest-tls-danger-invalid-hostnames", path = "reqwest/reqwest-tls-danger-invalid-hostnames", features = ["rlib"] }
-schemars_json_schema_ref_return = { package = "schemars-json-schema-ref-return", path = "schemars/schemars-json-schema-ref-return", features = ["rlib"] }
-schemars_recursive_inline_schema = { package = "schemars-recursive-inline-schema", path = "schemars/schemars-recursive-inline-schema", features = ["rlib"] }
-schemars_redundant_serde_default = { package = "schemars-redundant-serde-default", path = "schemars/schemars-redundant-serde-default", features = ["rlib"] }
-schemars_redundant_serde_deny_unknown_fields = { package = "schemars-redundant-serde-deny-unknown-fields", path = "schemars/schemars-redundant-serde-deny-unknown-fields", features = ["rlib"] }
-schemars_redundant_serde_rename = { package = "schemars-redundant-serde-rename", path = "schemars/schemars-redundant-serde-rename", features = ["rlib"] }
-schemars_redundant_serde_rename_all = { package = "schemars-redundant-serde-rename-all", path = "schemars/schemars-redundant-serde-rename-all", features = ["rlib"] }
-schemars_redundant_serde_skip = { package = "schemars-redundant-serde-skip", path = "schemars/schemars-redundant-serde-skip", features = ["rlib"] }
-schemars_redundant_serde_tag = { package = "schemars-redundant-serde-tag", path = "schemars/schemars-redundant-serde-tag", features = ["rlib"] }
-schemars_redundant_serde_transparent = { package = "schemars-redundant-serde-transparent", path = "schemars/schemars-redundant-serde-transparent", features = ["rlib"] }
-schemars_schema_for_value_json_schema = { package = "schemars-schema-for-value-json-schema", path = "schemars/schemars-schema-for-value-json-schema", features = ["rlib"] }
-serde_all_fields_default = { package = "serde-all-fields-default", path = "serde/serde-all-fields-default", features = ["rlib"] }
-serde_borrow_redundant_str_bytes = { package = "serde-borrow-redundant-str-bytes", path = "serde/serde-borrow-redundant-str-bytes", features = ["rlib"] }
-serde_cow_missing_borrow = { package = "serde-cow-missing-borrow", path = "serde/serde-cow-missing-borrow", features = ["rlib"] }
-serde_deserialize_any_portability = { package = "serde-deserialize-any-portability", path = "serde/serde-deserialize-any-portability", features = ["rlib"] }
-serde_expecting_style = { package = "serde-expecting-style", path = "serde/serde-expecting-style", features = ["rlib"] }
-serde_fallback_missing_other = { package = "serde-fallback-missing-other", path = "serde/serde-fallback-missing-other", features = ["rlib"] }
-serde_flatten_deny_unknown_fields = { package = "serde-flatten-deny-unknown-fields", path = "serde/serde-flatten-deny-unknown-fields", features = ["rlib"] }
-serde_inert_directional_attr = { package = "serde-inert-directional-attr", path = "serde/serde-inert-directional-attr", features = ["rlib"] }
-serde_manual_rename_all = { package = "serde-manual-rename-all", path = "serde/serde-manual-rename-all", features = ["rlib"] }
-serde_serialize_str_to_string = { package = "serde-serialize-str-to-string", path = "serde/serde-serialize-str-to-string", features = ["rlib"] }
-serde_skip_serializing_roundtrip = { package = "serde-skip-serializing-roundtrip", path = "serde/serde-skip-serializing-roundtrip", features = ["rlib"] }
-serde_skip_serializing_variant_error = { package = "serde-skip-serializing-variant-error", path = "serde/serde-skip-serializing-variant-error", features = ["rlib"] }
-serde_untagged_missing_expecting = { package = "serde-untagged-missing-expecting", path = "serde/serde-untagged-missing-expecting", features = ["rlib"] }
-sqlx_assert_sql_safe = { package = "sqlx-assert-sql-safe", path = "sqlx/sqlx-assert-sql-safe", features = ["rlib"] }
-sqlx_empty_push_tuples = { package = "sqlx-empty-push-tuples", path = "sqlx/sqlx-empty-push-tuples", features = ["rlib"] }
-sqlx_empty_push_values = { package = "sqlx-empty-push-values", path = "sqlx/sqlx-empty-push-values", features = ["rlib"] }
-sqlx_panicking_row_get = { package = "sqlx-panicking-row-get", path = "sqlx/sqlx-panicking-row-get", features = ["rlib"] }
-sqlx_panicking_statement_column = { package = "sqlx-panicking-statement-column", path = "sqlx/sqlx-panicking-statement-column", features = ["rlib"] }
-sqlx_pool_connection_leak = { package = "sqlx-pool-connection-leak", path = "sqlx/sqlx-pool-connection-leak", features = ["rlib"] }
-sqlx_query_builder_push_interpolation = { package = "sqlx-query-builder-push-interpolation", path = "sqlx/sqlx-query-builder-push-interpolation", features = ["rlib"] }
-sqlx_query_builder_push_unseparated_interpolation = { package = "sqlx-query-builder-push-unseparated-interpolation", path = "sqlx/sqlx-query-builder-push-unseparated-interpolation", features = ["rlib"] }
-sqlx_unchecked_query_macro = { package = "sqlx-unchecked-query-macro", path = "sqlx/sqlx-unchecked-query-macro", features = ["rlib"] }
-sqlx_zero_max_connections = { package = "sqlx-zero-max-connections", path = "sqlx/sqlx-zero-max-connections", features = ["rlib"] }
-strum_enum_representation = { package = "strum-enum-representation", path = "strum/strum-enum-representation", features = ["rlib"] }
-test_case_async_without_test_harness = { package = "test-case-async-without-test-harness", path = "test-case/test-case-async-without-test-harness", features = ["rlib"] }
-test_case_constant_match_guard = { package = "test-case-constant-match-guard", path = "test-case/test-case-constant-match-guard", features = ["rlib"] }
-test_case_empty_description = { package = "test-case-empty-description", path = "test-case/test-case-empty-description", features = ["rlib"] }
-test_case_empty_ignore_reason = { package = "test-case-empty-ignore-reason", path = "test-case/test-case-empty-ignore-reason", features = ["rlib"] }
-test_case_empty_matrix = { package = "test-case-empty-matrix", path = "test-case/test-case-empty-matrix", features = ["rlib"] }
-test_case_empty_panic_message = { package = "test-case-empty-panic-message", path = "test-case/test-case-empty-panic-message", features = ["rlib"] }
-test_case_ignore_without_reason = { package = "test-case-ignore-without-reason", path = "test-case/test-case-ignore-without-reason", features = ["rlib"] }
-test_case_ignored_matrix = { package = "test-case-ignored-matrix", path = "test-case/test-case-ignored-matrix", features = ["rlib"] }
-test_case_inconclusive_modifier = { package = "test-case-inconclusive-modifier", path = "test-case/test-case-inconclusive-modifier", features = ["rlib"] }
-test_case_large_suite = { package = "test-case-large-suite", path = "test-case/test-case-large-suite", features = ["rlib"] }
-test_case_legacy_inconclusive_description = { package = "test-case-legacy-inconclusive-description", path = "test-case/test-case-legacy-inconclusive-description", features = ["rlib"] }
-test_case_nonpositive_almost_precision = { package = "test-case-nonpositive-almost-precision", path = "test-case/test-case-nonpositive-almost-precision", features = ["rlib"] }
-test_case_panics_without_message = { package = "test-case-panics-without-message", path = "test-case/test-case-panics-without-message", features = ["rlib"] }
-test_case_single_case_matrix = { package = "test-case-single-case-matrix", path = "test-case/test-case-single-case-matrix", features = ["rlib"] }
-test_case_singleton_contains_in_order = { package = "test-case-singleton-contains-in-order", path = "test-case/test-case-singleton-contains-in-order", features = ["rlib"] }
-test_case_singleton_matrix_dimension = { package = "test-case-singleton-matrix-dimension", path = "test-case/test-case-singleton-matrix-dimension", features = ["rlib"] }
-test_case_unnamed_test_case = { package = "test-case-unnamed-test-case", path = "test-case/test-case-unnamed-test-case", features = ["rlib"] }
-test_case_whitespace_ignore_reason = { package = "test-case-whitespace-ignore-reason", path = "test-case/test-case-whitespace-ignore-reason", features = ["rlib"] }
-test_case_whitespace_panic_message = { package = "test-case-whitespace-panic-message", path = "test-case/test-case-whitespace-panic-message", features = ["rlib"] }
-test_case_wildcard_match = { package = "test-case-wildcard-match", path = "test-case/test-case-wildcard-match", features = ["rlib"] }
-test_case_with_function_path = { package = "test-case-with-function-path", path = "test-case/test-case-with-function-path", features = ["rlib"] }
-thiserror_named_field_positional_format = { package = "thiserror-named-field-positional-format", path = "thiserror/thiserror-named-field-positional-format", features = ["rlib"] }
-thiserror_no_std_path_display = { package = "thiserror-no-std-path-display", path = "thiserror/thiserror-no-std-path-display", features = ["rlib"] }
-thiserror_raw_field_format = { package = "thiserror-raw-field-format", path = "thiserror/thiserror-raw-field-format", features = ["rlib"] }
-thiserror_redundant_backtrace_attr = { package = "thiserror-redundant-backtrace-attr", path = "thiserror/thiserror-redundant-backtrace-attr", features = ["rlib"] }
-thiserror_redundant_from_source = { package = "thiserror-redundant-from-source", path = "thiserror/thiserror-redundant-from-source", features = ["rlib"] }
-thiserror_redundant_named_source = { package = "thiserror-redundant-named-source", path = "thiserror/thiserror-redundant-named-source", features = ["rlib"] }
-thiserror_self_display_recursion = { package = "thiserror-self-display-recursion", path = "thiserror/thiserror-self-display-recursion", features = ["rlib"] }
-thiserror_source_field_opt_out = { package = "thiserror-source-field-opt-out", path = "thiserror/thiserror-source-field-opt-out", features = ["rlib"] }
-thiserror_transparent_single_source_display = { package = "thiserror-transparent-single-source-display", path = "thiserror/thiserror-transparent-single-source-display", features = ["rlib"] }
-thiserror_tuple_format_positional_ambiguity = { package = "thiserror-tuple-format-positional-ambiguity", path = "thiserror/thiserror-tuple-format-positional-ambiguity", features = ["rlib"] }
-tokio_blocking_call_in_async = { package = "tokio-blocking-call-in-async", path = "tokio/tokio-blocking-call-in-async", features = ["rlib"] }
-tokio_handle_block_on_in_async = { package = "tokio-handle-block-on-in-async", path = "tokio/tokio-handle-block-on-in-async", features = ["rlib"] }
-tokio_runtime_block_on_in_async = { package = "tokio-runtime-block-on-in-async", path = "tokio/tokio-runtime-block-on-in-async", features = ["rlib"] }
-tokio_runtime_new_in_async = { package = "tokio-runtime-new-in-async", path = "tokio/tokio-runtime-new-in-async", features = ["rlib"] }
-tokio_sleep_in_loop = { package = "tokio-sleep-in-loop", path = "tokio/tokio-sleep-in-loop", features = ["rlib"] }
-tokio_spawn_blocking_async_closure = { package = "tokio-spawn-blocking-async-closure", path = "tokio/tokio-spawn-blocking-async-closure", features = ["rlib"] }
-tokio_unbounded_channel = { package = "tokio-unbounded-channel", path = "tokio/tokio-unbounded-channel", features = ["rlib"] }
-tokio_zero_capacity_channel = { package = "tokio-zero-capacity-channel", path = "tokio/tokio-zero-capacity-channel", features = ["rlib"] }
-tokio_zero_duration_interval = { package = "tokio-zero-duration-interval", path = "tokio/tokio-zero-duration-interval", features = ["rlib"] }
-tokio_zero_runtime_thread_count = { package = "tokio-zero-runtime-thread-count", path = "tokio/tokio-zero-runtime-thread-count", features = ["rlib"] }
-tracing_async_block_in_sync_scope = { package = "tracing-async-block-in-sync-scope", path = "tracing/tracing-async-block-in-sync-scope", features = ["rlib"] }
-tracing_await_holding_span_guard = { package = "tracing-await-holding-span-guard", path = "tracing/tracing-await-holding-span-guard", features = ["rlib"] }
-tracing_current_span_enter = { package = "tracing-current-span-enter", path = "tracing/tracing-current-span-enter", features = ["rlib"] }
-tracing_current_span_or_current = { package = "tracing-current-span-or-current", path = "tracing/tracing-current-span-or-current", features = ["rlib"] }
-tracing_direct_record_all = { package = "tracing-direct-record-all", path = "tracing/tracing-direct-record-all", features = ["rlib"] }
-tracing_format_field = { package = "tracing-format-field", path = "tracing/tracing-format-field", features = ["rlib"] }
-tracing_instrument_current_span = { package = "tracing-instrument-current-span", path = "tracing/tracing-instrument-current-span", features = ["rlib"] }
-tracing_message_interpolation = { package = "tracing-message-interpolation", path = "tracing/tracing-message-interpolation", features = ["rlib"] }
-tracing_none_enter = { package = "tracing-none-enter", path = "tracing/tracing-none-enter", features = ["rlib"] }
-tracing_none_or_current = { package = "tracing-none-or-current", path = "tracing/tracing-none-or-current", features = ["rlib"] }
-tracing_none_record = { package = "tracing-none-record", path = "tracing/tracing-none-record", features = ["rlib"] }
-tracing_redundant_field_assignment = { package = "tracing-redundant-field-assignment", path = "tracing/tracing-redundant-field-assignment", features = ["rlib"] }
-tracing_redundant_in_current_span = { package = "tracing-redundant-in-current-span", path = "tracing/tracing-redundant-in-current-span", features = ["rlib"] }
-tracing_to_string_field = { package = "tracing-to-string-field", path = "tracing/tracing-to-string-field", features = ["rlib"] }
-
+axum_nest_at_root = { workspace = true, features = ["rlib"] }
+axum_nest_service_at_root = { workspace = true, features = ["rlib"] }
+axum_nest_wildcard_path = { workspace = true, features = ["rlib"] }
+axum_route_empty_path = { workspace = true, features = ["rlib"] }
+axum_route_layer_on_empty_router = { workspace = true, features = ["rlib"] }
+axum_route_legacy_colon_capture = { workspace = true, features = ["rlib"] }
+axum_route_legacy_wildcard_capture = { workspace = true, features = ["rlib"] }
+axum_route_path_missing_slash = { workspace = true, features = ["rlib"] }
+axum_route_service_empty_path = { workspace = true, features = ["rlib"] }
+axum_route_service_router = { workspace = true, features = ["rlib"] }
+bevy_asset_source_after_asset_plugin = { workspace = true, features = ["rlib"] }
+bevy_borrowed_reborrowable = { workspace = true, features = ["rlib"] }
+bevy_camera_modification_in_fixed_update = { workspace = true, features = ["rlib"] }
+bevy_children_mutation_query = { workspace = true, features = ["rlib"] }
+bevy_component_field_contention = { workspace = true, features = ["rlib"] }
+bevy_conflicting_query_params = { workspace = true, features = ["rlib"] }
+bevy_conflicting_resource_params = { workspace = true, features = ["rlib"] }
+bevy_continuous_font_size = { workspace = true, features = ["rlib"] }
+bevy_continuous_ui_scale = { workspace = true, features = ["rlib"] }
+bevy_disallow_fixed_update_schedule = { workspace = true, features = ["rlib"] }
+bevy_disallow_update_schedule = { workspace = true, features = ["rlib"] }
+bevy_duplicate_dependencies = { workspace = true, features = ["rlib"] }
+bevy_duplicate_plugin_addition = { workspace = true, features = ["rlib"] }
+bevy_frame_button_edge_in_fixed_update = { workspace = true, features = ["rlib"] }
+bevy_global_transform_mutation_query = { workspace = true, features = ["rlib"] }
+bevy_incompatible_msaa = { workspace = true, features = ["rlib"] }
+bevy_inherited_visibility_mutation_query = { workspace = true, features = ["rlib"] }
+bevy_insert_message_resource = { workspace = true, features = ["rlib"] }
+bevy_invalid_constant_font_size = { workspace = true, features = ["rlib"] }
+bevy_iter_current_update_messages = { workspace = true, features = ["rlib"] }
+bevy_large_component = { workspace = true, features = ["rlib"] }
+bevy_large_component_change_filter = { workspace = true, features = ["rlib"] }
+bevy_load_builder_replaced_guard = { workspace = true, features = ["rlib"] }
+bevy_main_return_without_app_exit = { workspace = true, features = ["rlib"] }
+bevy_message_presence_without_consumption = { workspace = true, features = ["rlib"] }
+bevy_missing_clone_for_unit_component = { workspace = true, features = ["rlib"] }
+bevy_missing_copy_for_unit_component = { workspace = true, features = ["rlib"] }
+bevy_missing_default_for_unit_component = { workspace = true, features = ["rlib"] }
+bevy_missing_reflect = { workspace = true, features = ["rlib"] }
+bevy_mouse_displacement_times_delta = { workspace = true, features = ["rlib"] }
+bevy_narrow_exclusive_system = { workspace = true, features = ["rlib"] }
+bevy_partially_used_query_data = { workspace = true, features = ["rlib"] }
+bevy_presence_only_query_fetch = { workspace = true, features = ["rlib"] }
+bevy_readonly_system_access = { workspace = true, features = ["rlib"] }
+bevy_text_span_with_layout = { workspace = true, features = ["rlib"] }
+bevy_time_elapsed_secs_cast_f64 = { workspace = true, features = ["rlib"] }
+bevy_unconventional_naming = { workspace = true, features = ["rlib"] }
+bevy_unfiltered_entity_access_query = { workspace = true, features = ["rlib"] }
+bevy_unit_in_bundle = { workspace = true, features = ["rlib"] }
+bevy_wide_query_access = { workspace = true, features = ["rlib"] }
+bevy_world_entity = { workspace = true, features = ["rlib"] }
+bevy_world_entity_mut = { workspace = true, features = ["rlib"] }
+bevy_world_insert_batch = { workspace = true, features = ["rlib"] }
+bevy_world_insert_batch_if_new = { workspace = true, features = ["rlib"] }
+bevy_world_non_send = { workspace = true, features = ["rlib"] }
+bevy_world_non_send_mut = { workspace = true, features = ["rlib"] }
+bevy_world_resource = { workspace = true, features = ["rlib"] }
+bevy_world_resource_mut = { workspace = true, features = ["rlib"] }
+bevy_world_resource_ref = { workspace = true, features = ["rlib"] }
+bevy_world_run_schedule = { workspace = true, features = ["rlib"] }
+bevy_world_schedule_scope = { workspace = true, features = ["rlib"] }
+bevy_zst_query = { workspace = true, features = ["rlib"] }
+clap_allow_hyphen_values_without_num_args = { workspace = true, features = ["rlib"] }
+clap_allow_negative_numbers_without_num_args = { workspace = true, features = ["rlib"] }
+clap_command_with_arguments_option = { workspace = true, features = ["rlib"] }
+clap_derive_author_without_help_template = { workspace = true, features = ["rlib"] }
+clap_derive_bool_default_true = { workspace = true, features = ["rlib"] }
+clap_derive_redundant_action = { workspace = true, features = ["rlib"] }
+clap_derive_redundant_value_parser = { workspace = true, features = ["rlib"] }
+clap_derive_vec_vec_without_num_args = { workspace = true, features = ["rlib"] }
+clap_derive_verbatim_doc_comment_without_doc = { workspace = true, features = ["rlib"] }
+clap_external_subcommand_parser_without_external_subcommands = { workspace = true, features = ["rlib"] }
+clap_index_on_option = { workspace = true, features = ["rlib"] }
+clap_last_option = { workspace = true, features = ["rlib"] }
+clap_multicall_no_binary_name = { workspace = true, features = ["rlib"] }
+clap_require_equals_without_num_args = { workspace = true, features = ["rlib"] }
+clap_required_conditional_conflict = { workspace = true, features = ["rlib"] }
+clap_trailing_var_arg_without_num_args = { workspace = true, features = ["rlib"] }
 dylint_linting.workspace = true
+insta_allow_empty_glob = { workspace = true, features = ["rlib"] }
+insta_binary_snapshot_missing_extension = { workspace = true, features = ["rlib"] }
+insta_bind_to_scope_in_async = { workspace = true, features = ["rlib"] }
+insta_compact_json_snapshot = { workspace = true, features = ["rlib"] }
+insta_content_direct_match = { workspace = true, features = ["rlib"] }
+insta_deprecated_assert_display = { workspace = true, features = ["rlib"] }
+insta_empty_description = { workspace = true, features = ["rlib"] }
+insta_empty_filter_pattern = { workspace = true, features = ["rlib"] }
+insta_empty_input_file = { workspace = true, features = ["rlib"] }
+insta_empty_snapshot_path = { workspace = true, features = ["rlib"] }
+insta_empty_snapshot_suffix = { workspace = true, features = ["rlib"] }
+insta_glob_parent_traversal = { workspace = true, features = ["rlib"] }
+insta_json_snapshot = { workspace = true, features = ["rlib"] }
+insta_no_module_prefix = { workspace = true, features = ["rlib"] }
+insta_noop_filter = { workspace = true, features = ["rlib"] }
+insta_redundant_content_resolve_inner = { workspace = true, features = ["rlib"] }
+insta_settings_bind_future = { workspace = true, features = ["rlib"] }
+insta_settings_new = { workspace = true, features = ["rlib"] }
+insta_settings_raw_info = { workspace = true, features = ["rlib"] }
+insta_snapshot_in_loop = { workspace = true, features = ["rlib"] }
+reqwest_blocking_in_async = { workspace = true, features = ["rlib"] }
+reqwest_client_in_loop = { workspace = true, features = ["rlib"] }
+reqwest_client_wrapped_in_shared_pointer = { workspace = true, features = ["rlib"] }
+reqwest_cookie_provider_overridden = { workspace = true, features = ["rlib"] }
+reqwest_get_in_loop = { workspace = true, features = ["rlib"] }
+reqwest_multipart_manual_content_type = { workspace = true, features = ["rlib"] }
+reqwest_retry_invalid_max_extra_load = { workspace = true, features = ["rlib"] }
+reqwest_retry_no_budget = { workspace = true, features = ["rlib"] }
+reqwest_tls_danger_invalid_certs = { workspace = true, features = ["rlib"] }
+reqwest_tls_danger_invalid_hostnames = { workspace = true, features = ["rlib"] }
+schemars_json_schema_ref_return = { workspace = true, features = ["rlib"] }
+schemars_recursive_inline_schema = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_default = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_deny_unknown_fields = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_rename = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_rename_all = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_skip = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_tag = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_transparent = { workspace = true, features = ["rlib"] }
+schemars_schema_for_value_json_schema = { workspace = true, features = ["rlib"] }
+serde_all_fields_default = { workspace = true, features = ["rlib"] }
+serde_borrow_redundant_str_bytes = { workspace = true, features = ["rlib"] }
+serde_cow_missing_borrow = { workspace = true, features = ["rlib"] }
+serde_deserialize_any_portability = { workspace = true, features = ["rlib"] }
+serde_expecting_style = { workspace = true, features = ["rlib"] }
+serde_fallback_missing_other = { workspace = true, features = ["rlib"] }
+serde_flatten_deny_unknown_fields = { workspace = true, features = ["rlib"] }
+serde_inert_directional_attr = { workspace = true, features = ["rlib"] }
+serde_manual_rename_all = { workspace = true, features = ["rlib"] }
+serde_serialize_str_to_string = { workspace = true, features = ["rlib"] }
+serde_skip_serializing_roundtrip = { workspace = true, features = ["rlib"] }
+serde_skip_serializing_variant_error = { workspace = true, features = ["rlib"] }
+serde_untagged_missing_expecting = { workspace = true, features = ["rlib"] }
+sqlx_assert_sql_safe = { workspace = true, features = ["rlib"] }
+sqlx_empty_push_tuples = { workspace = true, features = ["rlib"] }
+sqlx_empty_push_values = { workspace = true, features = ["rlib"] }
+sqlx_panicking_row_get = { workspace = true, features = ["rlib"] }
+sqlx_panicking_statement_column = { workspace = true, features = ["rlib"] }
+sqlx_pool_connection_leak = { workspace = true, features = ["rlib"] }
+sqlx_query_builder_push_interpolation = { workspace = true, features = ["rlib"] }
+sqlx_query_builder_push_unseparated_interpolation = { workspace = true, features = ["rlib"] }
+sqlx_unchecked_query_macro = { workspace = true, features = ["rlib"] }
+sqlx_zero_max_connections = { workspace = true, features = ["rlib"] }
+strum_enum_representation = { workspace = true, features = ["rlib"] }
+test_case_async_without_test_harness = { workspace = true, features = ["rlib"] }
+test_case_constant_match_guard = { workspace = true, features = ["rlib"] }
+test_case_empty_description = { workspace = true, features = ["rlib"] }
+test_case_empty_ignore_reason = { workspace = true, features = ["rlib"] }
+test_case_empty_matrix = { workspace = true, features = ["rlib"] }
+test_case_empty_panic_message = { workspace = true, features = ["rlib"] }
+test_case_ignore_without_reason = { workspace = true, features = ["rlib"] }
+test_case_ignored_matrix = { workspace = true, features = ["rlib"] }
+test_case_inconclusive_modifier = { workspace = true, features = ["rlib"] }
+test_case_large_suite = { workspace = true, features = ["rlib"] }
+test_case_legacy_inconclusive_description = { workspace = true, features = ["rlib"] }
+test_case_nonpositive_almost_precision = { workspace = true, features = ["rlib"] }
+test_case_panics_without_message = { workspace = true, features = ["rlib"] }
+test_case_single_case_matrix = { workspace = true, features = ["rlib"] }
+test_case_singleton_contains_in_order = { workspace = true, features = ["rlib"] }
+test_case_singleton_matrix_dimension = { workspace = true, features = ["rlib"] }
+test_case_unnamed_test_case = { workspace = true, features = ["rlib"] }
+test_case_whitespace_ignore_reason = { workspace = true, features = ["rlib"] }
+test_case_whitespace_panic_message = { workspace = true, features = ["rlib"] }
+test_case_wildcard_match = { workspace = true, features = ["rlib"] }
+test_case_with_function_path = { workspace = true, features = ["rlib"] }
+thiserror_named_field_positional_format = { workspace = true, features = ["rlib"] }
+thiserror_no_std_path_display = { workspace = true, features = ["rlib"] }
+thiserror_raw_field_format = { workspace = true, features = ["rlib"] }
+thiserror_redundant_backtrace_attr = { workspace = true, features = ["rlib"] }
+thiserror_redundant_from_source = { workspace = true, features = ["rlib"] }
+thiserror_redundant_named_source = { workspace = true, features = ["rlib"] }
+thiserror_self_display_recursion = { workspace = true, features = ["rlib"] }
+thiserror_source_field_opt_out = { workspace = true, features = ["rlib"] }
+thiserror_transparent_single_source_display = { workspace = true, features = ["rlib"] }
+thiserror_tuple_format_positional_ambiguity = { workspace = true, features = ["rlib"] }
+tokio_blocking_call_in_async = { workspace = true, features = ["rlib"] }
+tokio_handle_block_on_in_async = { workspace = true, features = ["rlib"] }
+tokio_runtime_block_on_in_async = { workspace = true, features = ["rlib"] }
+tokio_runtime_new_in_async = { workspace = true, features = ["rlib"] }
+tokio_sleep_in_loop = { workspace = true, features = ["rlib"] }
+tokio_spawn_blocking_async_closure = { workspace = true, features = ["rlib"] }
+tokio_unbounded_channel = { workspace = true, features = ["rlib"] }
+tokio_zero_capacity_channel = { workspace = true, features = ["rlib"] }
+tokio_zero_duration_interval = { workspace = true, features = ["rlib"] }
+tokio_zero_runtime_thread_count = { workspace = true, features = ["rlib"] }
+tracing_async_block_in_sync_scope = { workspace = true, features = ["rlib"] }
+tracing_await_holding_span_guard = { workspace = true, features = ["rlib"] }
+tracing_current_span_enter = { workspace = true, features = ["rlib"] }
+tracing_current_span_or_current = { workspace = true, features = ["rlib"] }
+tracing_direct_record_all = { workspace = true, features = ["rlib"] }
+tracing_format_field = { workspace = true, features = ["rlib"] }
+tracing_instrument_current_span = { workspace = true, features = ["rlib"] }
+tracing_message_interpolation = { workspace = true, features = ["rlib"] }
+tracing_none_enter = { workspace = true, features = ["rlib"] }
+tracing_none_or_current = { workspace = true, features = ["rlib"] }
+tracing_none_record = { workspace = true, features = ["rlib"] }
+tracing_redundant_field_assignment = { workspace = true, features = ["rlib"] }
+tracing_redundant_in_current_span = { workspace = true, features = ["rlib"] }
+tracing_to_string_field = { workspace = true, features = ["rlib"] }
 
 [features]
 rlib = ["dylint_linting/constituent"]

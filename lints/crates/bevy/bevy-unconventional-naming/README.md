@@ -17,6 +17,7 @@ The lint does not check plugins written as functions that take `&mut App`.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
 struct Gameplay;
 
 impl Plugin for Gameplay {
@@ -30,6 +31,7 @@ struct Movement;
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
 struct GameplayPlugin;
 
 impl Plugin for GameplayPlugin {

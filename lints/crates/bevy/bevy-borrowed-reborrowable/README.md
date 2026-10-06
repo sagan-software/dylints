@@ -21,7 +21,7 @@ skips trait method implementations because the trait fixes their parameter types
 ## Example
 
 ```rust
-# use bevy_ecs::{component::Component, system::Query};
+# use bevy::ecs::{component::Component, system::Query};
 # #[derive(Component)]
 # struct Marker;
 fn count_markers(query: &mut Query<&Marker>) -> usize {
@@ -32,7 +32,7 @@ fn count_markers(query: &mut Query<&Marker>) -> usize {
 ## Use instead
 
 ```rust
-# use bevy_ecs::{component::Component, system::Query};
+# use bevy::ecs::{component::Component, system::Query};
 # #[derive(Component)]
 # struct Marker;
 fn count_markers(query: Query<&Marker>) -> usize {

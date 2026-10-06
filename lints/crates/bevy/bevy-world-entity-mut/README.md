@@ -17,6 +17,8 @@ exists.
 ## Example
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Health(u32);
 fn heal(world: &mut World, id: Entity) {
     world.entity_mut(id).insert(Health(100));
 }
@@ -25,6 +27,8 @@ fn heal(world: &mut World, id: Entity) {
 ## Use instead
 
 ```rust
+# use bevy::prelude::*;
+# #[derive(Component)] struct Health(u32);
 fn heal(world: &mut World, id: Entity) {
     if let Ok(mut entity) = world.get_entity_mut(id) {
         entity.insert(Health(100));

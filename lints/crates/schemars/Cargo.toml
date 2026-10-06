@@ -9,18 +9,17 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-schemars_json_schema_ref_return = { package = "schemars-json-schema-ref-return", path = "schemars-json-schema-ref-return", features = ["rlib"] }
-schemars_recursive_inline_schema = { package = "schemars-recursive-inline-schema", path = "schemars-recursive-inline-schema", features = ["rlib"] }
-schemars_redundant_serde_default = { package = "schemars-redundant-serde-default", path = "schemars-redundant-serde-default", features = ["rlib"] }
-schemars_redundant_serde_deny_unknown_fields = { package = "schemars-redundant-serde-deny-unknown-fields", path = "schemars-redundant-serde-deny-unknown-fields", features = ["rlib"] }
-schemars_redundant_serde_rename = { package = "schemars-redundant-serde-rename", path = "schemars-redundant-serde-rename", features = ["rlib"] }
-schemars_redundant_serde_rename_all = { package = "schemars-redundant-serde-rename-all", path = "schemars-redundant-serde-rename-all", features = ["rlib"] }
-schemars_redundant_serde_skip = { package = "schemars-redundant-serde-skip", path = "schemars-redundant-serde-skip", features = ["rlib"] }
-schemars_redundant_serde_tag = { package = "schemars-redundant-serde-tag", path = "schemars-redundant-serde-tag", features = ["rlib"] }
-schemars_redundant_serde_transparent = { package = "schemars-redundant-serde-transparent", path = "schemars-redundant-serde-transparent", features = ["rlib"] }
-schemars_schema_for_value_json_schema = { package = "schemars-schema-for-value-json-schema", path = "schemars-schema-for-value-json-schema", features = ["rlib"] }
-
 dylint_linting.workspace = true
+schemars_json_schema_ref_return = { workspace = true, features = ["rlib"] }
+schemars_recursive_inline_schema = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_default = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_deny_unknown_fields = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_rename = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_rename_all = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_skip = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_tag = { workspace = true, features = ["rlib"] }
+schemars_redundant_serde_transparent = { workspace = true, features = ["rlib"] }
+schemars_schema_for_value_json_schema = { workspace = true, features = ["rlib"] }
 
 [features]
 rlib = ["dylint_linting/constituent"]

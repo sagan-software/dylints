@@ -19,7 +19,7 @@ diagnostic, but no source rewrite.
 ## Example
 
 ```rust
-# use bevy_time::Time;
+# use bevy::time::Time;
 fn wave(time: &Time) -> f64 {
     (time.elapsed_secs() as f64).sin()
 }
@@ -28,7 +28,7 @@ fn wave(time: &Time) -> f64 {
 ## Use instead
 
 ```rust
-# use bevy_time::Time;
+# use bevy::time::Time;
 fn wave(time: &Time) -> f64 {
     time.elapsed_secs_f64().sin()
 }

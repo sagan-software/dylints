@@ -1,0 +1,27 @@
+warning: non-documentation attribute interrupts a documentation block
+  --> $DIR/manual.rs:2:1
+   |
+LL | #[allow(dead_code)]
+   | ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: move this attribute below the complete documentation block; review procedural macro attribute order before moving it
+   = note: `#[warn(interleaved_doc_attributes)]` on by default
+
+warning: non-documentation attribute interrupts a documentation block
+  --> $DIR/manual.rs:7:1
+   |
+LL | #[inline]
+   | ^^^^^^^^^
+   |
+   = help: move this attribute below the complete documentation block; review procedural macro attribute order before moving it
+
+warning: non-documentation attribute interrupts a documentation block
+  --> $DIR/manual.rs:9:1
+   |
+LL | #[cold]
+   | ^^^^^^^
+   |
+   = help: move this attribute below the complete documentation block; review procedural macro attribute order before moving it
+
+warning: 3 warnings emitted
+

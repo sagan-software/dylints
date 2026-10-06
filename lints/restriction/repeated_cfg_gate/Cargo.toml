@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dylint_linting.workspace = true
-dylint_support = { package = "dylint-support", path = "../../../support/dylint" }
+dylint_support.workspace = true
 proc-macro2 = { workspace = true, features = ["span-locations"] }
 syn = { workspace = true, features = ["full", "visit"] }
 

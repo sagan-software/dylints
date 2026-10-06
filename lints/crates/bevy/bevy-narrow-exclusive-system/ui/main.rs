@@ -1,5 +1,5 @@
-use bevy_app::{App, Update};
-use bevy_ecs::prelude::*;
+use bevy::app::{App, Update};
+use bevy::ecs::prelude::*;
 
 #[derive(Component)]
 struct Position(f32);
@@ -57,7 +57,7 @@ fn good_other(value: &mut Position) {
 
 fn generic_system() {}
 
-fn generic_schedule<S: bevy_ecs::schedule::ScheduleLabel>(app: &mut App, schedule: S) {
+fn generic_schedule<S: bevy::ecs::schedule::ScheduleLabel>(app: &mut App, schedule: S) {
     app.add_systems(schedule, generic_system);
 }
 

@@ -1,4 +1,4 @@
-//! Default lint levels reported by the runner bundle.
+//! Default lint levels reported by the Dylint libraries.
 
 use std::{collections::BTreeMap, str::FromStr};
 
@@ -8,7 +8,7 @@ use crate::error::SiteError;
 
 /// Default level of a lint as shown by the level filter.
 ///
-/// `None` marks a documented lint that the runner bundle does not register.
+/// `None` marks a documented lint that the Dylint libraries does not register.
 #[derive(Clone, Copy, Debug, Display, EnumString, Eq, Ord, PartialEq, PartialOrd)]
 #[strum(serialize_all = "lowercase")]
 pub(crate) enum LintLevel {
@@ -20,11 +20,11 @@ pub(crate) enum LintLevel {
     Deny,
     /// Registered with the `forbid` default level.
     Forbid,
-    /// Documented but absent from the runner's registered lints.
+    /// Documented but absent from the Dylint's registered lints.
     None,
 }
 
-/// Lint names and default levels registered by the runner bundle.
+/// Lint names and default levels registered by the Dylint libraries.
 #[derive(Debug, Default)]
 pub(crate) struct RegisteredLints(BTreeMap<String, LintLevel>);
 
@@ -43,7 +43,7 @@ impl RegisteredLints {
 impl FromStr for RegisteredLints {
     type Err = SiteError;
 
-    /// Parse `sagan-lints --list-private-lints` output.
+    /// Parse `cargo dylint list --all` output.
     ///
     /// Lint rows are indented by four spaces and hold the name, the level, and a
     /// description. Category headings, command echoes, and timing lines are not
@@ -62,7 +62,7 @@ impl FromStr for RegisteredLints {
     }
 }
 
-/// One lint row of the runner's lint table.
+/// One lint row of the Dylint's lint table.
 #[derive(Debug)]
 struct RegistryRow {
     /// rustc lint name.
@@ -103,17 +103,17 @@ mod tests {
     use super::{LintLevel, RegisteredLints};
     use crate::error::SiteError;
 
-    /// Parse runner output in tests.
+    /// Parse Dylint output in tests.
     fn parse(source: &str) -> Result<RegisteredLints, SiteError> {
         source.parse()
     }
 
     /// Runner output parses into names and levels while skipping non-row lines.
     #[test]
-    fn runner_rows_parse() {
-        // Mix rows with the heading, command echo, and timing lines the runner prints.
+    fn dylint_rows_parse() {
+        // Mix rows with the heading, command echo, and timing lines the Dylint prints.
         let source = "$ sagan-lints rustc -W help\nstyle\n    first_lint    warn    Does a thing\n    second_lint   allow   Does another\n\nTotal: 1.0s\n";
-        let registered = parse(source).expect("runner rows should parse");
+        let registered = parse(source).expect("Dylint rows should parse");
 
         // Listed lints keep their level; absent lints report `none`.
         assert_eq!(registered.level("first_lint"), LintLevel::Warn);

@@ -1,0 +1,43 @@
+// run-rustfix
+/// Return the input.
+#[must_use]
+/// The caller retains ownership.
+fn identity(value: i32) -> i32 {
+    value
+}
+
+/// A contiguous documentation block.
+/// Its attribute follows all documentation.
+#[must_use]
+fn valid(value: i32) -> i32 {
+    value
+}
+
+#[must_use]
+/// An attribute preceding every documentation line is contiguous too.
+fn preceding(value: i32) -> i32 {
+    value
+}
+
+#[doc = "Explicit documentation before the attribute."]
+#[inline]
+#[doc = "Explicit documentation after the attribute."]
+fn explicit(value: i32) -> i32 {
+    value
+}
+
+macro_rules! generated {
+    () => {
+        /// Expanded documentation.
+        #[must_use]
+        /// Expanded attributes are not directly editable.
+        fn expansion(value: i32) -> i32 {
+            value
+        }
+    };
+}
+generated!();
+
+fn main() {
+    let _value = identity(valid(preceding(explicit(expansion(1)))));
+}

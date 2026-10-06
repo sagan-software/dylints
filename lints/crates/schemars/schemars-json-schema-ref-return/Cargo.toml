@@ -10,9 +10,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dylint_linting.workspace = true
-dylint_support = { package = "dylint-support", path = "../../../../support/dylint" }
-schemars_support = { package = "schemars-support", path = "../support" }
-
+dylint_support.workspace = true
+schemars_support.workspace = true
 [dev-dependencies]
 dylint_testing.workspace = true
 schemars.workspace = true

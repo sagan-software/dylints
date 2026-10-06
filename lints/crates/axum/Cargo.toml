@@ -9,16 +9,16 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-axum_nest_at_root = { package = "axum-nest-at-root", path = "axum-nest-at-root", features = ["rlib"] }
-axum_nest_service_at_root = { package = "axum-nest-service-at-root", path = "axum-nest-service-at-root", features = ["rlib"] }
-axum_nest_wildcard_path = { package = "axum-nest-wildcard-path", path = "axum-nest-wildcard-path", features = ["rlib"] }
-axum_route_empty_path = { package = "axum-route-empty-path", path = "axum-route-empty-path", features = ["rlib"] }
-axum_route_layer_on_empty_router = { package = "axum-route-layer-on-empty-router", path = "axum-route-layer-on-empty-router", features = ["rlib"] }
-axum_route_legacy_colon_capture = { package = "axum-route-legacy-colon-capture", path = "axum-route-legacy-colon-capture", features = ["rlib"] }
-axum_route_legacy_wildcard_capture = { package = "axum-route-legacy-wildcard-capture", path = "axum-route-legacy-wildcard-capture", features = ["rlib"] }
-axum_route_path_missing_slash = { package = "axum-route-path-missing-slash", path = "axum-route-path-missing-slash", features = ["rlib"] }
-axum_route_service_empty_path = { package = "axum-route-service-empty-path", path = "axum-route-service-empty-path", features = ["rlib"] }
-axum_route_service_router = { package = "axum-route-service-router", path = "axum-route-service-router", features = ["rlib"] }
+axum_nest_at_root = { workspace = true, features = ["rlib"] }
+axum_nest_service_at_root = { workspace = true, features = ["rlib"] }
+axum_nest_wildcard_path = { workspace = true, features = ["rlib"] }
+axum_route_empty_path = { workspace = true, features = ["rlib"] }
+axum_route_layer_on_empty_router = { workspace = true, features = ["rlib"] }
+axum_route_legacy_colon_capture = { workspace = true, features = ["rlib"] }
+axum_route_legacy_wildcard_capture = { workspace = true, features = ["rlib"] }
+axum_route_path_missing_slash = { workspace = true, features = ["rlib"] }
+axum_route_service_empty_path = { workspace = true, features = ["rlib"] }
+axum_route_service_router = { workspace = true, features = ["rlib"] }
 dylint_linting.workspace = true
 
 [features]

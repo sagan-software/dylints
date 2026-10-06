@@ -1,7 +1,7 @@
 #![feature(rustc_private)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for tracing-specific private lints.
+//! Shared semantic helpers for tracing-specific lints.
 //!
 //! The helpers resolve tracing macro expansions, preserve structured field text,
 //! and build source-aware replacements for diagnostics. They keep event analysis
@@ -126,7 +126,6 @@ impl TracingMacroInvocation {
     /// comments, malformed delimiters, and mismatched source arguments return `None`.
     /// The original macro path, delimiters, separators, and unrelated arguments stay
     /// byte-for-byte unchanged in the returned source string.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -136,6 +135,7 @@ impl TracingMacroInvocation {
     ///     let _ = tracing_support::TracingMacroInvocation::redundant_field_assignment_replacement(value);
     /// };
     /// ```
+    #[must_use]
     pub fn redundant_field_assignment_replacement(&self) -> Option<String> {
         let (after_bang, contents) = macro_contents(&self.source)?;
         let parts = split_top_level(contents, b',');
@@ -152,7 +152,6 @@ impl TracingMacroInvocation {
     }
 
     /// Return the field whose value is the provided `format!` invocation.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -162,6 +161,7 @@ impl TracingMacroInvocation {
     ///     let _ = tracing_support::TracingMacroInvocation::formatted_field_for(value, expression_source);
     /// };
     /// ```
+    #[must_use]
     pub fn formatted_field_for(&self, expression_source: &str) -> Option<String> {
         let expression_source = compact_source(expression_source);
         self.fields().find_map(|field| {
@@ -172,7 +172,6 @@ impl TracingMacroInvocation {
     }
 
     /// Return the field whose value is the provided `.to_string()` expression.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -182,6 +181,7 @@ impl TracingMacroInvocation {
     ///     let _ = tracing_support::TracingMacroInvocation::stringified_field_for(value, expression_source);
     /// };
     /// ```
+    #[must_use]
     pub fn stringified_field_for(&self, expression_source: &str) -> Option<String> {
         let expression_source = compact_source(expression_source);
         self.fields().find_map(|field| {
@@ -308,7 +308,6 @@ fn apply_field_replacements(
 ///
 /// The helper follows macro hygiene to the public `tracing` definition and parses
 /// only top-level arguments, allowing callers to retain a source-level diagnostic.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -318,6 +317,7 @@ fn apply_field_replacements(
 ///     let _ = tracing_support::tracing_macro_invocation(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn tracing_macro_invocation(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -337,7 +337,6 @@ pub fn tracing_macro_invocation(
 ///
 /// Resolution uses the canonical definition path rather than method spelling, so
 /// an unrelated local trait or inherent method cannot trigger a tracing lint.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -347,6 +346,7 @@ pub fn tracing_macro_invocation(
 ///     let _ = tracing_support::is_to_string_trait_call(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_to_string_trait_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // Resolve only method calls before comparing the canonical trait path.
     if !matches!(expr.kind, ExprKind::MethodCall(..)) {
@@ -364,7 +364,6 @@ pub fn is_to_string_trait_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///
 /// The expansion chain is accepted only when rustc attributes the macro to `std`,
 /// `core`, or `alloc`, which keeps formatted-field checks independent of local macros.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -374,6 +373,7 @@ pub fn is_to_string_trait_call(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///     let _ = tracing_support::standard_format_invocation(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn standard_format_invocation(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Span> {
     // Walk outward through macro hygiene from the expanded expression.
     let mut context = expr.span.ctxt();
@@ -420,7 +420,6 @@ pub struct TracingMethodCall<'hir> {
 ///
 /// Type-dependent resolution excludes extension methods and local lookalikes while
 /// accepting public tracing re-exports whose displayed path contains private modules.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -430,6 +429,7 @@ pub struct TracingMethodCall<'hir> {
 ///     let _ = tracing_support::tracing_method_call(cx, expr, expected_path);
 /// };
 /// ```
+#[must_use]
 pub fn tracing_method_call<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -451,7 +451,6 @@ pub fn tracing_method_call<'hir>(
 ///
 /// Direct path resolution accepts aliases only after they resolve to one of the
 /// requested canonical tracing paths, preserving the original argument slice.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -461,6 +460,7 @@ pub fn tracing_method_call<'hir>(
 ///     let _ = tracing_support::tracing_function_arguments(cx, expr, expected_paths);
 /// };
 /// ```
+#[must_use]
 pub fn tracing_function_arguments<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -489,7 +489,6 @@ pub fn tracing_function_arguments<'hir>(
 /// `Span::in_scope` and the tracing subscriber scope functions return their
 /// callable's output type directly. The inferred call result covers closures,
 /// function items, and stored callables without matching their source syntax.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -499,6 +498,7 @@ pub fn tracing_function_arguments<'hir>(
 ///     let _ = tracing_support::call_returns_future(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn call_returns_future(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // Resolve the standard Future trait before asking the type solver about this result.
     let Some(future_trait) = cx.tcx.lang_items().future_trait() else {
@@ -517,7 +517,6 @@ pub fn call_returns_future(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///
 /// This predicate shares the same resolved-definition test as the argument helper,
 /// so boolean-only callers cannot drift from the full semantic contract.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -527,6 +526,7 @@ pub fn call_returns_future(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
 ///     let _ = tracing_support::is_tracing_function_call(cx, expr, expected_paths);
 /// };
 /// ```
+#[must_use]
 pub fn is_tracing_function_call(
     cx: &LateContext<'_>,
     expr: &Expr<'_>,
@@ -539,7 +539,6 @@ pub fn is_tracing_function_call(
 ///
 /// The receiver must resolve to a requested tracing constructor before the method
 /// match is returned, excluding wrappers and unrelated values with matching names.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -549,6 +548,7 @@ pub fn is_tracing_function_call(
 ///     let _ = tracing_support::method_on_direct_span(cx, expr, method_path, constructor_paths);
 /// };
 /// ```
+#[must_use]
 pub fn method_on_direct_span<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -563,7 +563,6 @@ pub fn method_on_direct_span<'hir>(
 ///
 /// Exactly one argument is required, and that argument must resolve to a requested
 /// tracing constructor before the method is considered a direct span operation.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -573,6 +572,7 @@ pub fn method_on_direct_span<'hir>(
 ///     let _ = tracing_support::method_with_direct_span_argument(cx, expr, method_path, constructor_paths);
 /// };
 /// ```
+#[must_use]
 pub fn method_with_direct_span_argument<'hir>(
     cx: &LateContext<'_>,
     expr: &'hir Expr<'hir>,
@@ -642,7 +642,6 @@ macro_rules! declare_direct_span_lint {
 ///
 /// The check follows coroutine metadata and one returned async expression, while
 /// excluding ordinary closures and source shapes that do not execute asynchronously.
-#[must_use]
 ///
 /// # Examples
 ///
@@ -652,6 +651,7 @@ macro_rules! declare_direct_span_lint {
 ///     let _ = tracing_support::is_explicit_async_closure(cx, expr);
 /// };
 /// ```
+#[must_use]
 pub fn is_explicit_async_closure(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     // Reject other expression forms before inspecting closure coroutine metadata.
     let ExprKind::Closure(closure) = expr.kind else {

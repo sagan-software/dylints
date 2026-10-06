@@ -1,7 +1,7 @@
 #![feature(rustc_private)]
 #![doc(hidden)]
 
-//! Shared semantic helpers for Serde-specific private lints.
+//! Shared semantic helpers for Serde-specific lints.
 //!
 //! The helpers resolve derived Serde implementations through rustc's trait
 //! impl index and macro expansion data, read Serde helper attributes from HIR,
@@ -43,7 +43,6 @@ pub struct Derives {
 
 impl Derives {
     /// Return true when either Serde derive is present.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -51,12 +50,12 @@ impl Derives {
     /// # #![feature(rustc_private)]
     /// assert!(!serde_support::Derives::default().has_serde());
     /// ```
+    #[must_use]
     pub const fn has_serde(self) -> bool {
         self.has_serialize || self.has_deserialize
     }
 
     /// Return true when the item only derives serialization.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -65,12 +64,12 @@ impl Derives {
     /// let derives = serde_support::Derives { has_serialize: true, ..Default::default() };
     /// assert!(derives.only_serialize());
     /// ```
+    #[must_use]
     pub const fn only_serialize(self) -> bool {
         self.has_serialize && !self.has_deserialize
     }
 
     /// Return true when the item only derives deserialization.
-    #[must_use]
     ///
     /// # Examples
     ///
@@ -79,6 +78,7 @@ impl Derives {
     /// let derives = serde_support::Derives { has_deserialize: true, ..Default::default() };
     /// assert!(derives.only_deserialize());
     /// ```
+    #[must_use]
     pub const fn only_deserialize(self) -> bool {
         self.has_deserialize && !self.has_serialize
     }

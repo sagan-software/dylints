@@ -91,3 +91,24 @@ struct Busy {
     output: Output,
 }
 ```
+
+## Interpretation and sources
+
+Chidamber and Kemerer defined six object-oriented design metrics:
+
+- Weighted Methods per Class, or WMC, sums method weights. Cyclomatic
+  Complexity is now a common weight.
+- Depth of Inheritance Tree, or DIT, measures the longest path to a root class.
+- Number of Children, or NOC, counts immediate subclasses.
+- Coupling Between Object classes, or CBO, counts other classes coupled to a
+  class.
+- Response For a Class, or RFC, counts methods that can execute in response to a
+  message to the class.
+- Lack of Cohesion of Methods, or LCOM, measures how little methods share state.
+
+WMC, coupling, response-set size, and cohesion have Rust analogues, but the implementation must choose the unit. A struct plus its inherent and trait `impl` blocks is one possible
+unit. A module is often more useful because Rust permits free functions and
+separates data from behavior. DIT and NOC do not transfer cleanly because trait
+implementation and supertrait relationships are not class inheritance.
+
+This lint's type-method unit differs from a Java class. The local profile controls included methods and aggregation. [Chidamber and Kemerer's paper](https://doi.org/10.1109/32.295895).
