@@ -24,6 +24,10 @@ macro_rules! declare_world_method_lint {
             ) {
                 use rustc_lint::LintContext as _;
 
+                // A panic in a test harness fails one test, which is the failure it wants.
+                if $crate::is_test_harness(cx) {
+                    return;
+                }
                 let Some(call) = $crate::world_method_call(cx, expr, $method) else {
                     return;
                 };

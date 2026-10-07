@@ -26,3 +26,11 @@ bevy_support::declare_world_method_lint! {
     "checks for panicking Bevy World resource access",
     "`World::resource` panics when the resource is absent"
 }
+
+/// Compile the test-harness fixture as rustc does for `cargo test`.
+#[test]
+fn ui_test_harness() {
+    dylint_testing::ui::Test::example(env!("CARGO_PKG_NAME"), "test_harness")
+        .rustc_flags(["--test"])
+        .run();
+}

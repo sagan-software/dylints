@@ -11,6 +11,10 @@ stops the whole app instead of taking an error path.
 
 ## Known problems
 
+The lint skips crates that rustc compiles as a test harness (`--test`), such as unit and
+integration test builds. A panic there fails one test. The ordinary build of the same target still
+checks code outside `#[cfg(test)]`.
+
 The lint reports every call, including calls where the code already guarantees that every entity
 exists.
 

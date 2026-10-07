@@ -22,6 +22,11 @@ name = "main"
 path = "ui/main.rs"
 test = false
 
+[[example]]
+name = "test_harness"
+path = "ui/test_harness.rs"
+test = false
+
 [features]
 rlib = ["dylint_linting/constituent"]
 

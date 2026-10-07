@@ -41,6 +41,26 @@ pub fn bevy_method_call<'hir>(
     })
 }
 
+/// Return whether rustc compiles the current crate as a test harness (`--test`).
+///
+/// Test harness builds hold unit tests, integration tests and their fixtures.
+/// A panic there fails one test, and their types are not part of the shipped
+/// program. The same sources outside `#[cfg(test)]` are still checked by the
+/// ordinary build of the target.
+///
+/// # Examples
+///
+/// ```rust
+/// # #![feature(rustc_private)]
+/// let _check = |cx| {
+///     let _ = bevy_support::is_test_harness(cx);
+/// };
+/// ```
+#[must_use]
+pub fn is_test_harness(cx: &LateContext<'_>) -> bool {
+    cx.tcx.sess.opts.test
+}
+
 /// Resolve an exact `World` method.
 ///
 /// # Examples

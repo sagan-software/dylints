@@ -28,6 +28,10 @@ dylint_support::documented_late_lint! {
 impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyMissingReflect {
     /// Check local Bevy domain types for `Reflect`.
     fn check_crate(&mut self, cx: &rustc_lint::LateContext<'tcx>) {
+        // Types that exist only in a test harness never reach scenes or inspectors.
+        if bevy_support::is_test_harness(cx) {
+            return;
+        }
         for target in bevy_support::local_bevy_types_missing_reflect(cx) {
             cx.emit_span_lint(
                 BEVY_MISSING_REFLECT,
@@ -45,4 +49,12 @@ impl<'tcx> rustc_lint::LateLintPass<'tcx> for BevyMissingReflect {
 #[test]
 fn ui() {
     dylint_testing::ui_test_examples(env!("CARGO_PKG_NAME"));
+}
+
+/// Compile the test-harness fixture as rustc does for `cargo test`.
+#[test]
+fn ui_test_harness() {
+    dylint_testing::ui::Test::example(env!("CARGO_PKG_NAME"), "test_harness")
+        .rustc_flags(["--test"])
+        .run();
 }

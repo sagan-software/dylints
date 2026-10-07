@@ -174,7 +174,8 @@ pub use self::bundles::{
 };
 pub use self::helpers::{parameter_spans, parameter_types};
 pub use self::methods::{
-    bevy_method_call, expression_has_type, trait_is_named, type_is_named, world_method_call,
+    bevy_method_call, expression_has_type, is_test_harness, trait_is_named, type_is_named,
+    world_method_call,
 };
 pub use self::queries::{
     borrowed_reborrowable_parameters, children_mutation_query_parameters,

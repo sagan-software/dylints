@@ -12,6 +12,10 @@ remote protocol cannot read it, and inspectors do not show it.
 
 ## Known problems
 
+The lint skips crates that rustc compiles as a test harness (`--test`), such as unit and
+integration test builds. Test-only types do not reach scenes, inspectors or the remote protocol. The
+ordinary build of the same target still checks types outside `#[cfg(test)]`.
+
 The lint reports every such type, including internal types that no tool needs to inspect. Deriving
 `Reflect` also requires every field type to implement `Reflect`, or the code must mark the field `#[reflect(ignore)]`.
 

@@ -10,6 +10,10 @@ Checks for calls to `World::schedule_scope`.
 
 ## Known problems
 
+The lint skips crates that rustc compiles as a test harness (`--test`), such as unit and
+integration test builds. A panic there fails one test. The ordinary build of the same target still
+checks code outside `#[cfg(test)]`.
+
 The lint reports every call, including calls where the code already guarantees that the schedule
 exists.
 
