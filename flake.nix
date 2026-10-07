@@ -1,6 +1,13 @@
 {
   description = "Sagan's custom Rust lints for Dylint";
 
+  # Request conservative limits where the Nix client controls build scheduling.
+  # Multi-user daemons need the matching system-wide nix.conf settings.
+  nixConfig = {
+    max-jobs = 1;
+    cores = 1;
+  };
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
@@ -39,61 +46,35 @@
         inherit (pkgs) lib;
         inherit (flake-utils.lib) mkApp;
         version = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).workspace.package.version;
-        rustupToolchain = "nightly-2026-07-15-${pkgs.stdenv.hostPlatform.rust.rustcTarget}";
+        toolchainChannel = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml)).toolchain.channel;
+        rustupToolchain = "${toolchainChannel}-${pkgs.stdenv.hostPlatform.rust.rustcTarget}";
         cargoTargetEnv = lib.toUpper (
           lib.replaceStrings [ "-" ] [ "_" ] pkgs.stdenv.hostPlatform.rust.rustcTarget
         );
-        rustToolchain = pkgs.rust-bin.nightly."2026-07-15".default.override {
-          extensions = [
-            "llvm-tools-preview"
-            "rust-analyzer"
-            "rustc-dev"
-            "clippy"
-            "rust-src"
-          ];
-        };
+        rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
         craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+        nativeBuildInputs = [ pkgs.pkg-config ];
+        buildInputs = with pkgs; [
+          openssl
+          zlib
+        ];
         dylintTools = craneLib.buildPackage {
           pname = "dylint-tools";
           version = "6.0.3";
           src = dylint-src;
           cargoExtraArgs = "-p cargo-dylint -p dylint-link";
+          CARGO_BUILD_JOBS = "1";
           DOCS_RS = "1";
-          nativeBuildInputs = [ pkgs.pkg-config ];
-          buildInputs = [
-            pkgs.openssl
-            pkgs.zlib
-          ];
+          inherit nativeBuildInputs buildInputs;
           doCheck = false;
         };
 
         dylintDriverSource = pkgs.runCommand "sagan-dylint-driver-source" { } ''
           cp -R ${dylint-src}/. "$out"
           chmod -R u+w "$out"
-          mkdir -p "$out/wrapper/src"
+          cp -R ${./nix/dylint-driver} "$out/wrapper"
+          chmod -R u+w "$out/wrapper"
           cp ${dylint-src}/driver/Cargo.lock "$out/wrapper/Cargo.lock"
-          cat >"$out/wrapper/Cargo.toml" <<'EOF'
-          [package]
-          name = "sagan-dylint-driver"
-          version = "0.1.0"
-          edition = "2024"
-
-          [dependencies]
-          dylint_driver = { path = "../driver" }
-
-          [workspace]
-          EOF
-          cat >"$out/wrapper/src/main.rs" <<'EOF'
-          #![feature(rustc_private)]
-
-          fn main() {
-              let args: Vec<_> = std::env::args_os().collect();
-              if let Err(error) = dylint_driver::dylint_driver(&args) {
-                  eprintln!("{error:#}");
-                  std::process::exit(1);
-              }
-          }
-          EOF
         '';
         dylintDriverCargoLock = dylintDriverSource + "/wrapper/Cargo.lock";
         dylintDriverCargoVendor = craneLib.vendorCargoDeps {
@@ -109,16 +90,12 @@
           cargoVendorDir = dylintDriverCargoVendor;
           cargoExtraArgs = "--manifest-path wrapper/Cargo.toml";
           CARGO_TARGET_DIR = "target";
+          CARGO_BUILD_JOBS = "1";
           "CARGO_TARGET_${cargoTargetEnv}_LINKER" = "${pkgs.stdenv.cc}/bin/cc";
           RUSTFLAGS = "-C link-args=-Wl,-rpath,${rustToolchain}/lib";
-          # The pinned compiler is supplied by crane. These libraries do not use
-          # clippy_utils extra symbols; "nightly" avoids its network-only discovery.
+          # Avoid clippy_utils symbol discovery, which otherwise fetches a driver.
           RUSTUP_TOOLCHAIN = "nightly-${pkgs.stdenv.hostPlatform.rust.rustcTarget}";
-          nativeBuildInputs = [ pkgs.pkg-config ];
-          buildInputs = [
-            pkgs.openssl
-            pkgs.zlib
-          ];
+          inherit nativeBuildInputs buildInputs;
           doCheck = false;
         };
         dylintDriverCargoArtifacts = craneLib.buildDepsOnly dylintDriverCommonArgs;
@@ -138,40 +115,19 @@
           }
         );
 
-        source = lib.cleanSourceWith {
-          src = ./.;
-          filter =
-            path: type:
-            lib.cleanSourceFilter path type
-            && !(
-              type == "directory"
-              && builtins.elem (baseNameOf path) [
-                ".claude"
-                ".direnv"
-                ".rustup-dylint"
-                "public"
-                "result"
-                "target"
-              ]
-            );
-        };
         common = {
           pname = "sagan-dylint-workspace";
           inherit version;
-          src = source;
+          # Flake inputs omit ignored local build outputs before Cargo sees the source.
+          src = lib.cleanSource ./.;
           strictDeps = true;
           hardeningDisable = [ "fortify" ];
-          nativeBuildInputs = [
-            dylintTools
-            pkgs.pkg-config
-          ];
-          buildInputs = [
-            pkgs.openssl
-            pkgs.zlib
-          ];
+          nativeBuildInputs = [ dylintTools ] ++ nativeBuildInputs;
+          inherit buildInputs;
           CARGO_PROFILE = "dev";
           CARGO_PROFILE_DEV_DEBUG = "0";
           CARGO_INCREMENTAL = "0";
+          CARGO_BUILD_JOBS = "1";
           CARGO_BUILD_BUILD_DIR = "target";
           RUSTUP_TOOLCHAIN = rustupToolchain;
           DOCS_RS = "1";
@@ -191,17 +147,11 @@
             '';
           }
         );
-        catalog = craneLib.buildPackage (
-          common
-          // {
-            pname = "sagan-lints-web";
-            inherit cargoArtifacts;
-            cargoExtraArgs = "-p sagan-lints-web";
-            doCheck = false;
-          }
-        );
         setup = ''
           export RUSTUP_HOME="''${RUSTUP_HOME:-$PWD/.rustup-dylint}"
+          # The pinned compiler is read-only in /nix/store; Dylint asks rustup
+          # to resolve rust-toolchain.toml while discovering workspace metadata.
+          export RUSTUP_AUTO_INSTALL=0
           export RUSTUP_TOOLCHAIN="${rustupToolchain}"
           export DYLINT_DRIVER_PATH="${dylintDriver}/lib/dylint-drivers"
           export CARGO_TARGET_${cargoTargetEnv}_LINKER=dylint-link
@@ -218,13 +168,19 @@
         '';
         runtime = [
           dylintTools
-          pkgs.git
-          pkgs.gnugrep
-          pkgs.pkg-config
-          pkgs.rustup
           rustToolchain
-          pkgs.mdbook
-        ];
+          # dylint-link delegates the final compiler link to this `cc` wrapper.
+          pkgs.stdenv.cc
+          # The Rumdl lint's allocator dependency builds jemalloc with `make`.
+          pkgs.gnumake
+        ]
+        ++ (with pkgs; [
+          cargo-nextest
+          git
+          mdbook
+          pkg-config
+          rustup
+        ]);
         command =
           name: text:
           pkgs.writeShellApplication {
@@ -237,72 +193,54 @@
           command "sagan-${name}" ''
             exec cargo xtask ${name} "$@"
           '';
-        selfLint = command "sagan-self-lint" ''
-          export DYLINT_RUSTFLAGS="-D warnings"
-          exec cargo dylint --no-metadata --no-build --lib-path ${lintLibraries}/lib/${libraryFilename} --workspace -- --lib --bins --tests "$@"
-        '';
-        checks = command "sagan-check" ''
-          cargo fmt --all -- --check
-          cargo clippy --workspace --lib --bins --tests -- -D warnings
-          cargo test --workspace --lib --bins --tests
-        '';
-        docsSite =
-          pkgs.runCommand "sagan-lints-site-${version}"
-            {
-              nativeBuildInputs = runtime ++ [ catalog ];
-            }
-            (
-              setup
-              + ''
-                cargo dylint list --no-metadata --no-build --lib-path ${lintLibraries}/lib/${libraryFilename} > lints.txt
-                sagan-lints-web --root ${source} --lint-list lints.txt --out-dir "$out"
-                mdbook build ${source} --dest-dir "$out/book"
-              ''
-            );
         treefmt = treefmt-nix.lib.evalModule pkgs {
           projectRootFile = "flake.nix";
           programs = {
             rustfmt.enable = true;
             nixfmt.enable = true;
+            taplo.enable = true;
           };
           settings.global.excludes = [
-            ".claude/**"
             ".direnv/**"
-            ".git/**"
             ".rustup-dylint/**"
             "target/**"
             "public/**"
             "result/**"
           ];
         };
+        workspaceChecks = craneLib.mkCargoDerivation (
+          common
+          // {
+            pname = "sagan-dylints-verification";
+            inherit cargoArtifacts;
+            buildPhaseCargoCommand = "true";
+            # mkCargoDerivation leaves doCheck disabled unless requested.
+            doCheck = true;
+            checkPhaseCargoCommand = setup + ''
+              cargo clippy --workspace --lib --bins --tests -- -D warnings -A unknown-lints
+              cargo test --workspace --lib --bins --tests
+              cargo test --workspace --doc
+              export DYLINT_RUSTFLAGS="-D warnings"
+              cargo dylint --no-metadata --no-build --lib-path ${lintLibraries}/lib/${libraryFilename} --workspace -- --lib --bins --tests
+            '';
+          }
+        );
       in
       {
         packages = {
           default = lintLibraries;
-          lint-libraries = lintLibraries;
           dylint-tools = dylintTools;
-          docs-site = docsSite;
         };
         apps = {
           default = mkApp { drv = task "lint"; };
-          self-lint = mkApp { drv = selfLint; };
           site = mkApp { drv = task "site"; };
           coverage = mkApp { drv = task "coverage"; };
           bench = mkApp { drv = task "bench"; };
-          check = mkApp { drv = checks; };
           fmt = mkApp { drv = treefmt.config.build.wrapper; };
         };
         checks = {
           fmt = treefmt.config.build.check ./.;
-          package = lintLibraries;
-          docs-site = docsSite;
-          clippy = craneLib.cargoClippy (
-            common
-            // {
-              inherit cargoArtifacts;
-              cargoClippyExtraArgs = "--workspace --lib --bins --tests -- -D warnings";
-            }
-          );
+          verification = workspaceChecks;
         };
         formatter = treefmt.config.build.wrapper;
         devShells.default = pkgs.mkShell {

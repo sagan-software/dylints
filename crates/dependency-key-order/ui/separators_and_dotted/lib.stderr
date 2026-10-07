@@ -1,0 +1,35 @@
+warning: dependency `alpha_dep` appears after `zeta_dep` but should sort before it
+  --> $DIR/Cargo.toml:10:1
+   |
+LL | "alpha_dep".path = "../alpha_dep"
+   | ^^^^^^^^^^^
+   |
+   = help: sort contiguous dependency entries alphabetically within each Cargo dependency table
+   = note: `#[warn(dependency_key_order)]` on by default
+
+warning: dependency `comment_alpha_dep` appears after `comment_zeta_dep` but should sort before it
+  --> $DIR/Cargo.toml:17:1
+   |
+LL | comment_alpha_dep = { path = "../comment_alpha_dep" }
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: sort contiguous dependency entries alphabetically within each Cargo dependency table
+
+warning: dependency `dev_alpha_dep` appears after `dev_zeta_dep` but should sort before it
+  --> $DIR/Cargo.toml:1:67
+   |
+LL | dev-dependencies = { dev_zeta_dep = { path = "../dev_zeta_dep" }, dev_alpha_dep = { path = "../dev_alpha_dep" } }
+   |                                                                   ^^^^^^^^^^^^^
+   |
+   = help: sort contiguous dependency entries alphabetically within each Cargo dependency table
+
+warning: dependency `unix_alpha_dep` appears after `unix_zeta_dep` but should sort before it
+  --> $DIR/Cargo.toml:21:1
+   |
+LL | unix_alpha_dep.path = "../unix_alpha_dep"
+   | ^^^^^^^^^^^^^^
+   |
+   = help: sort contiguous dependency entries alphabetically within each Cargo dependency table
+
+warning: 4 warnings emitted
+

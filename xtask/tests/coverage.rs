@@ -22,32 +22,12 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::Command,
-    sync::OnceLock,
 };
 use tempfile::TempDir;
 
-/// Compile one Rust fixture binary, reused across isolated test directories.
+/// Use Cargo's prebuilt fixture binary in isolated child-tool directories.
 fn fixture_binary() -> &'static Path {
-    static BINARY: OnceLock<PathBuf> = OnceLock::new();
-    BINARY.get_or_init(|| {
-        let directory = tempfile::tempdir().expect("fixture directory").keep();
-        let output = directory.join("debug/examples/tool-fixture");
-        let status = Command::new("cargo")
-            .current_dir(env!("CARGO_MANIFEST_DIR"))
-            .args([
-                "build",
-                "--quiet",
-                "--example",
-                "tool-fixture",
-                "--target-dir",
-            ])
-            .arg(&directory)
-            .env("CARGO_BUILD_BUILD_DIR", &directory)
-            .status()
-            .expect("compile fixture");
-        assert!(status.success());
-        output
-    })
+    Path::new(env!("CARGO_BIN_EXE_tool_fixture"))
 }
 
 /// Measured source mappings contain two aliases and one unselected file.
@@ -87,19 +67,25 @@ fn source_records(root: &Path) {
     let first = root.join("src/shared.rs");
     let alias = root.join("src/nested/../shared.rs");
     let other = root.join("other.rs");
-    write_lcov(root, &first, &alias, &other);
-    write_summary(root, &[first, alias, other]);
+    let fixture = root.join("crates/sqlx-fixture/src/lib.rs");
+    fs::create_dir_all(fixture.parent().expect("fixture parent"))
+        .expect("fixture source directory");
+    fs::write(&fixture, "fn fixture_only() {}\n").expect("fixture source");
+    // Give the report path both raw aliases and one unrelated, unselected source.
+    write_lcov(root, &first, &alias, &other, &fixture);
+    write_summary(root, &[first, alias, other, fixture]);
 }
 
 /// Preserve conflicting alias hits and an unrelated file in measured LCOV
 /// input.
-fn write_lcov(root: &Path, first: &Path, alias: &Path, other: &Path) {
+fn write_lcov(root: &Path, first: &Path, alias: &Path, other: &Path, fixture: &Path) {
     // Display each lexical spelling exactly as an LLVM exporter would emit it.
     let first_display = first.display();
     let alias_display = alias.display();
     let other_display = other.display();
+    let fixture_display = fixture.display();
     let lcov = format!(
-        "SF:{first_display}\nDA:10,0\nDA:20,0\nend_of_record\nSF:{alias_display}\nDA:10,4\nDA:30,0\nend_of_record\nSF:{other_display}\nDA:1,1\nend_of_record\n"
+        "SF:{first_display}\nDA:10,0\nDA:20,0\nend_of_record\nSF:{alias_display}\nDA:10,4\nDA:30,0\nend_of_record\nSF:{other_display}\nDA:1,1\nend_of_record\nSF:{fixture_display}\nDA:1,1\nend_of_record\n"
     );
     // Preserve the input independently from every generated output directory.
     fs::write(root.join("lcov-input.info"), lcov).expect("coverage records");
@@ -121,10 +107,28 @@ fn write_summary(root: &Path, paths: &[PathBuf]) {
 
 /// Run an isolated report while preserving the parent process environment.
 fn run(root: &Path, minimum: &str, mode: &str, is_scoped: bool) -> std::process::Output {
+    run_with_file_minimum(root, minimum, "0", mode, is_scoped)
+}
+
+/// Run one report with explicit aggregate and per-file coverage boundaries.
+fn run_with_file_minimum(
+    root: &Path,
+    minimum: &str,
+    file_minimum: &str,
+    mode: &str,
+    is_scoped: bool,
+) -> std::process::Output {
     // Environment changes apply only to this child and its selected source scope.
     let mut command = Command::new(env!("CARGO_BIN_EXE_xtask"));
     let _configured = command
-        .args(["coverage", "--min-lines", minimum, "--target-dir"])
+        .args([
+            "coverage",
+            "--min-lines",
+            minimum,
+            "--min-file-lines",
+            file_minimum,
+            "--target-dir",
+        ])
         .arg(root.join("coverage"))
         .env("PATH", root)
         .env("FIXTURE_ROOT", root)
@@ -135,6 +139,36 @@ fn run(root: &Path, minimum: &str, mode: &str, is_scoped: bool) -> std::process:
         let _configured = command.arg("--path").arg(root.join("src"));
     }
     command.output().expect("coverage process")
+}
+
+/// A high aggregate cannot hide a file below the configured coverage floor.
+#[test]
+#[expect(
+    many_assertions_in_test,
+    reason = "The failing threshold, error text, and retained per-file report are independent gate contracts."
+)]
+fn per_file_coverage_threshold_is_enforced() {
+    let directory = fixture();
+    let root = directory.path();
+    // Disable the aggregate floor so this failure isolates the per-file minimum.
+    let result = run_with_file_minimum(root, "0", "34", "", true);
+    let diagnostic = String::from_utf8_lossy(&result.stderr);
+    assert!(!result.status.success());
+    assert!(diagnostic.contains("shared.rs (33.33%)"), "{diagnostic}");
+    assert!(diagnostic.contains("34% minimum"), "{diagnostic}");
+    // The failed gate still leaves the canonical per-file evidence available.
+    let summary = read_report(root, "canonical_summary.json");
+    assert!(
+        summary["files"][0]["filename"]
+            .as_str()
+            .expect("canonical filename")
+            .ends_with("shared.rs")
+    );
+    // Parse the stored percentage separately from its displayed missing-line detail.
+    let percent = summary["files"][0]["lines"]["percent"]
+        .as_f64()
+        .expect("canonical percent");
+    assert!((percent - 33.333_333_333_333_336).abs() < 0.001);
 }
 
 /// Produce one successful scoped report for focused artifact assertions.
@@ -171,13 +205,33 @@ fn scoped_canonical_aliases() {
     assert!(gaps.contains("shared.rs:30"));
 }
 
-/// Raw scoped reports retain each selected lexical mapping separately.
+/// Every user-facing artifact reports the merged canonical source identity.
 #[test]
-fn scoped_raw_aliases() {
+#[expect(
+    many_assertions_in_test,
+    reason = "JSON, LCOV, and HTML each expose distinct parts of the same canonical merge contract."
+)]
+fn scoped_display_artifacts_merge_aliases() {
     let directory = scoped_report();
-    let raw = read_report(directory.path(), "summary.json");
-    assert_eq!(raw["data"][0]["files"].as_array().expect("files").len(), 2);
-    assert_eq!(raw["data"][0]["totals"]["lines"]["count"], 4);
+    let root = directory.path();
+    // The JSON summary contains one canonical source and merged executable-line totals.
+    let summary = read_report(root, "summary.json");
+    assert_eq!(summary["files"].as_array().expect("files").len(), 1);
+    assert_eq!(summary["totals"]["lines"]["count"], 3);
+    assert_eq!(summary["totals"]["lines"]["covered"], 1);
+    // LCOV retains all source-line counters while collapsing duplicate file aliases.
+    let lcov = fs::read_to_string(root.join("coverage/report/lcov.info")).expect("LCOV");
+    assert_eq!(lcov.matches("SF:").count(), 1);
+    assert!(lcov.contains("DA:10,4"));
+    assert!(lcov.contains("DA:20,0"));
+    assert!(lcov.contains("DA:30,0"));
+    // HTML uses the same canonical path and exposes its measured coverage and gaps.
+    let html = fs::read_to_string(root.join("coverage/report/index.html")).expect("HTML");
+    assert_eq!(html.matches("src/shared.rs</code>").count(), 1);
+    assert!(html.contains("33.33%"));
+    assert!(html.contains("20, 30"));
+    // A raw alias must never leak into a user-facing report.
+    assert!(!html.contains("src/nested/../shared.rs"));
 }
 
 /// Browsable reports exclude unrelated sources and preserve LLVM diagnostics.
@@ -193,6 +247,45 @@ fn scoped_browsable_reports() {
     // LLVM receives an escaped filename, rather than a weakened report scope.
     let calls = fs::read_to_string(root.join("calls.txt")).expect("calls");
     assert!(calls.contains("other\\\\.rs"));
+}
+
+/// Fixture support crates are omitted by the shared LLVM and canonical scope.
+#[test]
+#[expect(
+    many_assertions_in_test,
+    reason = "This test checks separate canonical JSON, text, LCOV, and LLVM-scope artifacts."
+)]
+fn fixture_crates_are_excluded_from_coverage_entries() {
+    let directory = fixture();
+    let root = directory.path();
+    // An unscoped run makes fixture exclusion come only from the shared filename rule.
+    assert_success(&run(root, "0", "", false));
+
+    // Canonical JSON must omit the fixture source and preserve the two measured files.
+    let canonical = read_report(root, "canonical_summary.json");
+    let files = canonical["files"].as_array().expect("canonical files");
+    assert_eq!(files.len(), 2);
+    assert!(files.iter().all(|file| {
+        !file["filename"]
+            .as_str()
+            .expect("canonical filename")
+            .contains("sqlx-fixture")
+    }));
+
+    // The public summary must exactly match the canonical coverage source.
+    let summary = read_report(root, "summary.json");
+    assert_eq!(
+        summary["files"].as_array().expect("canonical files").len(),
+        2
+    );
+    assert_eq!(summary["totals"]["lines"]["count"], 4);
+    assert_eq!(summary, canonical);
+    // LCOV and its LLVM invocation must use the identical fixture exclusion.
+    let lcov = fs::read_to_string(root.join("coverage/report/lcov.info")).expect("LCOV");
+    assert!(!lcov.contains("sqlx-fixture"));
+    assert_eq!(lcov.matches("SF:").count(), 2);
+    let calls = fs::read_to_string(root.join("calls.txt")).expect("LLVM calls");
+    assert!(calls.contains("[^/]*-fixture/"));
 }
 
 /// Threshold failures and test failures retain useful reports and remain
@@ -231,8 +324,7 @@ fn merges_hits_from_each_object_variant() {
 #[test_case::test_case("llvm-fail", "llvm-cov"; "LLVM failure")]
 #[test_case::test_case("no-objects", "no reportable objects"; "missing objects")]
 #[test_case::test_case("no-host", "no host triple"; "missing host")]
-#[test_case::test_case("text-fail", "llvm-cov"; "text export failure")]
-#[test_case::test_case("html-fail", "llvm-cov"; "HTML export failure")]
+#[test_case::test_case("html-write-fail", "Is a directory"; "canonical HTML write failure")]
 #[test_case::test_case("canonical-write-fail", "Is a directory"; "canonical summary write failure")]
 fn tool_failures_are_visible(mode: &str, message: &str) {
     // Each tool failure has its own named test and diagnostic assertion.
@@ -439,8 +531,9 @@ fn native_command_dispatch(task: &str, is_full: bool) {
             .arg(task)
             .env("PATH", root)
             .env("FIXTURE_ROOT", root)
-            .env("FIXTURE_MODE", mode);
-        // Full measurement must bypass the quick-sweep argument.
+            .env("FIXTURE_MODE", mode)
+            .env_remove("SAGAN_BENCH_FAST_SWEEP");
+        // Full measurement must bypass the bounded inventory-sweep mode.
         if is_full {
             let _configured = command.arg("--full");
         }
@@ -454,9 +547,10 @@ fn native_command_dispatch(task: &str, is_full: bool) {
     } else {
         "dylint"
     }));
-    // Quick and full benchmark modes retain distinct child arguments.
+    // Fast and full benchmark modes retain their workload-selection contract.
     if task == "bench" {
-        assert_eq!(calls.contains("--quick"), !is_full);
+        assert!(!calls.contains("--quick"));
+        assert_eq!(calls.contains("fast_sweep=Some(\"1\")"), !is_full);
     }
 }
 
@@ -572,7 +666,7 @@ fn explicit_coverage(root: &Path) -> std::process::Output {
     // Both build directories and process tools remain isolated from the parent.
     let mut command = Command::new(env!("CARGO_BIN_EXE_xtask"));
     command
-        .args(["coverage", "--target-dir"])
+        .args(["coverage", "--min-file-lines", "0", "--target-dir"])
         .arg(root.join("coverage"))
         .args(["--", "-p", "xtask", "--tests"])
         .env("PATH", root)

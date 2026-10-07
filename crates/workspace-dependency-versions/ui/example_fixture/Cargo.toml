@@ -1,0 +1,11 @@
+[package]
+name = "example-fixture"
+version = "0.1.0"
+edition = "2024"
+
+[dev-dependencies]
+old_fixture_dep = "1.0.0"
+
+[[example]]
+name = "main"
+path = "main.rs"

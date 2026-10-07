@@ -1,0 +1,47 @@
+[package]
+name = "test-case"
+version.workspace = true
+description = "Rust review lints for test-case macro misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dylint_linting.workspace = true
+test-case-async-without-test-harness = { workspace = true, features = ["rlib"] }
+test-case-constant-match-guard = { workspace = true, features = ["rlib"] }
+test-case-empty-description = { workspace = true, features = ["rlib"] }
+test-case-empty-ignore-reason = { workspace = true, features = ["rlib"] }
+test-case-empty-matrix = { workspace = true, features = ["rlib"] }
+test-case-empty-panic-message = { workspace = true, features = ["rlib"] }
+test-case-ignore-without-reason = { workspace = true, features = ["rlib"] }
+test-case-ignored-matrix = { workspace = true, features = ["rlib"] }
+test-case-inconclusive-modifier = { workspace = true, features = ["rlib"] }
+test-case-large-suite = { workspace = true, features = ["rlib"] }
+test-case-legacy-inconclusive-description = { workspace = true, features = [
+  "rlib",
+] }
+test-case-nonpositive-almost-precision = { workspace = true, features = [
+  "rlib",
+] }
+test-case-panics-without-message = { workspace = true, features = ["rlib"] }
+test-case-single-case-matrix = { workspace = true, features = ["rlib"] }
+test-case-singleton-contains-in-order = { workspace = true, features = [
+  "rlib",
+] }
+test-case-singleton-matrix-dimension = { workspace = true, features = ["rlib"] }
+test-case-unnamed-test-case = { workspace = true, features = ["rlib"] }
+test-case-whitespace-ignore-reason = { workspace = true, features = ["rlib"] }
+test-case-whitespace-panic-message = { workspace = true, features = ["rlib"] }
+test-case-wildcard-match = { workspace = true, features = ["rlib"] }
+test-case-with-function-path = { workspace = true, features = ["rlib"] }
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

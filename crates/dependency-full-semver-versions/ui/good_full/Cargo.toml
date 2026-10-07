@@ -1,0 +1,11 @@
+[package]
+name = "good-full"
+version = "1.2.3"
+edition = "2024"
+
+[lib]
+path = "lib.rs"
+
+[features]
+a = []
+b = []

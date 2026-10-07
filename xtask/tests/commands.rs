@@ -65,6 +65,7 @@ fn rejects_invalid_percentage_before_cleanup(value: &str) {
 /// Missing option values and unavailable source directories preserve old
 /// reports.
 #[test_case::test_case(&["--min-lines"]; "missing percentage")]
+#[test_case::test_case(&["--min-file-lines", "100.1"]; "invalid per-file percentage")]
 #[test_case::test_case(&["--path"]; "missing path")]
 #[test_case::test_case(&["--path", "/missing-dylints-review-source"]; "nonexistent directory")]
 fn rejects_invalid_options_before_cleanup(arguments: &[&str]) {

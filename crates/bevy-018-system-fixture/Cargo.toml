@@ -1,0 +1,11 @@
+[package]
+name = "bevy-018-system-fixture"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+bevy-018.workspace = true
+
+[lints]
+workspace = true

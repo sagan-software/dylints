@@ -1,0 +1,270 @@
+[package]
+name = "crates"
+version.workspace = true
+description = "Rust review lints for crate-specific documented API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+axum-nest-at-root = { workspace = true, features = ["rlib"] }
+axum-nest-service-at-root = { workspace = true, features = ["rlib"] }
+axum-nest-wildcard-path = { workspace = true, features = ["rlib"] }
+axum-route-empty-path = { workspace = true, features = ["rlib"] }
+axum-route-layer-on-empty-router = { workspace = true, features = ["rlib"] }
+axum-route-legacy-colon-capture = { workspace = true, features = ["rlib"] }
+axum-route-legacy-wildcard-capture = { workspace = true, features = ["rlib"] }
+axum-route-path-missing-slash = { workspace = true, features = ["rlib"] }
+axum-route-service-empty-path = { workspace = true, features = ["rlib"] }
+axum-route-service-router = { workspace = true, features = ["rlib"] }
+bevy-asset-source-after-asset-plugin = { workspace = true, features = ["rlib"] }
+bevy-borrowed-reborrowable = { workspace = true, features = ["rlib"] }
+bevy-camera-modification-in-fixed-update = { workspace = true, features = [
+  "rlib",
+] }
+bevy-children-mutation-query = { workspace = true, features = ["rlib"] }
+bevy-component-field-contention = { workspace = true, features = ["rlib"] }
+bevy-conflicting-query-params = { workspace = true, features = ["rlib"] }
+bevy-conflicting-resource-params = { workspace = true, features = ["rlib"] }
+bevy-continuous-font-size = { workspace = true, features = ["rlib"] }
+bevy-continuous-ui-scale = { workspace = true, features = ["rlib"] }
+bevy-disallow-fixed-update-schedule = { workspace = true, features = ["rlib"] }
+bevy-disallow-update-schedule = { workspace = true, features = ["rlib"] }
+bevy-duplicate-dependencies = { workspace = true, features = ["rlib"] }
+bevy-duplicate-plugin-addition = { workspace = true, features = ["rlib"] }
+bevy-frame-button-edge-in-fixed-update = { workspace = true, features = [
+  "rlib",
+] }
+bevy-global-transform-mutation-query = { workspace = true, features = ["rlib"] }
+bevy-incompatible-msaa = { workspace = true, features = ["rlib"] }
+bevy-inherited-visibility-mutation-query = { workspace = true, features = [
+  "rlib",
+] }
+bevy-insert-message-resource = { workspace = true, features = ["rlib"] }
+bevy-invalid-constant-font-size = { workspace = true, features = ["rlib"] }
+bevy-iter-current-update-messages = { workspace = true, features = ["rlib"] }
+bevy-large-component = { workspace = true, features = ["rlib"] }
+bevy-large-component-change-filter = { workspace = true, features = ["rlib"] }
+bevy-load-builder-replaced-guard = { workspace = true, features = ["rlib"] }
+bevy-main-return-without-app-exit = { workspace = true, features = ["rlib"] }
+bevy-message-presence-without-consumption = { workspace = true, features = [
+  "rlib",
+] }
+bevy-missing-clone-for-unit-component = { workspace = true, features = [
+  "rlib",
+] }
+bevy-missing-copy-for-unit-component = { workspace = true, features = ["rlib"] }
+bevy-missing-default-for-unit-component = { workspace = true, features = [
+  "rlib",
+] }
+bevy-missing-reflect = { workspace = true, features = ["rlib"] }
+bevy-mouse-displacement-times-delta = { workspace = true, features = ["rlib"] }
+bevy-narrow-exclusive-system = { workspace = true, features = ["rlib"] }
+bevy-partially-used-query-data = { workspace = true, features = ["rlib"] }
+bevy-presence-only-query-fetch = { workspace = true, features = ["rlib"] }
+bevy-readonly-system-access = { workspace = true, features = ["rlib"] }
+bevy-text-span-with-layout = { workspace = true, features = ["rlib"] }
+bevy-time-elapsed-secs-cast-f64 = { workspace = true, features = ["rlib"] }
+bevy-unconventional-naming = { workspace = true, features = ["rlib"] }
+bevy-unfiltered-entity-access-query = { workspace = true, features = ["rlib"] }
+bevy-unit-in-bundle = { workspace = true, features = ["rlib"] }
+bevy-wide-query-access = { workspace = true, features = ["rlib"] }
+bevy-world-entity = { workspace = true, features = ["rlib"] }
+bevy-world-entity-mut = { workspace = true, features = ["rlib"] }
+bevy-world-insert-batch = { workspace = true, features = ["rlib"] }
+bevy-world-insert-batch-if-new = { workspace = true, features = ["rlib"] }
+bevy-world-non-send = { workspace = true, features = ["rlib"] }
+bevy-world-non-send-mut = { workspace = true, features = ["rlib"] }
+bevy-world-resource = { workspace = true, features = ["rlib"] }
+bevy-world-resource-mut = { workspace = true, features = ["rlib"] }
+bevy-world-resource-ref = { workspace = true, features = ["rlib"] }
+bevy-world-run-schedule = { workspace = true, features = ["rlib"] }
+bevy-world-schedule-scope = { workspace = true, features = ["rlib"] }
+bevy-zst-query = { workspace = true, features = ["rlib"] }
+clap-allow-hyphen-values-without-num-args = { workspace = true, features = [
+  "rlib",
+] }
+clap-allow-negative-numbers-without-num-args = { workspace = true, features = [
+  "rlib",
+] }
+clap-command-with-arguments-option = { workspace = true, features = ["rlib"] }
+clap-derive-author-without-help-template = { workspace = true, features = [
+  "rlib",
+] }
+clap-derive-bool-default-true = { workspace = true, features = ["rlib"] }
+clap-derive-redundant-action = { workspace = true, features = ["rlib"] }
+clap-derive-redundant-value-parser = { workspace = true, features = ["rlib"] }
+clap-derive-vec-vec-without-num-args = { workspace = true, features = ["rlib"] }
+clap-derive-verbatim-doc-comment-without-doc = { workspace = true, features = [
+  "rlib",
+] }
+clap-external-subcommand-parser-without-external-subcommands = { workspace = true, features = [
+  "rlib",
+] }
+clap-index-on-option = { workspace = true, features = ["rlib"] }
+clap-last-option = { workspace = true, features = ["rlib"] }
+clap-multicall-no-binary-name = { workspace = true, features = ["rlib"] }
+clap-require-equals-without-num-args = { workspace = true, features = ["rlib"] }
+clap-required-conditional-conflict = { workspace = true, features = ["rlib"] }
+clap-trailing-var-arg-without-num-args = { workspace = true, features = [
+  "rlib",
+] }
+dylint_linting.workspace = true
+insta-allow-empty-glob = { workspace = true, features = ["rlib"] }
+insta-binary-snapshot-missing-extension = { workspace = true, features = [
+  "rlib",
+] }
+insta-bind-to-scope-in-async = { workspace = true, features = ["rlib"] }
+insta-compact-json-snapshot = { workspace = true, features = ["rlib"] }
+insta-content-direct-match = { workspace = true, features = ["rlib"] }
+insta-deprecated-assert-display = { workspace = true, features = ["rlib"] }
+insta-empty-description = { workspace = true, features = ["rlib"] }
+insta-empty-filter-pattern = { workspace = true, features = ["rlib"] }
+insta-empty-input-file = { workspace = true, features = ["rlib"] }
+insta-empty-snapshot-path = { workspace = true, features = ["rlib"] }
+insta-empty-snapshot-suffix = { workspace = true, features = ["rlib"] }
+insta-glob-parent-traversal = { workspace = true, features = ["rlib"] }
+insta-json-snapshot = { workspace = true, features = ["rlib"] }
+insta-no-module-prefix = { workspace = true, features = ["rlib"] }
+insta-noop-filter = { workspace = true, features = ["rlib"] }
+insta-redundant-content-resolve-inner = { workspace = true, features = [
+  "rlib",
+] }
+insta-settings-bind-future = { workspace = true, features = ["rlib"] }
+insta-settings-new = { workspace = true, features = ["rlib"] }
+insta-settings-raw-info = { workspace = true, features = ["rlib"] }
+insta-snapshot-in-loop = { workspace = true, features = ["rlib"] }
+reqwest-blocking-in-async = { workspace = true, features = ["rlib"] }
+reqwest-client-in-loop = { workspace = true, features = ["rlib"] }
+reqwest-client-wrapped-in-shared-pointer = { workspace = true, features = [
+  "rlib",
+] }
+reqwest-cookie-provider-overridden = { workspace = true, features = ["rlib"] }
+reqwest-get-in-loop = { workspace = true, features = ["rlib"] }
+reqwest-multipart-manual-content-type = { workspace = true, features = [
+  "rlib",
+] }
+reqwest-retry-invalid-max-extra-load = { workspace = true, features = ["rlib"] }
+reqwest-retry-no-budget = { workspace = true, features = ["rlib"] }
+reqwest-tls-danger-invalid-certs = { workspace = true, features = ["rlib"] }
+reqwest-tls-danger-invalid-hostnames = { workspace = true, features = ["rlib"] }
+schemars-json-schema-ref-return = { workspace = true, features = ["rlib"] }
+schemars-recursive-inline-schema = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-default = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-deny-unknown-fields = { workspace = true, features = [
+  "rlib",
+] }
+schemars-redundant-serde-rename = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-rename-all = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-skip = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-tag = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-transparent = { workspace = true, features = ["rlib"] }
+schemars-schema-for-value-json-schema = { workspace = true, features = [
+  "rlib",
+] }
+serde-all-fields-default = { workspace = true, features = ["rlib"] }
+serde-borrow-redundant-str-bytes = { workspace = true, features = ["rlib"] }
+serde-cow-missing-borrow = { workspace = true, features = ["rlib"] }
+serde-deserialize-any-portability = { workspace = true, features = ["rlib"] }
+serde-expecting-style = { workspace = true, features = ["rlib"] }
+serde-fallback-missing-other = { workspace = true, features = ["rlib"] }
+serde-flatten-deny-unknown-fields = { workspace = true, features = ["rlib"] }
+serde-inert-directional-attr = { workspace = true, features = ["rlib"] }
+serde-manual-rename-all = { workspace = true, features = ["rlib"] }
+serde-serialize-str-to-string = { workspace = true, features = ["rlib"] }
+serde-skip-serializing-roundtrip = { workspace = true, features = ["rlib"] }
+serde-skip-serializing-variant-error = { workspace = true, features = ["rlib"] }
+serde-untagged-missing-expecting = { workspace = true, features = ["rlib"] }
+sqlx-assert-sql-safe = { workspace = true, features = ["rlib"] }
+sqlx-empty-push-tuples = { workspace = true, features = ["rlib"] }
+sqlx-empty-push-values = { workspace = true, features = ["rlib"] }
+sqlx-panicking-row-get = { workspace = true, features = ["rlib"] }
+sqlx-panicking-statement-column = { workspace = true, features = ["rlib"] }
+sqlx-pool-connection-leak = { workspace = true, features = ["rlib"] }
+sqlx-query-builder-push-interpolation = { workspace = true, features = [
+  "rlib",
+] }
+sqlx-query-builder-push-unseparated-interpolation = { workspace = true, features = [
+  "rlib",
+] }
+sqlx-unchecked-query-macro = { workspace = true, features = ["rlib"] }
+sqlx-zero-max-connections = { workspace = true, features = ["rlib"] }
+strum-enum-representation = { workspace = true, features = ["rlib"] }
+test-case-async-without-test-harness = { workspace = true, features = ["rlib"] }
+test-case-constant-match-guard = { workspace = true, features = ["rlib"] }
+test-case-empty-description = { workspace = true, features = ["rlib"] }
+test-case-empty-ignore-reason = { workspace = true, features = ["rlib"] }
+test-case-empty-matrix = { workspace = true, features = ["rlib"] }
+test-case-empty-panic-message = { workspace = true, features = ["rlib"] }
+test-case-ignore-without-reason = { workspace = true, features = ["rlib"] }
+test-case-ignored-matrix = { workspace = true, features = ["rlib"] }
+test-case-inconclusive-modifier = { workspace = true, features = ["rlib"] }
+test-case-large-suite = { workspace = true, features = ["rlib"] }
+test-case-legacy-inconclusive-description = { workspace = true, features = [
+  "rlib",
+] }
+test-case-nonpositive-almost-precision = { workspace = true, features = [
+  "rlib",
+] }
+test-case-panics-without-message = { workspace = true, features = ["rlib"] }
+test-case-single-case-matrix = { workspace = true, features = ["rlib"] }
+test-case-singleton-contains-in-order = { workspace = true, features = [
+  "rlib",
+] }
+test-case-singleton-matrix-dimension = { workspace = true, features = ["rlib"] }
+test-case-unnamed-test-case = { workspace = true, features = ["rlib"] }
+test-case-whitespace-ignore-reason = { workspace = true, features = ["rlib"] }
+test-case-whitespace-panic-message = { workspace = true, features = ["rlib"] }
+test-case-wildcard-match = { workspace = true, features = ["rlib"] }
+test-case-with-function-path = { workspace = true, features = ["rlib"] }
+thiserror-named-field-positional-format = { workspace = true, features = [
+  "rlib",
+] }
+thiserror-no-std-path-display = { workspace = true, features = ["rlib"] }
+thiserror-raw-field-format = { workspace = true, features = ["rlib"] }
+thiserror-redundant-backtrace-attr = { workspace = true, features = ["rlib"] }
+thiserror-redundant-from-source = { workspace = true, features = ["rlib"] }
+thiserror-redundant-named-source = { workspace = true, features = ["rlib"] }
+thiserror-self-display-recursion = { workspace = true, features = ["rlib"] }
+thiserror-source-field-opt-out = { workspace = true, features = ["rlib"] }
+thiserror-transparent-single-source-display = { workspace = true, features = [
+  "rlib",
+] }
+thiserror-tuple-format-positional-ambiguity = { workspace = true, features = [
+  "rlib",
+] }
+tokio-blocking-call-in-async = { workspace = true, features = ["rlib"] }
+tokio-handle-block-on-in-async = { workspace = true, features = ["rlib"] }
+tokio-runtime-block-on-in-async = { workspace = true, features = ["rlib"] }
+tokio-runtime-new-in-async = { workspace = true, features = ["rlib"] }
+tokio-sleep-in-loop = { workspace = true, features = ["rlib"] }
+tokio-spawn-blocking-async-closure = { workspace = true, features = ["rlib"] }
+tokio-unbounded-channel = { workspace = true, features = ["rlib"] }
+tokio-zero-capacity-channel = { workspace = true, features = ["rlib"] }
+tokio-zero-duration-interval = { workspace = true, features = ["rlib"] }
+tokio-zero-runtime-thread-count = { workspace = true, features = ["rlib"] }
+tracing-async-block-in-sync-scope = { workspace = true, features = ["rlib"] }
+tracing-await-holding-span-guard = { workspace = true, features = ["rlib"] }
+tracing-current-span-enter = { workspace = true, features = ["rlib"] }
+tracing-current-span-or-current = { workspace = true, features = ["rlib"] }
+tracing-direct-record-all = { workspace = true, features = ["rlib"] }
+tracing-format-field = { workspace = true, features = ["rlib"] }
+tracing-instrument-current-span = { workspace = true, features = ["rlib"] }
+tracing-message-interpolation = { workspace = true, features = ["rlib"] }
+tracing-none-enter = { workspace = true, features = ["rlib"] }
+tracing-none-or-current = { workspace = true, features = ["rlib"] }
+tracing-none-record = { workspace = true, features = ["rlib"] }
+tracing-redundant-field-assignment = { workspace = true, features = ["rlib"] }
+tracing-redundant-in-current-span = { workspace = true, features = ["rlib"] }
+tracing-to-string-field = { workspace = true, features = ["rlib"] }
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

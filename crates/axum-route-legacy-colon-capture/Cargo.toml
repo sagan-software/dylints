@@ -1,0 +1,34 @@
+[package]
+name = "axum-route-legacy-colon-capture"
+version.workspace = true
+description = "A lint to check for Axum 0.7 colon captures"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+axum-support.workspace = true
+dylint-support.workspace = true
+dylint_linting.workspace = true
+[dev-dependencies]
+axum.workspace = true
+dylint_testing.workspace = true
+
+[[example]]
+name = "main"
+path = "ui/main.rs"
+test = false
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true
+
+[package.metadata.dylint]
+category = "axum"

@@ -1,383 +1,401 @@
 [workspace]
-# Category globs omit the aggregate library source directory `lints/src`.
-# Cargo discovers each group's path dependencies as workspace members.
-members = ["lints", "lints/[!su]*", "lints/s[tu]*", "lints/crates/[!s]*", "lints/crates/s[ceqt]*", "support", "web", "xtask"]
+# Workspace crates are direct children of crates; the one-level glob keeps nested UI fixtures isolated.
+members = ["crates/*", "xtask"]
 resolver = "3"
 
 [workspace.package]
-version = "0.2.1"
+version = "0.3.0"
 edition = "2024"
-# Dylint builds Git-selected libraries with the pinned rustc_private toolchain.
-# These libraries are distributed through Git tags instead of crates.io.
+# Compiler-specific lint libraries are consumed through Dylint Git discovery, not crates.io.
 publish = false
 
 [workspace.dependencies]
-interleaved_doc_attributes = { path = "lints/style/interleaved_doc_attributes" }
-semver = "1.0.28"
-cargo_lints = { package = "cargo", path = "lints/cargo" }
-complexity_lints = { package = "complexity", path = "lints/complexity" }
-correctness_lints = { package = "correctness", path = "lints/correctness" }
-crates_lints = { package = "crates", path = "lints/crates" }
-maintainability_lints = { package = "maintainability", path = "lints/maintainability" }
-perf_lints = { package = "perf", path = "lints/perf" }
-restriction_lints = { package = "restriction", path = "lints/restriction" }
-style_lints = { package = "style", path = "lints/style" }
-suspicious_lints = { package = "suspicious", path = "lints/suspicious" }
-ambiguous_numeric_unit_field = { path = "lints/restriction/ambiguous_numeric_unit_field" }
-consecutive_iterator_loops = { path = "lints/complexity/consecutive_iterator_loops" }
-contains_key_before_any = { path = "lints/complexity/contains_key_before_any" }
-insufficient_public_documentation = { path = "lints/restriction/insufficient_public_documentation" }
-manual_adjacent_window_loop = { path = "lints/complexity/manual_adjacent_window_loop" }
-manual_fallible_collect_loop = { path = "lints/complexity/manual_fallible_collect_loop" }
-manual_filter_for_each_loop = { path = "lints/complexity/manual_filter_for_each_loop" }
-manual_filter_map_for_each_loop = { path = "lints/complexity/manual_filter_map_for_each_loop" }
-manual_passthrough_inspect = { path = "lints/complexity/manual_passthrough_inspect" }
-manual_test_cases = { path = "lints/restriction/manual_test_cases" }
-manual_try_for_each_loop = { path = "lints/complexity/manual_try_for_each_loop" }
-many_assertions_in_test = { path = "lints/restriction/many_assertions_in_test" }
-missing_doctest_examples = { path = "lints/restriction/missing_doctest_examples" }
-one_use_predicate_binding = { path = "lints/complexity/one_use_predicate_binding" }
-one_use_private_helper = { path = "lints/complexity/one_use_private_helper" }
-owned_input_field_clones = { path = "lints/perf/owned_input_field_clones" }
-ownership_at_boundaries = { path = "lints/perf/ownership_at_boundaries" }
-path_attribute_outside_root = { path = "lints/restriction/path_attribute_outside_root" }
-public_serde_schema_derive = { path = "lints/restriction/public_serde_schema_derive" }
-trivial_public_constructor = { path = "lints/complexity/trivial_public_constructor" }
-unnecessary_module_directory = { path = "lints/restriction/unnecessary_module_directory" }
-unnecessary_public_type = { path = "lints/restriction/unnecessary_public_type" }
-# Local lint groups and helpers. Features stay on each consumer.
-abc_size = { path = "lints/maintainability/abc_size" }
-ad_hoc_as_ref = { path = "lints/style/ad_hoc_as_ref" }
-ad_hoc_borrow = { path = "lints/style/ad_hoc_borrow" }
-ad_hoc_default = { path = "lints/style/ad_hoc_default" }
-ad_hoc_display = { path = "lints/style/ad_hoc_display" }
-ad_hoc_from = { path = "lints/style/ad_hoc_from" }
-ad_hoc_from_str = { path = "lints/style/ad_hoc_from_str" }
-ad_hoc_into_iterator = { path = "lints/style/ad_hoc_into_iterator" }
-ad_hoc_iterator = { path = "lints/style/ad_hoc_iterator" }
-ad_hoc_try_from = { path = "lints/style/ad_hoc_try_from" }
-axum_nest_at_root = { package = "axum-nest-at-root", path = "lints/crates/axum/axum-nest-at-root" }
-axum_nest_service_at_root = { package = "axum-nest-service-at-root", path = "lints/crates/axum/axum-nest-service-at-root" }
-axum_nest_wildcard_path = { package = "axum-nest-wildcard-path", path = "lints/crates/axum/axum-nest-wildcard-path" }
-axum_route_empty_path = { package = "axum-route-empty-path", path = "lints/crates/axum/axum-route-empty-path" }
-axum_route_layer_on_empty_router = { package = "axum-route-layer-on-empty-router", path = "lints/crates/axum/axum-route-layer-on-empty-router" }
-axum_route_legacy_colon_capture = { package = "axum-route-legacy-colon-capture", path = "lints/crates/axum/axum-route-legacy-colon-capture" }
-axum_route_legacy_wildcard_capture = { package = "axum-route-legacy-wildcard-capture", path = "lints/crates/axum/axum-route-legacy-wildcard-capture" }
-axum_route_path_missing_slash = { package = "axum-route-path-missing-slash", path = "lints/crates/axum/axum-route-path-missing-slash" }
-axum_route_service_empty_path = { package = "axum-route-service-empty-path", path = "lints/crates/axum/axum-route-service-empty-path" }
-axum_route_service_router = { package = "axum-route-service-router", path = "lints/crates/axum/axum-route-service-router" }
-axum_support = { package = "axum-support", path = "lints/crates/axum/support" }
-bevy-018-system-fixture = { path = "lints/crates/bevy/bevy-conflicting-query-params/ui/bevy018_fixture" }
-bevy-support = { path = "lints/crates/bevy/support" }
-bevy_asset_source_after_asset_plugin = { package = "bevy-asset-source-after-asset-plugin", path = "lints/crates/bevy/bevy-asset-source-after-asset-plugin" }
-bevy_borrowed_reborrowable = { package = "bevy-borrowed-reborrowable", path = "lints/crates/bevy/bevy-borrowed-reborrowable" }
-bevy_camera_modification_in_fixed_update = { package = "bevy-camera-modification-in-fixed-update", path = "lints/crates/bevy/bevy-camera-modification-in-fixed-update" }
-bevy_children_mutation_query = { package = "bevy-children-mutation-query", path = "lints/crates/bevy/bevy-children-mutation-query" }
-bevy_component_field_contention = { package = "bevy-component-field-contention", path = "lints/crates/bevy/bevy-component-field-contention" }
-bevy_conflicting_query_params = { package = "bevy-conflicting-query-params", path = "lints/crates/bevy/bevy-conflicting-query-params" }
-bevy_conflicting_resource_params = { package = "bevy-conflicting-resource-params", path = "lints/crates/bevy/bevy-conflicting-resource-params" }
-bevy_continuous_font_size = { package = "bevy-continuous-font-size", path = "lints/crates/bevy/bevy-continuous-font-size" }
-bevy_continuous_ui_scale = { package = "bevy-continuous-ui-scale", path = "lints/crates/bevy/bevy-continuous-ui-scale" }
-bevy_disallow_fixed_update_schedule = { package = "bevy-disallow-fixed-update-schedule", path = "lints/crates/bevy/bevy-disallow-fixed-update-schedule" }
-bevy_disallow_update_schedule = { package = "bevy-disallow-update-schedule", path = "lints/crates/bevy/bevy-disallow-update-schedule" }
-bevy_duplicate_dependencies = { package = "bevy-duplicate-dependencies", path = "lints/crates/bevy/bevy-duplicate-dependencies" }
-bevy_duplicate_plugin_addition = { package = "bevy-duplicate-plugin-addition", path = "lints/crates/bevy/bevy-duplicate-plugin-addition" }
-bevy_frame_button_edge_in_fixed_update = { package = "bevy-frame-button-edge-in-fixed-update", path = "lints/crates/bevy/bevy-frame-button-edge-in-fixed-update" }
-bevy_global_transform_mutation_query = { package = "bevy-global-transform-mutation-query", path = "lints/crates/bevy/bevy-global-transform-mutation-query" }
-bevy_incompatible_msaa = { package = "bevy-incompatible-msaa", path = "lints/crates/bevy/bevy-incompatible-msaa" }
-bevy_inherited_visibility_mutation_query = { package = "bevy-inherited-visibility-mutation-query", path = "lints/crates/bevy/bevy-inherited-visibility-mutation-query" }
-bevy_insert_message_resource = { package = "bevy-insert-message-resource", path = "lints/crates/bevy/bevy-insert-message-resource" }
-bevy_invalid_constant_font_size = { package = "bevy-invalid-constant-font-size", path = "lints/crates/bevy/bevy-invalid-constant-font-size" }
-bevy_iter_current_update_messages = { package = "bevy-iter-current-update-messages", path = "lints/crates/bevy/bevy-iter-current-update-messages" }
-bevy_large_component = { package = "bevy-large-component", path = "lints/crates/bevy/bevy-large-component" }
-bevy_large_component_change_filter = { package = "bevy-large-component-change-filter", path = "lints/crates/bevy/bevy-large-component-change-filter" }
-bevy_load_builder_replaced_guard = { package = "bevy-load-builder-replaced-guard", path = "lints/crates/bevy/bevy-load-builder-replaced-guard" }
-bevy_main_return_without_app_exit = { package = "bevy-main-return-without-app-exit", path = "lints/crates/bevy/bevy-main-return-without-app-exit" }
-bevy_message_presence_without_consumption = { package = "bevy-message-presence-without-consumption", path = "lints/crates/bevy/bevy-message-presence-without-consumption" }
-bevy_missing_clone_for_unit_component = { package = "bevy-missing-clone-for-unit-component", path = "lints/crates/bevy/bevy-missing-clone-for-unit-component" }
-bevy_missing_copy_for_unit_component = { package = "bevy-missing-copy-for-unit-component", path = "lints/crates/bevy/bevy-missing-copy-for-unit-component" }
-bevy_missing_default_for_unit_component = { package = "bevy-missing-default-for-unit-component", path = "lints/crates/bevy/bevy-missing-default-for-unit-component" }
-bevy_missing_reflect = { package = "bevy-missing-reflect", path = "lints/crates/bevy/bevy-missing-reflect" }
-bevy_mouse_displacement_times_delta = { package = "bevy-mouse-displacement-times-delta", path = "lints/crates/bevy/bevy-mouse-displacement-times-delta" }
-bevy_narrow_exclusive_system = { package = "bevy-narrow-exclusive-system", path = "lints/crates/bevy/bevy-narrow-exclusive-system" }
-bevy_partially_used_query_data = { package = "bevy-partially-used-query-data", path = "lints/crates/bevy/bevy-partially-used-query-data" }
-bevy_presence_only_query_fetch = { package = "bevy-presence-only-query-fetch", path = "lints/crates/bevy/bevy-presence-only-query-fetch" }
-bevy_readonly_system_access = { package = "bevy-readonly-system-access", path = "lints/crates/bevy/bevy-readonly-system-access" }
-bevy_text_span_with_layout = { package = "bevy-text-span-with-layout", path = "lints/crates/bevy/bevy-text-span-with-layout" }
-bevy_time_elapsed_secs_cast_f64 = { package = "bevy-time-elapsed-secs-cast-f64", path = "lints/crates/bevy/bevy-time-elapsed-secs-cast-f64" }
-bevy_unconventional_naming = { package = "bevy-unconventional-naming", path = "lints/crates/bevy/bevy-unconventional-naming" }
-bevy_unfiltered_entity_access_query = { package = "bevy-unfiltered-entity-access-query", path = "lints/crates/bevy/bevy-unfiltered-entity-access-query" }
-bevy_unit_in_bundle = { package = "bevy-unit-in-bundle", path = "lints/crates/bevy/bevy-unit-in-bundle" }
-bevy_wide_query_access = { package = "bevy-wide-query-access", path = "lints/crates/bevy/bevy-wide-query-access" }
-bevy_world_entity = { package = "bevy-world-entity", path = "lints/crates/bevy/bevy-world-entity" }
-bevy_world_entity_mut = { package = "bevy-world-entity-mut", path = "lints/crates/bevy/bevy-world-entity-mut" }
-bevy_world_insert_batch = { package = "bevy-world-insert-batch", path = "lints/crates/bevy/bevy-world-insert-batch" }
-bevy_world_insert_batch_if_new = { package = "bevy-world-insert-batch-if-new", path = "lints/crates/bevy/bevy-world-insert-batch-if-new" }
-bevy_world_non_send = { package = "bevy-world-non-send", path = "lints/crates/bevy/bevy-world-non-send" }
-bevy_world_non_send_mut = { package = "bevy-world-non-send-mut", path = "lints/crates/bevy/bevy-world-non-send-mut" }
-bevy_world_resource = { package = "bevy-world-resource", path = "lints/crates/bevy/bevy-world-resource" }
-bevy_world_resource_mut = { package = "bevy-world-resource-mut", path = "lints/crates/bevy/bevy-world-resource-mut" }
-bevy_world_resource_ref = { package = "bevy-world-resource-ref", path = "lints/crates/bevy/bevy-world-resource-ref" }
-bevy_world_run_schedule = { package = "bevy-world-run-schedule", path = "lints/crates/bevy/bevy-world-run-schedule" }
-bevy_world_schedule_scope = { package = "bevy-world-schedule-scope", path = "lints/crates/bevy/bevy-world-schedule-scope" }
-bevy_zst_query = { package = "bevy-zst-query", path = "lints/crates/bevy/bevy-zst-query" }
-bool_name_prefix = { path = "lints/style/bool_name_prefix" }
-boxed_future_return = { path = "lints/perf/boxed_future_return" }
-broad_string_error_variant = { path = "lints/suspicious/broad_string_error_variant" }
-cargo_support = { package = "cargo-support", path = "lints/cargo/support" }
-clap_allow_hyphen_values_without_num_args = { package = "clap-allow-hyphen-values-without-num-args", path = "lints/crates/clap/clap-allow-hyphen-values-without-num-args" }
-clap_allow_negative_numbers_without_num_args = { package = "clap-allow-negative-numbers-without-num-args", path = "lints/crates/clap/clap-allow-negative-numbers-without-num-args" }
-clap_command_with_arguments_option = { package = "clap-command-with-arguments-option", path = "lints/crates/clap/clap-command-with-arguments-option" }
-clap_derive_author_without_help_template = { package = "clap-derive-author-without-help-template", path = "lints/crates/clap/clap-derive-author-without-help-template" }
-clap_derive_bool_default_true = { package = "clap-derive-bool-default-true", path = "lints/crates/clap/clap-derive-bool-default-true" }
-clap_derive_redundant_action = { package = "clap-derive-redundant-action", path = "lints/crates/clap/clap-derive-redundant-action" }
-clap_derive_redundant_value_parser = { package = "clap-derive-redundant-value-parser", path = "lints/crates/clap/clap-derive-redundant-value-parser" }
-clap_derive_vec_vec_without_num_args = { package = "clap-derive-vec-vec-without-num-args", path = "lints/crates/clap/clap-derive-vec-vec-without-num-args" }
-clap_derive_verbatim_doc_comment_without_doc = { package = "clap-derive-verbatim-doc-comment-without-doc", path = "lints/crates/clap/clap-derive-verbatim-doc-comment-without-doc" }
-clap_external_subcommand_parser_without_external_subcommands = { package = "clap-external-subcommand-parser-without-external-subcommands", path = "lints/crates/clap/clap-external-subcommand-parser-without-external-subcommands" }
-clap_index_on_option = { package = "clap-index-on-option", path = "lints/crates/clap/clap-index-on-option" }
-clap_last_option = { package = "clap-last-option", path = "lints/crates/clap/clap-last-option" }
-clap_multicall_no_binary_name = { package = "clap-multicall-no-binary-name", path = "lints/crates/clap/clap-multicall-no-binary-name" }
-clap_require_equals_without_num_args = { package = "clap-require-equals-without-num-args", path = "lints/crates/clap/clap-require-equals-without-num-args" }
-clap_required_conditional_conflict = { package = "clap-required-conditional-conflict", path = "lints/crates/clap/clap-required-conditional-conflict" }
-clap_support = { package = "clap-support", path = "lints/crates/clap/support" }
-clap_trailing_var_arg_without_num_args = { package = "clap-trailing-var-arg-without-num-args", path = "lints/crates/clap/clap-trailing-var-arg-without-num-args" }
-collect_return = { path = "lints/complexity/collect_return" }
-collection_bool_result = { path = "lints/suspicious/collection_bool_result" }
-complicated_conditional = { path = "lints/complexity/complicated_conditional" }
-country_string_field = { path = "lints/restriction/country_string_field" }
-custom_well_known_type = { path = "lints/restriction/custom_well_known_type" }
-crap_score = { path = "lints/maintainability/crap_score" }
-cyclomatic_complexity = { path = "lints/maintainability/cyclomatic_complexity" }
-date_string_field = { path = "lints/restriction/date_string_field" }
-datetime_integer_field = { path = "lints/restriction/datetime_integer_field" }
-dependency_full_semver_versions = { path = "lints/cargo/dependency_full_semver_versions" }
-dependency_key_order = { path = "lints/cargo/dependency_key_order" }
-doc_attr_comment = { path = "lints/style/doc_attr_comment" }
-duration_integer_field = { path = "lints/restriction/duration_integer_field" }
-dylint-support = { path = "support" }
-dylint_support = { package = "dylint-support", path = "support" }
-expensive_as_method = { path = "lints/perf/expensive_as_method" }
-expensive_sort_key = { path = "lints/perf/expensive_sort_key" }
-field_usage_cohesion = { path = "lints/maintainability/field_usage_cohesion" }
-hardcoded_path = { path = "lints/restriction/hardcoded_path" }
-http_method_string = { path = "lints/restriction/http_method_string" }
-impl_method_count = { path = "lints/maintainability/impl_method_count" }
-insta_allow_empty_glob = { package = "insta-allow-empty-glob", path = "lints/crates/insta/insta-allow-empty-glob" }
-insta_binary_snapshot_missing_extension = { package = "insta-binary-snapshot-missing-extension", path = "lints/crates/insta/insta-binary-snapshot-missing-extension" }
-insta_bind_to_scope_in_async = { package = "insta-bind-to-scope-in-async", path = "lints/crates/insta/insta-bind-to-scope-in-async" }
-insta_compact_json_snapshot = { package = "insta-compact-json-snapshot", path = "lints/crates/insta/insta-compact-json-snapshot" }
-insta_content_direct_match = { package = "insta-content-direct-match", path = "lints/crates/insta/insta-content-direct-match" }
-insta_deprecated_assert_display = { package = "insta-deprecated-assert-display", path = "lints/crates/insta/insta-deprecated-assert-display" }
-insta_empty_description = { package = "insta-empty-description", path = "lints/crates/insta/insta-empty-description" }
-insta_empty_filter_pattern = { package = "insta-empty-filter-pattern", path = "lints/crates/insta/insta-empty-filter-pattern" }
-insta_empty_input_file = { package = "insta-empty-input-file", path = "lints/crates/insta/insta-empty-input-file" }
-insta_empty_snapshot_path = { package = "insta-empty-snapshot-path", path = "lints/crates/insta/insta-empty-snapshot-path" }
-insta_empty_snapshot_suffix = { package = "insta-empty-snapshot-suffix", path = "lints/crates/insta/insta-empty-snapshot-suffix" }
-insta_glob_parent_traversal = { package = "insta-glob-parent-traversal", path = "lints/crates/insta/insta-glob-parent-traversal" }
-insta_json_snapshot = { package = "insta-json-snapshot", path = "lints/crates/insta/insta-json-snapshot" }
-insta_no_module_prefix = { package = "insta-no-module-prefix", path = "lints/crates/insta/insta-no-module-prefix" }
-insta_noop_filter = { package = "insta-noop-filter", path = "lints/crates/insta/insta-noop-filter" }
-insta_redundant_content_resolve_inner = { package = "insta-redundant-content-resolve-inner", path = "lints/crates/insta/insta-redundant-content-resolve-inner" }
-insta_settings_bind_future = { package = "insta-settings-bind-future", path = "lints/crates/insta/insta-settings-bind-future" }
-insta_settings_new = { package = "insta-settings-new", path = "lints/crates/insta/insta-settings-new" }
-insta_settings_raw_info = { package = "insta-settings-raw-info", path = "lints/crates/insta/insta-settings-raw-info" }
-insta_snapshot_in_loop = { package = "insta-snapshot-in-loop", path = "lints/crates/insta/insta-snapshot-in-loop" }
-insta_support = { package = "insta-support", path = "lints/crates/insta/support" }
-internal_import_self = { path = "lints/style/internal_import_self" }
-interpolated_logging = { path = "lints/restriction/interpolated_logging" }
-large_rust_crate = { path = "lints/restriction/large_rust_crate" }
-large_rust_file = { path = "lints/restriction/large_rust_file" }
-let_some_return_err = { path = "lints/complexity/let_some_return_err" }
-logged_conversion_impl = { path = "lints/suspicious/logged_conversion_impl" }
-logged_error_continue = { path = "lints/correctness/logged_error_continue" }
-maintainability-support = { path = "lints/maintainability/support" }
-manual_arg_parsing = { path = "lints/complexity/manual_arg_parsing" }
-manual_debug_impl = { path = "lints/style/manual_debug_impl" }
-manual_default_impl = { path = "lints/style/manual_default_impl" }
-manual_entry_update = { path = "lints/complexity/manual_entry_update" }
-manual_error_impl = { path = "lints/style/manual_error_impl" }
-manual_extend_loop = { path = "lints/complexity/manual_extend_loop" }
-manual_iterator_loop = { path = "lints/complexity/manual_iterator_loop" }
-manual_option_take_if = { path = "lints/complexity/manual_option_take_if" }
-manual_partition_loop = { path = "lints/complexity/manual_partition_loop" }
-manual_unzip_loop = { path = "lints/complexity/manual_unzip_loop" }
-many_exit_points = { path = "lints/maintainability/many_exit_points" }
-missing_clippy_toml = { path = "lints/cargo/missing_clippy_toml" }
-missing_intent_comments = { path = "lints/restriction/missing_intent_comments" }
-missing_rust_toolchain_toml = { path = "lints/cargo/missing_rust_toolchain_toml" }
-module_dependency_cycle = { path = "lints/maintainability/module_dependency_cycle" }
-module_fan_out = { path = "lints/maintainability/module_fan_out" }
-module_type_first = { path = "lints/style/module_type_first" }
-npath_complexity = { path = "lints/maintainability/npath_complexity" }
-package_lints_section = { path = "lints/cargo/package_lints_section" }
-panic_in_main = { path = "lints/correctness/panic_in_main" }
-path_string_field = { path = "lints/restriction/path_string_field" }
-public_surface_size = { path = "lints/maintainability/public_surface_size" }
-repeated_cfg_gate = { path = "lints/restriction/repeated_cfg_gate" }
-reqwest_blocking_in_async = { package = "reqwest-blocking-in-async", path = "lints/crates/reqwest/reqwest-blocking-in-async" }
-reqwest_client_in_loop = { package = "reqwest-client-in-loop", path = "lints/crates/reqwest/reqwest-client-in-loop" }
-reqwest_client_wrapped_in_shared_pointer = { package = "reqwest-client-wrapped-in-shared-pointer", path = "lints/crates/reqwest/reqwest-client-wrapped-in-shared-pointer" }
-reqwest_cookie_provider_overridden = { package = "reqwest-cookie-provider-overridden", path = "lints/crates/reqwest/reqwest-cookie-provider-overridden" }
-reqwest_get_in_loop = { package = "reqwest-get-in-loop", path = "lints/crates/reqwest/reqwest-get-in-loop" }
-reqwest_multipart_manual_content_type = { package = "reqwest-multipart-manual-content-type", path = "lints/crates/reqwest/reqwest-multipart-manual-content-type" }
-reqwest_retry_invalid_max_extra_load = { package = "reqwest-retry-invalid-max-extra-load", path = "lints/crates/reqwest/reqwest-retry-invalid-max-extra-load" }
-reqwest_retry_no_budget = { package = "reqwest-retry-no-budget", path = "lints/crates/reqwest/reqwest-retry-no-budget" }
-reqwest_support = { package = "reqwest-support", path = "lints/crates/reqwest/support" }
-reqwest_tls_danger_invalid_certs = { package = "reqwest-tls-danger-invalid-certs", path = "lints/crates/reqwest/reqwest-tls-danger-invalid-certs" }
-reqwest_tls_danger_invalid_hostnames = { package = "reqwest-tls-danger-invalid-hostnames", path = "lints/crates/reqwest/reqwest-tls-danger-invalid-hostnames" }
-rumdl_doc_comments = { path = "lints/style/rumdl_doc_comments" }
-runtime_env_read = { path = "lints/restriction/runtime_env_read" }
-rust_toolchain_toml = { path = "lints/cargo/rust_toolchain_toml" }
-schemars_json_schema_ref_return = { package = "schemars-json-schema-ref-return", path = "lints/crates/schemars/schemars-json-schema-ref-return" }
-schemars_recursive_inline_schema = { package = "schemars-recursive-inline-schema", path = "lints/crates/schemars/schemars-recursive-inline-schema" }
-schemars_redundant_serde_default = { package = "schemars-redundant-serde-default", path = "lints/crates/schemars/schemars-redundant-serde-default" }
-schemars_redundant_serde_deny_unknown_fields = { package = "schemars-redundant-serde-deny-unknown-fields", path = "lints/crates/schemars/schemars-redundant-serde-deny-unknown-fields" }
-schemars_redundant_serde_rename = { package = "schemars-redundant-serde-rename", path = "lints/crates/schemars/schemars-redundant-serde-rename" }
-schemars_redundant_serde_rename_all = { package = "schemars-redundant-serde-rename-all", path = "lints/crates/schemars/schemars-redundant-serde-rename-all" }
-schemars_redundant_serde_skip = { package = "schemars-redundant-serde-skip", path = "lints/crates/schemars/schemars-redundant-serde-skip" }
-schemars_redundant_serde_tag = { package = "schemars-redundant-serde-tag", path = "lints/crates/schemars/schemars-redundant-serde-tag" }
-schemars_redundant_serde_transparent = { package = "schemars-redundant-serde-transparent", path = "lints/crates/schemars/schemars-redundant-serde-transparent" }
-schemars_schema_for_value_json_schema = { package = "schemars-schema-for-value-json-schema", path = "lints/crates/schemars/schemars-schema-for-value-json-schema" }
-schemars_support = { package = "schemars-support", path = "lints/crates/schemars/support" }
-secret_raw_type = { path = "lints/restriction/secret_raw_type" }
-semantic_primitive_type = { path = "lints/restriction/semantic_primitive_type" }
-serde_all_fields_default = { package = "serde-all-fields-default", path = "lints/crates/serde/serde-all-fields-default" }
-serde_borrow_redundant_str_bytes = { package = "serde-borrow-redundant-str-bytes", path = "lints/crates/serde/serde-borrow-redundant-str-bytes" }
-serde_cow_missing_borrow = { package = "serde-cow-missing-borrow", path = "lints/crates/serde/serde-cow-missing-borrow" }
-serde_deserialize_any_portability = { package = "serde-deserialize-any-portability", path = "lints/crates/serde/serde-deserialize-any-portability" }
-serde_expecting_style = { package = "serde-expecting-style", path = "lints/crates/serde/serde-expecting-style" }
-serde_fallback_missing_other = { package = "serde-fallback-missing-other", path = "lints/crates/serde/serde-fallback-missing-other" }
-serde_flatten_deny_unknown_fields = { package = "serde-flatten-deny-unknown-fields", path = "lints/crates/serde/serde-flatten-deny-unknown-fields" }
-serde_inert_directional_attr = { package = "serde-inert-directional-attr", path = "lints/crates/serde/serde-inert-directional-attr" }
-serde_manual_rename_all = { package = "serde-manual-rename-all", path = "lints/crates/serde/serde-manual-rename-all" }
-serde_serialize_str_to_string = { package = "serde-serialize-str-to-string", path = "lints/crates/serde/serde-serialize-str-to-string" }
-serde_skip_serializing_roundtrip = { package = "serde-skip-serializing-roundtrip", path = "lints/crates/serde/serde-skip-serializing-roundtrip" }
-serde_skip_serializing_variant_error = { package = "serde-skip-serializing-variant-error", path = "lints/crates/serde/serde-skip-serializing-variant-error" }
-serde_support = { package = "serde-support", path = "lints/crates/serde/support" }
-serde_untagged_missing_expecting = { package = "serde-untagged-missing-expecting", path = "lints/crates/serde/serde-untagged-missing-expecting" }
-source_cognitive_complexity = { path = "lints/maintainability/source_cognitive_complexity" }
-sqlx = { package = "sqlx-fixture", path = "lints/crates/sqlx/fixture" }
-sqlx_assert_sql_safe = { package = "sqlx-assert-sql-safe", path = "lints/crates/sqlx/sqlx-assert-sql-safe" }
-sqlx_empty_push_tuples = { package = "sqlx-empty-push-tuples", path = "lints/crates/sqlx/sqlx-empty-push-tuples" }
-sqlx_empty_push_values = { package = "sqlx-empty-push-values", path = "lints/crates/sqlx/sqlx-empty-push-values" }
-sqlx_panicking_row_get = { package = "sqlx-panicking-row-get", path = "lints/crates/sqlx/sqlx-panicking-row-get" }
-sqlx_panicking_statement_column = { package = "sqlx-panicking-statement-column", path = "lints/crates/sqlx/sqlx-panicking-statement-column" }
-sqlx_pool_connection_leak = { package = "sqlx-pool-connection-leak", path = "lints/crates/sqlx/sqlx-pool-connection-leak" }
-sqlx_query_builder_push_interpolation = { package = "sqlx-query-builder-push-interpolation", path = "lints/crates/sqlx/sqlx-query-builder-push-interpolation" }
-sqlx_query_builder_push_unseparated_interpolation = { package = "sqlx-query-builder-push-unseparated-interpolation", path = "lints/crates/sqlx/sqlx-query-builder-push-unseparated-interpolation" }
-sqlx_support = { package = "sqlx-support", path = "lints/crates/sqlx/support" }
-sqlx_unchecked_query_macro = { package = "sqlx-unchecked-query-macro", path = "lints/crates/sqlx/sqlx-unchecked-query-macro" }
-sqlx_zero_max_connections = { package = "sqlx-zero-max-connections", path = "lints/crates/sqlx/sqlx-zero-max-connections" }
-string_error_result = { path = "lints/suspicious/string_error_result" }
-struct_update_default = { path = "lints/restriction/struct_update_default" }
-strum_enum_representation = { package = "strum-enum-representation", path = "lints/crates/strum/strum-enum-representation" }
-test_case_async_without_test_harness = { package = "test-case-async-without-test-harness", path = "lints/crates/test-case/test-case-async-without-test-harness" }
-test_case_constant_match_guard = { package = "test-case-constant-match-guard", path = "lints/crates/test-case/test-case-constant-match-guard" }
-test_case_empty_description = { package = "test-case-empty-description", path = "lints/crates/test-case/test-case-empty-description" }
-test_case_empty_ignore_reason = { package = "test-case-empty-ignore-reason", path = "lints/crates/test-case/test-case-empty-ignore-reason" }
-test_case_empty_matrix = { package = "test-case-empty-matrix", path = "lints/crates/test-case/test-case-empty-matrix" }
-test_case_empty_panic_message = { package = "test-case-empty-panic-message", path = "lints/crates/test-case/test-case-empty-panic-message" }
-test_case_ignore_without_reason = { package = "test-case-ignore-without-reason", path = "lints/crates/test-case/test-case-ignore-without-reason" }
-test_case_ignored_matrix = { package = "test-case-ignored-matrix", path = "lints/crates/test-case/test-case-ignored-matrix" }
-test_case_inconclusive_modifier = { package = "test-case-inconclusive-modifier", path = "lints/crates/test-case/test-case-inconclusive-modifier" }
-test_case_large_suite = { package = "test-case-large-suite", path = "lints/crates/test-case/test-case-large-suite" }
-test_case_legacy_inconclusive_description = { package = "test-case-legacy-inconclusive-description", path = "lints/crates/test-case/test-case-legacy-inconclusive-description" }
-test_case_nonpositive_almost_precision = { package = "test-case-nonpositive-almost-precision", path = "lints/crates/test-case/test-case-nonpositive-almost-precision" }
-test_case_panics_without_message = { package = "test-case-panics-without-message", path = "lints/crates/test-case/test-case-panics-without-message" }
-test_case_single_case_matrix = { package = "test-case-single-case-matrix", path = "lints/crates/test-case/test-case-single-case-matrix" }
-test_case_singleton_contains_in_order = { package = "test-case-singleton-contains-in-order", path = "lints/crates/test-case/test-case-singleton-contains-in-order" }
-test_case_singleton_matrix_dimension = { package = "test-case-singleton-matrix-dimension", path = "lints/crates/test-case/test-case-singleton-matrix-dimension" }
-test_case_support = { package = "test-case-support", path = "lints/crates/test-case/support" }
-test_case_unnamed_test_case = { package = "test-case-unnamed-test-case", path = "lints/crates/test-case/test-case-unnamed-test-case" }
-test_case_whitespace_ignore_reason = { package = "test-case-whitespace-ignore-reason", path = "lints/crates/test-case/test-case-whitespace-ignore-reason" }
-test_case_whitespace_panic_message = { package = "test-case-whitespace-panic-message", path = "lints/crates/test-case/test-case-whitespace-panic-message" }
-test_case_wildcard_match = { package = "test-case-wildcard-match", path = "lints/crates/test-case/test-case-wildcard-match" }
-test_case_with_function_path = { package = "test-case-with-function-path", path = "lints/crates/test-case/test-case-with-function-path" }
-thiserror_named_field_positional_format = { package = "thiserror-named-field-positional-format", path = "lints/crates/thiserror/thiserror-named-field-positional-format" }
-thiserror_no_std_path_display = { package = "thiserror-no-std-path-display", path = "lints/crates/thiserror/thiserror-no-std-path-display" }
-thiserror_raw_field_format = { package = "thiserror-raw-field-format", path = "lints/crates/thiserror/thiserror-raw-field-format" }
-thiserror_redundant_backtrace_attr = { package = "thiserror-redundant-backtrace-attr", path = "lints/crates/thiserror/thiserror-redundant-backtrace-attr" }
-thiserror_redundant_from_source = { package = "thiserror-redundant-from-source", path = "lints/crates/thiserror/thiserror-redundant-from-source" }
-thiserror_redundant_named_source = { package = "thiserror-redundant-named-source", path = "lints/crates/thiserror/thiserror-redundant-named-source" }
-thiserror_self_display_recursion = { package = "thiserror-self-display-recursion", path = "lints/crates/thiserror/thiserror-self-display-recursion" }
-thiserror_source_field_opt_out = { package = "thiserror-source-field-opt-out", path = "lints/crates/thiserror/thiserror-source-field-opt-out" }
-thiserror_support = { package = "thiserror-support", path = "lints/crates/thiserror/support" }
-thiserror_transparent_single_source_display = { package = "thiserror-transparent-single-source-display", path = "lints/crates/thiserror/thiserror-transparent-single-source-display" }
-thiserror_tuple_format_positional_ambiguity = { package = "thiserror-tuple-format-positional-ambiguity", path = "lints/crates/thiserror/thiserror-tuple-format-positional-ambiguity" }
-tokio_blocking_call_in_async = { package = "tokio-blocking-call-in-async", path = "lints/crates/tokio/tokio-blocking-call-in-async" }
-tokio_handle_block_on_in_async = { package = "tokio-handle-block-on-in-async", path = "lints/crates/tokio/tokio-handle-block-on-in-async" }
-tokio_runtime_block_on_in_async = { package = "tokio-runtime-block-on-in-async", path = "lints/crates/tokio/tokio-runtime-block-on-in-async" }
-tokio_runtime_new_in_async = { package = "tokio-runtime-new-in-async", path = "lints/crates/tokio/tokio-runtime-new-in-async" }
-tokio_sleep_in_loop = { package = "tokio-sleep-in-loop", path = "lints/crates/tokio/tokio-sleep-in-loop" }
-tokio_spawn_blocking_async_closure = { package = "tokio-spawn-blocking-async-closure", path = "lints/crates/tokio/tokio-spawn-blocking-async-closure" }
-tokio_support = { package = "tokio-support", path = "lints/crates/tokio/support" }
-tokio_unbounded_channel = { package = "tokio-unbounded-channel", path = "lints/crates/tokio/tokio-unbounded-channel" }
-tokio_zero_capacity_channel = { package = "tokio-zero-capacity-channel", path = "lints/crates/tokio/tokio-zero-capacity-channel" }
-tokio_zero_duration_interval = { package = "tokio-zero-duration-interval", path = "lints/crates/tokio/tokio-zero-duration-interval" }
-tokio_zero_runtime_thread_count = { package = "tokio-zero-runtime-thread-count", path = "lints/crates/tokio/tokio-zero-runtime-thread-count" }
-top_level_item_line_break = { path = "lints/style/top_level_item_line_break" }
-tracing_async_block_in_sync_scope = { package = "tracing-async-block-in-sync-scope", path = "lints/crates/tracing/tracing-async-block-in-sync-scope" }
-tracing_await_holding_span_guard = { package = "tracing-await-holding-span-guard", path = "lints/crates/tracing/tracing-await-holding-span-guard" }
-tracing_current_span_enter = { package = "tracing-current-span-enter", path = "lints/crates/tracing/tracing-current-span-enter" }
-tracing_current_span_or_current = { package = "tracing-current-span-or-current", path = "lints/crates/tracing/tracing-current-span-or-current" }
-tracing_direct_record_all = { package = "tracing-direct-record-all", path = "lints/crates/tracing/tracing-direct-record-all" }
-tracing_format_field = { package = "tracing-format-field", path = "lints/crates/tracing/tracing-format-field" }
-tracing_instrument_current_span = { package = "tracing-instrument-current-span", path = "lints/crates/tracing/tracing-instrument-current-span" }
-tracing_message_interpolation = { package = "tracing-message-interpolation", path = "lints/crates/tracing/tracing-message-interpolation" }
-tracing_none_enter = { package = "tracing-none-enter", path = "lints/crates/tracing/tracing-none-enter" }
-tracing_none_or_current = { package = "tracing-none-or-current", path = "lints/crates/tracing/tracing-none-or-current" }
-tracing_none_record = { package = "tracing-none-record", path = "lints/crates/tracing/tracing-none-record" }
-tracing_redundant_field_assignment = { package = "tracing-redundant-field-assignment", path = "lints/crates/tracing/tracing-redundant-field-assignment" }
-tracing_redundant_in_current_span = { package = "tracing-redundant-in-current-span", path = "lints/crates/tracing/tracing-redundant-in-current-span" }
-tracing_support = { package = "tracing-support", path = "lints/crates/tracing/support" }
-tracing_to_string_field = { package = "tracing-to-string-field", path = "lints/crates/tracing/tracing-to-string-field" }
-type_method_complexity = { path = "lints/maintainability/type_method_complexity" }
-unnecessary_map_err = { path = "lints/complexity/unnecessary_map_err" }
-url_string_field = { path = "lints/restriction/url_string_field" }
-vec_front_removal_in_loop = { path = "lints/perf/vec_front_removal_in_loop" }
-workspace_dependency_versions = { path = "lints/cargo/workspace_dependency_versions" }
-workspace_lints_inheritance = { path = "lints/cargo/workspace_lints_inheritance" }
+# Workspace-local dependencies use their Cargo package names as keys.
+# The -lints aliases distinguish group libraries from same-named crates.io packages.
+abc-size = { path = "crates/abc-size" }
+ad-hoc-as-ref = { path = "crates/ad-hoc-as-ref" }
+ad-hoc-borrow = { path = "crates/ad-hoc-borrow" }
+ad-hoc-default = { path = "crates/ad-hoc-default" }
+ad-hoc-display = { path = "crates/ad-hoc-display" }
+ad-hoc-from = { path = "crates/ad-hoc-from" }
+ad-hoc-from-str = { path = "crates/ad-hoc-from-str" }
+ad-hoc-into-iterator = { path = "crates/ad-hoc-into-iterator" }
+ad-hoc-iterator = { path = "crates/ad-hoc-iterator" }
+ad-hoc-try-from = { path = "crates/ad-hoc-try-from" }
+ambiguous-numeric-unit-field = { path = "crates/ambiguous-numeric-unit-field" }
+axum-nest-at-root = { path = "crates/axum-nest-at-root" }
+axum-nest-service-at-root = { path = "crates/axum-nest-service-at-root" }
+axum-nest-wildcard-path = { path = "crates/axum-nest-wildcard-path" }
+axum-route-empty-path = { path = "crates/axum-route-empty-path" }
+axum-route-layer-on-empty-router = { path = "crates/axum-route-layer-on-empty-router" }
+axum-route-legacy-colon-capture = { path = "crates/axum-route-legacy-colon-capture" }
+axum-route-legacy-wildcard-capture = { path = "crates/axum-route-legacy-wildcard-capture" }
+axum-route-path-missing-slash = { path = "crates/axum-route-path-missing-slash" }
+axum-route-service-empty-path = { path = "crates/axum-route-service-empty-path" }
+axum-route-service-router = { path = "crates/axum-route-service-router" }
+axum-support = { path = "crates/axum-support" }
+bevy-018-system-fixture = { path = "crates/bevy-018-system-fixture" }
+bevy-asset-source-after-asset-plugin = { path = "crates/bevy-asset-source-after-asset-plugin" }
+bevy-borrowed-reborrowable = { path = "crates/bevy-borrowed-reborrowable" }
+bevy-camera-modification-in-fixed-update = { path = "crates/bevy-camera-modification-in-fixed-update" }
+bevy-children-mutation-query = { path = "crates/bevy-children-mutation-query" }
+bevy-component-field-contention = { path = "crates/bevy-component-field-contention" }
+bevy-conflicting-query-params = { path = "crates/bevy-conflicting-query-params" }
+bevy-conflicting-resource-params = { path = "crates/bevy-conflicting-resource-params" }
+bevy-continuous-font-size = { path = "crates/bevy-continuous-font-size" }
+bevy-continuous-ui-scale = { path = "crates/bevy-continuous-ui-scale" }
+bevy-disallow-fixed-update-schedule = { path = "crates/bevy-disallow-fixed-update-schedule" }
+bevy-disallow-update-schedule = { path = "crates/bevy-disallow-update-schedule" }
+bevy-duplicate-dependencies = { path = "crates/bevy-duplicate-dependencies" }
+bevy-duplicate-plugin-addition = { path = "crates/bevy-duplicate-plugin-addition" }
+bevy-frame-button-edge-in-fixed-update = { path = "crates/bevy-frame-button-edge-in-fixed-update" }
+bevy-global-transform-mutation-query = { path = "crates/bevy-global-transform-mutation-query" }
+bevy-incompatible-msaa = { path = "crates/bevy-incompatible-msaa" }
+bevy-inherited-visibility-mutation-query = { path = "crates/bevy-inherited-visibility-mutation-query" }
+bevy-insert-message-resource = { path = "crates/bevy-insert-message-resource" }
+bevy-invalid-constant-font-size = { path = "crates/bevy-invalid-constant-font-size" }
+bevy-iter-current-update-messages = { path = "crates/bevy-iter-current-update-messages" }
+bevy-large-component = { path = "crates/bevy-large-component" }
+bevy-large-component-change-filter = { path = "crates/bevy-large-component-change-filter" }
+bevy-load-builder-replaced-guard = { path = "crates/bevy-load-builder-replaced-guard" }
+bevy-main-return-without-app-exit = { path = "crates/bevy-main-return-without-app-exit" }
+bevy-message-presence-without-consumption = { path = "crates/bevy-message-presence-without-consumption" }
+bevy-missing-clone-for-unit-component = { path = "crates/bevy-missing-clone-for-unit-component" }
+bevy-missing-copy-for-unit-component = { path = "crates/bevy-missing-copy-for-unit-component" }
+bevy-missing-default-for-unit-component = { path = "crates/bevy-missing-default-for-unit-component" }
+bevy-missing-reflect = { path = "crates/bevy-missing-reflect" }
+bevy-mouse-displacement-times-delta = { path = "crates/bevy-mouse-displacement-times-delta" }
+bevy-narrow-exclusive-system = { path = "crates/bevy-narrow-exclusive-system" }
+bevy-partially-used-query-data = { path = "crates/bevy-partially-used-query-data" }
+bevy-presence-only-query-fetch = { path = "crates/bevy-presence-only-query-fetch" }
+bevy-readonly-system-access = { path = "crates/bevy-readonly-system-access" }
+bevy-support = { path = "crates/bevy-support" }
+bevy-text-span-with-layout = { path = "crates/bevy-text-span-with-layout" }
+bevy-time-elapsed-secs-cast-f64 = { path = "crates/bevy-time-elapsed-secs-cast-f64" }
+bevy-unconventional-naming = { path = "crates/bevy-unconventional-naming" }
+bevy-unfiltered-entity-access-query = { path = "crates/bevy-unfiltered-entity-access-query" }
+bevy-unit-in-bundle = { path = "crates/bevy-unit-in-bundle" }
+bevy-wide-query-access = { path = "crates/bevy-wide-query-access" }
+bevy-world-entity = { path = "crates/bevy-world-entity" }
+bevy-world-entity-mut = { path = "crates/bevy-world-entity-mut" }
+bevy-world-insert-batch = { path = "crates/bevy-world-insert-batch" }
+bevy-world-insert-batch-if-new = { path = "crates/bevy-world-insert-batch-if-new" }
+bevy-world-non-send = { path = "crates/bevy-world-non-send" }
+bevy-world-non-send-mut = { path = "crates/bevy-world-non-send-mut" }
+bevy-world-resource = { path = "crates/bevy-world-resource" }
+bevy-world-resource-mut = { path = "crates/bevy-world-resource-mut" }
+bevy-world-resource-ref = { path = "crates/bevy-world-resource-ref" }
+bevy-world-run-schedule = { path = "crates/bevy-world-run-schedule" }
+bevy-world-schedule-scope = { path = "crates/bevy-world-schedule-scope" }
+bevy-zst-query = { path = "crates/bevy-zst-query" }
+bool-name-prefix = { path = "crates/bool-name-prefix" }
+boxed-future-return = { path = "crates/boxed-future-return" }
+broad-string-error-variant = { path = "crates/broad-string-error-variant" }
+cargo = { path = "crates/cargo" }
+cargo-support = { path = "crates/cargo-support" }
+clap-allow-hyphen-values-without-num-args = { path = "crates/clap-allow-hyphen-values-without-num-args" }
+clap-allow-negative-numbers-without-num-args = { path = "crates/clap-allow-negative-numbers-without-num-args" }
+clap-command-with-arguments-option = { path = "crates/clap-command-with-arguments-option" }
+clap-derive-author-without-help-template = { path = "crates/clap-derive-author-without-help-template" }
+clap-derive-bool-default-true = { path = "crates/clap-derive-bool-default-true" }
+clap-derive-redundant-action = { path = "crates/clap-derive-redundant-action" }
+clap-derive-redundant-value-parser = { path = "crates/clap-derive-redundant-value-parser" }
+clap-derive-vec-vec-without-num-args = { path = "crates/clap-derive-vec-vec-without-num-args" }
+clap-derive-verbatim-doc-comment-without-doc = { path = "crates/clap-derive-verbatim-doc-comment-without-doc" }
+clap-external-subcommand-parser-without-external-subcommands = { path = "crates/clap-external-subcommand-parser-without-external-subcommands" }
+clap-index-on-option = { path = "crates/clap-index-on-option" }
+clap-last-option = { path = "crates/clap-last-option" }
+clap-multicall-no-binary-name = { path = "crates/clap-multicall-no-binary-name" }
+clap-require-equals-without-num-args = { path = "crates/clap-require-equals-without-num-args" }
+clap-required-conditional-conflict = { path = "crates/clap-required-conditional-conflict" }
+clap-support = { path = "crates/clap-support" }
+clap-trailing-var-arg-without-num-args = { path = "crates/clap-trailing-var-arg-without-num-args" }
+collect-return = { path = "crates/collect-return" }
+collection-bool-result = { path = "crates/collection-bool-result" }
+complexity = { path = "crates/complexity" }
+complicated-conditional = { path = "crates/complicated-conditional" }
+consecutive-iterator-loops = { path = "crates/consecutive-iterator-loops" }
+contains-key-before-any = { path = "crates/contains-key-before-any" }
+correctness = { path = "crates/correctness" }
+country-string-field = { path = "crates/country-string-field" }
+crap-score = { path = "crates/crap-score" }
+crates = { path = "crates/crates" }
+custom-well-known-type = { path = "crates/custom-well-known-type" }
+cyclomatic-complexity = { path = "crates/cyclomatic-complexity" }
+date-string-field = { path = "crates/date-string-field" }
+datetime-integer-field = { path = "crates/datetime-integer-field" }
+dependency-full-semver-versions = { path = "crates/dependency-full-semver-versions" }
+dependency-key-order = { path = "crates/dependency-key-order" }
+doc-attr-comment = { path = "crates/doc-attr-comment" }
+duration-integer-field = { path = "crates/duration-integer-field" }
+dylint-support = { path = "crates/dylint-support" }
+expensive-as-method = { path = "crates/expensive-as-method" }
+expensive-sort-key = { path = "crates/expensive-sort-key" }
+field-usage-cohesion = { path = "crates/field-usage-cohesion" }
+hardcoded-path = { path = "crates/hardcoded-path" }
+http-method-string = { path = "crates/http-method-string" }
+impl-method-count = { path = "crates/impl-method-count" }
+insta-allow-empty-glob = { path = "crates/insta-allow-empty-glob" }
+insta-binary-snapshot-missing-extension = { path = "crates/insta-binary-snapshot-missing-extension" }
+insta-bind-to-scope-in-async = { path = "crates/insta-bind-to-scope-in-async" }
+insta-compact-json-snapshot = { path = "crates/insta-compact-json-snapshot" }
+insta-content-direct-match = { path = "crates/insta-content-direct-match" }
+insta-deprecated-assert-display = { path = "crates/insta-deprecated-assert-display" }
+insta-empty-description = { path = "crates/insta-empty-description" }
+insta-empty-filter-pattern = { path = "crates/insta-empty-filter-pattern" }
+insta-empty-input-file = { path = "crates/insta-empty-input-file" }
+insta-empty-snapshot-path = { path = "crates/insta-empty-snapshot-path" }
+insta-empty-snapshot-suffix = { path = "crates/insta-empty-snapshot-suffix" }
+insta-glob-parent-traversal = { path = "crates/insta-glob-parent-traversal" }
+insta-json-snapshot = { path = "crates/insta-json-snapshot" }
+insta-no-module-prefix = { path = "crates/insta-no-module-prefix" }
+insta-noop-filter = { path = "crates/insta-noop-filter" }
+insta-redundant-content-resolve-inner = { path = "crates/insta-redundant-content-resolve-inner" }
+insta-settings-bind-future = { path = "crates/insta-settings-bind-future" }
+insta-settings-new = { path = "crates/insta-settings-new" }
+insta-settings-raw-info = { path = "crates/insta-settings-raw-info" }
+insta-snapshot-in-loop = { path = "crates/insta-snapshot-in-loop" }
+insta-support = { path = "crates/insta-support" }
+insufficient-public-documentation = { path = "crates/insufficient-public-documentation" }
+interleaved-doc-attributes = { path = "crates/interleaved-doc-attributes" }
+internal-import-self = { path = "crates/internal-import-self" }
+interpolated-logging = { path = "crates/interpolated-logging" }
+large-rust-crate = { path = "crates/large-rust-crate" }
+large-rust-file = { path = "crates/large-rust-file" }
+let-some-return-err = { path = "crates/let-some-return-err" }
+logged-conversion-impl = { path = "crates/logged-conversion-impl" }
+logged-error-continue = { path = "crates/logged-error-continue" }
+maintainability = { path = "crates/maintainability" }
+maintainability-support = { path = "crates/maintainability-support" }
+manual-adjacent-window-loop = { path = "crates/manual-adjacent-window-loop" }
+manual-arg-parsing = { path = "crates/manual-arg-parsing" }
+manual-debug-impl = { path = "crates/manual-debug-impl" }
+manual-default-impl = { path = "crates/manual-default-impl" }
+manual-entry-update = { path = "crates/manual-entry-update" }
+manual-error-impl = { path = "crates/manual-error-impl" }
+manual-extend-loop = { path = "crates/manual-extend-loop" }
+manual-fallible-collect-loop = { path = "crates/manual-fallible-collect-loop" }
+manual-filter-for-each-loop = { path = "crates/manual-filter-for-each-loop" }
+manual-filter-map-for-each-loop = { path = "crates/manual-filter-map-for-each-loop" }
+manual-iterator-loop = { path = "crates/manual-iterator-loop" }
+manual-option-take-if = { path = "crates/manual-option-take-if" }
+manual-partition-loop = { path = "crates/manual-partition-loop" }
+manual-passthrough-inspect = { path = "crates/manual-passthrough-inspect" }
+manual-test-cases = { path = "crates/manual-test-cases" }
+manual-try-for-each-loop = { path = "crates/manual-try-for-each-loop" }
+manual-unzip-loop = { path = "crates/manual-unzip-loop" }
+many-assertions-in-test = { path = "crates/many-assertions-in-test" }
+many-exit-points = { path = "crates/many-exit-points" }
+missing-clippy-toml = { path = "crates/missing-clippy-toml" }
+missing-doctest-examples = { path = "crates/missing-doctest-examples" }
+missing-intent-comments = { path = "crates/missing-intent-comments" }
+missing-rust-toolchain-toml = { path = "crates/missing-rust-toolchain-toml" }
+module-dependency-cycle = { path = "crates/module-dependency-cycle" }
+module-fan-out = { path = "crates/module-fan-out" }
+module-type-first = { path = "crates/module-type-first" }
+npath-complexity = { path = "crates/npath-complexity" }
+one-use-predicate-binding = { path = "crates/one-use-predicate-binding" }
+one-use-private-helper = { path = "crates/one-use-private-helper" }
+owned-input-field-clones = { path = "crates/owned-input-field-clones" }
+ownership-at-boundaries = { path = "crates/ownership-at-boundaries" }
+package-lints-section = { path = "crates/package-lints-section" }
+panic-in-main = { path = "crates/panic-in-main" }
+path-attribute-outside-root = { path = "crates/path-attribute-outside-root" }
+path-string-field = { path = "crates/path-string-field" }
+perf = { path = "crates/perf" }
+public-serde-schema-derive = { path = "crates/public-serde-schema-derive" }
+public-surface-size = { path = "crates/public-surface-size" }
+repeated-cfg-gate = { path = "crates/repeated-cfg-gate" }
+reqwest-blocking-in-async = { path = "crates/reqwest-blocking-in-async" }
+reqwest-client-in-loop = { path = "crates/reqwest-client-in-loop" }
+reqwest-client-wrapped-in-shared-pointer = { path = "crates/reqwest-client-wrapped-in-shared-pointer" }
+reqwest-cookie-provider-overridden = { path = "crates/reqwest-cookie-provider-overridden" }
+reqwest-get-in-loop = { path = "crates/reqwest-get-in-loop" }
+reqwest-multipart-manual-content-type = { path = "crates/reqwest-multipart-manual-content-type" }
+reqwest-retry-invalid-max-extra-load = { path = "crates/reqwest-retry-invalid-max-extra-load" }
+reqwest-retry-no-budget = { path = "crates/reqwest-retry-no-budget" }
+reqwest-support = { path = "crates/reqwest-support" }
+reqwest-tls-danger-invalid-certs = { path = "crates/reqwest-tls-danger-invalid-certs" }
+reqwest-tls-danger-invalid-hostnames = { path = "crates/reqwest-tls-danger-invalid-hostnames" }
+restriction = { path = "crates/restriction" }
+rumdl-doc-comments = { path = "crates/rumdl-doc-comments" }
+runtime-env-read = { path = "crates/runtime-env-read" }
+rust-toolchain-toml = { path = "crates/rust-toolchain-toml" }
+schemars-json-schema-ref-return = { path = "crates/schemars-json-schema-ref-return" }
+schemars-recursive-inline-schema = { path = "crates/schemars-recursive-inline-schema" }
+schemars-redundant-serde-default = { path = "crates/schemars-redundant-serde-default" }
+schemars-redundant-serde-deny-unknown-fields = { path = "crates/schemars-redundant-serde-deny-unknown-fields" }
+schemars-redundant-serde-rename = { path = "crates/schemars-redundant-serde-rename" }
+schemars-redundant-serde-rename-all = { path = "crates/schemars-redundant-serde-rename-all" }
+schemars-redundant-serde-skip = { path = "crates/schemars-redundant-serde-skip" }
+schemars-redundant-serde-tag = { path = "crates/schemars-redundant-serde-tag" }
+schemars-redundant-serde-transparent = { path = "crates/schemars-redundant-serde-transparent" }
+schemars-schema-for-value-json-schema = { path = "crates/schemars-schema-for-value-json-schema" }
+schemars-support = { path = "crates/schemars-support" }
+secret-raw-type = { path = "crates/secret-raw-type" }
+semantic-primitive-type = { path = "crates/semantic-primitive-type" }
+serde-all-fields-default = { path = "crates/serde-all-fields-default" }
+serde-borrow-redundant-str-bytes = { path = "crates/serde-borrow-redundant-str-bytes" }
+serde-cow-missing-borrow = { path = "crates/serde-cow-missing-borrow" }
+serde-deserialize-any-portability = { path = "crates/serde-deserialize-any-portability" }
+serde-expecting-style = { path = "crates/serde-expecting-style" }
+serde-fallback-missing-other = { path = "crates/serde-fallback-missing-other" }
+serde-flatten-deny-unknown-fields = { path = "crates/serde-flatten-deny-unknown-fields" }
+serde-inert-directional-attr = { path = "crates/serde-inert-directional-attr" }
+serde-manual-rename-all = { path = "crates/serde-manual-rename-all" }
+serde-serialize-str-to-string = { path = "crates/serde-serialize-str-to-string" }
+serde-skip-serializing-roundtrip = { path = "crates/serde-skip-serializing-roundtrip" }
+serde-skip-serializing-variant-error = { path = "crates/serde-skip-serializing-variant-error" }
+serde-support = { path = "crates/serde-support" }
+serde-untagged-missing-expecting = { path = "crates/serde-untagged-missing-expecting" }
+source-cognitive-complexity = { path = "crates/source-cognitive-complexity" }
+# The local fixture deliberately exposes the upstream SQLx crate name to UI cases.
+sqlx = { package = "sqlx-fixture", path = "crates/sqlx-fixture" }
+sqlx-assert-sql-safe = { path = "crates/sqlx-assert-sql-safe" }
+sqlx-empty-push-tuples = { path = "crates/sqlx-empty-push-tuples" }
+sqlx-empty-push-values = { path = "crates/sqlx-empty-push-values" }
+sqlx-panicking-row-get = { path = "crates/sqlx-panicking-row-get" }
+sqlx-panicking-statement-column = { path = "crates/sqlx-panicking-statement-column" }
+sqlx-pool-connection-leak = { path = "crates/sqlx-pool-connection-leak" }
+sqlx-query-builder-push-interpolation = { path = "crates/sqlx-query-builder-push-interpolation" }
+sqlx-query-builder-push-unseparated-interpolation = { path = "crates/sqlx-query-builder-push-unseparated-interpolation" }
+sqlx-support = { path = "crates/sqlx-support" }
+sqlx-unchecked-query-macro = { path = "crates/sqlx-unchecked-query-macro" }
+sqlx-zero-max-connections = { path = "crates/sqlx-zero-max-connections" }
+string-error-result = { path = "crates/string-error-result" }
+struct-update-default = { path = "crates/struct-update-default" }
+strum-enum-representation = { path = "crates/strum-enum-representation" }
+style = { path = "crates/style" }
+suspicious = { path = "crates/suspicious" }
+test-case-async-without-test-harness = { path = "crates/test-case-async-without-test-harness" }
+test-case-constant-match-guard = { path = "crates/test-case-constant-match-guard" }
+test-case-empty-description = { path = "crates/test-case-empty-description" }
+test-case-empty-ignore-reason = { path = "crates/test-case-empty-ignore-reason" }
+test-case-empty-matrix = { path = "crates/test-case-empty-matrix" }
+test-case-empty-panic-message = { path = "crates/test-case-empty-panic-message" }
+test-case-ignore-without-reason = { path = "crates/test-case-ignore-without-reason" }
+test-case-ignored-matrix = { path = "crates/test-case-ignored-matrix" }
+test-case-inconclusive-modifier = { path = "crates/test-case-inconclusive-modifier" }
+test-case-large-suite = { path = "crates/test-case-large-suite" }
+test-case-legacy-inconclusive-description = { path = "crates/test-case-legacy-inconclusive-description" }
+test-case-nonpositive-almost-precision = { path = "crates/test-case-nonpositive-almost-precision" }
+test-case-panics-without-message = { path = "crates/test-case-panics-without-message" }
+test-case-single-case-matrix = { path = "crates/test-case-single-case-matrix" }
+test-case-singleton-contains-in-order = { path = "crates/test-case-singleton-contains-in-order" }
+test-case-singleton-matrix-dimension = { path = "crates/test-case-singleton-matrix-dimension" }
+test-case-support = { path = "crates/test-case-support" }
+test-case-unnamed-test-case = { path = "crates/test-case-unnamed-test-case" }
+test-case-whitespace-ignore-reason = { path = "crates/test-case-whitespace-ignore-reason" }
+test-case-whitespace-panic-message = { path = "crates/test-case-whitespace-panic-message" }
+test-case-wildcard-match = { path = "crates/test-case-wildcard-match" }
+test-case-with-function-path = { path = "crates/test-case-with-function-path" }
+thiserror-named-field-positional-format = { path = "crates/thiserror-named-field-positional-format" }
+thiserror-no-std-path-display = { path = "crates/thiserror-no-std-path-display" }
+thiserror-raw-field-format = { path = "crates/thiserror-raw-field-format" }
+thiserror-redundant-backtrace-attr = { path = "crates/thiserror-redundant-backtrace-attr" }
+thiserror-redundant-from-source = { path = "crates/thiserror-redundant-from-source" }
+thiserror-redundant-named-source = { path = "crates/thiserror-redundant-named-source" }
+thiserror-self-display-recursion = { path = "crates/thiserror-self-display-recursion" }
+thiserror-source-field-opt-out = { path = "crates/thiserror-source-field-opt-out" }
+thiserror-support = { path = "crates/thiserror-support" }
+thiserror-transparent-single-source-display = { path = "crates/thiserror-transparent-single-source-display" }
+thiserror-tuple-format-positional-ambiguity = { path = "crates/thiserror-tuple-format-positional-ambiguity" }
+tokio-blocking-call-in-async = { path = "crates/tokio-blocking-call-in-async" }
+tokio-handle-block-on-in-async = { path = "crates/tokio-handle-block-on-in-async" }
+tokio-runtime-block-on-in-async = { path = "crates/tokio-runtime-block-on-in-async" }
+tokio-runtime-new-in-async = { path = "crates/tokio-runtime-new-in-async" }
+tokio-sleep-in-loop = { path = "crates/tokio-sleep-in-loop" }
+tokio-spawn-blocking-async-closure = { path = "crates/tokio-spawn-blocking-async-closure" }
+tokio-support = { path = "crates/tokio-support" }
+tokio-unbounded-channel = { path = "crates/tokio-unbounded-channel" }
+tokio-zero-capacity-channel = { path = "crates/tokio-zero-capacity-channel" }
+tokio-zero-duration-interval = { path = "crates/tokio-zero-duration-interval" }
+tokio-zero-runtime-thread-count = { path = "crates/tokio-zero-runtime-thread-count" }
+top-level-item-line-break = { path = "crates/top-level-item-line-break" }
+tracing-async-block-in-sync-scope = { path = "crates/tracing-async-block-in-sync-scope" }
+tracing-await-holding-span-guard = { path = "crates/tracing-await-holding-span-guard" }
+tracing-current-span-enter = { path = "crates/tracing-current-span-enter" }
+tracing-current-span-or-current = { path = "crates/tracing-current-span-or-current" }
+tracing-direct-record-all = { path = "crates/tracing-direct-record-all" }
+tracing-format-field = { path = "crates/tracing-format-field" }
+tracing-instrument-current-span = { path = "crates/tracing-instrument-current-span" }
+tracing-message-interpolation = { path = "crates/tracing-message-interpolation" }
+tracing-none-enter = { path = "crates/tracing-none-enter" }
+tracing-none-or-current = { path = "crates/tracing-none-or-current" }
+tracing-none-record = { path = "crates/tracing-none-record" }
+tracing-redundant-field-assignment = { path = "crates/tracing-redundant-field-assignment" }
+tracing-redundant-in-current-span = { path = "crates/tracing-redundant-in-current-span" }
+tracing-support = { path = "crates/tracing-support" }
+tracing-to-string-field = { path = "crates/tracing-to-string-field" }
+trivial-public-constructor = { path = "crates/trivial-public-constructor" }
+type-method-complexity = { path = "crates/type-method-complexity" }
+unnecessary-map-err = { path = "crates/unnecessary-map-err" }
+unnecessary-module-directory = { path = "crates/unnecessary-module-directory" }
+unnecessary-public-type = { path = "crates/unnecessary-public-type" }
+url-string-field = { path = "crates/url-string-field" }
+vec-front-removal-in-loop = { path = "crates/vec-front-removal-in-loop" }
+workspace-dependency-versions = { path = "crates/workspace-dependency-versions" }
+workspace-lints-inheritance = { path = "crates/workspace-lints-inheritance" }
 
-# Compiler integration, parsing, diagnostics and catalog generation.
-askama        = { version = "0.16.0", default-features = false, features = ["config", "derive", "std"] }
-axum          = "0.8.9"
-# Bevy UI fixtures use umbrella re-exports; 0.18 deliberately tests cross-version diagnostics.
-bevy_018      = { package = "bevy", version = "0.18.0", default-features = false }
-bevy      = { package = "bevy", version = "0.19.0", default-features = false }
-chrono        = { version = "0.4.45", default-features = false, features = ["std"] }
-clap          = { version = "4.6.1", features = ["derive"] }
-criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support", "plotters", "html_reports"] }
+# Crates.io dependencies use canonical package names; version aliases keep old APIs testable.
+askama = { version = "0.16.0", default-features = false, features = [
+  "config",
+  "derive",
+  "std",
+] }
+axum = "0.8.9"
+bevy = { version = "0.19.0", default-features = false }
+# Bevy 0.18 remains for cross-version API diagnostics against the current Bevy release.
+bevy-018 = { package = "bevy", version = "0.18.0", default-features = false }
+chrono = { version = "0.4.45", default-features = false, features = ["std"] }
+clap = { version = "4.6.1", features = ["derive"] }
+criterion = { version = "0.8.2", default-features = false, features = [
+  "cargo_bench_support",
+  "plotters",
+  "html_reports",
+] }
 dylint_linting = "6.0.3"
 dylint_testing = "6.0.3"
-heck           = "0.5.0"
-http           = "1.4.2"
-insta          = "1.48.0"
-log            = { version = "0.4.33", features = ["kv"] }
-proc-macro2    = "1.0.106"
+heck = "0.5.0"
+http = "1.4.2"
+insta = "1.48.0"
+log = { version = "0.4.33", features = ["kv"] }
+proc-macro2 = "1.0.106"
 pulldown-cmark = "0.13.4"
-reqwest        = { version = "0.13.4", features = ["blocking", "cookies", "multipart"] }
-rumdl          = { version = "=0.2.55", default-features = false }
-schemars       = "1.2.1"
-secrecy        = "0.10.3"
-serde          = { version = "1.0.228", features = ["derive"] }
-serde_json     = "1.0.149"
-strum          = { version = "0.28.0", features = ["derive"] }
-syn            = "2.0.117"
-tempfile       = "3.27.0"
-test-case     = "3.3.1"
-thiserror      = { version = "2.0.18", default-features = false }
-thiserror_v1   = { package = "thiserror", version = "1.0.69" }
-tokio          = { version = "1.53.1", features = ["macros", "rt-multi-thread", "sync", "time"] }
-toml           = "1.1.3"
-toml_edit      = "0.25.13"
-tracing        = "0.1.44"
-tracing-subscriber = { version = "0.3.23", default-features = false, features = ["registry"] }
-url            = "2.5.8"
-walkdir        = "2.5.0"
-
+reqwest = { version = "0.13.4", features = [
+  "blocking",
+  "cookies",
+  "multipart",
+] }
+rumdl = { version = "=0.2.55", default-features = false }
+schemars = "1.2.1"
+secrecy = "0.10.3"
+semver = "1.0.28"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+strum = { version = "0.28.0", features = ["derive"] }
+syn = "2.0.117"
+tempfile = "3.27.0"
+test-case = "3.3.1"
+thiserror = { version = "2.0.18", default-features = false }
+# Two lints recognize derive behavior in thiserror 1 as well as the current major.
+thiserror-v1 = { package = "thiserror", version = "1.0.69" }
+tokio = { version = "1.53.1", features = [
+  "macros",
+  "rt-multi-thread",
+  "sync",
+  "time",
+] }
+toml = "1.1.3"
+toml_edit = "0.25.13"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", default-features = false, features = [
+  "registry",
+] }
+url = "2.5.8"
+walkdir = "2.5.0"
 [workspace.lints.rust.unexpected_cfgs]
-level     = "warn"
+level = "warn"
 check-cfg = ["cfg(dylint_lib, values(any()))"]
 
 # Dylint 6.0.3 loads only these group libraries. The crates group registers
@@ -385,15 +403,15 @@ check-cfg = ["cfg(dylint_lib, values(any()))"]
 # https://trailofbits.github.io/dylint/examples/general/
 [workspace.metadata.dylint]
 libraries = [
-  { path = "lints/cargo" },
-  { path = "lints/complexity" },
-  { path = "lints/correctness" },
-  { path = "lints/crates" },
-  { path = "lints/maintainability" },
-  { path = "lints/perf" },
-  { path = "lints/restriction" },
-  { path = "lints/style" },
-  { path = "lints/suspicious" },
+  { path = "crates/cargo" },
+  { path = "crates/complexity" },
+  { path = "crates/correctness" },
+  { path = "crates/crates" },
+  { path = "crates/maintainability" },
+  { path = "crates/perf" },
+  { path = "crates/restriction" },
+  { path = "crates/style" },
+  { path = "crates/suspicious" },
 ]
 
 # https://doc.rust-lang.org/rustc/lints/listing/index.html
@@ -401,62 +419,62 @@ libraries = [
 # Warnings. Cargo emits lower priorities first. Groups use -1; individual checks
 # use 0, selected overrides use 1, and ABI/attribute restrictions use 2.
 absolute-paths-not-starting-with-crate = "warn"
-ambiguous-negative-literals            = "warn"
-closure-returning-async-block          = "warn"
-deprecated-safe-2024                   = "warn"
-deref-into-dyn-supertrait              = "warn"
-edition-2024-expr-fragment-specifier   = "warn"
-elided-lifetimes-in-paths              = "warn"
-explicit-outlives-requirements         = "warn"
-ffi-unwind-calls                       = "warn"
-if-let-rescope                         = "warn"
-impl-trait-overcaptures                = "warn"
-impl-trait-redundant-captures          = "warn"
-keyword-idents-2018                    = "warn"
-keyword-idents-2024                    = "warn"
-let-underscore-drop                    = "warn"
-macro-use-extern-crate        = "warn"
-meta-variable-misuse          = "warn"
-missing-copy-implementations  = "warn"
+ambiguous-negative-literals = "warn"
+closure-returning-async-block = "warn"
+deprecated-safe-2024 = "warn"
+deref-into-dyn-supertrait = "warn"
+edition-2024-expr-fragment-specifier = "warn"
+elided-lifetimes-in-paths = "warn"
+explicit-outlives-requirements = "warn"
+ffi-unwind-calls = "warn"
+if-let-rescope = "warn"
+impl-trait-overcaptures = "warn"
+impl-trait-redundant-captures = "warn"
+keyword-idents-2018 = "warn"
+keyword-idents-2024 = "warn"
+let-underscore-drop = "warn"
+macro-use-extern-crate = "warn"
+meta-variable-misuse = "warn"
+missing-copy-implementations = "warn"
 missing-debug-implementations = "warn"
-missing-docs                  = { level = "warn", priority = 1 }
-missing-unsafe-on-extern      = "warn"
+missing-docs = { level = "warn", priority = 1 }
+missing-unsafe-on-extern = "warn"
 non-ascii-idents = "warn"
-redundant-imports                            = "warn"
-redundant-lifetimes                          = "warn"
-rust-2021-incompatible-closure-captures      = "warn"
-rust-2021-incompatible-or-patterns           = "warn"
-rust-2021-prefixes-incompatible-syntax       = "warn"
-rust-2021-prelude-collisions                 = "warn"
+redundant-imports = "warn"
+redundant-lifetimes = "warn"
+rust-2021-incompatible-closure-captures = "warn"
+rust-2021-incompatible-or-patterns = "warn"
+rust-2021-prefixes-incompatible-syntax = "warn"
+rust-2021-prelude-collisions = "warn"
 rust-2024-guarded-string-incompatible-syntax = "warn"
-rust-2024-incompatible-pat                   = "warn"
-rust-2024-prelude-collisions                 = "warn"
-single-use-lifetimes                         = "warn"
-tail-expr-drop-order  = "warn"
-trivial-casts         = "warn"
+rust-2024-incompatible-pat = "warn"
+rust-2024-prelude-collisions = "warn"
+single-use-lifetimes = "warn"
+tail-expr-drop-order = "warn"
+trivial-casts = "warn"
 trivial-numeric-casts = "warn"
-unit-bindings         = "warn"
-unknown-lints         = "warn"
-unnameable-types      = "warn"
-unreachable-pub            = { level = "warn", priority = 1 }
+unit-bindings = "warn"
+unknown-lints = "warn"
+unnameable-types = "warn"
+unreachable-pub = { level = "warn", priority = 1 }
 unsafe-attr-outside-unsafe = "warn"
-unsafe-op-in-unsafe-fn     = "warn"
-unused-crate-dependencies  = "warn"
-unused-extern-crates       = "warn"
-unused-import-braces       = "warn"
-unused-lifetimes           = "warn"
-unused-macro-rules         = "warn"
-unused-qualifications      = "warn"
-unused-results             = "warn"
-variant-size-differences   = "warn"
+unsafe-op-in-unsafe-fn = "warn"
+unused-crate-dependencies = "warn"
+unused-extern-crates = "warn"
+unused-import-braces = "warn"
+unused-lifetimes = "warn"
+unused-macro-rules = "warn"
+unused-qualifications = "warn"
+unused-results = "warn"
+variant-size-differences = "warn"
 
 # Allowances.
 # Native linker messages originate in dylint-link and compiler integration.
-linker-messages               = "allow"
+linker-messages = "allow"
 # Dylint entry points require unsafe export attributes.
-unsafe-code                = "allow"
+unsafe-code = "allow"
 # Lint crates require the pinned compiler-private API.
-unstable-features          = "allow"
+unstable-features = "allow"
 
 # Pinned nightly 2026-07-15 requires these opt-in crate features in every target.
 # multiple-supertrait-upcastable: feature(multiple_supertrait_upcastable).
@@ -466,19 +484,17 @@ unstable-features          = "allow"
 # supertrait-item-shadowing-definition and supertrait-item-shadowing-usage are unknown
 # to this pinned compiler, so requesting either produces unknown_lints warnings.
 
-
 [workspace.lints.rustdoc]
 # Warnings. Cargo emits lower priorities first. Groups use -1; individual checks
 # use 0, selected overrides use 1, and ABI/attribute restrictions use 2.
-bare_urls                    = "warn"
-broken_intra_doc_links       = "warn"
+bare_urls = "warn"
+broken_intra_doc_links = "warn"
 invalid_codeblock_attributes = "warn"
-invalid_html_tags            = "warn"
-invalid_rust_codeblocks      = "warn"
-private_intra_doc_links      = "warn"
-redundant_explicit_links     = "warn"
-unescaped_backticks          = "warn"
-
+invalid_html_tags = "warn"
+invalid_rust_codeblocks = "warn"
+private_intra_doc_links = "warn"
+redundant_explicit_links = "warn"
+unescaped_backticks = "warn"
 
 [workspace.lints.clippy]
 # Warnings. Cargo emits lower priorities first. Groups use -1; individual checks
@@ -486,40 +502,40 @@ unescaped_backticks          = "warn"
 all = { level = "warn", priority = -1 }
 allow_attributes = { level = "warn", priority = 2 }
 allow_attributes_without_reason = { level = "warn", priority = 2 }
-disallowed_macros               = { level = "warn", priority = 2 }
-disallowed_types                = { level = "warn", priority = 2 }
-indexing_slicing                = { level = "warn", priority = 2 }
-cargo                           = { level = "warn", priority = -1 }
+disallowed_macros = { level = "warn", priority = 2 }
+disallowed_types = { level = "warn", priority = 2 }
+indexing_slicing = { level = "warn", priority = 2 }
+cargo = { level = "warn", priority = -1 }
 complexity = { level = "warn", priority = -1 }
-cognitive_complexity    = "warn"
+cognitive_complexity = "warn"
 correctness = { level = "warn", priority = -1 }
-needless_pass_by_value  = "warn"
+needless_pass_by_value = "warn"
 nursery = { level = "warn", priority = -1 }
-missing_const_for_fn    = { level = "warn", priority = 1 }
+missing_const_for_fn = { level = "warn", priority = 1 }
 pedantic = { level = "warn", priority = -1 }
 perf = { level = "warn", priority = -1 }
 style = { level = "warn", priority = -1 }
 suspicious = { level = "warn", priority = -1 }
-too_many_arguments                 = "warn"
-type_complexity                    = "warn"
-option_if_let_else                 = "warn"
-doc_markdown                       = "warn"
-missing_errors_doc                 = "warn"
-missing_docs_in_private_items      = { level = "warn", priority = 1 }
-missing_panics_doc                 = "warn"
-cast_precision_loss                = { level = "warn", priority = 1 }
-struct_field_names                 = { level = "warn", priority = 1 }
-must_use_candidate                 = "warn"
-if_not_else                        = { level = "warn", priority = 1 }
-collapsible_if                     = { level = "warn", priority = 1 }
-match_same_arms                    = { level = "warn", priority = 1 }
+too_many_arguments = "warn"
+type_complexity = "warn"
+option_if_let_else = "warn"
+doc_markdown = "warn"
+missing_errors_doc = "warn"
+missing_docs_in_private_items = { level = "warn", priority = 1 }
+missing_panics_doc = "warn"
+cast_precision_loss = { level = "warn", priority = 1 }
+struct_field_names = { level = "warn", priority = 1 }
+must_use_candidate = "warn"
+if_not_else = { level = "warn", priority = 1 }
+collapsible_if = { level = "warn", priority = 1 }
+match_same_arms = { level = "warn", priority = 1 }
 redundant_closure_for_method_calls = { level = "warn", priority = 1 }
-let_and_return                     = { level = "warn", priority = 1 }
-struct_excessive_bools             = { level = "warn", priority = 1 }
-missing_fields_in_debug            = { level = "warn", priority = 1 }
-use_self                           = { level = "warn", priority = 1 }
-unused_self                        = { level = "warn", priority = 1 }
-unnecessary_wraps                  = { level = "warn", priority = 1 }
+let_and_return = { level = "warn", priority = 1 }
+struct_excessive_bools = { level = "warn", priority = 1 }
+missing_fields_in_debug = { level = "warn", priority = 1 }
+use_self = { level = "warn", priority = 1 }
+unused_self = { level = "warn", priority = 1 }
+unnecessary_wraps = { level = "warn", priority = 1 }
 
 # Allowances.
 # UI cases intentionally compare dependency versions; transitive versions also differ.
@@ -529,8 +545,8 @@ no_mangle_with_rust_abi = { level = "allow", priority = 2 }
 # Borrowing async patterns in UI and support code can produce non-Send futures.
 future_not_send = { level = "allow", priority = 1 }
 # The current analysis suggests lifetime changes that need semantic review.
-significant_drop_tightening        = { level = "allow", priority = 1 }
+significant_drop_tightening = { level = "allow", priority = 1 }
 # Explicit crate visibility documents helper ownership.
-redundant_pub_crate                = { level = "allow", priority = 1 }
+redundant_pub_crate = { level = "allow", priority = 1 }
 # Individual restriction checks are enabled selectively.
-restriction                        = { level = "allow", priority = -1 }
+restriction = { level = "allow", priority = -1 }

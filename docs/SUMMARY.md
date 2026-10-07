@@ -1,4 +1,4 @@
-# Guide
+# Dylints
 
 - [Using the lints](usage.md)
 - [Contributing](development.md)

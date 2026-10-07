@@ -12,8 +12,19 @@ use std::{
 pub(super) struct Lint {
     /// Cargo package name, also used in the Dylint library filename.
     pub(super) name: String,
+    /// Exact Cargo package selector, including its workspace version.
+    pub(super) package_spec: String,
     /// Shared library built by the pinned development toolchain.
     pub(super) library: PathBuf,
+}
+
+/// Keep bounded and standard file-size samples in independent Criterion groups.
+pub(super) const fn file_size_group(is_fast_sweep: bool) -> &'static str {
+    if is_fast_sweep {
+        "file_size_fast"
+    } else {
+        "file_size"
+    }
 }
 
 /// Discover leaf lint packages from Cargo metadata rather than a second lint
@@ -54,6 +65,10 @@ fn leaf_lint(
     if is_category(metadata, directory) {
         return None;
     }
+    // Leaf libraries declare their owning group; aggregate packages do not.
+    let _category = package
+        .pointer("/metadata/dylint/category")
+        .and_then(serde_json::Value::as_str)?;
     // Documentation and a workload distinguish leaf lints from support packages.
     let has_documentation = directory.join("README.md").is_file();
     let has_workload = directory.join("ui").is_dir() || directory.join("examples").is_dir();
@@ -88,6 +103,8 @@ fn is_dynamic(package: &serde_json::Value) -> bool {
 /// Match dylint-link's platform prefix, normalized name, toolchain, and suffix.
 fn library(package: &serde_json::Value, toolchain: &str, target: &Path) -> Lint {
     let name = package["name"].as_str().expect("package name").to_owned();
+    let version = package["version"].as_str().expect("package version");
+    let package_spec = format!("{name}@{version}");
     // Cargo normalizes hyphens in library names, while benchmark names retain package spelling.
     let library_name = name.replace('-', "_");
     let prefix = std::env::consts::DLL_PREFIX;
@@ -96,6 +113,7 @@ fn library(package: &serde_json::Value, toolchain: &str, target: &Path) -> Lint 
     let filename = format!("{prefix}{library_name}@{toolchain}{suffix}");
     Lint {
         name,
+        package_spec,
         library: target.join("debug").join(filename),
     }
 }

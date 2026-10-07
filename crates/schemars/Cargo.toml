@@ -1,0 +1,35 @@
+[package]
+name = "schemars"
+version.workspace = true
+description = "Rust review lints for Schemars API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dylint_linting.workspace = true
+schemars-json-schema-ref-return = { workspace = true, features = ["rlib"] }
+schemars-recursive-inline-schema = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-default = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-deny-unknown-fields = { workspace = true, features = [
+  "rlib",
+] }
+schemars-redundant-serde-rename = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-rename-all = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-skip = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-tag = { workspace = true, features = ["rlib"] }
+schemars-redundant-serde-transparent = { workspace = true, features = ["rlib"] }
+schemars-schema-for-value-json-schema = { workspace = true, features = [
+  "rlib",
+] }
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

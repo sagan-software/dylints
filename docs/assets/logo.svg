@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
-  <title id="title">Sagan lints</title>
-  <desc id="desc">A clean, slanted white S on a black square.</desc>
+  <title id="title">Dylints — Sagan Software</title>
+  <desc id="desc">A slanted white Sagan Software monogram on a charcoal square.</desc>
   <rect width="96" height="96" rx="12" fill="#161616"/>
   <path d="M74 20H43c-4 0-7 2-9 5L23 42c-3 5-1 9 4 11l25 9-9 13H20l-7 11h34c4 0 7-2 9-5l13-19c3-5 1-9-4-11l-25-9 7-11h20Z" transform="translate(4 -5)" fill="#f4f3ee"/>
 </svg>

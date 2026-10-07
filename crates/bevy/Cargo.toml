@@ -1,0 +1,88 @@
+[package]
+name = "bevy"
+version.workspace = true
+description = "Rust review lints for Bevy API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bevy-asset-source-after-asset-plugin = { workspace = true, features = ["rlib"] }
+bevy-borrowed-reborrowable = { workspace = true, features = ["rlib"] }
+bevy-camera-modification-in-fixed-update = { workspace = true, features = [
+  "rlib",
+] }
+bevy-children-mutation-query = { workspace = true, features = ["rlib"] }
+bevy-component-field-contention = { workspace = true, features = ["rlib"] }
+bevy-conflicting-query-params = { workspace = true, features = ["rlib"] }
+bevy-conflicting-resource-params = { workspace = true, features = ["rlib"] }
+bevy-continuous-font-size = { workspace = true, features = ["rlib"] }
+bevy-continuous-ui-scale = { workspace = true, features = ["rlib"] }
+bevy-disallow-fixed-update-schedule = { workspace = true, features = ["rlib"] }
+bevy-disallow-update-schedule = { workspace = true, features = ["rlib"] }
+bevy-duplicate-dependencies = { workspace = true, features = ["rlib"] }
+bevy-duplicate-plugin-addition = { workspace = true, features = ["rlib"] }
+bevy-frame-button-edge-in-fixed-update = { workspace = true, features = [
+  "rlib",
+] }
+bevy-global-transform-mutation-query = { workspace = true, features = ["rlib"] }
+bevy-incompatible-msaa = { workspace = true, features = ["rlib"] }
+bevy-inherited-visibility-mutation-query = { workspace = true, features = [
+  "rlib",
+] }
+bevy-insert-message-resource = { workspace = true, features = ["rlib"] }
+bevy-invalid-constant-font-size = { workspace = true, features = ["rlib"] }
+bevy-iter-current-update-messages = { workspace = true, features = ["rlib"] }
+bevy-large-component = { workspace = true, features = ["rlib"] }
+bevy-large-component-change-filter = { workspace = true, features = ["rlib"] }
+bevy-load-builder-replaced-guard = { workspace = true, features = ["rlib"] }
+bevy-main-return-without-app-exit = { workspace = true, features = ["rlib"] }
+bevy-message-presence-without-consumption = { workspace = true, features = [
+  "rlib",
+] }
+bevy-missing-clone-for-unit-component = { workspace = true, features = [
+  "rlib",
+] }
+bevy-missing-copy-for-unit-component = { workspace = true, features = ["rlib"] }
+bevy-missing-default-for-unit-component = { workspace = true, features = [
+  "rlib",
+] }
+bevy-missing-reflect = { workspace = true, features = ["rlib"] }
+bevy-mouse-displacement-times-delta = { workspace = true, features = ["rlib"] }
+bevy-narrow-exclusive-system = { workspace = true, features = ["rlib"] }
+bevy-partially-used-query-data = { workspace = true, features = ["rlib"] }
+bevy-presence-only-query-fetch = { workspace = true, features = ["rlib"] }
+bevy-readonly-system-access = { workspace = true, features = ["rlib"] }
+bevy-text-span-with-layout = { workspace = true, features = ["rlib"] }
+bevy-time-elapsed-secs-cast-f64 = { workspace = true, features = ["rlib"] }
+bevy-unconventional-naming = { workspace = true, features = ["rlib"] }
+bevy-unfiltered-entity-access-query = { workspace = true, features = ["rlib"] }
+bevy-unit-in-bundle = { workspace = true, features = ["rlib"] }
+bevy-wide-query-access = { workspace = true, features = ["rlib"] }
+bevy-world-entity = { workspace = true, features = ["rlib"] }
+bevy-world-entity-mut = { workspace = true, features = ["rlib"] }
+bevy-world-insert-batch = { workspace = true, features = ["rlib"] }
+bevy-world-insert-batch-if-new = { workspace = true, features = ["rlib"] }
+bevy-world-non-send = { workspace = true, features = ["rlib"] }
+bevy-world-non-send-mut = { workspace = true, features = ["rlib"] }
+bevy-world-resource = { workspace = true, features = ["rlib"] }
+bevy-world-resource-mut = { workspace = true, features = ["rlib"] }
+bevy-world-resource-ref = { workspace = true, features = ["rlib"] }
+bevy-world-run-schedule = { workspace = true, features = ["rlib"] }
+bevy-world-schedule-scope = { workspace = true, features = ["rlib"] }
+bevy-zst-query = { workspace = true, features = ["rlib"] }
+dylint_linting.workspace = true
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[dev-dependencies]
+dylint_testing.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

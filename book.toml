@@ -1,5 +1,5 @@
 [book]
-title = "Sagan Lints"
+title = "Dylints"
 authors = ["Bill Curry"]
 language = "en"
 src = "docs"
@@ -10,3 +10,4 @@ build-dir = "public/book"
 [output.html]
 site-url = "/dylints/book/"
 git-repository-url = "https://github.com/sagan-software/dylints"
+additional-js = ["docs/theme/report-links.js"]

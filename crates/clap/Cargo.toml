@@ -1,0 +1,49 @@
+[package]
+name = "clap"
+version.workspace = true
+description = "Rust review lints for clap API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+clap-allow-hyphen-values-without-num-args = { workspace = true, features = [
+  "rlib",
+] }
+clap-allow-negative-numbers-without-num-args = { workspace = true, features = [
+  "rlib",
+] }
+clap-command-with-arguments-option = { workspace = true, features = ["rlib"] }
+clap-derive-author-without-help-template = { workspace = true, features = [
+  "rlib",
+] }
+clap-derive-bool-default-true = { workspace = true, features = ["rlib"] }
+clap-derive-redundant-action = { workspace = true, features = ["rlib"] }
+clap-derive-redundant-value-parser = { workspace = true, features = ["rlib"] }
+clap-derive-vec-vec-without-num-args = { workspace = true, features = ["rlib"] }
+clap-derive-verbatim-doc-comment-without-doc = { workspace = true, features = [
+  "rlib",
+] }
+clap-external-subcommand-parser-without-external-subcommands = { workspace = true, features = [
+  "rlib",
+] }
+clap-index-on-option = { workspace = true, features = ["rlib"] }
+clap-last-option = { workspace = true, features = ["rlib"] }
+clap-multicall-no-binary-name = { workspace = true, features = ["rlib"] }
+clap-require-equals-without-num-args = { workspace = true, features = ["rlib"] }
+clap-required-conditional-conflict = { workspace = true, features = ["rlib"] }
+clap-trailing-var-arg-without-num-args = { workspace = true, features = [
+  "rlib",
+] }
+dylint_linting.workspace = true
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

@@ -156,7 +156,7 @@ fn benchmark(root: &Path, is_full: bool) -> Result<(), Error> {
         "--",
     ]);
     if !is_full {
-        let _configured = command.env("SAGAN_BENCH_FAST_SWEEP", "1").arg("--quick");
+        let _configured = command.env("SAGAN_BENCH_FAST_SWEEP", "1");
     }
     process::run(&mut command)
 }

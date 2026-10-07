@@ -1,0 +1,63 @@
+# large-rust-file
+
+## What it does
+
+Checks each Rust source file compiled into the crate. It warns when a file has
+1,500 or more non-test lines or 2,000 or more total lines. Blank and comment
+lines count. When a file reaches both limits, the lint reports only the
+total-line violation.
+
+A line is a test line when it belongs to an item marked `#[test]`, or to an
+attribute whose last path segment is `test`, such as `#[tokio::test]`. It also
+qualifies when a `#[cfg(...)]` requires `test`, such as `#[cfg(test)]` or
+`#[cfg(all(test, unix))]`. Test lines count only toward the total limit.
+
+## Why is this bad?
+
+A file of this size usually holds several unrelated responsibilities. Reviewers
+and editors must scroll through code that does not concern the change, and the
+file becomes a frequent merge-conflict site.
+
+## Known problems
+
+The lint reads the crate's own source files from disk under the compiler's
+current directory. It skips files outside that directory, files from inactive
+`cfg` modules, and files that other crates contribute, such as macro
+definitions and the standard library.
+
+If `syn` cannot parse a file, every line counts as non-test. Test helpers
+without a test attribute or `cfg(test)`, such as a `tests.rs` module loaded with
+a plain `mod tests;`, also count as non-test.
+
+## Example
+
+The abbreviated snippets require their separate module files and omitted implementation.
+
+```rust,ignore
+// src/main.rs, 1,800 lines long
+fn main() {
+    let config = load_config();
+    run_commands(&config);
+}
+
+fn load_config() -> Config {
+    // 600 lines of configuration loading
+}
+
+fn run_commands(config: &Config) {
+    // 1,100 lines of command handling
+}
+```
+
+## Use instead
+
+```rust,ignore
+// src/main.rs
+mod commands;
+mod config;
+
+fn main() {
+    let config = config::load();
+    commands::run(&config);
+}
+```

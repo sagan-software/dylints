@@ -50,6 +50,7 @@ jobs:
       - name: Install Dylint tools and mdBook
         run: |
           cargo install --locked --version "$DYLINT_VERSION" cargo-dylint dylint-link
+          cargo install --locked --version 0.9.143 cargo-nextest
           cargo install --locked mdbook
           echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=dylint-link" >>"$GITHUB_ENV"
       - name: Require a semver increase for the change
@@ -60,14 +61,16 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run Clippy
-        run: cargo clippy --workspace --lib --bins --tests -- -D warnings
+        run: cargo clippy --workspace --lib --bins --tests -- -D warnings -A unknown-lints
       - name: Run tests
         run: cargo test --workspace --lib --bins --tests
+      - name: Run tests with nextest
+        run: cargo nextest run --workspace --lib --bins --tests
       # UI and Cargo example fixtures deliberately violate lint contracts.
       - name: Lint ordinary library, binary and integration-test targets
         run: cargo xtask lint
       - name: Measure canonical executable-line coverage
-        run: cargo xtask coverage --min-lines 97 -- --workspace --lib --bins --tests
+        run: cargo xtask coverage --min-lines 97 --min-file-lines 90 -- --workspace --lib --bins --tests
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -95,7 +98,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31.11.1
-      - run: nix flake check
+      - run: nix --accept-flake-config --max-jobs 1 --cores 1 flake check
 
   deploy-pages:
     name: Deploy documentation and reports
@@ -129,6 +132,6 @@ jobs:
           git config user.name "$(git log -1 --format=%an)"
           git config user.email "$(git log -1 --format=%ae)"
       - name: Publish the validated version
-        run: nix develop -c cargo xtask release --publish
+        run: nix --accept-flake-config develop -c cargo xtask release --publish
         env:
           GH_TOKEN: ${{ github.token }}

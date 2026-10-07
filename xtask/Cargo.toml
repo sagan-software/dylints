@@ -18,16 +18,17 @@ walkdir.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true
-dylint_support.workspace = true
+dylint-support.workspace = true
 test-case.workspace = true
 
 [[bench]]
 name = "lint_passes"
 harness = false
 
-[[example]]
-name = "tool-fixture"
+[[bin]]
+name = "tool_fixture"
 path = "tests/fixtures/tools.rs"
+test = false
 
 [lints]
 workspace = true

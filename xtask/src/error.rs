@@ -28,6 +28,16 @@ pub(crate) enum Error {
         /// Child exit status.
         status: ExitStatus,
     },
+    /// A captured child failed and returned diagnostics.
+    #[error("{program} failed with {status}\n{output}")]
+    CapturedProcess {
+        /// Program that failed.
+        program: String,
+        /// Child exit status.
+        status: ExitStatus,
+        /// Captured standard error and standard output.
+        output: String,
+    },
     /// An argument or report violated its contract.
     #[error("{0}")]
     Invalid(String),

@@ -1,0 +1,37 @@
+[package]
+name = "thiserror"
+version.workspace = true
+description = "Rust review lints for thiserror API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dylint_linting.workspace = true
+thiserror-named-field-positional-format = { workspace = true, features = [
+  "rlib",
+] }
+thiserror-no-std-path-display = { workspace = true, features = ["rlib"] }
+thiserror-raw-field-format = { workspace = true, features = ["rlib"] }
+thiserror-redundant-backtrace-attr = { workspace = true, features = ["rlib"] }
+thiserror-redundant-from-source = { workspace = true, features = ["rlib"] }
+thiserror-redundant-named-source = { workspace = true, features = ["rlib"] }
+thiserror-self-display-recursion = { workspace = true, features = ["rlib"] }
+thiserror-source-field-opt-out = { workspace = true, features = ["rlib"] }
+thiserror-transparent-single-source-display = { workspace = true, features = [
+  "rlib",
+] }
+thiserror-tuple-format-positional-ambiguity = { workspace = true, features = [
+  "rlib",
+] }
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

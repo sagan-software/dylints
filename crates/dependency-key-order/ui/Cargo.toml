@@ -1,0 +1,52 @@
+[package]
+name = "dependency-key-order-fixture"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = [
+  "alpha_dep",
+  "beta_dep",
+  "build_alpha_dep",
+  "build_zeta_dep",
+  "comment_alpha_dep",
+  "comment_zeta_dep",
+  "dev_alpha_dep",
+  "dev_zeta_dep",
+  "gamma_dep",
+  "unix_alpha_dep",
+  "unix_zeta_dep",
+  "workspace_alpha_dep",
+  "workspace_zeta_dep",
+  "zeta_dep",
+]
+
+[workspace.dependencies]
+workspace_zeta_dep = { path = "workspace_zeta_dep" }
+workspace_alpha_dep = { path = "workspace_alpha_dep" }
+
+[dependencies]
+zeta_dep = { path = "zeta_dep" }
+alpha_dep = { path = "alpha_dep" }
+beta_dep = { path = "beta_dep" }
+gamma_dep = { path = "gamma_dep" }
+
+comment_zeta_dep = { path = "comment_zeta_dep" }
+# comment separators allow independently sorted groups
+comment_alpha_dep = { path = "comment_alpha_dep" }
+
+[dev-dependencies]
+dev_zeta_dep = { path = "dev_zeta_dep" }
+dev_alpha_dep = { path = "dev_alpha_dep" }
+
+[build-dependencies]
+make_zeta_dep = { package = "build-zeta-dep", path = "build_zeta_dep" }
+make_alpha_dep = { package = "build-alpha-dep", path = "build_alpha_dep" }
+
+[target.'cfg(unix)'.dependencies]
+unix_zeta_dep = { path = "unix_zeta_dep" }
+unix_alpha_dep = { path = "unix_alpha_dep" }
+
+[[bin]]
+name = "dependency-key-order-fixture"
+path = "main.rs"

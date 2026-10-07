@@ -1,6 +1,16 @@
 # Nextest configuration
 # https://nexte.st/docs/configuration/
 
+[test-groups]
+# Run one test at a time to bound memory. UI tests also share Cargo example
+# outputs, so keep them in a single-slot group if the global limit is raised.
+dylint-ui = { max-threads = 1 }
+
 [profile.default]
-# Default test threads
-test-threads = "num-cpus"
+# Keep test processes bounded on developer machines; pass --test-threads to
+# raise this for larger runners.
+test-threads = 1
+
+[[profile.default.overrides]]
+filter = "test(/^ui$/)"
+test-group = "dylint-ui"

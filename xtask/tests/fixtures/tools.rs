@@ -2,6 +2,21 @@
     unused_crate_dependencies,
     reason = "the fixture uses clap and shares xtask's other package dependencies"
 )]
+#![expect(
+    clippy::cast_precision_loss,
+    clippy::cognitive_complexity,
+    clippy::disallowed_methods,
+    clippy::index_refutable_slice,
+    clippy::indexing_slicing,
+    clippy::too_many_lines,
+    reason = "the fake tool fixture intentionally emulates external command behavior"
+)]
+#![expect(
+    one_use_private_helper,
+    panic_in_main,
+    semantic_primitive_type,
+    reason = "This fake executable models external command names and fails fast on invalid test-harness inputs."
+)]
 //! Child-process fixture for coverage orchestration; no shell scripts are required.
 use clap::Parser;
 use std::{env, ffi::OsString, fs, io::Write as _, path::PathBuf, process::ExitCode};
@@ -58,6 +73,65 @@ fn selected(tool: Tool) -> (&'static str, Arguments) {
     }
 }
 
+/// Detect the shared filename filter passed to every LLVM export.
+fn has_fixture_exclusion(arguments: &[OsString]) -> bool {
+    arguments.windows(2).any(|pair| {
+        pair[0] == "--ignore-filename-regex" && pair[1].to_string_lossy().contains("[^/]*-fixture/")
+    })
+}
+
+/// Identify a source beneath a support-crate directory ending in `-fixture`.
+fn is_fixture_source(filename: &str) -> bool {
+    filename
+        .split('/')
+        .any(|component| component.ends_with("-fixture"))
+}
+
+/// Apply LLVM's filename exclusion to the fixture's LCOV records.
+fn filtered_lcov(source: &str, should_exclude_fixture_crates: bool) -> String {
+    source
+        .split_inclusive("end_of_record")
+        .filter(|record| {
+            let filename = record
+                .lines()
+                .find_map(|line| line.strip_prefix("SF:"))
+                .unwrap_or_default();
+            !should_exclude_fixture_crates || !is_fixture_source(filename)
+        })
+        .collect()
+}
+
+/// Apply LLVM's filename exclusion and recompute raw line totals.
+fn filtered_summary(source: &str, should_exclude_fixture_crates: bool) -> String {
+    let mut summary: serde_json::Value = serde_json::from_str(source).expect("summary input");
+    if should_exclude_fixture_crates {
+        let files = summary["data"][0]["files"]
+            .as_array_mut()
+            .expect("summary files");
+        files.retain(|file| !file["filename"].as_str().is_some_and(is_fixture_source));
+        let (count, covered) = files.iter().fold((0_u64, 0_u64), |totals, file| {
+            (
+                totals.0
+                    + file["summary"]["lines"]["count"]
+                        .as_u64()
+                        .unwrap_or_default(),
+                totals.1
+                    + file["summary"]["lines"]["covered"]
+                        .as_u64()
+                        .unwrap_or_default(),
+            )
+        });
+        summary["data"][0]["totals"]["lines"]["count"] = count.into();
+        summary["data"][0]["totals"]["lines"]["covered"] = covered.into();
+        summary["data"][0]["totals"]["lines"]["percent"] = if count == 0 {
+            0.0.into()
+        } else {
+            (covered as f64 * 100.0 / count as f64).into()
+        };
+    }
+    serde_json::to_string(&summary).expect("serialize filtered summary")
+}
+
 /// Emulate Cargo and LLVM while leaving report interpretation to xtask.
 fn main() -> ExitCode {
     let (tool, parsed) = selected(Invocation::parse().tool);
@@ -70,7 +144,12 @@ fn main() -> ExitCode {
         .append(true)
         .open(root.join("calls.txt"))
         .unwrap();
-    writeln!(calls, "{tool} {arguments:?}").unwrap();
+    writeln!(
+        calls,
+        "{tool} {arguments:?} fast_sweep={:?}",
+        env::var_os("SAGAN_BENCH_FAST_SWEEP")
+    )
+    .unwrap();
     match tool {
         "cargo" => {
             if arguments.get(1).is_some_and(|argument| argument != "test") {
@@ -146,49 +225,41 @@ fn main() -> ExitCode {
             if mode == "llvm-fail" {
                 return ExitCode::from(9);
             }
-            if (mode == "text-fail" && arguments.get(1).is_some_and(|value| value == "report"))
-                || (mode == "html-fail" && arguments.get(1).is_some_and(|value| value == "show"))
-            {
-                return ExitCode::from(9);
-            }
             if arguments
                 .iter()
                 .any(|argument| argument == "--summary-only")
             {
                 let source = fs::read_to_string(root.join("summary-input.json")).unwrap();
-                print!("{source}");
+                print!(
+                    "{}",
+                    filtered_summary(&source, has_fixture_exclusion(&arguments))
+                );
             } else if arguments.iter().any(|argument| argument == "--format=lcov") {
                 if mode == "canonical-write-fail" {
                     fs::create_dir_all(root.join("coverage/report/canonical_summary.json"))
                         .unwrap();
                 }
+                if mode == "html-write-fail" {
+                    fs::create_dir_all(root.join("coverage/report/index.html")).unwrap();
+                }
                 if mode == "object-variants" {
-                    let second = arguments.iter().any(|argument| {
+                    let is_second_variant = arguments.iter().any(|argument| {
                         PathBuf::from(argument)
                             .file_name()
                             .is_some_and(|name| name == "second")
                     });
                     let path = root.join("src/shared.rs");
                     let path = path.display();
-                    let first_hits = u8::from(!second);
-                    let second_hits = u8::from(second);
+                    let first_hits = u8::from(!is_second_variant);
+                    let second_hits = u8::from(is_second_variant);
                     println!("SF:{path}\nDA:10,{first_hits}\nDA:20,{second_hits}\nend_of_record");
                     return ExitCode::SUCCESS;
                 }
                 let source = fs::read_to_string(root.join("lcov-input.info")).unwrap();
-                print!("{source}");
-            } else if arguments.iter().any(|argument| argument == "show") {
-                let output = arguments
-                    .iter()
-                    .find_map(|argument| argument.to_str().unwrap().strip_prefix("--output-dir="))
-                    .unwrap();
-                fs::write(
-                    PathBuf::from(output).join("index.html"),
-                    "<html><body>Coverage fixture</body></html>",
-                )
-                .unwrap();
-            } else {
-                println!("raw LLVM report");
+                print!(
+                    "{}",
+                    filtered_lcov(&source, has_fixture_exclusion(&arguments))
+                );
             }
         }
         "git" => {
@@ -215,11 +286,12 @@ fn main() -> ExitCode {
                     .iter()
                     .any(|argument| argument.to_string_lossy().starts_with("HEAD:refs/heads/"))
                 {
-                    if arguments.iter().any(|argument| {
+                    let is_leased_branch_update = arguments.iter().any(|argument| {
                         let argument = argument.to_string_lossy();
                         argument.starts_with("--force-with-lease=refs/heads/")
                             && argument.ends_with(':')
-                    }) {
+                    });
+                    if is_leased_branch_update {
                         return ExitCode::from(1);
                     }
                     fs::write(root.join("branch-owner.txt"), "release").unwrap();

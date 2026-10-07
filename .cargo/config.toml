@@ -1,6 +1,15 @@
 [alias]
 xtask = "run --package xtask --"
 
+[build]
+# Keep Rust compiler memory predictable on developer machines.
+# Override with CARGO_BUILD_JOBS when more memory is available.
+jobs = 1
+
+[env]
+# Bound in-process test concurrency for the exact `cargo test` gate.
+RUST_TEST_THREADS = "1"
+
 # Development build policy. Cargo configuration supports profile overrides.
 # https://doc.rust-lang.org/cargo/reference/config.html#profile
 [profile.dev]

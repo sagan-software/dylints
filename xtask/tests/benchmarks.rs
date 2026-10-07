@@ -22,7 +22,7 @@ mod support;
 
 use std::{fs, process::Command};
 
-use self::support::{lints, workload};
+use self::support::{file_size_group, lints, workload};
 
 /// Read the workspace metadata through Cargo's documented JSON interface.
 fn metadata() -> serde_json::Value {
@@ -37,30 +37,71 @@ fn metadata() -> serde_json::Value {
 
 /// Every leaf lint has one sorted, unique benchmark identity.
 #[test]
+#[expect(
+    many_assertions_in_test,
+    reason = "The inventory has separate count, sorting, uniqueness, and metadata contracts."
+)]
 fn benchmark_inventory_covers_leaf_lints() {
     // Coverage counts identities once and keeps their registration order stable.
-    let inventory = lints(&metadata(), "test-toolchain");
-    assert!(
-        inventory.len() >= 295,
-        "existing leaf lints must remain covered"
+    let metadata = metadata();
+    let inventory = lints(&metadata, "test-toolchain");
+    // Check the total independently from the shape and ordering of the entries.
+    assert_eq!(
+        inventory.len(),
+        297,
+        "each registered leaf lint is measured"
     );
     assert!(inventory.iter().map(|lint| &lint.name).is_sorted());
     let names: std::collections::BTreeSet<_> = inventory.iter().map(|lint| &lint.name).collect();
     assert_eq!(names.len(), inventory.len());
+    assert!(
+        inventory.iter().all(|lint| {
+            metadata["packages"]
+                .as_array()
+                .expect("packages")
+                .iter()
+                .find(|package| package["name"] == lint.name)
+                .and_then(|package| package.pointer("/metadata/dylint/category"))
+                .and_then(serde_json::Value::as_str)
+                .is_some()
+        }),
+        "only packages with a Dylint category are leaf lints"
+    );
 }
 
-/// Inventory names exclude categories and retain the pinned library identity.
+/// Inventory names exclude categories and retain the canonical package identity.
 #[test]
+#[expect(
+    many_assertions_in_test,
+    reason = "The test protects package identity, group exclusion, and toolchain-qualified paths."
+)]
 fn benchmark_inventory_preserves_leaf_library_identity() {
     // Categories are not leaf identities, and filenames retain the toolchain.
     let inventory = lints(&metadata(), "test-toolchain");
-    assert!(inventory.iter().any(|lint| lint.name == "large_rust_file"));
+    let size_lint = inventory
+        .iter()
+        .find(|lint| lint.name == "large-rust-file")
+        .expect("leaf lint identity");
+    // Package specs must retain both the kebab-case crate identity and workspace version.
+    assert_eq!(size_lint.package_spec, "large-rust-file@0.3.0");
+    let bevy_lint = inventory
+        .iter()
+        .find(|lint| lint.name == "bevy-duplicate-dependencies")
+        .expect("crate-specific lint identity");
+    assert_eq!(bevy_lint.package_spec, "bevy-duplicate-dependencies@0.3.0");
     assert!(!inventory.iter().any(|lint| lint.name == "restriction"));
     assert!(
         inventory
             .iter()
             .all(|lint| lint.library.to_string_lossy().contains("@test-toolchain"))
     );
+}
+
+/// Fast and full file-size samples never share Criterion comparison baselines.
+#[test]
+fn file_size_benchmark_groups_match_the_sampling_mode() {
+    assert_eq!(file_size_group(true), "file_size_fast");
+    assert_eq!(file_size_group(false), "file_size");
 }
 
 /// Workloads have deterministic source and an independent Cargo workspace.
@@ -150,7 +191,7 @@ fn assert_category_excluded(dynamic: &serde_json::Value, directory: &std::path::
 fn fixture_metadata(directory: &std::path::Path, crate_type: &str) -> serde_json::Value {
     serde_json::json!({
         "target_directory": directory,
-        "packages": [{"name": "candidate-lint", "manifest_path": directory.join("Cargo.toml"),
+        "packages": [{"name": "candidate-lint", "version": "0.1.0", "metadata": {"dylint": {"category": "test"}}, "manifest_path": directory.join("Cargo.toml"),
             "targets": [{"crate_types": [crate_type]}]}]
     })
 }
@@ -185,6 +226,22 @@ fn benchmark_inventory_checks_categories_and_examples() {
     assert_inventory_size(&dynamic, 1);
 }
 
+/// Aggregate packages remain excluded even when they resemble documented lint crates.
+#[test]
+fn benchmark_inventory_requires_lint_category_metadata() {
+    // A documented package is not a leaf lint until Cargo metadata marks its category.
+    let directory = documented_leaf();
+    let mut metadata = fixture_metadata(directory.path(), "cdylib");
+    let _removed = metadata["packages"][0]
+        .as_object_mut()
+        .expect("package object")
+        .remove("metadata");
+    assert_inventory_size(&metadata, 0);
+    // Adding the authoritative Dylint category makes the same fixture eligible.
+    metadata["packages"][0]["metadata"] = serde_json::json!({"dylint": {"category": "test"}});
+    assert_inventory_size(&metadata, 1);
+}
+
 /// Create the files that distinguish leaf lints from support packages.
 fn documented_leaf() -> tempfile::TempDir {
     // Documentation and a UI directory make this fixture eligible as a leaf lint.
@@ -207,6 +264,8 @@ fn benchmark_inventory_respects_separate_build_directory() {
         "build_directory": "/build",
         "packages": [{
             "name": "candidate-lint",
+            "version": "0.1.0",
+            "metadata": {"dylint": {"category": "test"}},
             "manifest_path": directory.path().join("Cargo.toml"),
             "targets": [{"crate_types": ["cdylib"]}]
         }]

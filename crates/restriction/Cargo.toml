@@ -1,0 +1,51 @@
+[package]
+name = "restriction"
+version.workspace = true
+description = "Rust review lints for local policy restrictions"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ambiguous-numeric-unit-field = { workspace = true, features = ["rlib"] }
+country-string-field = { workspace = true, features = ["rlib"] }
+custom-well-known-type = { workspace = true, features = ["rlib"] }
+date-string-field = { workspace = true, features = ["rlib"] }
+datetime-integer-field = { workspace = true, features = ["rlib"] }
+duration-integer-field = { workspace = true, features = ["rlib"] }
+dylint_linting.workspace = true
+hardcoded-path = { workspace = true, features = ["rlib"] }
+http-method-string = { workspace = true, features = ["rlib"] }
+insufficient-public-documentation = { workspace = true, features = ["rlib"] }
+interpolated-logging = { workspace = true, features = ["rlib"] }
+large-rust-crate = { workspace = true, features = ["rlib"] }
+large-rust-file = { workspace = true, features = ["rlib"] }
+manual-test-cases = { workspace = true, features = ["rlib"] }
+many-assertions-in-test = { workspace = true, features = ["rlib"] }
+missing-doctest-examples = { workspace = true, features = ["rlib"] }
+missing-intent-comments = { workspace = true, features = ["rlib"] }
+path-attribute-outside-root = { workspace = true, features = ["rlib"] }
+path-string-field = { workspace = true, features = ["rlib"] }
+public-serde-schema-derive = { workspace = true, features = ["rlib"] }
+repeated-cfg-gate = { workspace = true, features = ["rlib"] }
+runtime-env-read = { workspace = true, features = ["rlib"] }
+secret-raw-type = { workspace = true, features = ["rlib"] }
+semantic-primitive-type = { workspace = true, features = ["rlib"] }
+struct-update-default = { workspace = true, features = ["rlib"] }
+unnecessary-module-directory = { workspace = true, features = ["rlib"] }
+unnecessary-public-type = { workspace = true, features = ["rlib"] }
+url-string-field = { workspace = true, features = ["rlib"] }
+
+[dev-dependencies]
+dylint_testing.workspace = true
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

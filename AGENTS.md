@@ -8,8 +8,8 @@ Use Dylint's `workspace.metadata.dylint.libraries` in the target workspace's
 root `Cargo.toml` or `dylint.toml`. Keep existing library entries.
 
 Use `branch = "main"` and select library paths with `pattern`. The quick
-start selects `lints/correctness`, `lints/perf`, and `lints/suspicious`.
-The `lints` aggregate selects all groups, including stricter policy checks.
+start selects `crates/correctness`, `crates/perf`, and `crates/suspicious`.
+The `crates/sagan-lints` aggregate selects all groups, including stricter policy checks.
 These settings are not application dependencies.
 
 Install the compiler and Dylint tools shown in the quick start, then run
@@ -32,21 +32,43 @@ agent entry points in sync.
 
 ## Development workflow
 
-Run Cargo commands inside `nix develop`. The shell supplies the pinned nightly
+Run Cargo commands inside `nix --accept-flake-config develop`. The shell supplies the pinned nightly
 toolchain, `cargo-dylint`, `dylint-link`, a prebuilt Dylint driver, and the
-`dylint-link` linker setting that UI tests require.
+`dylint-link` linker setting that UI tests require. It disables Rustup auto-install
+because the pinned toolchain is read-only in `/nix/store`; this lets Dylint resolve
+the active compiler without trying to mutate or download components into the store.
+Nix command wrappers also include `cc` for `dylint-link` and GNU Make for the
+Rumdl lint's native jemalloc dependency.
+
+The workspace caps Cargo builds at one compiler job and test execution at one
+thread. This flake requests one Nix derivation and one build core where the Nix
+client controls scheduling. Those limits cap one invocation; a multi-user Nix
+daemon can still receive work from other clients. Only the daemon's
+system-wide configuration caps aggregate Nix build load. Avoid overlapping
+heavyweight builds until an administrator sets `max-jobs` and `cores` in the
+daemon configuration. Nix prompts before applying this flake's settings; pass
+`--accept-flake-config` to each command that evaluates it.
+Larger machines can raise Cargo's cap with `CARGO_BUILD_JOBS` and override Nix's
+limits with `--max-jobs` and `--cores`.
 
 Use these commands:
 
 - `cargo fmt --all` formats Rust source.
-- `cargo clippy --workspace --lib --bins --tests -- -D warnings` runs the
-  Clippy gate.
+- `nix --accept-flake-config fmt` formats Rust, Nix, and TOML files through treefmt and Taplo.
+- `cargo clippy --workspace --lib --bins --tests -- -D warnings -A unknown-lints`
+  runs the Clippy gate. Plain Cargo does not load Dylint libraries; the separate
+  Dylint gate remains strict for custom lint names.
+- `cargo nextest run --workspace --lib --bins --tests` runs test binaries using
+  `.config/nextest.toml`.
 - `cargo test --workspace --lib --bins --tests` runs every unit, UI, and
   integration test.
+- `cargo test --workspace --doc` runs documentation tests, which nextest does
+  not support.
+- `cargo xtask coverage --min-lines 97 --min-file-lines 90 -- --workspace --lib --bins --tests` enforces aggregate and per-file executable-line coverage.
 - `cargo test -p LINT_NAME --lib` runs one lint's UI test.
 - `cargo test -p xtask --tests` runs development-command integration tests.
-- `nix run .#site` generates the lint catalog in `public/`.
-- `nix flake check` builds the Nix packages and checks formatting.
+- `nix --accept-flake-config run .#site` generates the lint catalog in `public/`.
+- `nix --accept-flake-config --max-jobs 1 --cores 1 flake check` builds the Nix packages and checks formatting with bounded parallelism.
 
 ## Dependency management
 
@@ -56,10 +78,13 @@ Use these commands:
 
 ## Creating Dylint lints
 
-- Put lints under `lints/<category>/<lint_name>/`, or under
-  `lints/crates/<crate>/<lint-name>/` for crate-specific lints. Add the crate to
-  workspace dependencies and its parent group. Verify that the workspace globs
-  and path dependency discovery include the crate.
+- Put each lint crate directly under `crates/<lint-name>/`. Put its category
+  and crate-family groups beside it under `crates/<group>/`. Set the lint's
+  category in `[package.metadata.dylint]`; do not nest lint crates under group
+  directories. Keep `xtask` at the workspace root.
+- Add the crate to root `Cargo.toml` workspace dependencies and its parent
+  group's manifest and `register_lints` calls. Verify that `crates/*` includes
+  it and Dylint discovery still lists only parent groups.
 - Categories are Dylint group crates modeled on Clippy group names: `cargo`,
   `complexity`, `correctness`, `crates`, `maintainability`, `perf`,
   `restriction`, `style`, and `suspicious`. Add each new lint to its category
@@ -67,16 +92,16 @@ Use these commands:
 - Keep category discovery intact: root `Cargo.toml`
   `[workspace.metadata.dylint]` lists the category crate paths. Keep lint options
   in `dylint.toml`; Dylint rejects duplicate discovery tables.
-- When adding a category, also update the discovery and category map in
-  `flake.nix`, and `LintCategory` in `web/src/category.rs`.
+- When adding a category, also update discovery and category mapping in
+  `flake.nix` and `crates/sagan-lints-web/src/category.rs`.
 - Declare every lint with the `Warn` default level.
-- Model new lint crates on `lints/perf/ownership_at_boundaries` and
-  `lints/suspicious/string_error_result`.
+- Model new lint crates on `crates/ownership-at-boundaries` and
+  `crates/string-error-result`.
 
 Each lint crate must contain this layout:
 
 ```text
-lints/<category>/<lint_name>/
+crates/<lint_name>/
   Cargo.toml
   README.md
   src/lib.rs
@@ -159,6 +184,8 @@ UI test requirements:
 - When diagnostics change, run the tests and use the reported
   `Actual stderr saved to PATH` file to update `ui/main.stderr`. Do not write
   large stderr blocks by hand.
+- Declare UI fixture examples with `test = false`; the `ui_test` harness builds
+  them as examples, so Cargo should not schedule duplicate example test targets.
 
 Before considering a new lint done:
 
@@ -167,7 +194,7 @@ Before considering a new lint done:
 3. Run the Clippy gate.
 4. Run `cargo dylint list --all` and confirm that
    the lint appears.
-5. Run `nix run .#site` and confirm that generation succeeds.
+5. Run `nix --accept-flake-config run .#site` and confirm that generation succeeds.
 
 ## Workspace and releases
 

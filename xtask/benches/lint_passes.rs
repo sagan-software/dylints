@@ -22,7 +22,7 @@ use std::{
     time::Duration,
 };
 
-use self::support::{Lint, lints, workload};
+use self::support::{Lint, file_size_group, lints, workload};
 use criterion::{Criterion, SamplingMode, criterion_group, criterion_main};
 use dylint_support::rust_file_size_violation;
 use tempfile::TempDir;
@@ -117,7 +117,7 @@ fn prepare_libraries(metadata: &serde_json::Value, lints: &mut [Lint]) {
     for lint in lints.iter_mut() {
         let filename = lint.library.file_name().expect("lint library filename");
         lint.library = directory.join("debug").join(filename);
-        let _configured = command.args(["--package", &lint.name]);
+        let _configured = command.args(["--package", &lint.package_spec]);
     }
     // Select only leaf packages so no category enables dylint_linting's constituent feature.
     let status = command.status().expect("build benchmark lint libraries");
@@ -184,7 +184,7 @@ fn lint_passes(criterion: &mut Criterion) {
     }
     let lint = lints
         .iter()
-        .find(|lint| lint.name == "large_rust_file")
+        .find(|lint| lint.name == "large-rust-file")
         .expect("file-size lint");
     let mut command = compiler(&driver, &small_source, &[lint]);
     let _configured = command.env_remove("DYLINT_TOML");
@@ -197,18 +197,19 @@ fn lint_passes(criterion: &mut Criterion) {
 /// Isolate the shared file-size policy on actual repository files and threshold
 /// edges.
 fn file_size(criterion: &mut Criterion) {
-    let mut group = criterion.benchmark_group("file_size");
-    if env::var_os(FAST_SWEEP_ENV).is_some() {
+    let fast_sweep = env::var_os(FAST_SWEEP_ENV).is_some();
+    let mut group = criterion.benchmark_group(file_size_group(fast_sweep));
+    if fast_sweep {
         let _configured = group.measurement_time(Duration::from_millis(10));
     }
     for (name, source) in [
         (
             "support",
-            include_str!("../../support/src/lib.rs").to_owned(),
+            include_str!("../../crates/dylint-support/src/lib.rs").to_owned(),
         ),
         (
             "aggregate",
-            include_str!("../../lints/src/lib.rs").to_owned(),
+            include_str!("../../crates/sagan-lints/src/lib.rs").to_owned(),
         ),
         ("below_production_limit", "const _: () = ();\n".repeat(1499)),
         ("at_production_limit", "const _: () = ();\n".repeat(1500)),

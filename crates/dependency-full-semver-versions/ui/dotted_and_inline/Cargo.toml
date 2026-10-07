@@ -1,0 +1,28 @@
+[package]
+name = "dotted-and-inline"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+inline_minor = { package = "good-full", path = "../good_full", version = "1.2" }
+dotted_major.package = "good-full"
+dotted_major.path = "../good_full"
+dotted_major.version = "1"
+operator_range = { package = "good-full", path = "../good_full", version = ">=1" }
+path_only = { package = "workspace-only", path = "../workspace_only" }
+"quoted-name" = { package = "good-full", path = "../good_full", version = "0.2" }
+# The `#` inside the path string does not start a comment.
+hash_in_string = { package = "good-full", path = "../good_full/#/..", version = "3" }
+multiline_array = { package = "good-full", path = "../good_full", features = [
+  "a",
+  "b",
+], version = "4" }
+
+[target.'cfg(unix)'.dependencies]
+target_minor = { package = "good-full", path = "../good_full", version = "1.2" }
+
+[lib]
+path = "lib.rs"
+
+[workspace]
+resolver = "3"

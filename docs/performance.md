@@ -9,9 +9,11 @@ cargo xtask bench
 cargo xtask bench --full
 ```
 
-The default command performs Criterion's quick sweep. It samples every leaf lint with a prebuilt driver and bounded workloads. Use `--full` for statistical measurement before comparing a performance change. Reports include compiler startup and workload checking; they do not isolate only callback time.
+The default command performs a bounded inventory sweep: it samples every leaf lint with a prebuilt driver and small workloads using shortened warm-up and measurement windows. It retains Criterion's normal sample collection and plots. Fast and full file-size results use separate Criterion groups, so their sampling modes are not compared as code changes. Use `--full` for longer statistical measurements before comparing a performance change. Reports include compiler startup and workload checking; they do not isolate only callback time.
 
 Use the same pinned compiler, build profile, machine and workload sizes when comparing results. Keep external workload and toolchain changes separate from the measured implementation. Open `target/criterion/report/index.html`; the site publishes this index under `benches/report/`. Keep the generated directory structure so the index can resolve its chart and result links.
+
+Build timings are omitted. Reliable comparisons need explicitly controlled warm and cold caches, dependency state, profile and host; this report measures compiler analysis with a prebuilt driver. Timings from an uncontrolled runner would mostly describe cache state.
 
 ## Build costs
 

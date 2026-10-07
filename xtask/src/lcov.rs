@@ -9,6 +9,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fmt::{self, Write as _},
     path::{Path, PathBuf},
 };
 
@@ -126,6 +127,177 @@ pub(crate) fn metric(lines: &Lines) -> Metric {
     )
 }
 
+/// Encode one LCOV record per canonical source file, merging every compiled
+/// variant before exposing the report to other LCOV consumers.
+pub(crate) fn encode(lines: &Lines) -> String {
+    // The map gives one source-ordered record per canonical file path.
+    let mut files: BTreeMap<&Path, Vec<(u64, u64)>> = BTreeMap::new();
+    for ((path, line), hits) in lines {
+        // `Lines` has already merged compiled variants by canonical path and line.
+        files
+            .entry(path.as_path())
+            .or_default()
+            .push((*line, *hits));
+    }
+
+    let mut output = String::new();
+    for (path, entries) in files {
+        // Keep each file header adjacent to its counters for ordinary LCOV readers.
+        output.push_str("SF:");
+        output.push_str(&path.to_string_lossy());
+        output.push('\n');
+        for (line, hits) in entries {
+            push_format(&mut output, format_args!("DA:{line},{hits}\n"));
+        }
+        // A complete record lets downstream tools distinguish file boundaries.
+        output.push_str("end_of_record\n");
+    }
+    output
+}
+
+/// Render the same canonical executable-line measurements for people.
+pub(crate) fn html(lines: &Lines, root: &Path) -> String {
+    // Build the headline and detail rows from the same canonical summary.
+    let report = summary(lines);
+    let total = &report.totals.lines;
+    let mut html = String::from(HTML_START);
+    push_format(
+        &mut html,
+        format_args!(
+            "{:.2}% line coverage ({}/{}) across {} canonical source files. Compiler path aliases are merged by source file and line; a line counts as covered when any compiled variant reaches it.</p><div class=\"table-wrap\"><table><thead><tr><th scope=\"col\">Source file</th><th scope=\"col\">Line coverage</th><th scope=\"col\">Covered lines</th><th scope=\"col\">Uncovered executable lines</th></tr></thead><tbody>",
+            total.percent,
+            total.covered,
+            total.count,
+            report.files.len()
+        ),
+    );
+    // Each row preserves exact gaps so readers can inspect uncovered work.
+    for file in &report.files {
+        html.push_str(&html_row(file, root));
+    }
+    html.push_str(HTML_END);
+    html
+}
+
+/// Render a plain-text summary from the same canonical line inventory.
+pub(crate) fn text_summary(lines: &Lines, root: &Path) -> String {
+    // Reuse canonical totals so terminal output agrees with HTML and JSON.
+    let report = summary(lines);
+    let mut output = String::new();
+    push_format(
+        &mut output,
+        format_args!(
+            "Canonical executable line coverage: {:.2}% ({}/{})\nCanonical source files: {}\n",
+            report.totals.lines.percent,
+            report.totals.lines.covered,
+            report.totals.lines.count,
+            report.files.len()
+        ),
+    );
+    // Stable source order makes per-file changes easy to compare in CI logs.
+    for file in &report.files {
+        let display_path = display_path(file.filename, root);
+        push_format(
+            &mut output,
+            format_args!(
+                "{:6.2}% ({}/{}) {display_path}\n",
+                file.lines.percent, file.lines.covered, file.lines.count
+            ),
+        );
+    }
+    output
+}
+
+/// Render one canonical file row with exact uncovered-line details.
+fn html_row(file: &FileReport<'_>, root: &Path) -> String {
+    // Escape paths before inserting repository text into markup.
+    let display_path = escape_html(&display_path(file.filename, root));
+    let missing = missing_lines(&file.missing_lines);
+    let mut row = String::new();
+    // Keep percentages, hit totals, and exact gaps together for each source row.
+    push_format(
+        &mut row,
+        format_args!(
+            "<tr><th scope=\"row\"><code>{display_path}</code></th><td>{:.2}%</td><td>{}/{}</td><td>{missing}</td></tr>",
+            file.lines.percent, file.lines.covered, file.lines.count
+        ),
+    );
+    row
+}
+
+/// Format a compact expandable list of executable lines without hits.
+fn missing_lines(lines: &[u64]) -> String {
+    if lines.is_empty() {
+        return "None".to_owned();
+    }
+    let numbers = lines
+        .iter()
+        .map(u64::to_string)
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "<details><summary>{} lines</summary><code>{numbers}</code></details>",
+        lines.len()
+    )
+}
+
+/// Shorten canonical report filenames to workspace-relative paths.
+fn display_path(path: &Path, root: &Path) -> String {
+    path.strip_prefix(root)
+        .unwrap_or(path)
+        .display()
+        .to_string()
+}
+
+/// Append formatted text to a String; writing into a String cannot fail.
+fn push_format(output: &mut String, arguments: fmt::Arguments<'_>) {
+    output
+        .write_fmt(arguments)
+        .expect("formatting into a String cannot fail");
+}
+
+/// Escape source paths before placing them in HTML text.
+#[expect(
+    one_use_private_helper,
+    reason = "The named helper centralizes the HTML escaping invariant for report paths."
+)]
+fn escape_html(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
+
+/// Opening document markup and styles for the standalone coverage report.
+const HTML_START: &str = r#"<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dylints coverage</title>
+<style>
+:root { font-family: system-ui, sans-serif; color: #202b36; background: #fff; }
+body { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+h1 { margin: .2rem 0; }
+.summary { color: #465564; margin: 0 0 1.5rem; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { border-bottom: 1px solid #d6dde4; padding: .65rem .75rem; text-align: left; vertical-align: top; }
+thead th { position: sticky; top: 0; background: #f3f6f8; }
+td:nth-child(2), td:nth-child(3) { white-space: nowrap; }
+code { font-family: ui-monospace, monospace; overflow-wrap: anywhere; }
+details summary { cursor: pointer; color: #155b87; }
+details[open] summary { margin-bottom: .4rem; }
+@media (max-width: 700px) {
+  body { padding: 1rem; }
+  .table-wrap { overflow-x: auto; }
+  table { min-width: 650px; }
+  th, td { padding: .55rem; }
+}
+</style></head><body><main><h1>Dylints coverage</h1><p class="summary">"#;
+
+/// Closing document markup shared by the coverage report renderer.
+const HTML_END: &str = "</tbody></table></div></main></body></html>\n";
+
 /// Per-file canonical line coverage and exact uncovered lines.
 #[derive(Serialize)]
 struct FileReport<'path> {
@@ -137,9 +309,27 @@ struct FileReport<'path> {
     missing_lines: Vec<u64>,
 }
 
+/// Canonical JSON coverage summary and its unique source-file rows.
+#[derive(Serialize)]
+pub(crate) struct Summary<'path> {
+    /// Measurement scope for this report.
+    scope: &'static str,
+    /// One entry for each canonical Rust source file.
+    files: Vec<FileReport<'path>>,
+    /// Aggregate line measurements.
+    totals: Totals,
+}
+
+/// Aggregate canonical metrics.
+#[derive(Serialize)]
+struct Totals {
+    /// Executable-line counts across canonical sources.
+    lines: Metric,
+}
+
 /// Serialize the canonical summary while retaining stable filename and line
 /// order.
-pub(crate) fn summary(lines: &Lines) -> serde_json::Value {
+pub(crate) fn summary(lines: &Lines) -> Summary<'_> {
     // Group canonical lines by borrowed source identity in stable path order.
     let mut files: BTreeMap<&Path, Vec<(u64, u64)>> = BTreeMap::new();
     for ((path, line), hits) in lines {
@@ -163,11 +353,13 @@ pub(crate) fn summary(lines: &Lines) -> serde_json::Value {
                 .collect(),
         })
         .collect();
-    serde_json::json!({
-        "scope": "canonical executable LCOV DA lines from production and test targets; cfg(test) included; examples and fixtures excluded",
-        "files": reports,
-        "totals": {"lines": metric(lines)}
-    })
+    Summary {
+        scope: "canonical executable LCOV DA lines from production and test targets; cfg(test) included; examples and fixtures excluded",
+        files: reports,
+        totals: Totals {
+            lines: metric(lines),
+        },
+    }
 }
 
 #[cfg(test)]
@@ -195,44 +387,70 @@ mod tests {
     /// Lexical aliases merge disjoint hits and preserve the exact uncovered
     /// line.
     #[test]
+    #[expect(
+        many_assertions_in_test,
+        reason = "The test separately protects merged counts, canonical identity, LCOV, HTML, and gaps."
+    )]
     fn merges_aliases_with_maximum_hits() {
         let root = Path::new("/workspace");
         // Aliases contribute complementary hits to the same physical file.
         let input = "SF:/workspace/src/../shared.rs\nDA:10,1\nDA:20,0\nDA:30,0\nend_of_record\nSF:/workspace/shared.rs\nDA:10,0\nDA:20,3,checksum\nDA:30,0\nend_of_record\n";
         let lines = parse(input, root, &BTreeSet::new()).unwrap();
         let counts = metric(&lines);
+        // Both aliases must contribute to the canonical file's executable-line counts.
         assert_eq!((counts.count, counts.covered), (3, 2));
         // The output exposes both canonical identity and exact uncovered lines.
         let report = summary(&lines);
-        assert_eq!(report["files"][0]["missing_lines"], serde_json::json!([30]));
-        assert_eq!(report["files"][0]["filename"], "/workspace/shared.rs");
+        let file = report.files.first().expect("canonical file");
+        assert_eq!(file.missing_lines, [30]);
+        assert_eq!(file.filename, Path::new("/workspace/shared.rs"));
+        // LCOV consumers receive one record with the maximum hit count per line.
+        let encoded = super::encode(&lines);
+        assert_eq!(encoded.matches("SF:").count(), 1);
+        assert!(encoded.contains("SF:/workspace/shared.rs\n"));
+        assert!(encoded.contains("DA:10,1\nDA:20,3\nDA:30,0\n"));
+        let html = super::html(&lines, root);
+        assert_eq!(html.matches("shared.rs</code>").count(), 1);
+        assert!(html.contains("66.67%"));
+        assert!(html.contains("30</code>"));
     }
 
     /// Fixture aliases and unselected sources cannot enter canonical totals.
     #[test]
+    #[expect(
+        many_assertions_in_test,
+        reason = "The selected file, aggregate rate, and rendered scope are separate selection guarantees."
+    )]
     fn filters_selected_sources_after_normalization() {
         let root = Path::new("/workspace");
         // Source selection operates after canonicalization and fixture exclusion.
-        let selected = BTreeSet::from([root.join("lints/crates/sqlx/src/lib.rs")]);
-        let input = "SF:lints/crates/sqlx/support/../fixture/src/lib.rs\nDA:1,0\nend_of_record\nSF:lints/crates/sqlx/src/lib.rs\nDA:2,7\nend_of_record\nSF:other.rs\nDA:3,0\nend_of_record\n";
+        let selected = BTreeSet::from([root.join("crates/sqlx/src/lib.rs")]);
+        let input = "SF:crates/sqlx-support/../fixture/src/lib.rs\nDA:1,0\nend_of_record\nSF:crates/sqlx/src/lib.rs\nDA:2,7\nend_of_record\nSF:other.rs\nDA:3,0\nend_of_record\n";
         let lines = parse(input, root, &selected).unwrap();
         // Counts and percentages must use the same selected executable lines.
         assert_eq!((metric(&lines).count, metric(&lines).covered), (1, 1));
-        assert_eq!(summary(&lines)["totals"]["lines"]["percent"], 100.0);
+        assert!((summary(&lines).totals.lines.percent - 100.0).abs() < f64::EPSILON);
+        let html = super::html(&lines, root);
+        assert!(html.contains("crates/sqlx/src/lib.rs"));
+        assert!(!html.contains("fixture"));
+        assert!(!html.contains("other.rs"));
     }
 
     /// Malformed DA fields and records without a source cannot become
     /// executable lines.
     #[test]
+    #[expect(
+        many_assertions_in_test,
+        reason = "Malformed input handling and empty-report output are independent parser contracts."
+    )]
     fn malformed_and_empty_records_do_not_add_lines() {
         // Invalid records and records without an active source cannot add lines.
         let input = "DA:1,1\nSF:/workspace/source.rs\nDA:a,1\nDA:1,-1\nDA:2\nDA:3,NaN\nDA:4,1\nend_of_record\nDA:5,1\n";
         let lines = parse(input, Path::new("/workspace"), &BTreeSet::new()).unwrap();
+        // The valid record contributes one line; empty reports still render zero coverage.
         assert_eq!(lines.len(), 1);
         assert!(metric(&super::Lines::new()).percent.abs() < f64::EPSILON);
-        assert_eq!(
-            summary(&super::Lines::new())["files"],
-            serde_json::json!([])
-        );
+        assert!(summary(&super::Lines::new()).files.is_empty());
+        assert!(super::html(&super::Lines::new(), Path::new("/workspace")).contains("0.00%"));
     }
 }

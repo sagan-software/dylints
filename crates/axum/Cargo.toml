@@ -1,0 +1,31 @@
+[package]
+name = "axum"
+version.workspace = true
+description = "Rust review lints for Axum routing API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+axum-nest-at-root = { workspace = true, features = ["rlib"] }
+axum-nest-service-at-root = { workspace = true, features = ["rlib"] }
+axum-nest-wildcard-path = { workspace = true, features = ["rlib"] }
+axum-route-empty-path = { workspace = true, features = ["rlib"] }
+axum-route-layer-on-empty-router = { workspace = true, features = ["rlib"] }
+axum-route-legacy-colon-capture = { workspace = true, features = ["rlib"] }
+axum-route-legacy-wildcard-capture = { workspace = true, features = ["rlib"] }
+axum-route-path-missing-slash = { workspace = true, features = ["rlib"] }
+axum-route-service-empty-path = { workspace = true, features = ["rlib"] }
+axum-route-service-router = { workspace = true, features = ["rlib"] }
+dylint_linting.workspace = true
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

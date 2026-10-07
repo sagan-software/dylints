@@ -1,0 +1,35 @@
+[package]
+name = "tracing"
+version.workspace = true
+description = "Rust review lints for tracing API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dylint_linting.workspace = true
+tracing-async-block-in-sync-scope = { workspace = true, features = ["rlib"] }
+tracing-await-holding-span-guard = { workspace = true, features = ["rlib"] }
+tracing-current-span-enter = { workspace = true, features = ["rlib"] }
+tracing-current-span-or-current = { workspace = true, features = ["rlib"] }
+tracing-direct-record-all = { workspace = true, features = ["rlib"] }
+tracing-format-field = { workspace = true, features = ["rlib"] }
+tracing-instrument-current-span = { workspace = true, features = ["rlib"] }
+tracing-message-interpolation = { workspace = true, features = ["rlib"] }
+tracing-none-enter = { workspace = true, features = ["rlib"] }
+tracing-none-or-current = { workspace = true, features = ["rlib"] }
+tracing-none-record = { workspace = true, features = ["rlib"] }
+tracing-redundant-field-assignment = { workspace = true, features = ["rlib"] }
+tracing-redundant-in-current-span = { workspace = true, features = ["rlib"] }
+tracing-to-string-field = { workspace = true, features = ["rlib"] }
+
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true

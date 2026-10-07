@@ -1,0 +1,60 @@
+# manual-extend-loop
+
+## What it does
+
+Checks for a `for` loop whose body is only one `Vec::push` or
+`VecDeque::push_back` call on a local variable, a field, or a dereference of
+one. When the loop pushes its unchanged item from a `Vec`, `VecDeque`, array,
+or slice, the lint suggests replacing the loop with one `extend` call. Other
+source types receive help without a machine-applicable fix because their
+`size_hint` can have side effects.
+
+## Why is this bad?
+
+The loop grows the collection one item at a time. `Extend::extend` adds the
+items in one call and can reserve capacity from the iterator size hint. When
+code transforms the pushed value, `extend` with `map` states the transformation
+in one place. When `size_hint` has side effects, calling it can change later
+yielded values. The lint limits
+machine-applicable fixes to standard source types whose `size_hint` has no
+side effects.
+
+## Known problems
+
+- Only the standard `Vec::push` and `VecDeque::push_back` trigger. The lint
+  ignores other collections, such as `HashSet::insert`, and local types with a
+  `push` method.
+- The target must be a built-in `Vec` or `VecDeque` reached from a local place
+  through only built-in references. The lint ignores targets reached through
+  custom `Deref` or `DerefMut` receivers.
+- The lint skips bodies that contain `?`, `.await`, `break`, `continue`, or
+  `return`, and pushed values that read the target collection.
+- The lint ignores a source expression that reads the target collection because
+  `extend` holds the target borrow while it evaluates the source.
+- A target produced by a call or an index, such as `target().push(value)`, is
+  ignored because the loop evaluates it once per item.
+- The automatic fix applies only when the loop pushes its variable without
+  coercion from a `Vec`, `VecDeque`, array, or slice, as a statement or block
+  tail. Other source types, including iterator adapters, get help without a
+  machine-applicable fix because their `size_hint` can have side effects.
+  Other loops, such as loops in match arms, get help without a fix. Loops with
+  line or block comments retain the diagnostic and its help text but get no
+  automatic fix. Comment markers inside string literals do not suppress fixes.
+
+## Example
+
+```rust
+fn append_all(output: &mut Vec<i32>, values: Vec<i32>) {
+    for value in values {
+        output.push(value);
+    }
+}
+```
+
+## Use instead
+
+```rust
+fn append_all(output: &mut Vec<i32>, values: Vec<i32>) {
+    output.extend(values);
+}
+```

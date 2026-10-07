@@ -1,0 +1,49 @@
+# duration-integer-field
+
+## What it does
+
+Checks for named fields whose type is a primitive integer and whose name contains
+a time-unit word. The words cover nanoseconds through weeks, such as `ns`, `ms`,
+`millis`, `sec`, `seconds`, `mins`, `hr`, `hours`, `days`, and `weeks`, matched
+between underscores and with case. The singular words `second`, `minute`,
+`hour`, `day`, and `week`, which usually name a calendar component, and `min`,
+which usually means minimum, do not count.
+
+## Why is this bad?
+
+The unit lives only in the field name, so code can pass milliseconds where
+callers expect seconds and still compile. `std::time::Duration` stores one value
+and converts units explicitly.
+
+## Known problems
+
+The compiler resolves type aliases before the lint examines the type. The lint
+peels up to eight consecutive standard `Option` layers at each point in its
+traversal. Longer chains, local `Option` lookalikes, and user-defined wrappers
+remain opaque. After peeling, it checks only primitive
+integer types, including type aliases and `use` renames; integer newtypes such
+as `struct BusinessDays(u16)` remain opaque.
+
+It warns on a raw integer count that uses a unit word but is not an elapsed
+time, such as `business_days: u16`. It does not flag duration names without a
+unit word, such as `timeout` or `ttl`.
+
+## Example
+
+```rust
+struct RetryConfig {
+    retry_delay_seconds: u64,
+    timeout_ms: usize,
+}
+```
+
+## Use instead
+
+```rust
+use std::time::Duration;
+
+struct RetryConfig {
+    retry_delay: Duration,
+    timeout: Duration,
+}
+```

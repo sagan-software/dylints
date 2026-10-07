@@ -11,6 +11,7 @@ use std::{
 };
 
 use clap::Args;
+use serde::Deserialize;
 
 use crate::{error::Error, lcov, paths, percentage::Percentage, process};
 
@@ -20,6 +21,9 @@ pub(crate) struct Coverage {
     /// Minimum canonical executable-line coverage percentage.
     #[arg(long, default_value = "0")]
     min_lines: Percentage,
+    /// Minimum canonical executable-line coverage for every displayed file.
+    #[arg(long, default_value = "90")]
+    min_file_lines: Percentage,
     /// Restrict the report to Rust sources within this directory; repeat as
     /// needed.
     #[arg(long = "path")]
@@ -31,6 +35,10 @@ pub(crate) struct Coverage {
     #[arg(last = true)]
     test_args: Vec<OsString>,
 }
+
+/// Sources generated for examples and intentionally isolated test fixtures are
+/// not production coverage entries.
+const IGNORE_FILENAME_REGEX: &str = r"(/\.cargo/registry/|/\.rustup(-dylint)?/|/rustc/|/nix/store/|/examples/|/ui/|/fixtures/|/fixture/|/[^/]*-fixture/|/target/)";
 
 impl Coverage {
     /// Run selected tests, retain reports even on test failure, and enforce
@@ -45,8 +53,8 @@ impl Coverage {
         let (selected, target) = self.prepare(root, target_override)?;
         // Preserve reports from unsuccessful tests before returning their status.
         let status = self.test(root, &target, rustflags)?;
-        let percent = measured_report(&target, root, &selected)?;
-        self.check_result(status, percent)
+        let report = measured_report(&target, root, &selected)?;
+        self.check_result(status, &report)
     }
 
     /// Resolve every input before replacing coverage-owned outputs.
@@ -67,7 +75,11 @@ impl Coverage {
     }
 
     /// Preserve test failure before applying the configured minimum.
-    fn check_result(&self, status: std::process::ExitStatus, percent: f64) -> Result<(), Error> {
+    fn check_result(
+        &self,
+        status: std::process::ExitStatus,
+        report: &MeasuredCoverage,
+    ) -> Result<(), Error> {
         // Failed tests remain a failure even when their partial profiles exceed the minimum.
         if !status.success() {
             return Err(Error::Process {
@@ -77,10 +89,14 @@ impl Coverage {
         }
         // Compare the canonical rate only after the test outcome has passed.
         let minimum = self.min_lines.value();
-        if percent < minimum {
+        if report.total_percent < minimum {
             return Err(Error::Invalid(format!(
-                "line coverage {percent:.2}% is below the {minimum}% minimum"
+                "line coverage {:.2}% is below the {minimum}% minimum",
+                report.total_percent
             )));
+        }
+        if let Some(message) = file_minimum_error(report, self.min_file_lines.value()) {
+            return Err(Error::Invalid(message));
         }
         Ok(())
     }
@@ -135,19 +151,134 @@ fn instrumented_cargo(root: &Path, target: &Path, wrapper: &Path, linker: &str) 
 }
 
 /// Build one measured report and expose its exact output location.
-fn measured_report(target: &Path, root: &Path, selected: &BTreeSet<PathBuf>) -> Result<f64, Error> {
+#[expect(
+    many_exit_points,
+    reason = "Each failed tool, profile merge, report export, or file read must retain its original error."
+)]
+fn measured_report(
+    target: &Path,
+    root: &Path,
+    selected: &BTreeSet<PathBuf>,
+) -> Result<MeasuredCoverage, Error> {
     // Use LLVM tools from the compiler that generated these profiles.
     let tools = llvm_tools()?;
+    // Merge retained compiler variants before exporting any user-facing format.
     merge(target, &tools)?;
-    let percent = report(target, &tools, root, selected)?;
+    // Keep the report set and threshold based on the same canonical line data.
+    let total_percent = report(target, &tools, root, selected)?;
+    // Read the report back so per-file limits use the exact displayed entries.
+    let summary = fs::read(target.join("report/canonical_summary.json"))?;
+    let summary: CanonicalSummary = serde_json::from_slice(&summary)?;
+    let report = MeasuredCoverage {
+        total_percent,
+        files: summary.files,
+    };
     // Keep the diagnostic tied to the generated artifact, including failing tests.
     let directory = target.join("report");
     let display = directory.display();
     writeln!(
         std::io::stdout().lock(),
-        "canonical line coverage: {percent:.2}%\nreports: {display}"
+        "canonical line coverage: {total_percent:.2}%\nreports: {display}"
     )?;
-    Ok(percent)
+    Ok(report)
+}
+
+/// Canonical report fields needed for the per-file acceptance gate.
+#[derive(Debug, Deserialize)]
+struct CanonicalSummary {
+    /// Every source entry rendered in the canonical coverage summary.
+    files: Vec<FileCoverage>,
+}
+
+/// Coverage for one displayed file.
+#[derive(Debug, Deserialize)]
+struct FileCoverage {
+    /// Canonical source identity shown in the report.
+    filename: PathBuf,
+    /// Executable-line coverage metric.
+    lines: FileMetric,
+}
+
+/// Minimal per-file metric parsed from the generated canonical artifact.
+#[derive(Debug, Deserialize)]
+struct FileMetric {
+    /// Covered executable lines as a percentage.
+    percent: f64,
+}
+
+/// Aggregate and per-file measurements from one report run.
+#[derive(Debug)]
+struct MeasuredCoverage {
+    /// Aggregate canonical line coverage.
+    total_percent: f64,
+    /// Every displayed file and its canonical coverage.
+    files: Vec<FileCoverage>,
+}
+
+/// Explain every displayed file that falls below its configured minimum.
+fn file_minimum_error(report: &MeasuredCoverage, minimum: f64) -> Option<String> {
+    let gaps: Vec<_> = report
+        .files
+        .iter()
+        .filter(|file| file.lines.percent < minimum)
+        .map(|file| format!("{} ({:.2}%)", file.filename.display(), file.lines.percent))
+        .collect();
+    (!gaps.is_empty()).then(|| {
+        format!(
+            "file line coverage is below the {minimum}% minimum: {}",
+            gaps.join(", ")
+        )
+    })
+}
+
+#[cfg(test)]
+mod per_file_tests {
+    use super::{CanonicalSummary, FileCoverage, FileMetric, MeasuredCoverage, file_minimum_error};
+
+    /// A clean 90% boundary passes for every displayed file.
+    #[test]
+    fn per_file_minimum_accepts_equality() {
+        let report: CanonicalSummary = serde_json::from_value(serde_json::json!({
+            "files": [{
+                "filename": "crates/example/src/lib.rs",
+                "lines": {"percent": 90.0}
+            }]
+        }))
+        .expect("canonical file report");
+        let report = MeasuredCoverage {
+            total_percent: 90.0,
+            files: report.files,
+        };
+        assert_eq!(file_minimum_error(&report, 90.0), None);
+    }
+
+    /// Every below-floor file appears with its exact measured percentage.
+    #[test]
+    fn per_file_minimum_reports_all_gaps() {
+        let report = MeasuredCoverage {
+            total_percent: 97.0,
+            files: vec![
+                FileCoverage {
+                    filename: "crates/first/src/lib.rs".into(),
+                    lines: FileMetric { percent: 0.0 },
+                },
+                FileCoverage {
+                    filename: "crates/second/src/lib.rs".into(),
+                    lines: FileMetric { percent: 89.9 },
+                },
+                FileCoverage {
+                    filename: "crates/third/src/lib.rs".into(),
+                    lines: FileMetric { percent: 90.0 },
+                },
+            ],
+        };
+        assert_eq!(
+            file_minimum_error(&report, 90.0).as_deref(),
+            Some(
+                "file line coverage is below the 90% minimum: crates/first/src/lib.rs (0.00%), crates/second/src/lib.rs (89.90%)"
+            )
+        );
+    }
 }
 
 /// Replace only coverage-owned build and report outputs in a validated
@@ -292,8 +423,12 @@ fn is_executable(entry: &walkdir::DirEntry) -> Result<bool, Error> {
 fn llvm_command(tools: &Path, operation: &str, target: &Path, objects: &[PathBuf]) -> Command {
     // Exclude generated files and intentional counterexample fixtures from every report.
     let mut command = Command::new(tools.join("llvm-cov"));
-    let _configured = command.arg(operation).arg("--instr-profile").arg(target.join("coverage.profdata"))
-        .arg("--ignore-filename-regex").arg("(/\\.cargo/registry/|/\\.rustup(-dylint)?/|/rustc/|/nix/store/|/examples/|/ui/|/fixtures/|/fixture/|/target/)");
+    let _configured = command
+        .arg(operation)
+        .arg("--instr-profile")
+        .arg(target.join("coverage.profdata"))
+        .arg("--ignore-filename-regex")
+        .arg(IGNORE_FILENAME_REGEX);
     // LLVM accepts one positional object followed by explicitly named additional objects.
     if let Some((first, rest)) = objects.split_first() {
         let _configured = command.arg(first);
@@ -323,8 +458,7 @@ fn capture(command: &mut Command, target: &Path) -> Result<Vec<u8>, Error> {
     Ok(result.stdout)
 }
 
-/// Emit raw LLVM reports, canonical summary and browsable HTML from one
-/// profile.
+/// Emit canonical LCOV data, summaries and browsable HTML from one profile.
 fn report(
     target: &Path,
     tools: &Path,
@@ -334,7 +468,7 @@ fn report(
     // Derive all report formats from the same objects and merged profile.
     let objects = objects(target)?;
     let summary = read_summary(target, tools, &objects)?;
-    scoped_reports(target, tools, root, selected, &objects, summary)
+    scoped_reports(target, tools, root, selected, &objects, &summary)
 }
 
 /// Read LLVM's raw mapping inventory before applying source selection.
@@ -346,58 +480,19 @@ fn read_summary(target: &Path, tools: &Path, objects: &[PathBuf]) -> Result<Llvm
     Ok(serde_json::from_slice(&raw)?)
 }
 
-/// Apply one scope to canonical totals and every browsable LLVM report.
+/// Apply one source scope to the canonical report.
 fn scoped_reports(
     target: &Path,
     tools: &Path,
     root: &Path,
     selected: &BTreeSet<PathBuf>,
     objects: &[PathBuf],
-    mut summary: LlvmReport,
+    summary: &LlvmReport,
 ) -> Result<f64, Error> {
-    // Resolve lexical aliases before excluding unselected filenames in every LLVM output.
-    let ignore = scoped_ignore(&summary, root, selected)?;
-    let command = |operation| {
-        let mut command = llvm_command(tools, operation, target, objects);
-        if let Some(ignore) = &ignore {
-            let _configured = command.arg("--ignore-filename-regex").arg(ignore);
-        }
-        command
-    };
-    // Canonical totals merge source aliases; raw LLVM totals retain every mapping.
-    let percent = canonical_report(target, tools, root, selected, objects, ignore.as_deref())?;
-    raw_reports(
-        target,
-        root,
-        selected,
-        &mut summary,
-        &mut command("report"),
-        &mut command("show"),
-    )?;
-    Ok(percent)
-}
-
-/// Retain filtered raw totals and their matching text and HTML artifacts.
-fn raw_reports(
-    target: &Path,
-    root: &Path,
-    selected: &BTreeSet<PathBuf>,
-    summary: &mut LlvmReport,
-    text: &mut Command,
-    html: &mut Command,
-) -> Result<(), Error> {
-    filter_summary(summary, root, selected)?;
-    write_json(&target.join("report/summary.json"), summary)?;
-    // The same exclusion expression governs both browsable formats.
-    llvm_reports(target, text, html)
-}
-
-/// Serialize one report artifact without mixing tool diagnostics into its
-/// bytes.
-fn write_json(path: &Path, value: &impl serde::Serialize) -> Result<(), Error> {
-    let bytes = serde_json::to_vec_pretty(value)?;
-    fs::write(path, bytes)?;
-    Ok(())
+    // Resolve lexical aliases before excluding unselected filenames from each object export.
+    let ignore = scoped_ignore(summary, root, selected)?;
+    // The displayed files, LCOV and thresholds all share the same merged lines.
+    canonical_report(target, tools, root, selected, objects, ignore.as_deref())
 }
 
 /// Normalize executable-line identities and write the canonical coverage
@@ -412,7 +507,7 @@ fn canonical_report(
 ) -> Result<f64, Error> {
     let lines = object_lines(target, tools, root, selected, objects, ignore)?;
     // Stable source and line order exposes the exact untested production lines.
-    canonical_artifacts(&lines, &target.join("report"))?;
+    canonical_artifacts(&lines, root, &target.join("report"))?;
     Ok(lcov::metric(&lines).percent)
 }
 
@@ -425,47 +520,41 @@ fn object_lines(
     objects: &[PathBuf],
     ignore: Option<&str>,
 ) -> Result<lcov::Lines, Error> {
-    // LLVM deduplicates function mappings across objects; export variants separately first.
+    // LLVM can discard a compiled variant's counters when objects are combined.
     let mut lines = lcov::Lines::new();
-    let mut raw_file = fs::File::create(target.join("report/lcov.info"))?;
     for object in objects {
         let mut command = llvm_command(tools, "export", target, std::slice::from_ref(object));
         if let Some(ignore) = ignore {
             let _configured = command.arg("--ignore-filename-regex").arg(ignore);
         }
-        // Preserve each raw export before canonicalizing its source paths.
+        // Merge each variant by canonical source path and executable line.
         let raw = capture(command.arg("--format=lcov"), target)?;
-        raw_file.write_all(&raw)?;
         // A line reached by any retained compiler variant remains covered.
         for (identity, hits) in lcov::parse(&String::from_utf8_lossy(&raw), root, selected)? {
             let previous = lines.entry(identity).or_default();
             *previous = (*previous).max(hits);
         }
     }
+    // LCOV consumers receive the same canonical records as the HTML and JSON reports.
+    fs::write(target.join("report/lcov.info"), lcov::encode(&lines))?;
     Ok(lines)
 }
 
 /// Write canonical totals and their exact measured line inventory.
-fn canonical_artifacts(lines: &lcov::Lines, report: &Path) -> Result<(), Error> {
-    write_json(
-        &report.join("canonical_summary.json"),
-        &lcov::summary(lines),
-    )?;
+#[expect(
+    many_exit_points,
+    reason = "Each artifact write has a distinct path and must report its own I/O failure."
+)]
+fn canonical_artifacts(lines: &lcov::Lines, root: &Path, report: &Path) -> Result<(), Error> {
+    // Serialize the shared canonical summary before deriving its human-readable views.
+    let summary = lcov::summary(lines);
+    let json = serde_json::to_vec_pretty(&summary)?;
+    fs::write(report.join("canonical_summary.json"), &json)?;
+    fs::write(report.join("summary.json"), json)?;
+    // All displayed formats come from this same merged line inventory.
+    fs::write(report.join("summary.txt"), lcov::text_summary(lines, root))?;
+    fs::write(report.join("index.html"), lcov::html(lines, root))?;
     write_lines(lines, report)
-}
-
-/// Export LLVM text and HTML using the same selected mapping scope.
-fn llvm_reports(target: &Path, text: &mut Command, html: &mut Command) -> Result<(), Error> {
-    // Retain text totals alongside the same profile used by HTML.
-    let report = target.join("report");
-    fs::write(report.join("summary.txt"), capture(text, target)?)?;
-    // LLVM creates the browsable HTML tree inside the retained report directory.
-    let display = report.display();
-    let _configured = html
-        .args(["--format=html", "--show-line-counts-or-regions"])
-        .arg(format!("--output-dir={display}"));
-    let _html = capture(html, target)?;
-    Ok(())
 }
 
 /// Write stable canonical line identities and exact zero-hit gaps.
@@ -499,38 +588,25 @@ fn escape_filename(filename: &str) -> String {
     result
 }
 
-/// LLVM report envelope, retaining unrelated export metadata.
-#[derive(serde::Deserialize, serde::Serialize)]
+/// LLVM summary inventory used to derive the exact source-scope expression.
+#[derive(serde::Deserialize)]
 struct LlvmReport {
-    /// One mapping set per instrumented profile.
+    /// Source mappings from the instrumented profile.
     data: Vec<LlvmMapping>,
-    /// LLVM export version and type fields.
-    #[serde(flatten)]
-    metadata: std::collections::BTreeMap<String, serde_json::Value>,
 }
 
-/// Source mappings and summary totals for one instrumented profile.
-#[derive(serde::Deserialize, serde::Serialize)]
+/// Source mappings from one instrumented profile.
+#[derive(serde::Deserialize)]
 struct LlvmMapping {
-    /// Raw lexical filenames remain separate mappings.
+    /// Raw lexical filenames used to build a scoped ignore expression.
     files: Vec<LlvmFile>,
-    /// LLVM counters by metric name.
-    totals: std::collections::BTreeMap<String, lcov::Metric>,
-    /// Fields outside the summary profile are retained unchanged.
-    #[serde(flatten)]
-    metadata: std::collections::BTreeMap<String, serde_json::Value>,
 }
 
-/// One lexical source mapping and its LLVM metric counters.
-#[derive(serde::Deserialize, serde::Serialize)]
+/// One LLVM lexical source filename.
+#[derive(serde::Deserialize)]
 struct LlvmFile {
     /// LLVM's original filename spelling.
     filename: PathBuf,
-    /// Exact metric counts with approximate percentage projections.
-    summary: std::collections::BTreeMap<String, lcov::Metric>,
-    /// Additional mapping fields survive scope filtering.
-    #[serde(flatten)]
-    metadata: std::collections::BTreeMap<String, serde_json::Value>,
 }
 
 /// Keep every lexical alias of a selected source and exclude every other
@@ -560,85 +636,23 @@ fn scoped_ignore(
         }
     }
     // Add exact escaped exclusions without weakening the shared fixture exclusions.
-    let base =
-        "(/\\.cargo/registry/|/rustc/|/nix/store/|/examples/|/ui/|/fixtures/|/fixture/|/target/)";
     Ok((!excluded.is_empty()).then(|| {
         let excluded = excluded.join("|");
-        format!("{base}|{excluded}")
+        format!("{IGNORE_FILENAME_REGEX}|{excluded}")
     }))
-}
-
-/// Filter raw summary mappings while preserving aliases and recomputing raw
-/// totals.
-fn filter_summary(
-    summary: &mut LlvmReport,
-    root: &Path,
-    selected: &BTreeSet<PathBuf>,
-) -> Result<(), Error> {
-    if selected.is_empty() {
-        return Ok(());
-    }
-    let mapping = summary
-        .data
-        .first_mut()
-        .ok_or_else(|| Error::Invalid("LLVM summary has no mapping data".to_owned()))?;
-    // Preserve every selected lexical mapping, including aliases of one source file.
-    let mut retained = Vec::new();
-    for file in mapping.files.drain(..) {
-        if selected.contains(&paths::canonical(&file.filename, root)?) {
-            retained.push(file);
-        }
-    }
-    // Recompute raw mapping totals after removing unselected mappings.
-    mapping.files = retained;
-    for name in [
-        "branches",
-        "functions",
-        "instantiations",
-        "lines",
-        "mcdc",
-        "regions",
-    ] {
-        // Counts remain exact integers; Metric derives the approximate percentage.
-        let count = mapping
-            .files
-            .iter()
-            .filter_map(|file| file.summary.get(name))
-            .map(|metric| metric.count)
-            .sum();
-        let covered = mapping
-            .files
-            .iter()
-            .filter_map(|file| file.summary.get(name))
-            .map(|metric| metric.covered)
-            .sum();
-        let _old = mapping
-            .totals
-            .insert(name.to_owned(), lcov::Metric::new(count, covered));
-    }
-    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{LlvmFile, LlvmMapping, LlvmReport, filter_summary, scoped_ignore};
-    use std::{
-        collections::BTreeMap, ffi::OsString, os::unix::ffi::OsStringExt as _, path::PathBuf,
-    };
+    use super::{LlvmFile, LlvmMapping, LlvmReport, scoped_ignore};
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt as _, path::PathBuf};
 
     /// Build one raw lexical mapping for scope-boundary tests.
     fn mapping(filename: PathBuf) -> LlvmReport {
         LlvmReport {
             data: vec![LlvmMapping {
-                files: vec![LlvmFile {
-                    filename,
-                    summary: BTreeMap::new(),
-                    metadata: BTreeMap::new(),
-                }],
-                totals: BTreeMap::new(),
-                metadata: BTreeMap::new(),
+                files: vec![LlvmFile { filename }],
             }],
-            metadata: BTreeMap::new(),
         }
     }
 
@@ -648,12 +662,8 @@ mod tests {
         // A real selection must not become an empty successful LLVM report.
         let root = tempfile::tempdir().expect("mapping fixture");
         let selected = std::iter::once(root.path().join("selected.rs")).collect();
-        let mut report = LlvmReport {
-            data: Vec::new(),
-            metadata: BTreeMap::new(),
-        };
+        let report = LlvmReport { data: Vec::new() };
         assert!(scoped_ignore(&report, root.path(), &selected).is_err());
-        assert!(filter_summary(&mut report, root.path(), &selected).is_err());
     }
 
     /// LLVM exclusion expressions reject filenames that cannot be UTF-8 text.

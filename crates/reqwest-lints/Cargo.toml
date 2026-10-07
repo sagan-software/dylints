@@ -1,0 +1,34 @@
+[package]
+name = "reqwest-lints"
+version.workspace = true
+description = "Rust review lints for Reqwest API misuse"
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dylint_linting.workspace = true
+reqwest-blocking-in-async = { workspace = true, features = ["rlib"] }
+reqwest-client-in-loop = { workspace = true, features = ["rlib"] }
+reqwest-client-wrapped-in-shared-pointer = { workspace = true, features = [
+  "rlib",
+] }
+reqwest-cookie-provider-overridden = { workspace = true, features = ["rlib"] }
+reqwest-get-in-loop = { workspace = true, features = ["rlib"] }
+reqwest-multipart-manual-content-type = { workspace = true, features = [
+  "rlib",
+] }
+reqwest-retry-invalid-max-extra-load = { workspace = true, features = ["rlib"] }
+reqwest-retry-no-budget = { workspace = true, features = ["rlib"] }
+reqwest-tls-danger-invalid-certs = { workspace = true, features = ["rlib"] }
+reqwest-tls-danger-invalid-hostnames = { workspace = true, features = ["rlib"] }
+[features]
+rlib = ["dylint_linting/constituent"]
+
+[lints]
+workspace = true
+
+[package.metadata.rust-analyzer]
+rustc_private = true
