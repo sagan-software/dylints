@@ -80,7 +80,9 @@ lints, so they are not expected to see the same reduction.
 
 Bevy 0.19 fixture dependencies use umbrella re-exports and only required features. Bevy 0.18 remains for deliberate cross-version diagnostics. Bevy derive macros require the current umbrella dependency's canonical name `bevy`; aliases are not discovered by its macro manifest helper.
 
-Dylint's upstream CI caches Cargo tools, registry and Git sources, compiler toolchains and Dylint drivers. The workflow also caches workspace build artifacts. Keep coverage instrumentation outputs separate from ordinary build artifacts.
+Dylint's upstream CI caches Cargo tools, registry and Git sources, compiler toolchains and Dylint drivers. The workflow also caches workspace build artifacts. Compiler and tool caches use their own versions rather than the workspace lockfile, so workspace release bumps do not invalidate them. Restore the compiler before invoking Rustup, and skip tool installation on an exact tool-cache hit. Registry and Git-source caching belongs to the workspace Cargo cache to avoid uploading the same data twice. Keep coverage instrumentation outputs separate from ordinary build artifacts.
+
+CI runs ordinary tests once with nextest, with doctests and instrumented coverage as separate gates. The small xtask integration suite also runs before workspace Clippy and UI tests so broken development commands fail early. Nix verification retains its independent sandboxed test run. The previous failing run spent 3½ minutes reinstalling tools despite restoring a cache; cache-hit savings and total CI times must be measured on successful runs of the updated workflow.
 
 Source: [Dylint 6.0.3 CI](https://github.com/trailofbits/dylint/blob/v6.0.3/.github/workflows/ci.yml) and [Bevy 0.19 macro manifest lookup](https://docs.rs/bevy_macro_utils/0.19.0/src/bevy_macro_utils/bevy_manifest.rs.html).
 

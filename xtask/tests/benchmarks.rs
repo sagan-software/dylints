@@ -83,12 +83,18 @@ fn benchmark_inventory_preserves_leaf_library_identity() {
         .find(|lint| lint.name == "large-rust-file")
         .expect("leaf lint identity");
     // Package specs must retain both the kebab-case crate identity and workspace version.
-    assert_eq!(size_lint.package_spec, "large-rust-file@0.3.0");
+    assert_eq!(
+        size_lint.package_spec,
+        concat!("large-rust-file@", env!("CARGO_PKG_VERSION"))
+    );
     let bevy_lint = inventory
         .iter()
         .find(|lint| lint.name == "bevy-duplicate-dependencies")
         .expect("crate-specific lint identity");
-    assert_eq!(bevy_lint.package_spec, "bevy-duplicate-dependencies@0.3.0");
+    assert_eq!(
+        bevy_lint.package_spec,
+        concat!("bevy-duplicate-dependencies@", env!("CARGO_PKG_VERSION"))
+    );
     assert!(!inventory.iter().any(|lint| lint.name == "restriction"));
     assert!(
         inventory

@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "abc-size"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -23,7 +23,7 @@ dependencies = [
 
 [[package]]
 name = "ad-hoc-as-ref"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -32,7 +32,7 @@ dependencies = [
 
 [[package]]
 name = "ad-hoc-borrow"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -41,7 +41,7 @@ dependencies = [
 
 [[package]]
 name = "ad-hoc-default"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -50,7 +50,7 @@ dependencies = [
 
 [[package]]
 name = "ad-hoc-display"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -59,7 +59,7 @@ dependencies = [
 
 [[package]]
 name = "ad-hoc-from"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -68,7 +68,7 @@ dependencies = [
 
 [[package]]
 name = "ad-hoc-from-str"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -77,7 +77,7 @@ dependencies = [
 
 [[package]]
 name = "ad-hoc-into-iterator"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -86,7 +86,7 @@ dependencies = [
 
 [[package]]
 name = "ad-hoc-iterator"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -95,7 +95,7 @@ dependencies = [
 
 [[package]]
 name = "ad-hoc-try-from"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -128,7 +128,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
 name = "ambiguous-numeric-unit-field"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -468,7 +468,7 @@ dependencies = [
 
 [[package]]
 name = "axum"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum-nest-at-root",
  "axum-nest-service-at-root",
@@ -528,7 +528,7 @@ dependencies = [
 
 [[package]]
 name = "axum-nest-at-root"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum 0.8.9",
  "axum-support",
@@ -539,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "axum-nest-service-at-root"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum 0.8.9",
  "axum-support",
@@ -550,7 +550,7 @@ dependencies = [
 
 [[package]]
 name = "axum-nest-wildcard-path"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum 0.8.9",
  "axum-support",
@@ -561,7 +561,7 @@ dependencies = [
 
 [[package]]
 name = "axum-route-empty-path"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum 0.8.9",
  "axum-support",
@@ -572,7 +572,7 @@ dependencies = [
 
 [[package]]
 name = "axum-route-layer-on-empty-router"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum 0.8.9",
  "axum-support",
@@ -583,7 +583,7 @@ dependencies = [
 
 [[package]]
 name = "axum-route-legacy-colon-capture"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum 0.8.9",
  "axum-support",
@@ -594,7 +594,7 @@ dependencies = [
 
 [[package]]
 name = "axum-route-legacy-wildcard-capture"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum 0.8.9",
  "axum-support",
@@ -605,7 +605,7 @@ dependencies = [
 
 [[package]]
 name = "axum-route-path-missing-slash"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum 0.8.9",
  "axum-support",
@@ -616,7 +616,7 @@ dependencies = [
 
 [[package]]
 name = "axum-route-service-empty-path"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum 0.8.9",
  "axum-support",
@@ -627,7 +627,7 @@ dependencies = [
 
 [[package]]
 name = "axum-route-service-router"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum 0.8.9",
  "axum-support",
@@ -638,7 +638,7 @@ dependencies = [
 
 [[package]]
 name = "axum-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
 ]
@@ -666,7 +666,7 @@ dependencies = [
 
 [[package]]
 name = "bevy"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy-asset-source-after-asset-plugin",
  "bevy-borrowed-reborrowable",
@@ -744,14 +744,14 @@ dependencies = [
 
 [[package]]
 name = "bevy-018-system-fixture"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.18.1",
 ]
 
 [[package]]
 name = "bevy-asset-source-after-asset-plugin"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -762,7 +762,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-borrowed-reborrowable"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -773,7 +773,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-camera-modification-in-fixed-update"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -784,7 +784,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-children-mutation-query"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -795,7 +795,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-component-field-contention"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -806,7 +806,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-conflicting-query-params"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.18.1",
  "bevy 0.19.0",
@@ -819,7 +819,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-conflicting-resource-params"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -830,7 +830,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-continuous-font-size"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -841,7 +841,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-continuous-ui-scale"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -852,7 +852,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-disallow-fixed-update-schedule"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -863,7 +863,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-disallow-update-schedule"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -874,7 +874,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-duplicate-dependencies"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.18.1",
  "bevy 0.19.0",
@@ -886,7 +886,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-duplicate-plugin-addition"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -897,7 +897,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-frame-button-edge-in-fixed-update"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -908,7 +908,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-global-transform-mutation-query"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -919,7 +919,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-incompatible-msaa"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -930,7 +930,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-inherited-visibility-mutation-query"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -941,7 +941,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-insert-message-resource"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -952,7 +952,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-invalid-constant-font-size"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "dylint-support",
@@ -962,7 +962,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-iter-current-update-messages"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -973,7 +973,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-large-component"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -984,7 +984,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-large-component-change-filter"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -995,7 +995,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-load-builder-replaced-guard"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1006,7 +1006,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-main-return-without-app-exit"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1017,7 +1017,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-message-presence-without-consumption"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1028,7 +1028,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-missing-clone-for-unit-component"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1039,7 +1039,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-missing-copy-for-unit-component"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1050,7 +1050,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-missing-default-for-unit-component"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1061,7 +1061,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-missing-reflect"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1072,7 +1072,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-mouse-displacement-times-delta"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1083,7 +1083,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-narrow-exclusive-system"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1094,7 +1094,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-partially-used-query-data"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1105,7 +1105,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-presence-only-query-fetch"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1116,7 +1116,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-readonly-system-access"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1127,7 +1127,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -1135,7 +1135,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-text-span-with-layout"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1146,7 +1146,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-time-elapsed-secs-cast-f64"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1157,7 +1157,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-unconventional-naming"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1168,7 +1168,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-unfiltered-entity-access-query"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1179,7 +1179,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-unit-in-bundle"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1190,7 +1190,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-wide-query-access"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1201,7 +1201,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-entity"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1212,7 +1212,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-entity-mut"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1223,7 +1223,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-insert-batch"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1234,7 +1234,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-insert-batch-if-new"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1245,7 +1245,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-non-send"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1256,7 +1256,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-non-send-mut"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1267,7 +1267,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-resource"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1278,7 +1278,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-resource-mut"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1289,7 +1289,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-resource-ref"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1300,7 +1300,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-run-schedule"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1311,7 +1311,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-world-schedule-scope"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -1322,7 +1322,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-zst-query"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "bevy 0.19.0",
  "bevy-support",
@@ -2699,7 +2699,7 @@ dependencies = [
 
 [[package]]
 name = "bool-name-prefix"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -2708,7 +2708,7 @@ dependencies = [
 
 [[package]]
 name = "boxed-future-return"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -2717,7 +2717,7 @@ dependencies = [
 
 [[package]]
 name = "broad-string-error-variant"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -2789,7 +2789,7 @@ dependencies = [
 
 [[package]]
 name = "cargo"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dependency-full-semver-versions",
  "dependency-key-order",
@@ -2814,7 +2814,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "tempfile",
@@ -2914,7 +2914,7 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap-allow-hyphen-values-without-num-args",
  "clap-allow-negative-numbers-without-num-args",
@@ -2947,7 +2947,7 @@ dependencies = [
 
 [[package]]
 name = "clap-allow-hyphen-values-without-num-args"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -2958,7 +2958,7 @@ dependencies = [
 
 [[package]]
 name = "clap-allow-negative-numbers-without-num-args"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -2969,7 +2969,7 @@ dependencies = [
 
 [[package]]
 name = "clap-command-with-arguments-option"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -2980,7 +2980,7 @@ dependencies = [
 
 [[package]]
 name = "clap-derive-author-without-help-template"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -2991,7 +2991,7 @@ dependencies = [
 
 [[package]]
 name = "clap-derive-bool-default-true"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3002,7 +3002,7 @@ dependencies = [
 
 [[package]]
 name = "clap-derive-redundant-action"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3013,7 +3013,7 @@ dependencies = [
 
 [[package]]
 name = "clap-derive-redundant-value-parser"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3024,7 +3024,7 @@ dependencies = [
 
 [[package]]
 name = "clap-derive-vec-vec-without-num-args"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3035,7 +3035,7 @@ dependencies = [
 
 [[package]]
 name = "clap-derive-verbatim-doc-comment-without-doc"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3046,7 +3046,7 @@ dependencies = [
 
 [[package]]
 name = "clap-external-subcommand-parser-without-external-subcommands"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3057,7 +3057,7 @@ dependencies = [
 
 [[package]]
 name = "clap-index-on-option"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3068,7 +3068,7 @@ dependencies = [
 
 [[package]]
 name = "clap-last-option"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3079,7 +3079,7 @@ dependencies = [
 
 [[package]]
 name = "clap-multicall-no-binary-name"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3090,7 +3090,7 @@ dependencies = [
 
 [[package]]
 name = "clap-require-equals-without-num-args"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3101,7 +3101,7 @@ dependencies = [
 
 [[package]]
 name = "clap-required-conditional-conflict"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3112,11 +3112,11 @@ dependencies = [
 
 [[package]]
 name = "clap-support"
-version = "0.3.13"
+version = "0.3.14"
 
 [[package]]
 name = "clap-trailing-var-arg-without-num-args"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "clap-support",
@@ -3197,7 +3197,7 @@ dependencies = [
 
 [[package]]
 name = "collect-return"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3206,7 +3206,7 @@ dependencies = [
 
 [[package]]
 name = "collection-bool-result"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3253,7 +3253,7 @@ dependencies = [
 
 [[package]]
 name = "complexity"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "collect-return",
  "complicated-conditional",
@@ -3282,7 +3282,7 @@ dependencies = [
 
 [[package]]
 name = "complicated-conditional"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3301,7 +3301,7 @@ dependencies = [
 
 [[package]]
 name = "consecutive-iterator-loops"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3367,7 +3367,7 @@ dependencies = [
 
 [[package]]
 name = "contains-key-before-any"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3439,7 +3439,7 @@ dependencies = [
 
 [[package]]
 name = "correctness"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "logged-error-continue",
@@ -3448,7 +3448,7 @@ dependencies = [
 
 [[package]]
 name = "country-string-field"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3466,7 +3466,7 @@ dependencies = [
 
 [[package]]
 name = "crap-score"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3480,7 +3480,7 @@ dependencies = [
 
 [[package]]
 name = "crates"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "axum-nest-at-root",
  "axum-nest-service-at-root",
@@ -3784,7 +3784,7 @@ dependencies = [
 
 [[package]]
 name = "custom-well-known-type"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3795,7 +3795,7 @@ dependencies = [
 
 [[package]]
 name = "cyclomatic-complexity"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3811,7 +3811,7 @@ checksum = "4583a4551df46e2792f82ceeac45e850d2e2d5debba0b91f102385cda5b11f06"
 
 [[package]]
 name = "date-string-field"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "chrono",
  "dylint-support",
@@ -3821,7 +3821,7 @@ dependencies = [
 
 [[package]]
 name = "datetime-integer-field"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "chrono",
  "dylint-support",
@@ -3831,7 +3831,7 @@ dependencies = [
 
 [[package]]
 name = "dependency-full-semver-versions"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "cargo-support",
  "dylint-support",
@@ -3842,7 +3842,7 @@ dependencies = [
 
 [[package]]
 name = "dependency-key-order"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "cargo-support",
  "dylint-support",
@@ -3937,7 +3937,7 @@ checksum = "c9c272297e804878a2a4b707cfcfc6d2328b5bb936944613b4fdf2b9269afdfd"
 
 [[package]]
 name = "doc-attr-comment"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3967,7 +3967,7 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 
 [[package]]
 name = "duration-integer-field"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -3994,7 +3994,7 @@ dependencies = [
 
 [[package]]
 name = "dylint-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "proc-macro2",
@@ -4186,7 +4186,7 @@ dependencies = [
 
 [[package]]
 name = "expensive-as-method"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -4195,7 +4195,7 @@ dependencies = [
 
 [[package]]
 name = "expensive-sort-key"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -4221,7 +4221,7 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "field-usage-cohesion"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -4552,7 +4552,7 @@ dependencies = [
 
 [[package]]
 name = "hardcoded-path"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -4696,7 +4696,7 @@ dependencies = [
 
 [[package]]
 name = "http-method-string"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -4946,7 +4946,7 @@ dependencies = [
 
 [[package]]
 name = "impl-method-count"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -4968,7 +4968,7 @@ dependencies = [
 
 [[package]]
 name = "insta"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "insta-allow-empty-glob",
@@ -5012,7 +5012,7 @@ dependencies = [
 
 [[package]]
 name = "insta-allow-empty-glob"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5023,7 +5023,7 @@ dependencies = [
 
 [[package]]
 name = "insta-binary-snapshot-missing-extension"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5034,7 +5034,7 @@ dependencies = [
 
 [[package]]
 name = "insta-bind-to-scope-in-async"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5045,7 +5045,7 @@ dependencies = [
 
 [[package]]
 name = "insta-compact-json-snapshot"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5056,7 +5056,7 @@ dependencies = [
 
 [[package]]
 name = "insta-content-direct-match"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5067,7 +5067,7 @@ dependencies = [
 
 [[package]]
 name = "insta-deprecated-assert-display"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5078,7 +5078,7 @@ dependencies = [
 
 [[package]]
 name = "insta-empty-description"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5089,7 +5089,7 @@ dependencies = [
 
 [[package]]
 name = "insta-empty-filter-pattern"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5100,7 +5100,7 @@ dependencies = [
 
 [[package]]
 name = "insta-empty-input-file"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5111,7 +5111,7 @@ dependencies = [
 
 [[package]]
 name = "insta-empty-snapshot-path"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5122,7 +5122,7 @@ dependencies = [
 
 [[package]]
 name = "insta-empty-snapshot-suffix"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5133,7 +5133,7 @@ dependencies = [
 
 [[package]]
 name = "insta-glob-parent-traversal"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5144,7 +5144,7 @@ dependencies = [
 
 [[package]]
 name = "insta-json-snapshot"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5155,7 +5155,7 @@ dependencies = [
 
 [[package]]
 name = "insta-no-module-prefix"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5166,7 +5166,7 @@ dependencies = [
 
 [[package]]
 name = "insta-noop-filter"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5177,7 +5177,7 @@ dependencies = [
 
 [[package]]
 name = "insta-redundant-content-resolve-inner"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5188,7 +5188,7 @@ dependencies = [
 
 [[package]]
 name = "insta-settings-bind-future"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5199,7 +5199,7 @@ dependencies = [
 
 [[package]]
 name = "insta-settings-new"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5210,7 +5210,7 @@ dependencies = [
 
 [[package]]
 name = "insta-settings-raw-info"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5221,7 +5221,7 @@ dependencies = [
 
 [[package]]
 name = "insta-snapshot-in-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5232,14 +5232,14 @@ dependencies = [
 
 [[package]]
 name = "insta-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
 ]
 
 [[package]]
 name = "insufficient-public-documentation"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5249,7 +5249,7 @@ dependencies = [
 
 [[package]]
 name = "interleaved-doc-attributes"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5258,7 +5258,7 @@ dependencies = [
 
 [[package]]
 name = "internal-import-self"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5267,7 +5267,7 @@ dependencies = [
 
 [[package]]
 name = "interpolated-logging"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5426,7 +5426,7 @@ dependencies = [
 
 [[package]]
 name = "large-rust-crate"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5439,7 +5439,7 @@ dependencies = [
 
 [[package]]
 name = "large-rust-file"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5454,7 +5454,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "let-some-return-err"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5566,7 +5566,7 @@ checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
 
 [[package]]
 name = "logged-conversion-impl"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5576,7 +5576,7 @@ dependencies = [
 
 [[package]]
 name = "logged-error-continue"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5592,7 +5592,7 @@ checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
 
 [[package]]
 name = "maintainability"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "abc-size",
  "crap-score",
@@ -5611,14 +5611,14 @@ dependencies = [
 
 [[package]]
 name = "maintainability-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
 ]
 
 [[package]]
 name = "manual-adjacent-window-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5627,7 +5627,7 @@ dependencies = [
 
 [[package]]
 name = "manual-arg-parsing"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "dylint-support",
@@ -5637,7 +5637,7 @@ dependencies = [
 
 [[package]]
 name = "manual-debug-impl"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5646,7 +5646,7 @@ dependencies = [
 
 [[package]]
 name = "manual-default-impl"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5655,7 +5655,7 @@ dependencies = [
 
 [[package]]
 name = "manual-entry-update"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5664,7 +5664,7 @@ dependencies = [
 
 [[package]]
 name = "manual-error-impl"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5674,7 +5674,7 @@ dependencies = [
 
 [[package]]
 name = "manual-extend-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5683,7 +5683,7 @@ dependencies = [
 
 [[package]]
 name = "manual-fallible-collect-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5692,7 +5692,7 @@ dependencies = [
 
 [[package]]
 name = "manual-filter-for-each-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5701,7 +5701,7 @@ dependencies = [
 
 [[package]]
 name = "manual-filter-map-for-each-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5710,7 +5710,7 @@ dependencies = [
 
 [[package]]
 name = "manual-iterator-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5719,7 +5719,7 @@ dependencies = [
 
 [[package]]
 name = "manual-option-take-if"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5728,7 +5728,7 @@ dependencies = [
 
 [[package]]
 name = "manual-partition-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5737,7 +5737,7 @@ dependencies = [
 
 [[package]]
 name = "manual-passthrough-inspect"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5746,7 +5746,7 @@ dependencies = [
 
 [[package]]
 name = "manual-test-cases"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5756,7 +5756,7 @@ dependencies = [
 
 [[package]]
 name = "manual-try-for-each-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5765,7 +5765,7 @@ dependencies = [
 
 [[package]]
 name = "manual-unzip-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5774,7 +5774,7 @@ dependencies = [
 
 [[package]]
 name = "many-assertions-in-test"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5783,7 +5783,7 @@ dependencies = [
 
 [[package]]
 name = "many-exit-points"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5868,7 +5868,7 @@ dependencies = [
 
 [[package]]
 name = "missing-clippy-toml"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "cargo-support",
  "dylint-support",
@@ -5880,7 +5880,7 @@ dependencies = [
 
 [[package]]
 name = "missing-doctest-examples"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5891,7 +5891,7 @@ dependencies = [
 
 [[package]]
 name = "missing-intent-comments"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5900,7 +5900,7 @@ dependencies = [
 
 [[package]]
 name = "missing-rust-toolchain-toml"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "cargo-support",
  "dylint-support",
@@ -5910,7 +5910,7 @@ dependencies = [
 
 [[package]]
 name = "module-dependency-cycle"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5920,7 +5920,7 @@ dependencies = [
 
 [[package]]
 name = "module-fan-out"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -5930,7 +5930,7 @@ dependencies = [
 
 [[package]]
 name = "module-type-first"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6040,7 +6040,7 @@ checksum = "610a5acd306ec67f907abe5567859a3c693fb9886eb1f012ab8f2a47bef3db51"
 
 [[package]]
 name = "npath-complexity"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6191,7 +6191,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "one-use-predicate-binding"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6200,7 +6200,7 @@ dependencies = [
 
 [[package]]
 name = "one-use-private-helper"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6230,7 +6230,7 @@ dependencies = [
 
 [[package]]
 name = "owned-input-field-clones"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6239,7 +6239,7 @@ dependencies = [
 
 [[package]]
 name = "ownership-at-boundaries"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6248,7 +6248,7 @@ dependencies = [
 
 [[package]]
 name = "package-lints-section"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "cargo-support",
  "dylint-support",
@@ -6268,7 +6268,7 @@ dependencies = [
 
 [[package]]
 name = "panic-in-main"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6345,7 +6345,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "path-attribute-outside-root"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6354,7 +6354,7 @@ dependencies = [
 
 [[package]]
 name = "path-string-field"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6369,7 +6369,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "perf"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "boxed-future-return",
  "dylint_linting",
@@ -6553,7 +6553,7 @@ checksum = "33cb294fe86a74cbcf50d4445b37da762029549ebeea341421c7c70370f86cac"
 
 [[package]]
 name = "public-serde-schema-derive"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6564,7 +6564,7 @@ dependencies = [
 
 [[package]]
 name = "public-surface-size"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6893,7 +6893,7 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "repeated-cfg-gate"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6944,7 +6944,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest-blocking-in-async"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6955,7 +6955,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest-client-in-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6966,7 +6966,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest-client-wrapped-in-shared-pointer"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6977,7 +6977,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest-cookie-provider-overridden"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6988,7 +6988,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest-get-in-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -6999,7 +6999,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest-lints"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "reqwest-blocking-in-async",
@@ -7016,7 +7016,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest-multipart-manual-content-type"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7027,7 +7027,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest-retry-invalid-max-extra-load"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7038,7 +7038,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest-retry-no-budget"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7049,14 +7049,14 @@ dependencies = [
 
 [[package]]
 name = "reqwest-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
 ]
 
 [[package]]
 name = "reqwest-tls-danger-invalid-certs"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7067,7 +7067,7 @@ dependencies = [
 
 [[package]]
 name = "reqwest-tls-danger-invalid-hostnames"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7078,7 +7078,7 @@ dependencies = [
 
 [[package]]
 name = "restriction"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "ambiguous-numeric-unit-field",
  "country-string-field",
@@ -7171,7 +7171,7 @@ dependencies = [
 
 [[package]]
 name = "rumdl-doc-comments"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7181,7 +7181,7 @@ dependencies = [
 
 [[package]]
 name = "runtime-env-read"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7190,7 +7190,7 @@ dependencies = [
 
 [[package]]
 name = "rust-toolchain-toml"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "cargo-support",
  "dylint-support",
@@ -7335,7 +7335,7 @@ checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
 name = "sagan-lints"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "cargo",
  "complexity",
@@ -7352,7 +7352,7 @@ dependencies = [
 
 [[package]]
 name = "sagan-lints-web"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "askama",
  "clap 4.6.4",
@@ -7385,7 +7385,7 @@ dependencies = [
 
 [[package]]
 name = "schemars"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "schemars-json-schema-ref-return",
@@ -7415,7 +7415,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-json-schema-ref-return"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7426,7 +7426,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-recursive-inline-schema"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7437,7 +7437,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-redundant-serde-default"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7449,7 +7449,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-redundant-serde-deny-unknown-fields"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7461,7 +7461,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-redundant-serde-rename"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7473,7 +7473,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-redundant-serde-rename-all"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7485,7 +7485,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-redundant-serde-skip"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7497,7 +7497,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-redundant-serde-tag"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7509,7 +7509,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-redundant-serde-transparent"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7521,7 +7521,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-schema-for-value-json-schema"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7533,7 +7533,7 @@ dependencies = [
 
 [[package]]
 name = "schemars-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
 ]
@@ -7567,7 +7567,7 @@ dependencies = [
 
 [[package]]
 name = "secret-raw-type"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7600,7 +7600,7 @@ dependencies = [
 
 [[package]]
 name = "semantic-primitive-type"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7625,7 +7625,7 @@ checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 
 [[package]]
 name = "serde"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "serde-all-fields-default",
@@ -7655,7 +7655,7 @@ dependencies = [
 
 [[package]]
 name = "serde-all-fields-default"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7666,7 +7666,7 @@ dependencies = [
 
 [[package]]
 name = "serde-borrow-redundant-str-bytes"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7677,7 +7677,7 @@ dependencies = [
 
 [[package]]
 name = "serde-cow-missing-borrow"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7688,7 +7688,7 @@ dependencies = [
 
 [[package]]
 name = "serde-deserialize-any-portability"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7699,7 +7699,7 @@ dependencies = [
 
 [[package]]
 name = "serde-expecting-style"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7710,7 +7710,7 @@ dependencies = [
 
 [[package]]
 name = "serde-fallback-missing-other"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7721,7 +7721,7 @@ dependencies = [
 
 [[package]]
 name = "serde-flatten-deny-unknown-fields"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7732,7 +7732,7 @@ dependencies = [
 
 [[package]]
 name = "serde-inert-directional-attr"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7743,7 +7743,7 @@ dependencies = [
 
 [[package]]
 name = "serde-manual-rename-all"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7754,7 +7754,7 @@ dependencies = [
 
 [[package]]
 name = "serde-serialize-str-to-string"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7765,7 +7765,7 @@ dependencies = [
 
 [[package]]
 name = "serde-skip-serializing-roundtrip"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7776,7 +7776,7 @@ dependencies = [
 
 [[package]]
 name = "serde-skip-serializing-variant-error"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7787,11 +7787,11 @@ dependencies = [
 
 [[package]]
 name = "serde-support"
-version = "0.3.13"
+version = "0.3.14"
 
 [[package]]
 name = "serde-untagged-missing-expecting"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -7976,7 +7976,7 @@ dependencies = [
 
 [[package]]
 name = "source-cognitive-complexity"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8004,7 +8004,7 @@ dependencies = [
 
 [[package]]
 name = "sqlx"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "sqlx-assert-sql-safe",
@@ -8021,7 +8021,7 @@ dependencies = [
 
 [[package]]
 name = "sqlx-assert-sql-safe"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8032,7 +8032,7 @@ dependencies = [
 
 [[package]]
 name = "sqlx-empty-push-tuples"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8043,7 +8043,7 @@ dependencies = [
 
 [[package]]
 name = "sqlx-empty-push-values"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8054,11 +8054,11 @@ dependencies = [
 
 [[package]]
 name = "sqlx-fixture"
-version = "0.3.13"
+version = "0.3.14"
 
 [[package]]
 name = "sqlx-panicking-row-get"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8069,7 +8069,7 @@ dependencies = [
 
 [[package]]
 name = "sqlx-panicking-statement-column"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8080,7 +8080,7 @@ dependencies = [
 
 [[package]]
 name = "sqlx-pool-connection-leak"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8091,7 +8091,7 @@ dependencies = [
 
 [[package]]
 name = "sqlx-query-builder-push-interpolation"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8102,7 +8102,7 @@ dependencies = [
 
 [[package]]
 name = "sqlx-query-builder-push-unseparated-interpolation"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8113,14 +8113,14 @@ dependencies = [
 
 [[package]]
 name = "sqlx-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
 ]
 
 [[package]]
 name = "sqlx-unchecked-query-macro"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8131,7 +8131,7 @@ dependencies = [
 
 [[package]]
 name = "sqlx-zero-max-connections"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8163,7 +8163,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "string-error-result"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8187,7 +8187,7 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "struct-update-default"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8196,7 +8196,7 @@ dependencies = [
 
 [[package]]
 name = "strum"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "dylint_testing",
@@ -8214,7 +8214,7 @@ dependencies = [
 
 [[package]]
 name = "strum-enum-representation"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8239,7 +8239,7 @@ dependencies = [
 
 [[package]]
 name = "style"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "ad-hoc-as-ref",
  "ad-hoc-borrow",
@@ -8271,7 +8271,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "suspicious"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "broad-string-error-variant",
  "collection-bool-result",
@@ -8406,7 +8406,7 @@ dependencies = [
 
 [[package]]
 name = "test-case"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "test-case-async-without-test-harness",
@@ -8443,7 +8443,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-async-without-test-harness"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8455,7 +8455,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-constant-match-guard"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8478,7 +8478,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-empty-description"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8489,7 +8489,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-empty-ignore-reason"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8500,7 +8500,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-empty-matrix"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8511,7 +8511,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-empty-panic-message"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8522,7 +8522,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-ignore-without-reason"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8533,7 +8533,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-ignored-matrix"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8544,7 +8544,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-inconclusive-modifier"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8555,7 +8555,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-large-suite"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8566,7 +8566,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-legacy-inconclusive-description"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8589,7 +8589,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-nonpositive-almost-precision"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8600,7 +8600,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-panics-without-message"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8611,7 +8611,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-single-case-matrix"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8622,7 +8622,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-singleton-contains-in-order"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8633,7 +8633,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-singleton-matrix-dimension"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8644,7 +8644,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "proc-macro2",
@@ -8653,7 +8653,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-unnamed-test-case"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8664,7 +8664,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-whitespace-ignore-reason"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8675,7 +8675,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-whitespace-panic-message"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8686,7 +8686,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-wildcard-match"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8697,7 +8697,7 @@ dependencies = [
 
 [[package]]
 name = "test-case-with-function-path"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8721,7 +8721,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "thiserror-named-field-positional-format",
@@ -8778,7 +8778,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-named-field-positional-format"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8789,7 +8789,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-no-std-path-display"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8801,7 +8801,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-raw-field-format"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8813,7 +8813,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-redundant-backtrace-attr"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8824,7 +8824,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-redundant-from-source"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8835,7 +8835,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-redundant-named-source"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8846,7 +8846,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-self-display-recursion"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8857,7 +8857,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-source-field-opt-out"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8868,7 +8868,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "proc-macro2",
@@ -8877,7 +8877,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-transparent-single-source-display"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8888,7 +8888,7 @@ dependencies = [
 
 [[package]]
 name = "thiserror-tuple-format-positional-ambiguity"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -8994,7 +8994,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "tokio-blocking-call-in-async",
@@ -9027,7 +9027,7 @@ dependencies = [
 
 [[package]]
 name = "tokio-blocking-call-in-async"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9038,7 +9038,7 @@ dependencies = [
 
 [[package]]
 name = "tokio-handle-block-on-in-async"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9060,7 +9060,7 @@ dependencies = [
 
 [[package]]
 name = "tokio-runtime-block-on-in-async"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9071,7 +9071,7 @@ dependencies = [
 
 [[package]]
 name = "tokio-runtime-new-in-async"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9092,7 +9092,7 @@ dependencies = [
 
 [[package]]
 name = "tokio-sleep-in-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9103,7 +9103,7 @@ dependencies = [
 
 [[package]]
 name = "tokio-spawn-blocking-async-closure"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9114,14 +9114,14 @@ dependencies = [
 
 [[package]]
 name = "tokio-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
 ]
 
 [[package]]
 name = "tokio-unbounded-channel"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9132,7 +9132,7 @@ dependencies = [
 
 [[package]]
 name = "tokio-zero-capacity-channel"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9143,7 +9143,7 @@ dependencies = [
 
 [[package]]
 name = "tokio-zero-duration-interval"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9154,7 +9154,7 @@ dependencies = [
 
 [[package]]
 name = "tokio-zero-runtime-thread-count"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9238,7 +9238,7 @@ checksum = "7d56353a2a665ad0f41a421187180aab746c8c325620617ad883a99a1cbe66d2"
 
 [[package]]
 name = "top-level-item-line-break"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9303,7 +9303,7 @@ dependencies = [
 
 [[package]]
 name = "tracing"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
  "tracing-async-block-in-sync-scope",
@@ -9324,7 +9324,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-async-block-in-sync-scope"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9346,7 +9346,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-await-holding-span-guard"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9366,7 +9366,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-current-span-enter"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9377,7 +9377,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-current-span-or-current"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9388,7 +9388,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-direct-record-all"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9399,7 +9399,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-format-field"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9410,7 +9410,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-instrument-current-span"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9432,7 +9432,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-message-interpolation"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9443,7 +9443,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-none-enter"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9454,7 +9454,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-none-or-current"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9465,7 +9465,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-none-record"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9488,7 +9488,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-redundant-field-assignment"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9499,7 +9499,7 @@ dependencies = [
 
 [[package]]
 name = "tracing-redundant-in-current-span"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9529,14 +9529,14 @@ dependencies = [
 
 [[package]]
 name = "tracing-support"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint_linting",
 ]
 
 [[package]]
 name = "tracing-to-string-field"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9558,7 +9558,7 @@ dependencies = [
 
 [[package]]
 name = "trivial-public-constructor"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9573,7 +9573,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "type-method-complexity"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9634,7 +9634,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "unnecessary-map-err"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9643,7 +9643,7 @@ dependencies = [
 
 [[package]]
 name = "unnecessary-module-directory"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9653,7 +9653,7 @@ dependencies = [
 
 [[package]]
 name = "unnecessary-public-type"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9715,7 +9715,7 @@ dependencies = [
 
 [[package]]
 name = "url-string-field"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -9778,7 +9778,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "vec-front-removal-in-loop"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "dylint-support",
  "dylint_linting",
@@ -10348,7 +10348,7 @@ checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
 name = "workspace-dependency-versions"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "cargo-support",
  "dylint-support",
@@ -10360,7 +10360,7 @@ dependencies = [
 
 [[package]]
 name = "workspace-lints-inheritance"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "cargo-support",
  "dylint-support",
@@ -10386,7 +10386,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "clap 4.6.4",
  "criterion",
