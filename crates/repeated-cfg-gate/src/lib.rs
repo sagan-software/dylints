@@ -830,16 +830,23 @@ mod tests {
     }
 
     /// Indexed lookups preserve empty lines, CRLF and invalid-column behavior.
+    #[test_case::test_case(1, 3, Some(3); "CRLF boundary")]
+    #[test_case::test_case(1, 4, None; "past CRLF boundary")]
+    #[test_case::test_case(2, 0, Some(4); "empty line")]
+    #[test_case::test_case(2, 1, None; "past empty line")]
+    #[test_case::test_case(3, 3, Some(8); "last line end")]
+    #[test_case::test_case(3, usize::MAX, None; "overflowing column")]
+    #[test_case::test_case(4, 0, None; "missing line")]
+    fn checks_indexed_line_boundaries(line: usize, column: usize, expected: Option<usize>) {
+        assert_eq!(
+            SourceLines::new("é\r\n\nend").offset(line, column),
+            expected
+        );
+    }
+
+    /// Empty source still has a valid initial byte position.
     #[test]
-    fn checks_indexed_line_boundaries() {
-        let lines = SourceLines::new("é\r\n\nend");
-        assert_eq!(lines.offset(1, 3), Some(3));
-        assert_eq!(lines.offset(1, 4), None);
-        assert_eq!(lines.offset(2, 0), Some(4));
-        assert_eq!(lines.offset(2, 1), None);
-        assert_eq!(lines.offset(3, 3), Some(8));
-        assert_eq!(lines.offset(3, usize::MAX), None);
-        assert_eq!(lines.offset(4, 0), None);
+    fn indexes_empty_source() {
         assert_eq!(SourceLines::new("").offset(1, 0), Some(0));
     }
 

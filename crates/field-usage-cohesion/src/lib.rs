@@ -325,6 +325,7 @@ fn measured_methods(
 
 /// Build a sparse graph with the same field-and-call connected components.
 fn method_adjacency(measured: &[(&LocalDefId, &MethodUsage)]) -> HashMap<usize, HashSet<usize>> {
+    // Resolve call targets once, using the same indices as component traversal.
     let indices: HashMap<_, _> = measured
         .iter()
         .enumerate()
@@ -412,16 +413,19 @@ mod tests {
         count: usize,
         graph: &HashMap<usize, HashSet<usize>>,
     ) -> Vec<Vec<usize>> {
+        // Sort members before sorting components to ignore both traversal orders.
         let mut components = connected_components(count, graph);
         for component in &mut components {
             component.sort_unstable();
         }
+        // Equal partitions must compare equally even when their roots differ.
         components.sort_unstable();
         components
     }
 
     /// Compute the original pairwise relationship as an independent reference.
     fn reference_graph(measured: &[(&LocalDefId, &MethodUsage)]) -> HashMap<usize, HashSet<usize>> {
+        // Examine each unordered pair once, independently of the sparse algorithm.
         let mut graph: HashMap<usize, HashSet<usize>> = HashMap::new();
         for (left, (left_id, left_usage)) in measured.iter().enumerate() {
             for (right, (right_id, right_usage)) in measured.iter().enumerate().skip(left + 1) {
@@ -429,6 +433,7 @@ mod tests {
                     || left_usage.calls.contains(right_id)
                     || right_usage.calls.contains(left_id)
                 {
+                    // Every shared-field or delegation relation is undirected.
                     let _is_new = graph.entry(left).or_default().insert(right);
                     let _is_new = graph.entry(right).or_default().insert(left);
                 }

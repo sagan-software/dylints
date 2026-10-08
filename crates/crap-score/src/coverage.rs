@@ -63,7 +63,8 @@ impl Coverage {
                 .resolved_paths
                 .insert(path.to_path_buf(), fs::canonicalize(path).ok());
         }
-        let path = self.resolved_paths.get(path)?.as_ref()?;
+        let path = self.resolved_paths.get(path).and_then(Option::as_ref)?;
+        // LCOV uses positive line numbers; reject zero endpoints before range lookup.
         let lines = NonZeroUsize::new(*lines.start())?..=NonZeroUsize::new(*lines.end())?;
         let mut measured = 0_u32;
         let mut covered = 0_u32;
@@ -175,13 +176,15 @@ mod tests {
         assert_eq!(coverage.fraction(&missing, 1..=2), None);
     }
 
-    /// Repeated callables reuse one successful or failed source-path resolution.
+    /// Repeated callables reuse one successful source-path resolution.
     #[test]
     fn reuses_source_path_resolutions() {
+        // Repeated measured queries must retain the same cache entry.
         let (mut coverage, path) = fixture_coverage();
         for _ in 0..3 {
             assert_eq!(coverage.fraction(&path, 1..=2), Some(0.5));
         }
+        // A successful lookup stores the canonical identity, not just a hit marker.
         assert_eq!(coverage.resolved_paths.len(), 1);
         assert!(
             coverage
@@ -189,12 +192,19 @@ mod tests {
                 .get(&path)
                 .is_some_and(Option::is_some)
         );
+    }
 
+    /// Failed resolutions are cached so later queries do not retry file-system work.
+    #[test]
+    fn reuses_failed_source_path_resolutions() {
+        // Repeated absent-source queries must share one negative cache entry.
+        let (mut coverage, path) = fixture_coverage();
         let missing = path.with_file_name("missing-source");
         for _ in 0..3 {
             assert_eq!(coverage.fraction(&missing, 1..=2), None);
         }
-        assert_eq!(coverage.resolved_paths.len(), 2);
+        // Negative entries remain distinguishable from paths never queried.
+        assert_eq!(coverage.resolved_paths.len(), 1);
         assert_eq!(coverage.resolved_paths.get(&missing), Some(&None));
     }
 
