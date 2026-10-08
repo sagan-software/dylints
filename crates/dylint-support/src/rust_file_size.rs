@@ -66,6 +66,12 @@ pub fn rust_file_size_violation(source: &str) -> Option<RustFileSizeViolation> {
 
 /// Count unique physical lines spanned by test-only Rust items.
 fn test_line_count(source: &str, total_line_count: usize) -> usize {
+    // Every recognized test-only marker is an attribute and therefore needs `#`.
+    // This is only a negative filter; sources containing it still use the parser.
+    if !source.contains('#') {
+        return 0;
+    }
+
     // A parse failure keeps every line in the non-test count.
     let Ok(file) = syn::parse_file(source) else {
         return 0;
@@ -344,6 +350,19 @@ mod tests {
         assert_eq!(test_line_count(test_only, 4), 4);
         assert_eq!(test_line_count(mixed, 4), 0);
         assert_eq!(test_line_count(framework_test, 2), 2);
+    }
+
+    /// Attribute-free files and attribute-like text remain production source.
+    #[test]
+    fn keeps_non_attribute_source_in_production_count() {
+        for source in [
+            "const VALUE: usize = 1;\n",
+            "// #[test]\nfn ordinary() {}\n",
+            "const TEXT: &str = \"#[test]\";\n",
+            "not valid Rust {\n",
+        ] {
+            assert_eq!(test_line_count(source, source.lines().count()), 0);
+        }
     }
 
     /// A parse failure keeps every physical line in the non-test count.

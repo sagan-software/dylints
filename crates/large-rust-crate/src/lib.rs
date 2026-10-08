@@ -335,6 +335,12 @@ fn file_stats_from_source(source: &str) -> FileStats {
 
 /// Count unique physical lines spanned by test-only Rust items.
 fn test_line_count(source: &str, total_line_count: usize) -> usize {
+    // Every recognized test-only marker is an attribute and therefore needs `#`.
+    // This is only a negative filter; sources containing it still use the parser.
+    if !source.contains('#') {
+        return 0;
+    }
+
     // Parse the file and collect every item whose attributes require test mode.
     let Ok(file) = syn::parse_file(source) else {
         return 0;
@@ -612,6 +618,19 @@ mod tests {
     };
     use rustc_span::{BytePos, Span};
     use std::path::{Path, PathBuf};
+
+    /// Attribute-free files and attribute-like text remain production source.
+    #[test]
+    fn keeps_non_attribute_source_in_production_count() {
+        for source in [
+            "const VALUE: usize = 1;\n",
+            "// #[test]\nfn ordinary() {}\n",
+            "const TEXT: &str = \"#[test]\";\n",
+            "not valid Rust {\n",
+        ] {
+            assert_eq!(test_line_count(source, source.lines().count()), 0);
+        }
+    }
 
     /// The serde default helpers return the documented limits.
     #[test]

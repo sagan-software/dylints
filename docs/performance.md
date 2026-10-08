@@ -83,3 +83,16 @@ Bevy 0.19 fixture dependencies use umbrella re-exports and only required feature
 Dylint's upstream CI caches Cargo tools, registry and Git sources, compiler toolchains and Dylint drivers. The workflow also caches workspace build artifacts. Keep coverage instrumentation outputs separate from ordinary build artifacts.
 
 Source: [Dylint 6.0.3 CI](https://github.com/trailofbits/dylint/blob/v6.0.3/.github/workflows/ci.yml) and [Bevy 0.19 macro manifest lookup](https://docs.rs/bevy_macro_utils/0.19.0/src/bevy_macro_utils/bevy_manifest.rs.html).
+
+## Attribute-free source-size checks
+
+Source-size checks skip test-region parsing when a file contains no `#` character:
+every supported test-only marker requires an attribute. Sources containing `#`
+still use the full parser, including comments and strings that merely resemble
+attributes. Both the shared file-size helper and crate-size lint use this filter.
+
+A development-profile microbenchmark of the shared file-size helper on 1,600
+`const _: () = ();` lines took 22.65 ms before and 0.16 ms afterward per call.
+These are medians of seven batches of 30 calls using `black_box`, on the pinned
+compiler with debug information disabled. This isolates the helper and does not
+measure compiler startup, file I/O, or full-suite runtime.
