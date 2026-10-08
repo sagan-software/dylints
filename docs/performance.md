@@ -19,7 +19,45 @@ Build timings are omitted. Reliable comparisons need explicitly controlled warm 
 
 The Dylint libraries use compiler-private dependencies. Link them through `dylint-link`. Cargo's build and target directories must agree because UI tests load the linked dynamic libraries from the target directory. The Nix shell clears an inherited shared build directory so each Dylint child can select its own target directory. A forced shared build directory places linker-named libraries outside Dylint’s lookup directory.
 
-Development builds disable incremental compilation and retain line-table debug information. CI disables debug information to limit artifacts. Bevy 0.19 fixture dependencies use umbrella re-exports and only required features. Bevy 0.18 remains for deliberate cross-version diagnostics. Bevy derive macros require the current umbrella dependency's canonical name `bevy`; aliases are not discovered by its macro manifest helper.
+Development and CI builds disable incremental compilation and debug information to limit artifacts. For source-level backtraces, opt in with `CARGO_PROFILE_DEV_DEBUG=line-tables-only`; use `CARGO_PROFILE_DEV_DEBUG=2` for full debugger information. These overrides rebuild affected artifacts, so use them for focused lint development. Existing artifacts from previous profiles remain on disk until explicitly cleaned.
+
+Lint crates retain both `cdylib` and `rlib` outputs: Dylint loads the shared library, while category and aggregate crates link their constituents through Rust libraries. The `rlib` feature controls Dylint registration symbols, not Cargo's output types. Helper crates already produce only `rlib`. Removing either output from a constituent breaks standalone loading or group composition.
+
+Nix scopes the lint dependency cache to the aggregate lint library instead of the entire workspace. Workspace verification still covers all of its original targets. The catalog is generated through the existing xtask command.
+
+## Incremental optimization measurements
+
+Local x86_64 Linux measurements on the 0.2.0 workspace layout with `nightly-2026-07-15` (before the 0.3 layout refactor):
+
+| Workload | Before | After |
+| --- | ---: | ---: |
+| Fresh `cargo build -p perf --lib` target directory | 336.2 MiB | 145.3 MiB |
+| Loadable libraries in that build | 51.4 MiB | 5.9 MiB |
+| `bevy-asset-source-after-asset-plugin` test executable | 71.1 MiB | 34.0 MiB |
+| Compiler check of 500 locally allowed Markdown doc blocks | 492 ms | 55 ms |
+
+The build comparison changes only development debug information from
+`line-tables-only` to `0`, using separate empty target/build directories and
+already downloaded dependencies. Allocated disk usage counts each inode once.
+One build of each profile took 17.0 and 15.7 seconds respectively; these are
+observations, not statistically established build-time improvements. Test
+executable sizes compare the same package and dependencies under both profiles.
+
+The Markdown comparison uses identical no-debug profiles with and without the
+per-item lint-level guard. Each of 500 public functions has a locally allowed
+doc comment containing spaced emphasis. The lint remains enabled at crate
+level, and `rumdl.toml` enables MD037. The figures are medians of five alternating
+driver runs after warmup, including compiler startup and metadata emission.
+This measures skipped work on suppressed documentation, not a speedup for
+enabled Markdown checks or the entire lint suite. The UI regression checks
+local re-enabling, local suppression, and fulfilled expectations.
+
+These measurements exclude toolchain installation, Nix store closures, and
+downstream project dependencies. Existing caches are not automatically removed.
+
+## Fixture dependencies
+
+Bevy 0.19 fixture dependencies use umbrella re-exports and only required features. Bevy 0.18 remains for deliberate cross-version diagnostics. Bevy derive macros require the current umbrella dependency's canonical name `bevy`; aliases are not discovered by its macro manifest helper.
 
 Dylint's upstream CI caches Cargo tools, registry and Git sources, compiler toolchains and Dylint drivers. The workflow also caches workspace build artifacts. Keep coverage instrumentation outputs separate from ordinary build artifacts.
 

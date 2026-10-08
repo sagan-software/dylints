@@ -10,10 +10,11 @@ jobs = 1
 # Bound in-process test concurrency for the exact `cargo test` gate.
 RUST_TEST_THREADS = "1"
 
-# Development build policy. Cargo configuration supports profile overrides.
+# Hundreds of UI harnesses otherwise repeat dependency debug information.
+# Opt in with CARGO_PROFILE_DEV_DEBUG=line-tables-only when debugging a lint.
 # https://doc.rust-lang.org/cargo/reference/config.html#profile
 [profile.dev]
-debug = "line-tables-only"
+debug = 0
 incremental = false
 
 [target.'cfg(all())']

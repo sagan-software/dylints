@@ -132,13 +132,19 @@
           RUSTUP_TOOLCHAIN = rustupToolchain;
           DOCS_RS = "1";
         };
-        cargoArtifacts = craneLib.buildDepsOnly (common // { doCheck = false; });
+        lintCargoArtifacts = craneLib.buildDepsOnly (
+          common
+          // {
+            cargoExtraArgs = "--locked -p sagan-lints --lib";
+            doCheck = false;
+          }
+        );
         libraryFilename = "libsagan_lints@${rustupToolchain}${pkgs.stdenv.hostPlatform.extensions.sharedLibrary}";
         lintLibraries = craneLib.buildPackage (
           common
           // {
             pname = "sagan-dylint-libraries";
-            inherit cargoArtifacts;
+            cargoArtifacts = lintCargoArtifacts;
             cargoExtraArgs = "-p sagan-lints";
             doCheck = false;
             installPhaseCommand = ''
@@ -212,7 +218,7 @@
           common
           // {
             pname = "sagan-dylints-verification";
-            inherit cargoArtifacts;
+            cargoArtifacts = lintCargoArtifacts;
             buildPhaseCargoCommand = "true";
             # mkCargoDerivation leaves doCheck disabled unless requested.
             doCheck = true;

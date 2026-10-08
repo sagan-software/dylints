@@ -1,0 +1,14 @@
+warning: MD037 in Rust doc comment at line 1, column 13: Spaces inside emphasis markers: "* emphasis *"
+  --> $DIR/levels.rs:9:5
+   |
+LL |     /// Enabled * emphasis * must still warn inside an allowed crate.
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: fix the Markdown in this Rust doc comment: `/// Enabled *emphasis* must still warn inside an allowed crate.`
+   |
+note: the lint level is defined here
+  --> $DIR/levels.rs:7:8
+   |
+LL | #[warn(rumdl_doc_comments)]
+   |        ^^^^^^^^^^^^^^^^^^
+
+warning: 1 warning emitted
+

@@ -103,6 +103,11 @@ impl<'tcx> LateLintPass<'tcx> for RumdlDocComments {
 impl RumdlDocComments {
     /// Check the docs of one definition with the settings for its source directory.
     fn check_def_docs(&mut self, cx: &LateContext<'_>, def_id: LocalDefId, span: Span) {
+        // Consult each item's level so nested overrides and expectations still run.
+        // Disabled docs need neither Markdown parsing nor configuration discovery.
+        if cx.get_lint_level_spec(RUMDL_DOC_COMMENTS).is_allow() {
+            return;
+        }
         // Recover exact source when possible so rumdl fixes can become suggestions.
         let attrs = cx.tcx.hir_attrs(cx.tcx.local_def_id_to_hir_id(def_id));
         let Some(source) = doc_comment_source(cx, attrs, span) else {
