@@ -291,12 +291,18 @@ fn repeated_gates(cx: &EarlyContext<'_>) -> BTreeMap<CfgPredicate, Vec<GateOccur
         let mut collector = CfgGateCollector::default();
         collector.visit_file(&file);
 
+        if collector.gates.is_empty() {
+            continue;
+        }
+
+        // Index line starts once instead of rescanning the source for each occurrence.
+        let lines = SourceLines::new(&candidate.source);
+
         // Merge this file's occurrences into the crate-wide predicate map.
         for (predicate, ranges) in collector.gates {
             let occurrences: &mut Vec<GateOccurrence> = gates.entry(predicate).or_default();
             occurrences.extend(ranges.into_iter().filter_map(|range| {
-                source_span(candidate.start_pos, &candidate.source, range)
-                    .map(|span| GateOccurrence { span })
+                source_span(candidate.start_pos, &lines, range).map(|span| GateOccurrence { span })
             }));
         }
     }
@@ -468,14 +474,15 @@ fn foreign_item_attributes(item: &ForeignItem) -> &[Attribute] {
 }
 
 /// Build a rustc span from a source-relative line and column location.
-fn source_span(start_pos: BytePos, source: &str, location: SourceLocation) -> Option<Span> {
+fn source_span(
+    start_pos: BytePos,
+    source: &SourceLines<'_>,
+    location: SourceLocation,
+) -> Option<Span> {
     // Convert both endpoints before constructing the diagnostic span.
-    line_column_offset(source, location.start_line, location.start_column)
-        .zip(line_column_offset(
-            source,
-            location.end_line,
-            location.end_column,
-        ))
+    source
+        .offset(location.start_line, location.start_column)
+        .zip(source.offset(location.end_line, location.end_column))
         // Reject malformed or reversed source locations before applying the file offset.
         .filter(|(start, end)| start <= end)
         // Guard integer conversion and source-map offset addition independently.
@@ -489,32 +496,34 @@ fn source_span(start_pos: BytePos, source: &str, location: SourceLocation) -> Op
         })
 }
 
-/// Convert a one-based line and zero-based byte column into a source offset.
-fn line_column_offset(source: &str, line: usize, column: usize) -> Option<usize> {
-    // Reject invalid one-based line numbers before scanning source text.
-    if line == 0 {
-        return None;
+/// Byte offsets for the start of each physical source line.
+struct SourceLines<'source> {
+    /// Original source used to validate UTF-8 boundaries.
+    source: &'source str,
+    /// One entry per line, including an empty trailing line.
+    starts: Vec<usize>,
+}
+
+impl<'source> SourceLines<'source> {
+    /// Build one line index for all diagnostic locations in a file.
+    fn new(source: &'source str) -> Self {
+        let starts = std::iter::once(0)
+            .chain(source.match_indices('\n').map(|(offset, _)| offset + 1))
+            .collect();
+        Self { source, starts }
     }
 
-    // Track the byte offset of each line while preserving UTF-8 boundaries.
-    let mut current_line = 1;
-    let mut line_start = 0;
-    for segment in source.split_inclusive('\n') {
-        if current_line == line {
-            // Exclude the newline itself from the valid byte-column range.
-            let line_end = line_start + segment.trim_end_matches('\n').len();
-            let offset = line_start.checked_add(column)?;
-            return (offset <= line_end && source.is_char_boundary(offset)).then_some(offset);
-        }
-        line_start += segment.len();
-        current_line += 1;
+    /// Convert a one-based line and zero-based byte column into a source offset.
+    fn offset(&self, line: usize, column: usize) -> Option<usize> {
+        let start = *self.starts.get(line.checked_sub(1)?)?;
+        // Exclude the newline, while retaining the original CRLF column semantics.
+        let end = self
+            .starts
+            .get(line)
+            .map_or(self.source.len(), |next| next - 1);
+        let offset = start.checked_add(column)?;
+        (offset <= end && self.source.is_char_boundary(offset)).then_some(offset)
     }
-
-    if current_line == line && line_start == source.len() {
-        return (column == 0).then_some(line_start);
-    }
-
-    None
 }
 
 /// Convert a `syn` span into a source-relative line and column location.
@@ -670,8 +679,8 @@ fn ui() {
 #[cfg(test)]
 mod tests {
     use super::{
-        CfgGateCollector, CfgPredicate, SourceLocation, cfg_predicate, crate_local_path,
-        is_item_test_only, is_rust_source_path, line_column_offset, source_span,
+        CfgGateCollector, CfgPredicate, SourceLines, SourceLocation, cfg_predicate,
+        crate_local_path, is_item_test_only, is_rust_source_path, source_span,
     };
     use std::path::{Path, PathBuf};
     use syn::Attribute;
@@ -794,25 +803,39 @@ mod tests {
     /// Source offsets accept valid UTF-8 boundaries.
     #[test]
     fn validates_source_offsets() {
-        assert_eq!(line_column_offset("é\nvalue", 1, 2), Some(2));
+        assert_eq!(SourceLines::new("é\nvalue").offset(1, 2), Some(2));
     }
 
     /// Source offsets reject a byte column in the middle of a UTF-8 code point.
     #[test]
     fn rejects_non_boundary_offsets() {
-        assert_eq!(line_column_offset("é", 1, 1), None);
+        assert_eq!(SourceLines::new("é").offset(1, 1), None);
     }
 
     /// Line offsets handle an empty trailing line and invalid line numbers.
     #[test]
     fn handles_empty_trailing_lines() {
-        assert_eq!(line_column_offset("value\n", 2, 0), Some(6));
+        assert_eq!(SourceLines::new("value\n").offset(2, 0), Some(6));
     }
 
     /// Line offsets reject a zero or missing line.
     #[test]
     fn rejects_missing_lines() {
-        assert_eq!(line_column_offset("value", 0, 0), None);
+        assert_eq!(SourceLines::new("value").offset(0, 0), None);
+    }
+
+    /// Indexed lookups preserve empty lines, CRLF and invalid-column behavior.
+    #[test]
+    fn checks_indexed_line_boundaries() {
+        let lines = SourceLines::new("é\r\n\nend");
+        assert_eq!(lines.offset(1, 3), Some(3));
+        assert_eq!(lines.offset(1, 4), None);
+        assert_eq!(lines.offset(2, 0), Some(4));
+        assert_eq!(lines.offset(2, 1), None);
+        assert_eq!(lines.offset(3, 3), Some(8));
+        assert_eq!(lines.offset(3, usize::MAX), None);
+        assert_eq!(lines.offset(4, 0), None);
+        assert_eq!(SourceLines::new("").offset(1, 0), Some(0));
     }
 
     /// Valid source locations are converted into rustc spans.
@@ -824,7 +847,7 @@ mod tests {
             end_line: 1,
             end_column: 5,
         };
-        assert!(source_span(super::BytePos(10), "value", location).is_some());
+        assert!(source_span(super::BytePos(10), &SourceLines::new("value"), location).is_some());
     }
 
     /// Source spans reject reversed source locations.
@@ -836,7 +859,7 @@ mod tests {
             end_line: 1,
             end_column: 1,
         };
-        assert!(source_span(super::BytePos(0), "value", location).is_none());
+        assert!(source_span(super::BytePos(0), &SourceLines::new("value"), location).is_none());
     }
 
     /// Rust source extensions include `.rs` and `.in` but exclude other files.

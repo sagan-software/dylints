@@ -96,3 +96,16 @@ A development-profile microbenchmark of the shared file-size helper on 1,600
 These are medians of seven batches of 30 calls using `black_box`, on the pinned
 compiler with debug information disabled. This isolates the helper and does not
 measure compiler startup, file I/O, or full-suite runtime.
+
+## Repeated-cfg diagnostic locations
+
+`repeated-cfg-gate` indexes source line starts once per file that contains cfg
+gates. Each diagnostic endpoint then uses an indexed lookup instead of scanning
+all preceding lines. UTF-8 boundary checks, empty trailing lines, and invalid
+location rejection are preserved. The index uses one `usize` per source line.
+
+A development-profile microbenchmark resolving column zero on each of 2,000
+lines took 65.49 ms before and 0.18 ms afterward, including index construction.
+The figures are medians of seven batches, with inputs and results passed through
+`black_box`. This measures location conversion alone, not syntax parsing or a
+complete lint run; files with few gates have less opportunity to benefit.
