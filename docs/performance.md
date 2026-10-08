@@ -180,3 +180,12 @@ subtree drops from 131 to 127 distinct package/version entries: `encoding_rs`,
 platform-specific proxy dependencies. Packages required elsewhere can remain in
 the workspace graph; these counts are not a measurement of total disk savings.
 TLS diagnostics still compile against the existing default TLS implementation.
+
+## Router-only Axum fixtures
+
+Axum fixture dependencies disable default features because the fixtures exercise
+routing and middleware APIs rather than server startup, JSON/form/query extractors,
+or tracing integration. The Linux Axum dependency subtree drops from 64 to 35
+distinct package/version entries under the measured workspace resolution. Other
+workspace packages may still need some of those dependencies. All Axum UI fixtures
+retain their expected diagnostics with the smaller feature configuration.
