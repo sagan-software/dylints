@@ -16,7 +16,12 @@ use std::{
 
 /// Canonical source identities and maximum observed hits for each executable line.
 #[derive(Debug, Default)]
-pub(super) struct Coverage(BTreeMap<PathBuf, BTreeMap<NonZeroUsize, u64>>);
+pub(super) struct Coverage {
+    /// Measured executable lines indexed by canonical source path.
+    lines: BTreeMap<PathBuf, BTreeMap<NonZeroUsize, u64>>,
+    /// Source-path resolutions reused for all callables in this compilation.
+    resolved_paths: BTreeMap<PathBuf, Option<PathBuf>>,
+}
 
 /// Report failures preserve their source and distinguish malformed measured input.
 #[derive(Debug, thiserror::Error)]
@@ -51,14 +56,19 @@ impl Coverage {
     }
 
     /// Return measured coverage; absent files and empty ranges have no score.
-    pub(super) fn fraction(&self, path: &Path, lines: RangeInclusive<usize>) -> Option<f64> {
-        // Resolve each callable once; line records borrow the per-source mapping.
-        let path = fs::canonicalize(path).ok()?;
+    pub(super) fn fraction(&mut self, path: &Path, lines: RangeInclusive<usize>) -> Option<f64> {
+        // Resolve a reported source path only once, including failed lookups.
+        if !self.resolved_paths.contains_key(path) {
+            let _previous = self
+                .resolved_paths
+                .insert(path.to_path_buf(), fs::canonicalize(path).ok());
+        }
+        let path = self.resolved_paths.get(path)?.as_ref()?;
         let lines = NonZeroUsize::new(*lines.start())?..=NonZeroUsize::new(*lines.end())?;
         let mut measured = 0_u32;
         let mut covered = 0_u32;
         // Missing measured lines stay absent rather than becoming invented zero hits.
-        for (_line, hits) in self.0.get(&path)?.range(lines) {
+        for (_line, hits) in self.lines.get(path)?.range(lines) {
             measured += 1;
             covered += u32::from(*hits > 0);
         }
@@ -80,7 +90,7 @@ impl std::str::FromStr for Coverage {
                     path: PathBuf::from(path),
                     source,
                 })?;
-                file = Some(result.0.entry(canonical).or_default());
+                file = Some(result.lines.entry(canonical).or_default());
             } else if let Some(data) = record.strip_prefix("DA:") {
                 // Alias records merge maximum hits without cloning a source path per line.
                 let lines = file.as_mut().ok_or(Error::MissingSource)?;
@@ -153,16 +163,39 @@ mod tests {
     #[test_case::test_case(0, 2, None; "zero start")]
     #[test_case::test_case(1, 0, None; "zero end")]
     fn measured_fraction(first: usize, last: usize, expected: Option<f64>) {
-        let (coverage, path) = fixture_coverage();
+        let (mut coverage, path) = fixture_coverage();
         assert_eq!(coverage.fraction(&path, first..=last), expected);
     }
 
     /// A missing source path cannot acquire coverage from another file's measurements.
     #[test]
     fn missing_source_has_no_fraction() {
-        let (coverage, path) = fixture_coverage();
+        let (mut coverage, path) = fixture_coverage();
         let missing = path.with_file_name("missing-source");
         assert_eq!(coverage.fraction(&missing, 1..=2), None);
+    }
+
+    /// Repeated callables reuse one successful or failed source-path resolution.
+    #[test]
+    fn reuses_source_path_resolutions() {
+        let (mut coverage, path) = fixture_coverage();
+        for _ in 0..3 {
+            assert_eq!(coverage.fraction(&path, 1..=2), Some(0.5));
+        }
+        assert_eq!(coverage.resolved_paths.len(), 1);
+        assert!(
+            coverage
+                .resolved_paths
+                .get(&path)
+                .is_some_and(Option::is_some)
+        );
+
+        let missing = path.with_file_name("missing-source");
+        for _ in 0..3 {
+            assert_eq!(coverage.fraction(&missing, 1..=2), None);
+        }
+        assert_eq!(coverage.resolved_paths.len(), 2);
+        assert_eq!(coverage.resolved_paths.get(&missing), Some(&None));
     }
 
     /// Line data requires an active source even after a record has terminated.
@@ -222,7 +255,7 @@ mod tests {
     /// Unrelated LCOV records do not invent executable lines in an empty report.
     #[test]
     fn ignores_unmeasured_records() {
-        let coverage: Coverage = "TN:ignored\nend_of_record".parse().expect("empty profile");
+        let mut coverage: Coverage = "TN:ignored\nend_of_record".parse().expect("empty profile");
         assert_eq!(coverage.fraction(&source_path(), 1..=2), None);
     }
 
@@ -239,7 +272,7 @@ mod tests {
     #[test]
     fn reads_measured_report() {
         let report = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui/coverage.info");
-        let coverage = Coverage::read(&report).expect("checked-in report");
+        let mut coverage = Coverage::read(&report).expect("checked-in report");
         assert_eq!(coverage.fraction(&source_path(), 1..=1), Some(0.0));
     }
 }

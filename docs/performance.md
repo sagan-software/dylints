@@ -146,3 +146,16 @@ with attribute-like text still use the existing syntax-aware parser. The change
 removes full-source copies and parser work for attribute-free files; it does not
 change cfg classification or diagnostic locations. No whole-suite speedup is
 claimed for this change.
+
+## Coverage source identity caching
+
+The coverage-based complexity lint resolves each reported source path once per
+compilation instead of canonicalizing it for every function. Successful and
+failed resolutions are cached in the report's state; caches do not persist across
+compilations. Coverage still comes only from the measured executable-line records.
+
+A development-profile microbenchmark of 5,000 coverage queries for one source file
+had median batch times of 49.1 ms before and 2.1 ms after caching, over seven
+batches. The report was parsed before timing. This measures repeated source lookup
+and fraction calculation, not report loading, complexity analysis, or compiler
+startup. It does not imply the same benefit for one-function-per-file workloads.

@@ -159,7 +159,7 @@ impl<'tcx> LateLintPass<'tcx> for CrapScore {
         let State::Ready {
             coverage,
             threshold,
-        } = &self.state
+        } = &mut self.state
         else {
             return;
         };
@@ -188,7 +188,7 @@ impl<'tcx> LateLintPass<'tcx> for CrapScore {
 fn measured_fraction<'tcx>(
     cx: &LateContext<'tcx>,
     body: &'tcx Body<'tcx>,
-    coverage: &coverage::Coverage,
+    coverage: &mut coverage::Coverage,
 ) -> Option<f64> {
     // Resolve both endpoints before selecting a local source identity.
     let source_map = cx.sess().source_map();
