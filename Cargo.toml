@@ -4,7 +4,7 @@ members = ["crates/*", "xtask"]
 resolver = "3"
 
 [workspace.package]
-version = "0.3.10"
+version = "0.3.11"
 edition = "2024"
 # Compiler-specific lint libraries are consumed through Dylint Git discovery, not crates.io.
 publish = false
@@ -362,7 +362,8 @@ insta = "1.48.0"
 log = { version = "0.4.33", features = ["kv"] }
 proc-macro2 = "1.0.106"
 pulldown-cmark = "0.13.4"
-reqwest = { version = "0.13.4", features = [
+reqwest = { version = "0.13.4", default-features = false, features = [
+  "default-tls",
   "blocking",
   "cookies",
   "multipart",

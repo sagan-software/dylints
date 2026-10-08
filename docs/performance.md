@@ -169,3 +169,14 @@ checkout, one discovery walk visited 1,647 entries instead of 3,169. Seven-run
 median times were 9.27 ms and 8.21 ms; the small timing difference is not evidence
 of a substantial catalog-generation speedup. The structural benefit is bounded
 traversal even when nested fixture/build directories grow.
+
+## Reqwest fixture features
+
+Reqwest fixtures explicitly enable TLS, blocking requests, cookies, and multipart
+instead of enabling all defaults. Charset decoding, HTTP/2, and system-proxy
+integration are not used by these compile-time fixtures. The Linux Reqwest
+subtree drops from 131 to 127 distinct package/version entries: `encoding_rs`,
+`fnv`, `h2`, and `tokio-util` leave that subtree. The lockfile also drops unused
+platform-specific proxy dependencies. Packages required elsewhere can remain in
+the workspace graph; these counts are not a measurement of total disk savings.
+TLS diagnostics still compile against the existing default TLS implementation.
