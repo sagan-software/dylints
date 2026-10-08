@@ -111,7 +111,7 @@ pub(crate) fn read_lints(
 
 /// Find each flat lint crate's `ui` fixture directory, rejecting an empty tree.
 fn lint_ui_directories(crates_root: &Path) -> Result<Vec<PathBuf>, SiteError> {
-    let mut ui_directories = directories_named(crates_root, "ui")?;
+    let mut ui_directories = crate_directories_named(crates_root, "ui")?;
     // Lint crates live directly below `crates/`; group crates and nested UI
     // fixtures have no README at this exact depth and cannot populate the catalog.
     ui_directories.retain(|directory| {
@@ -241,7 +241,7 @@ fn suggesting_macros(crates_root: &Path) -> Result<SuggestingMacros, SiteError> 
     // Support crates keep their sources in `src` and their package names end in `-support`.
     let mut sources = String::new();
     // Applicability is determined by the shared suggestion macros, not lint source spelling.
-    for directory in directories_named(crates_root, "src")? {
+    for directory in crate_directories_named(crates_root, "src")? {
         let is_support = directory
             .parent()
             .and_then(Path::file_name)
@@ -254,13 +254,17 @@ fn suggesting_macros(crates_root: &Path) -> Result<SuggestingMacros, SiteError> 
     Ok(SuggestingMacros::from(sources.as_str()))
 }
 
-/// Find every directory below `root` with exactly this name, in path order.
-fn directories_named(root: &Path, name: &str) -> Result<Vec<PathBuf>, SiteError> {
+/// Find named directories directly inside flat workspace crates, in path order.
+fn crate_directories_named(root: &Path, name: &str) -> Result<Vec<PathBuf>, SiteError> {
     // Do not follow links, because repository links could escape the lint tree.
-    let entries = walk(root, usize::MAX)?;
+    let entries = walk(root, 2)?;
     Ok(entries
         .into_iter()
-        .filter(|entry| entry.file_type().is_dir() && entry.file_name() == OsStr::new(name))
+        .filter(|entry| {
+            entry.depth() == 2
+                && entry.file_type().is_dir()
+                && entry.file_name() == OsStr::new(name)
+        })
         .map(DirEntry::into_path)
         .collect())
 }
@@ -539,6 +543,21 @@ pub(crate) mod tests {
             .expect("group and nested UI directories should be ignored");
         let names: Vec<_> = lints.iter().map(|lint| lint.name.as_str()).collect();
         assert_eq!(names, ["fixable_style", "serde_unregistered"]);
+    }
+
+    /// Discovery does not descend into fixtures or build-output source directories.
+    #[test]
+    fn source_discovery_stays_at_crate_depth() {
+        let root = tempfile::tempdir().expect("temporary directory should be available");
+        for directory in [
+            "real-support/src",
+            "lint/ui/fake-support/src",
+            "lint/target/dependency/src",
+        ] {
+            fs::create_dir_all(root.path().join(directory)).expect("create source directory");
+        }
+        let sources = super::crate_directories_named(root.path(), "src").expect("discover sources");
+        assert_eq!(sources, vec![root.path().join("real-support/src")]);
     }
 
     /// A tree containing only a category test still has no lint crates.

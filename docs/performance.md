@@ -159,3 +159,13 @@ had median batch times of 49.1 ms before and 2.1 ms after caching, over seven
 batches. The report was parsed before timing. This measures repeated source lookup
 and fraction calculation, not report loading, complexity analysis, or compiler
 startup. It does not imply the same benefit for one-function-per-file workloads.
+
+## Bounded catalog discovery
+
+Catalog discovery visits only `crates/<crate>/ui` and `crates/<crate>/src`, rather
+than recursively traversing fixture and build-output subtrees first. Source files
+inside a selected crate's `src` are still read recursively. On the measured
+checkout, one discovery walk visited 1,647 entries instead of 3,169. Seven-run
+median times were 9.27 ms and 8.21 ms; the small timing difference is not evidence
+of a substantial catalog-generation speedup. The structural benefit is bounded
+traversal even when nested fixture/build directories grow.
