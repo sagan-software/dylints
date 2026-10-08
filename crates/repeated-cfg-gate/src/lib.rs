@@ -23,6 +23,7 @@ extern crate rustc_span;
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Component, Path, PathBuf},
+    sync::Arc,
 };
 
 use proc_macro2::Span as ProcMacroSpan;
@@ -79,7 +80,7 @@ struct SourceCandidate {
     /// Byte position where this source file starts in rustc's source map.
     start_pos: BytePos,
     /// Source text used for syntax-aware cfg and test-region analysis.
-    source: String,
+    source: Arc<String>,
 }
 
 /// Collects repeated predicates while tracking test-only item regions.
@@ -356,13 +357,17 @@ fn loaded_rust_source_files(cx: &EarlyContext<'_>) -> Vec<SourceCandidate> {
             continue;
         }
 
-        // Copy source text while the source-map guard is still held.
-        let Some(source) = source_file.src.as_deref() else {
+        // Share rustc's retained source; an attribute-free file cannot contain cfg gates.
+        let Some(source) = source_file
+            .src
+            .as_ref()
+            .filter(|source| source.contains('#'))
+        else {
             continue;
         };
         candidates.push(SourceCandidate {
             start_pos: source_file.start_pos,
-            source: source.to_owned(),
+            source: Arc::clone(source),
         });
     }
 

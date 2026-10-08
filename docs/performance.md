@@ -136,3 +136,13 @@ and two occurrences of one candidate retained 1 counter instead of 50,001.
 Median scanning time over seven batches was 52.9 ms before and 20.1 ms afterward.
 This excludes workspace discovery and file I/O; memory growth now follows the
 number of candidate names instead of all distinct workspace identifiers.
+
+## Shared cfg source text
+
+`repeated-cfg-gate` now retains shared handles to rustc's source strings instead
+of copying all loaded source text into a second collection. Files without `#`
+are omitted before parsing because they cannot contain cfg attributes. Files
+with attribute-like text still use the existing syntax-aware parser. The change
+removes full-source copies and parser work for attribute-free files; it does not
+change cfg classification or diagnostic locations. No whole-suite speedup is
+claimed for this change.
