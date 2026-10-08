@@ -17,6 +17,7 @@ syn = { workspace = true, features = ["full", "visit"] }
 
 [dev-dependencies]
 dylint_testing.workspace = true
+test-case.workspace = true
 
 [features]
 rlib = ["dylint_linting/constituent"]

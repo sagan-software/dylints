@@ -189,3 +189,18 @@ or tracing integration. The Linux Axum dependency subtree drops from 64 to 35
 distinct package/version entries under the measured workspace resolution. Other
 workspace packages may still need some of those dependencies. All Axum UI fixtures
 retain their expected diagnostics with the smaller feature configuration.
+
+## Sparse field-cohesion graphs
+
+The field-cohesion lint now connects each field's users to one representative
+method and indexes direct callees, rather than comparing all method pairs and
+materializing shared-field cliques. Connected components—and therefore the
+existing diagnostic thresholds and summaries—remain the same. Regression tests
+compare components against the original pairwise algorithm across 4,096 field
+and call combinations, including self-calls and unknown callees.
+
+For 300 methods sharing four fields, a development-profile microbenchmark of graph
+construction and component traversal stored 598 adjacency entries instead of
+89,700. Seven-run median times were 74.64 ms before and 1.67 ms afterward. This
+isolates graph work; it excludes rustc traversal and does not represent a
+whole-suite speedup. Sparse graphs avoid quadratic edge storage for shared fields.

@@ -549,13 +549,14 @@ pub(crate) mod tests {
     #[test]
     fn source_discovery_stays_at_crate_depth() {
         let root = tempfile::tempdir().expect("temporary directory should be available");
-        for directory in [
+        [
             "real-support/src",
             "lint/ui/fake-support/src",
             "lint/target/dependency/src",
-        ] {
-            fs::create_dir_all(root.path().join(directory)).expect("create source directory");
-        }
+        ]
+        .into_iter()
+        .try_for_each(|directory| fs::create_dir_all(root.path().join(directory)))
+        .expect("create source directories");
         let sources = super::crate_directories_named(root.path(), "src").expect("discover sources");
         assert_eq!(sources, vec![root.path().join("real-support/src")]);
     }

@@ -620,16 +620,12 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     /// Attribute-free files and attribute-like text remain production source.
-    #[test]
-    fn keeps_non_attribute_source_in_production_count() {
-        for source in [
-            "const VALUE: usize = 1;\n",
-            "// #[test]\nfn ordinary() {}\n",
-            "const TEXT: &str = \"#[test]\";\n",
-            "not valid Rust {\n",
-        ] {
-            assert_eq!(test_line_count(source, source.lines().count()), 0);
-        }
+    #[test_case::test_case("const VALUE: usize = 1;\n"; "plain source")]
+    #[test_case::test_case("// #[test]\nfn ordinary() {}\n"; "comment text")]
+    #[test_case::test_case("const TEXT: &str = \"#[test]\";\n"; "string text")]
+    #[test_case::test_case("not valid Rust {\n"; "malformed source")]
+    fn keeps_non_attribute_source_in_production_count(source: &str) {
+        assert_eq!(test_line_count(source, source.lines().count()), 0);
     }
 
     /// The serde default helpers return the documented limits.

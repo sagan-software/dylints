@@ -323,25 +323,35 @@ fn measured_methods(
         .collect()
 }
 
-/// Build an undirected method graph from shared fields and direct receiver calls.
+/// Build a sparse graph with the same field-and-call connected components.
 fn method_adjacency(measured: &[(&LocalDefId, &MethodUsage)]) -> HashMap<usize, HashSet<usize>> {
-    // Methods without an edge have no entry; component discovery treats them as isolated.
-    let mut adjacency: HashMap<usize, HashSet<usize>> = HashMap::new();
-    for (left, &(left_id, left_usage)) in measured.iter().enumerate() {
-        // Compare each unordered method pair once and add a symmetric edge.
-        for (right, &(right_id, right_usage)) in measured.iter().enumerate().skip(left + 1) {
-            // Join methods that share state or directly delegate to one another.
-            let shares_field = !left_usage.fields.is_disjoint(&right_usage.fields);
-            let left_calls_right = left_usage.calls.contains(right_id);
-            let right_calls_left = right_usage.calls.contains(left_id);
-            if shares_field || left_calls_right || right_calls_left {
-                // Each unordered pair is visited once, so both insertions add a new edge.
-                let _is_left_new = adjacency.entry(left).or_default().insert(right);
-                let _is_right_new = adjacency.entry(right).or_default().insert(left);
-            }
+    let indices: HashMap<_, _> = measured
+        .iter()
+        .enumerate()
+        .map(|(index, (id, _))| (**id, index))
+        .collect();
+    let mut first_field_use = HashMap::new();
+    let mut adjacency = HashMap::new();
+    for (index, (_, usage)) in measured.iter().enumerate() {
+        // A star connects all users of a field without constructing a quadratic clique.
+        for &field in &usage.fields {
+            let first = *first_field_use.entry(field).or_insert(index);
+            connect_methods(&mut adjacency, index, first);
+        }
+        // Direct delegation joins the same components; unknown callees remain excluded.
+        for target in usage.calls.iter().filter_map(|target| indices.get(target)) {
+            connect_methods(&mut adjacency, index, *target);
         }
     }
     adjacency
+}
+
+/// Add an undirected edge while leaving self-calls and isolated methods unchanged.
+fn connect_methods(adjacency: &mut HashMap<usize, HashSet<usize>>, left: usize, right: usize) {
+    if left != right {
+        let _is_left_new = adjacency.entry(left).or_default().insert(right);
+        let _is_right_new = adjacency.entry(right).or_default().insert(left);
+    }
 }
 
 /// Return connected components from an undirected adjacency list.
@@ -381,4 +391,78 @@ fn connected_components(
 #[test]
 fn ui() {
     dylint_testing::ui_test(env!("CARGO_PKG_NAME"), "ui");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        HashMap, HashSet, LocalDefId, MethodUsage, connected_components, method_adjacency,
+    };
+    use rustc_span::{def_id::DefIndex, sym};
+
+    /// Construct identities for graph-only tests without requiring a compiler context.
+    fn method_id(index: u32) -> LocalDefId {
+        LocalDefId {
+            local_def_index: DefIndex::from_u32(index),
+        }
+    }
+
+    /// Stabilize component membership independently of graph traversal order.
+    fn normalized_components(
+        count: usize,
+        graph: &HashMap<usize, HashSet<usize>>,
+    ) -> Vec<Vec<usize>> {
+        let mut components = connected_components(count, graph);
+        for component in &mut components {
+            component.sort_unstable();
+        }
+        components.sort_unstable();
+        components
+    }
+
+    /// Compute the original pairwise relationship as an independent reference.
+    fn reference_graph(measured: &[(&LocalDefId, &MethodUsage)]) -> HashMap<usize, HashSet<usize>> {
+        let mut graph: HashMap<usize, HashSet<usize>> = HashMap::new();
+        for (left, (left_id, left_usage)) in measured.iter().enumerate() {
+            for (right, (right_id, right_usage)) in measured.iter().enumerate().skip(left + 1) {
+                if !left_usage.fields.is_disjoint(&right_usage.fields)
+                    || left_usage.calls.contains(right_id)
+                    || right_usage.calls.contains(left_id)
+                {
+                    let _is_new = graph.entry(left).or_default().insert(right);
+                    let _is_new = graph.entry(right).or_default().insert(left);
+                }
+            }
+        }
+        graph
+    }
+
+    /// Cover every two-field assignment and cycle-edge subset for four methods.
+    #[test]
+    fn preserves_pairwise_connectivity() {
+        for field_mask in 0..256_u32 {
+            for call_mask in 0..16_u32 {
+                let methods: Vec<_> = (0..4)
+                    .map(|index| {
+                        let fields = [(1 << (2 * index), sym::test), (2 << (2 * index), sym::cfg)]
+                            .into_iter()
+                            .filter_map(|(mask, field)| (field_mask & mask != 0).then_some(field))
+                            .collect();
+                        // Self-calls and unknown callees must not change graph components.
+                        let mut calls = HashSet::from([method_id(index), method_id(99)]);
+                        if call_mask & (1 << index) != 0 {
+                            let _is_new = calls.insert(method_id((index + 1) % 4));
+                        }
+                        (method_id(index), MethodUsage { fields, calls })
+                    })
+                    .collect();
+                let measured: Vec<_> = methods.iter().map(|(id, usage)| (id, usage)).collect();
+                assert_eq!(
+                    normalized_components(measured.len(), &method_adjacency(&measured)),
+                    normalized_components(measured.len(), &reference_graph(&measured)),
+                    "fields={field_mask}, calls={call_mask}",
+                );
+            }
+        }
+    }
 }
