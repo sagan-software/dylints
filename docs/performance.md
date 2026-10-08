@@ -122,3 +122,17 @@ Regression tests verify that retained text, including an empty snapshot, works
 without an accessible file, and that fallback reads and missing-file handling
 remain available. This removes file I/O and full-file allocations on the retained
 source path; no whole-suite runtime percentage has been measured for this change.
+
+## Candidate-only public-type scanning
+
+`unnecessary-public-type` skips workspace scanning when the crate has no
+candidate types. Otherwise it stores only candidate-name counters, capped at two
+occurrences, and stops reading additional files when all candidates have a second
+occurrence. Identifier slices are borrowed instead of allocated per token.
+The existing lexical matching policy is unchanged.
+
+A development-profile microbenchmark scanning 50,000 unrelated unique identifiers
+and two occurrences of one candidate retained 1 counter instead of 50,001.
+Median scanning time over seven batches was 52.9 ms before and 20.1 ms afterward.
+This excludes workspace discovery and file I/O; memory growth now follows the
+number of candidate names instead of all distinct workspace identifiers.

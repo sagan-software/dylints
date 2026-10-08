@@ -43,6 +43,11 @@ dylint_support::documented_early_lint! {
 impl EarlyLintPass for UnnecessaryPublicType {
     /// Check crate for this lint.
     fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &Crate) {
+        // Without candidate types there is no reason to inspect manifests or workspace files.
+        let candidates = public_type_candidates(krate);
+        if candidates.is_empty() {
+            return;
+        }
         let crate_root_span = krate.spans.inner_span;
 
         // Anchor manifest and source discovery to the crate root that rustc is compiling.
@@ -65,10 +70,10 @@ impl EarlyLintPass for UnnecessaryPublicType {
         // Count identifiers across the crate and every Rust file in its workspace, because a
         // sibling crate or another target of this package can use a `pub` type.
         let search_root = workspace_root(&manifest_path);
-        let identifier_counts = identifier_counts(cx, &crate_root, &search_root);
+        let identifier_counts = identifier_counts(cx, &crate_root, &search_root, &candidates);
 
         // Report public type names whose declaration is their only local occurrence.
-        for candidate in public_type_candidates(krate) {
+        for candidate in candidates {
             if identifier_counts
                 .get(&candidate.name)
                 .copied()
@@ -178,15 +183,23 @@ fn identifier_counts(
     cx: &EarlyContext<'_>,
     crate_root: &Path,
     search_root: &Path,
+    candidates: &[PublicTypeCandidate],
 ) -> BTreeMap<String, usize> {
     // Deduplicate files that the crate loads from inside the search root.
     let mut files = local_crate_rust_files(cx, crate_root);
     files.extend(workspace_rust_files(search_root));
 
     // Aggregate lexical identifier counts, skipping files that cannot be read as UTF-8 text.
-    let mut counts = BTreeMap::new();
+    let mut counts = candidates
+        .iter()
+        .map(|candidate| (candidate.name.clone(), 0))
+        .collect();
     for source in files.iter().filter_map(|path| read_file(path)) {
         count_identifiers(&source, &mut counts);
+        // Further files cannot change the result once every candidate has another occurrence.
+        if counts.values().all(|count| *count > 1) {
+            break;
+        }
     }
     counts
 }
@@ -277,36 +290,21 @@ fn workspace_root(manifest_path: &Path) -> PathBuf {
         .map_or_else(|| package_dir.clone(), Path::to_path_buf)
 }
 
-/// Count identifiers used by the lint.
+/// Count only candidate identifiers, retaining at most the two occurrences needed.
 fn count_identifiers(source: &str, counts: &mut BTreeMap<String, usize>) {
-    // Build ASCII identifiers incrementally and flush them at delimiters.
-    let mut identifier = String::new();
-
-    for character in source.chars() {
-        if is_identifier_continue(character) {
-            identifier.push(character);
-            continue;
-        }
-
-        record_identifier(&mut identifier, counts);
+    // Borrow token slices instead of allocating and cloning every workspace identifier.
+    for identifier in source.split(|character| !is_identifier_continue(character)) {
+        record_identifier(identifier, counts);
     }
-
-    // Flush an identifier that reaches the end of the source without a delimiter.
-    record_identifier(&mut identifier, counts);
 }
 
-/// Helper for record identifier analysis.
-fn record_identifier(identifier: &mut String, counts: &mut BTreeMap<String, usize>) {
-    // Count only nonempty tokens with a valid Rust identifier start.
-    if identifier.is_empty() {
-        return;
+/// Record a valid candidate token without growing the set of tracked names.
+fn record_identifier(identifier: &str, counts: &mut BTreeMap<String, usize>) {
+    if identifier.chars().next().is_some_and(is_identifier_start)
+        && let Some(count) = counts.get_mut(identifier)
+    {
+        *count = (*count + 1).min(2);
     }
-
-    if identifier.chars().next().is_some_and(is_identifier_start) {
-        *counts.entry(identifier.clone()).or_default() += 1;
-    }
-
-    identifier.clear();
 }
 
 /// Return whether identifier start.
@@ -568,18 +566,28 @@ mod tests {
     /// Identifier scanning counts ASCII tokens and flushes at end of input.
     #[test]
     fn counts_identifiers() {
-        let mut counts = BTreeMap::new();
-        count_identifiers("alpha _beta 123gamma alpha", &mut counts);
-
-        assert_eq!(counts.get("alpha"), Some(&2));
+        let mut counts = BTreeMap::from([
+            ("alpha".to_owned(), 0),
+            ("_beta".to_owned(), 0),
+            ("gamma".to_owned(), 0),
+        ]);
+        count_identifiers("alpha _beta 123gamma alpha unrelated alpha", &mut counts);
+        assert_eq!(
+            counts,
+            BTreeMap::from([
+                ("alpha".to_owned(), 2),
+                ("_beta".to_owned(), 1),
+                ("gamma".to_owned(), 0),
+            ])
+        );
     }
 
     /// Identifier recording ignores empty and invalid-start tokens.
     #[test]
     fn records_only_valid_identifier_starts() {
         let mut counts = BTreeMap::new();
-        record_identifier(&mut String::new(), &mut counts);
-        record_identifier(&mut "123".to_owned(), &mut counts);
+        record_identifier("", &mut counts);
+        record_identifier("123", &mut counts);
 
         assert!(counts.is_empty());
     }
