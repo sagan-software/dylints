@@ -109,3 +109,16 @@ lines took 65.49 ms before and 0.18 ms afterward, including index construction.
 The figures are medians of seven batches, with inputs and results passed through
 `black_box`. This measures location conversion alone, not syntax parsing or a
 complete lint run; files with few gates have less opportunity to benefit.
+
+## Clap source snapshots
+
+Clap derive and documentation recovery now borrows rustc's retained source text
+instead of reopening and reading the complete file for each lookup. The shared
+source-map handle is cloned without cloning its text, and only the selected
+source segment is copied. This also keeps byte offsets aligned with the compiler's
+source snapshot. Files without retained text still use the existing disk fallback.
+
+Regression tests verify that retained text, including an empty snapshot, works
+without an accessible file, and that fallback reads and missing-file handling
+remain available. This removes file I/O and full-file allocations on the retained
+source path; no whole-suite runtime percentage has been measured for this change.

@@ -11,7 +11,7 @@ extern crate rustc_lint;
 extern crate rustc_middle;
 extern crate rustc_span;
 
-use std::{fs::File, io::Read, ops::Range, str::FromStr};
+use std::{borrow::Cow, fs::File, io::Read, ops::Range, path::Path, str::FromStr};
 
 use rustc_ast::{
     Attribute, Crate, FieldDef, GenericArg, Item, ItemKind, LitKind, Ty, TyKind, Variant,
@@ -794,13 +794,13 @@ fn source_segment_before_span(
         span.lo() >= source_file.start_pos && span.lo() <= source_file.end_position()
     })?;
     let path = source_file.name.clone().into_local_path()?;
+    let loaded_source = source_file.src.clone();
     let local_offset = span.lo().0.checked_sub(source_file.start_pos.0)? as usize;
     drop(files);
 
-    // Read the file after releasing the source-map lock.
-    let mut source = String::new();
-    let mut file = File::open(path).ok()?;
-    let _bytes_read = file.read_to_string(&mut source).ok()?;
+    // Borrow rustc's snapshot so repeated fields do not reread the entire file.
+    // Fall back to disk only when the source map has no retained text.
+    let source = source_text(loaded_source.as_deref().map(String::as_str), &path)?;
     let prefix = source.get(..local_offset)?;
     // Bound the fallback at the nearest structural delimiter before the span.
     let boundary = prefix
@@ -814,6 +814,21 @@ fn source_segment_before_span(
         .unwrap_or(0);
 
     prefix.get(boundary..).map(str::to_owned)
+}
+
+/// Borrow compiler-retained text, or read a file when that text is unavailable.
+fn source_text<'source>(
+    loaded_source: Option<&'source str>,
+    path: &Path,
+) -> Option<Cow<'source, str>> {
+    if let Some(source) = loaded_source {
+        return Some(Cow::Borrowed(source));
+    }
+
+    let mut source = String::new();
+    let mut file = File::open(path).ok()?;
+    let _bytes_read = file.read_to_string(&mut source).ok()?;
+    Some(Cow::Owned(source))
 }
 
 /// A clap builder type that owns fluent configuration methods.
@@ -1218,4 +1233,40 @@ fn is_builder_method(
         false
     };
     is_clap_method && is_expected_builder
+}
+
+#[cfg(test)]
+mod tests {
+    use super::source_text;
+    use std::{borrow::Cow, path::Path};
+
+    /// Retained source remains available without opening its original file.
+    #[test]
+    fn borrows_retained_source_without_file_access() {
+        let missing = Path::new(env!("CARGO_MANIFEST_DIR")).join("missing-source-fixture.rs");
+        assert!(matches!(
+            source_text(Some("snapshot"), &missing),
+            Some(Cow::Borrowed("snapshot"))
+        ));
+        assert!(matches!(
+            source_text(Some(""), &missing),
+            Some(Cow::Borrowed(""))
+        ));
+    }
+
+    /// Files without retained compiler text preserve the disk fallback.
+    #[test]
+    fn reads_source_when_no_snapshot_is_available() {
+        let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
+        let source = source_text(None, &manifest).expect("read the crate manifest");
+        assert!(matches!(source, Cow::Owned(_)));
+        assert!(source.contains("[package]"));
+    }
+
+    /// Missing files without retained text remain unsupported.
+    #[test]
+    fn rejects_missing_source_without_snapshot() {
+        let missing = Path::new(env!("CARGO_MANIFEST_DIR")).join("missing-source-fixture.rs");
+        assert!(source_text(None, &missing).is_none());
+    }
 }
