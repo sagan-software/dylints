@@ -55,6 +55,27 @@ local re-enabling, local suppression, and fulfilled expectations.
 These measurements exclude toolchain installation, Nix store closures, and
 downstream project dependencies. Existing caches are not automatically removed.
 
+## Parser dependencies in focused builds
+
+Workspace lints disable `dylint-support`'s default features. Only
+`large-rust-file` and `unnecessary-module-directory` enable its `rust-file-size`
+feature, which supplies the shared source-size parser. Direct consumers of the
+support crate retain that feature by default. This keeps unrelated lint builds
+from compiling the support crate's full `syn` parser and span-location support.
+Other dependencies can still require `syn`, including compiler-side proc macros.
+
+On the 0.3.2 workspace with the pinned compiler and debug information disabled,
+a fresh `cargo build --locked --offline -p perf --lib` used 145.3 MiB before
+this feature split and 126.4 MiB afterward, a 13% reduction. Both measurements
+used empty temporary target/build directories, warm downloaded dependencies,
+and one Cargo build job; allocated disk usage counted each inode once. The
+single builds took 29.1 and 25.2 seconds, respectively, which is insufficient to
+establish a repeatable build-time improvement. Temporary artifacts were removed.
+
+These savings apply to focused builds that do not enable the parser elsewhere.
+The full aggregate and workspace test builds still include the parser-dependent
+lints, so they are not expected to see the same reduction.
+
 ## Fixture dependencies
 
 Bevy 0.19 fixture dependencies use umbrella re-exports and only required features. Bevy 0.18 remains for deliberate cross-version diagnostics. Bevy derive macros require the current umbrella dependency's canonical name `bevy`; aliases are not discovered by its macro manifest helper.

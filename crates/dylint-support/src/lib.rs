@@ -11,9 +11,11 @@ use rustc_span::Symbol;
 use tempfile as _;
 
 mod optional;
+#[cfg(feature = "rust-file-size")]
 mod rust_file_size;
 
 pub use self::optional::peel_standard_options;
+#[cfg(feature = "rust-file-size")]
 pub use self::rust_file_size::{RustFileSizeViolation, rust_file_size_violation};
 
 /// Return whether a compiled crate is an internal helper or UI fixture.

@@ -4,7 +4,7 @@ members = ["crates/*", "xtask"]
 resolver = "3"
 
 [workspace.package]
-version = "0.3.2"
+version = "0.3.3"
 edition = "2024"
 # Compiler-specific lint libraries are consumed through Dylint Git discovery, not crates.io.
 publish = false
@@ -128,7 +128,7 @@ dependency-full-semver-versions = { path = "crates/dependency-full-semver-versio
 dependency-key-order = { path = "crates/dependency-key-order" }
 doc-attr-comment = { path = "crates/doc-attr-comment" }
 duration-integer-field = { path = "crates/duration-integer-field" }
-dylint-support = { path = "crates/dylint-support" }
+dylint-support = { path = "crates/dylint-support", default-features = false }
 expensive-as-method = { path = "crates/expensive-as-method" }
 expensive-sort-key = { path = "crates/expensive-sort-key" }
 field-usage-cohesion = { path = "crates/field-usage-cohesion" }

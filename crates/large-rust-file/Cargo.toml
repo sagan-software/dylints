@@ -9,7 +9,7 @@ publish.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dylint-support.workspace = true
+dylint-support = { workspace = true, features = ["rust-file-size"] }
 dylint_linting.workspace = true
 [dev-dependencies]
 dylint_testing.workspace = true
