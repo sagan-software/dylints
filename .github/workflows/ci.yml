@@ -25,6 +25,10 @@ jobs:
   check:
     name: Tests, lints and reports
     runs-on: ubuntu-latest
+    env:
+      # Public Ubuntu runners have 4 CPUs and 16 GB RAM; retain headroom
+      # for rustc and native dependencies. UI tests remain serialized.
+      CARGO_BUILD_JOBS: "2"
     steps:
       - uses: actions/checkout@v7
         with:
