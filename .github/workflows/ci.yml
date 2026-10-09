@@ -49,6 +49,7 @@ jobs:
         with:
           shared-key: workspace
           cache-bin: false
+          cache-on-failure: true
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - uses: actions/cache/restore@v5
         id: tools
